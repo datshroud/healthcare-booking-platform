@@ -1,0 +1,5 @@
+bin/
+obj/
+.vs/
+*.user
+src/BookingCareManagement.Web/appsettings.Development.json
