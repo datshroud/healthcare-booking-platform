@@ -1,0 +1,89 @@
+﻿@page "/MyBookings/Reviews/ReviewSuccess"
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Success - Thank You</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="~/css/ReviewSuccess.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <div class="navbar-nav me-auto">
+                <a class="nav-link mx-3" href="#">Services</a>
+                <a class="nav-link mx-3" href="#">Book Now</a>
+                <a class="nav-link mx-3" href="#">My Bookings</a>
+            </div>
+            <div class="d-flex align-items-center user-info">
+                <div class="user-badge">D</div>
+                <span class="user-name">Dang Minh Bao</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Success Card -->
+    <div class="container">
+        <div class="success-card">
+            <!-- Success Icon -->
+            <div class="success-icon-wrapper">
+                <div class="star-icon">
+                    <div class="checkmark-badge">
+                        <i class="fas fa-check"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Message -->
+            <h2 class="success-title">Thanks for your feedback!</h2>
+            <p class="success-message">
+                Your rating and review have been successfully submitted. We appreciate your valuable input. It helps us enhance our services and provide a better experience for you and others.
+            </p>
+
+            <!-- Service Information -->
+            <div class="service-info">
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-concierge-bell"></i>
+                        <span>Service</span>
+                    </div>
+                    <div class="info-value">Therapeutic Exercise</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-user"></i>
+                        <span>Employee</span>
+                    </div>
+                    <div class="info-value">Jane Doe</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Date & Time</span>
+                    </div>
+                    <div class="info-value">30 October 2025 12:30</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-brand">
+            <div>goodbone</div>
+            <div class="made-with">
+                Made with <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="12" alt=""> Trafft
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src=""></script>
+</body>
+</html>
