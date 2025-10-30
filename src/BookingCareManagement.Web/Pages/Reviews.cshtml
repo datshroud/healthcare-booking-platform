@@ -1,0 +1,114 @@
+﻿@page "/MyBookings/Reviews"
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Review</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="~/css/Reviews.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container-fluid">
+            <div class="navbar-nav me-auto">
+                <a class="nav-link mx-3" href="#">Services</a>
+                <a class="nav-link mx-3" href="#">Book Now</a>
+                <a class="nav-link mx-3" href="#">My Bookings</a>
+            </div>
+            <div class="d-flex align-items-center user-info ms-2">
+                <div class="user-badge">D</div>
+                <span style="color: #4299e1; font-weight: 500;">Dang Minh Bao</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Review Card -->
+    <div class="container">
+        <div class="review-card">
+            <!-- Service Information -->
+            <div class="service-info">
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-concierge-bell"></i>
+                        <span>Service</span>
+                    </div>
+                    <div class="info-value">Heat and Ice Therapy</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-user"></i>
+                        <span>Employee</span>
+                    </div>
+                    <div class="info-value">Jane Doe</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Date & Time</span>
+                    </div>
+                    <div class="info-value">30 October 2025 13:30</div>
+                </div>
+            </div>
+
+            <!-- Rating Section -->
+            <div class="text-center">
+                <h2 class="rating-title">How would you rate your experience?</h2>
+                <p class="rating-subtitle">Your feedback is important for us! Your review will be posted publicly on the web.</p>
+            </div>
+
+            <!-- Star Rating -->
+            <div class="stars-container">
+                <i class="fas fa-star star" data-rating="1"></i>
+                <i class="fas fa-star star" data-rating="2"></i>
+                <i class="fas fa-star star" data-rating="3"></i>
+                <i class="fas fa-star star" data-rating="4"></i>
+                <i class="fas fa-star star" data-rating="5"></i>
+            </div>
+
+            <!-- Review Form -->
+            <form>
+                <textarea class="form-control" rows="5" placeholder="Describe your experience (optional)"></textarea>
+
+                <div class="mb-3">
+                    <label style="color: #e2e8f0; margin-bottom: 0.75rem; display: block;">Show:</label>
+                    <div class="privacy-options">
+                        <div class="privacy-option">
+                            <input class="form-check-input" type="radio" name="privacy" id="fullName" checked>
+                            <label class="form-check-label" for="fullName">Full Name</label>
+                        </div>
+                        <div class="privacy-option">
+                            <input class="form-check-input" type="radio" name="privacy" id="firstName">
+                            <label class="form-check-label" for="firstName">First Name Only</label>
+                        </div>
+                        <div class="privacy-option">
+                            <input class="form-check-input" type="radio" name="privacy" id="anonymous">
+                            <label class="form-check-label" for="anonymous">Anonymous</label>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-submit">Post Review</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-brand">
+            <div>goodbone</div>
+            <div class="made-with">
+                Made with <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="12" alt=""> Trafft
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/Reviews.js"></script>
+</body>
+</html>
