@@ -39,7 +39,7 @@ function updateStars() {
 // Initialize with 5 stars selected
 updateStars();
 
-// Form submission handler (optional)
+// Form submission handler
 document.querySelector('form').addEventListener('submit', function (e) {
     e.preventDefault();
 
@@ -50,5 +50,7 @@ document.querySelector('form').addEventListener('submit', function (e) {
     console.log('Review:', textarea);
     console.log('Privacy:', privacy);
 
-    alert('Review submitted! Rating: ' + selectedRating + ' stars');
+    // Có thể hiện thông báo nhỏ (nếu muốn)
+    // alert('Review submitted! Rating: ' + selectedRating + ' stars');
+    window.location.href = 'Reviews/ReviewSuccess';
 });
