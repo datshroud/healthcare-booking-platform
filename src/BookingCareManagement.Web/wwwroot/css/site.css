@@ -316,3 +316,19 @@ body {
     position: relative;
     z-index: 10;
 }
+
+/*Ai build login thì dùng*/
+/* Ẩn các phần layout khi ở trang login */
+body.page-login .navbar,
+body.page-login .footer {
+    display: none;
+}
+
+/* Tùy chỉnh nền và chiều cao riêng cho trang login */
+body.page-login {
+    background: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* phủ full màn hình */
+}
