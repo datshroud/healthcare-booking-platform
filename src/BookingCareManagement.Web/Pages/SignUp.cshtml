@@ -1,0 +1,83 @@
+﻿@page
+@model BookingCareManagement.Pages.SignUpModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap-grid.min.css">
+    <link rel="stylesheet" href="~/css/signup.css">
+    <title>Document</title>
+</head>
+
+<body>
+    <div class="SignUp-container">
+        <h2>Create Your Account</h2>
+        <div class="signup-content">
+            <form>
+                <label for="firstname"><span class="required">*</span> First Name</label>
+                <input type="firstname" id="firstname" placeholder="Enter firstname" required>
+
+                <label for="lastname"><span class="required">*</span> Last Name</label>
+                <input type="lastname" id="lastname" placeholder="Enter lastname" required>
+
+                <label for="email"><span class="required">*</span> Email</label>
+                <input type="email" id="email" placeholder="Enter email" required>
+
+
+                <label for="password"><span class="required">*</span> Password</label>
+                <input type="password" id="password" placeholder="Enter password" required>
+
+                <div class="input-group phone-group">
+                    <label for="phone"><span class="required">*</span> Phone</label>
+                    <div class="phone-input-wrapper">
+                        <select class="country-code">
+                            <option value="+84">🇻🇳 Vietnam (+84)</option>
+                            <option value="+1">🇺🇸 Canada/USA (+1)</option>
+                            <option value="+44">🇬🇧 UK (+44)</option>
+                            <option value="+61">🇦🇺 Australia (+61)</option>
+                            <option value="+49">🇩🇪 Germany (+49)</option>
+                            <option value="+33">🇫🇷 France (+33)</option>
+                            <option value="+81">🇯🇵 Japan (+81)</option>
+                            <option value="+86">🇨🇳 China (+86)</option>
+                            <option value="+91">🇮🇳 India (+91)</option>
+                            <option value="+62">🇮🇩 Indonesia (+62)</option>
+                            <option value="+60">🇲🇾 Malaysia (+60)</option>
+                            <option value="+63">🇵🇭 Philippines (+63)</option>
+                            <option value="+65">🇸🇬 Singapore (+65)</option>
+                            <option value="+66">🇹🇭 Thailand (+66)</option>
+                            <option value="+82">🇰🇷 South Korea (+82)</option>
+                            <option value="+7">🇷🇺 Russia/Kazakhstan (+7)</option>
+                            <option value="+55">🇧🇷 Brazil (+55)</option>
+                            <option value="+52">🇲🇽 Mexico (+52)</option>
+                            <option value="+34">🇪🇸 Spain (+34)</option>
+                            <option value="+39">🇮🇹 Italy (+39)</option>
+                        </select>
+                        <input type="tel" id="phone" placeholder="Nhập số điện thoại">
+                    </div>
+                </div>
+                <button type="submit" class="signup-button">Log In</button>
+            </form>
+        </div>
+        <div class="divider">
+            <span>OR</span>
+        </div>
+
+        <div class="social-signup">
+            <button class="google"><img src="~/img/google.png" alt=""> Log In with Google</button>
+            <button class="apple"><img src="/~img/apple.png" alt=""> Log In with Apple</button>
+            <button class="facebook"><img src="~/img/facebook.png" alt=""> Log In with Facebook</button>
+            <button class="linkedin"><img src="~/img/linkedin.png" alt=""> Log In with LinkedIn</button>
+        </div>
+
+        <div class="footer-links">
+            <p>Already have an account? <a href="Login">Log In</a></p>
+        </div>
+    </div>
+</body>
+
+</html>

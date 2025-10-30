@@ -1,0 +1,62 @@
+﻿@page 
+@model BookingCareManagement.Pages.LoginModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap-grid.min.css">
+    <link rel="stylesheet" href="~/css/login.css">
+    <title>Document</title>
+</head>
+s
+<body>
+    <div class="login-container">
+        <h2>Log In to Your Account</h2>
+        <form>
+            <label for="email"><span class="required">*</span> Email</label>
+            <input type="email" id="email" placeholder="Enter email" required>
+
+
+            <label for="password"><span class="required">*</span> Password</label>
+            <input type="password" id="password" placeholder="Enter password" required>
+
+
+            <button type="submit" class="login-btn">Log In</button>
+        </form>
+
+        <div class="divider">
+            <span>OR</span>
+        </div>
+
+        <div class="social-login">
+            <button class="google">
+                <img src="/img/google.png"
+                     alt=""> Log In with Google
+            </button>
+            <button class="apple">
+                <img src="/img/google.png"
+                     alt=""> Log In with Apple
+            </button>
+            <button class="facebook">
+                <img src="/img/facebook.png"
+                     alt=""> Log In with Facebook
+            </button>
+            <button class="linkedin">
+                <img src=".img/linkedin.png"
+                     alt=""> Log In with LinkedIn
+            </button>
+        </div>
+
+        <div class="footer-links">
+            <p>Forgot Your Password? <a href="SignUp">Reset Password</a></p>
+            <p>Don't have an account? <a href="forgot_password">Sign Up now</a></p>
+        </div>
+    </div>
+</body>
+
+</html>
