@@ -1,5 +1,5 @@
-﻿@page 
-@model BookingCareManagement.Pages.LoginModel
+﻿@page "/login"
+@model BookingCareManagement.Pages.Auth.LoginModel
 @{
     Layout = null;
 }
@@ -11,19 +11,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap-grid.min.css">
     <link rel="stylesheet" href="~/css/login.css">
-    <title>Document</title>
+    <title>Login</title>
 </head>
-s
 <body>
     <div class="login-container">
         <h2>Log In to Your Account</h2>
-        <form>
+        <form id="login-form">
             <label for="email"><span class="required">*</span> Email</label>
-            <input type="email" id="email" placeholder="Enter email" required>
+            <input name="email" type="email" id="email" placeholder="Enter email" required>
 
 
             <label for="password"><span class="required">*</span> Password</label>
-            <input type="password" id="password" placeholder="Enter password" required>
+            <input name="password" type="password" id="password" placeholder="Enter password" required>
 
 
             <button type="submit" class="login-btn">Log In</button>
@@ -34,11 +33,11 @@ s
         </div>
 
         <div class="social-login">
-            <button class="google">
+            <button id="google-login" class="google">
                 <img src="/img/google.png"
                      alt=""> Log In with Google
             </button>
-            <button class="apple">
+            @* <button class="apple">
                 <img src="/img/google.png"
                      alt=""> Log In with Apple
             </button>
@@ -49,7 +48,7 @@ s
             <button class="linkedin">
                 <img src=".img/linkedin.png"
                      alt=""> Log In with LinkedIn
-            </button>
+            </button> *@
         </div>
 
         <div class="footer-links">

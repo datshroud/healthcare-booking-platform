@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace BookingCareManagement.Pages
+namespace BookingCareManagement.Pages.Auth
 {
-    public class forgot_passwordModel : PageModel
+    public class ForgotPasswordModel : PageModel
     {
         public void OnGet()
         {

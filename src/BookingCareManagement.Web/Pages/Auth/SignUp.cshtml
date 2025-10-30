@@ -1,5 +1,5 @@
-﻿@page
-@model BookingCareManagement.Pages.SignUpModel
+﻿@page "/signup"
+@model BookingCareManagement.Pages.Auth.SignUpModel
 @{
     Layout = null;
 }
@@ -18,15 +18,15 @@
     <div class="SignUp-container">
         <h2>Create Your Account</h2>
         <div class="signup-content">
-            <form>
+            <form id="signup-form">
                 <label for="firstname"><span class="required">*</span> First Name</label>
-                <input type="firstname" id="firstname" placeholder="Enter firstname" required>
+                <input name="firstname" type="text" id="firstname" placeholder="Enter firstname" required>
 
                 <label for="lastname"><span class="required">*</span> Last Name</label>
-                <input type="lastname" id="lastname" placeholder="Enter lastname" required>
+                <input name="lastname" type="text" id="lastname" placeholder="Enter lastname" required>
 
                 <label for="email"><span class="required">*</span> Email</label>
-                <input type="email" id="email" placeholder="Enter email" required>
+                <input name="email" type="email" id="email" placeholder="Enter email" required>
 
 
                 <label for="password"><span class="required">*</span> Password</label>
@@ -68,10 +68,10 @@
         </div>
 
         <div class="social-signup">
-            <button class="google"><img src="~/img/google.png" alt=""> Log In with Google</button>
-            <button class="apple"><img src="/~img/apple.png" alt=""> Log In with Apple</button>
+            <button id="google-signup" class="google"><img src="~/img/google.png" alt=""> Log In with Google</button>
+            @* <button class="apple"><img src="/~img/apple.png" alt=""> Log In with Apple</button>
             <button class="facebook"><img src="~/img/facebook.png" alt=""> Log In with Facebook</button>
-            <button class="linkedin"><img src="~/img/linkedin.png" alt=""> Log In with LinkedIn</button>
+            <button class="linkedin"><img src="~/img/linkedin.png" alt=""> Log In with LinkedIn</button> *@
         </div>
 
         <div class="footer-links">

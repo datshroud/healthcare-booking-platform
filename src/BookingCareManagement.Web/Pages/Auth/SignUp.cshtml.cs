@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace BookingCareManagement.Pages
+namespace BookingCareManagement.Pages.Auth
 {
     public class SignUpModel : PageModel
     {
