@@ -1,82 +1,49 @@
-﻿@page "/MyBookings"
+﻿@page
+@model MyBookingsModel
 @{
-    Layout = null;
+    Layout = "_Layout";
+    ViewData["Title"] = "My Bookings";
 }
-<!DOCTYPE html>
-<html lang="vi">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Bookings - Service Review</title>
+
+
+@section Styles {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="~/css/MyBookings.css" rel="stylesheet">
-</head>
-<body>
-    <!-- Navigation -->
-    <nav class="navbar navbar-expand-lg">
-        <div class="container-fluid">
-            <div class="navbar-nav me-auto">
-                <a class="nav-link mx-3" href="#">Services</a>
-                <a class="nav-link mx-3" href="#">Book Now</a>
-                <a class="nav-link mx-3 active" href="#">My Bookings</a>
-            </div>
-            <div class="d-flex align-items-center user-info">
-                <div class="user-badge">D</div>
-                <span class="user-name">Dang Minh Bao</span>
-            </div>
-        </div>
-    </nav>
+    <link rel="stylesheet" href="~/css/MyBookings.css" />
+}
 
-    <!-- Header Section -->
-    <div class="bookings-header">
-        <h1 class="bookings-title">Bookings</h1>
-        <button class="btn-book-now">Book Now</button>
-    </div>
-
-    <!-- Main Content -->
-    <div class="container">
-        <div class="bookings-wrapper">
+<!-- Main Content -->
+<div class="container">
+    <div class="bookings-wrapper">
 
 
-            <!-- Filter Dropdown -->
-            <div class="filter-section">
-                <div class="dropdown-wrapper">
-                    <button class="filter-dropdown" id="filterDropdown">
-                        <i class="fas fa-bars"></i>
-                        <span>All Bookings</span>
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
-                    <div class="dropdown-menu-custom" id="dropdownMenu">
-                        <div class="dropdown-item-custom active">All Bookings</div>
-                        <div class="dropdown-item-custom">Past Bookings</div>
-                        <div class="dropdown-item-custom">Upcoming Bookings</div>
-                    </div>
+        <!-- Filter Dropdown -->
+        <div class="filter-section">
+            <div class="dropdown-wrapper">
+                <button class="filter-dropdown" id="filterDropdown">
+                    <i class="fas fa-bars"></i>
+                    <span>All Bookings</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu-custom" id="dropdownMenu">
+                    <div class="dropdown-item-custom active">All Bookings</div>
+                    <div class="dropdown-item-custom">Past Bookings</div>
+                    <div class="dropdown-item-custom">Upcoming Bookings</div>
                 </div>
             </div>
+        </div>
 
-            <!-- Empty State -->
-            <div class="empty-state">
-                <div class="empty-state-icon">
-                    <i class="fa-solid fa-magnifying-glass"></i>
-                </div>
-                <p class="empty-state-text">No bookings for selected period</p>
-                <button class="btn-book-now-secondary">Book Now</button>
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fa fa-search"></i>
             </div>
+            <p class="empty-state-text">No bookings for selected period</p>
+            <button class="btn-book-now-secondary">Book Now</button>
         </div>
     </div>
+</div>
 
-    <!-- Footer -->
-    <div class="footer">
-        <div class="footer-brand">
-            <div>goodbone</div>
-            <div class="made-with">
-                Made with <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" width="12" alt=""> Trafft
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+@section Scripts {
     <script src="~/js/MyBookings.js"></script>
-</body>
-</html>
+}
