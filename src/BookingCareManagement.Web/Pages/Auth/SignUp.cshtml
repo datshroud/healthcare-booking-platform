@@ -11,29 +11,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap-grid.min.css">
     <link rel="stylesheet" href="~/css/signup.css">
-    <title>Document</title>
+    <title>Đăng ký</title>
 </head>
 
 <body>
     <div class="SignUp-container">
-        <h2>Create Your Account</h2>
+        <h2>Tạo tài khoản</h2>
         <div class="signup-content">
             <form id="signup-form">
-                <label for="firstname"><span class="required">*</span> First Name</label>
-                <input name="firstname" type="text" id="firstname" placeholder="Enter firstname" required>
+                <label for="firstname"><span class="required">*</span> Họ</label>
+                <input name="firstname" type="text" id="firstname" placeholder="Nhập họ" required>
 
-                <label for="lastname"><span class="required">*</span> Last Name</label>
-                <input name="lastname" type="text" id="lastname" placeholder="Enter lastname" required>
+                <label for="lastname"><span class="required">*</span> Tên</label>
+                <input name="lastname" type="text" id="lastname" placeholder="Nhập tên" required>
 
                 <label for="email"><span class="required">*</span> Email</label>
-                <input name="email" type="email" id="email" placeholder="Enter email" required>
+                <input name="email" type="email" id="email" placeholder="Nhập email" required>
 
 
-                <label for="password"><span class="required">*</span> Password</label>
-                <input type="password" id="password" placeholder="Enter password" required>
+                <label for="password"><span class="required">*</span> Mật khẩu</label>
+                <input type="password" id="password" placeholder="Nhập mật khẩu" required>
 
                 <div class="input-group phone-group">
-                    <label for="phone"><span class="required">*</span> Phone</label>
+                    <label for="phone"><span class="required">*</span> Số điện thoại</label>
                     <div class="phone-input-wrapper">
                         <select class="country-code">
                             <option value="+84">🇻🇳 Vietnam (+84)</option>
@@ -60,7 +60,7 @@
                         <input type="tel" id="phone" placeholder="Nhập số điện thoại">
                     </div>
                 </div>
-                <button type="submit" class="signup-button">Log In</button>
+                <button type="submit" class="signup-button">Đăng ký</button>
             </form>
         </div>
         <div class="divider">
@@ -68,16 +68,17 @@
         </div>
 
         <div class="social-signup">
-            <button id="google-signup" class="google"><img src="~/img/google.png" alt=""> Log In with Google</button>
+            <button id="google-signup" class="google"><img src="~/img/google.png" alt=""> Đăng ký với Google</button>
             @* <button class="apple"><img src="/~img/apple.png" alt=""> Log In with Apple</button>
             <button class="facebook"><img src="~/img/facebook.png" alt=""> Log In with Facebook</button>
             <button class="linkedin"><img src="~/img/linkedin.png" alt=""> Log In with LinkedIn</button> *@
         </div>
 
         <div class="footer-links">
-            <p>Already have an account? <a href="Login">Log In</a></p>
+            <p>Đã có tài khoản? <a href="login">Đăng nhập</a></p>
         </div>
     </div>
+    <script src="~/js/auth.js" asp-append-version="true"></script>
 </body>
 
 </html>

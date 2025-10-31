@@ -15,17 +15,17 @@
 </head>
 <body>
     <div class="login-container">
-        <h2>Log In to Your Account</h2>
+        <h2>Đăng nhập tài khoản</h2>
         <form id="login-form">
             <label for="email"><span class="required">*</span> Email</label>
-            <input name="email" type="email" id="email" placeholder="Enter email" required>
+            <input name="email" type="email" id="email" placeholder="Nhập email" required>
 
 
-            <label for="password"><span class="required">*</span> Password</label>
-            <input name="password" type="password" id="password" placeholder="Enter password" required>
+            <label for="password"><span class="required">*</span> Mật khẩu</label>
+            <input name="password" type="password" id="password" placeholder="Nhập mật khẩu" required>
 
 
-            <button type="submit" class="login-btn">Log In</button>
+            <button type="submit" class="login-btn">Đăng nhập</button>
         </form>
 
         <div class="divider">
@@ -35,7 +35,7 @@
         <div class="social-login">
             <button id="google-login" class="google">
                 <img src="/img/google.png"
-                     alt=""> Log In with Google
+                     alt=""> Đăng nhập với Google
             </button>
             @* <button class="apple">
                 <img src="/img/google.png"
@@ -52,10 +52,11 @@
         </div>
 
         <div class="footer-links">
-            <p>Forgot Your Password? <a href="SignUp">Reset Password</a></p>
-            <p>Don't have an account? <a href="forgot_password">Sign Up now</a></p>
+            <p>Quên mật khẩu? <a href="forgot-password">Đặt lại mật khẩu</a></p>
+            <p>Chưa có tài khoản? <a href="signup">Đăng ký ngay</a></p>
         </div>
     </div>
+    <script src="~/js/auth.js" asp-append-version="true"></script>
 </body>
 
 </html>

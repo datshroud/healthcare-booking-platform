@@ -4,11 +4,12 @@ using BookingCareManagement.Domain.Aggregates.ClinicRoom;
 using BookingCareManagement.Domain.Aggregates.Doctor;
 using BookingCareManagement.Domain.Aggregates.Service;
 using BookingCareManagement.Domain.Aggregates.User;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace BookingCareManagement.Infrastructure.Persistence;
 
-public class ApplicationDBContext : DbContext
+public class ApplicationDBContext : IdentityDbContext<AppUser, AppRole, string>
 {
     public ApplicationDBContext(DbContextOptions<ApplicationDBContext> o) : base(o) { }
 
