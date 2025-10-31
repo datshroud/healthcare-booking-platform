@@ -91,8 +91,10 @@ body {
   text-align: start;
 }
 
+
 body {
     background-image: url("../images/background.svg");
+    background-size: cover;
     min-height: 100vh;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     position: relative;
@@ -151,104 +153,50 @@ body {
         background-color: rgba(66, 153, 225, 0.2); /* hiệu ứng hover nhẹ */
     }
 
-
 /* Footer */
-.footer {
-    background-color: #212529;
-    align-items: center;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    justify-content: center;
-    padding: 32px 24px 28px;
-}
-
-.footer-content {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    max-width: 1200px;
+.custom-footer {
+    background-color: #2d3238;
+    color: #fff;
+    text-align: right;
+    padding: 40px 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    position: relative;
+    bottom: 0;
     width: 100%;
 }
 
-.footer-mark {
-    border-top: 1px solid #868E96;
-    color: var(--color-graphite);
+.footer-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    margin-right: 150px;
+}
+
+.footer-line {
+    width: 80%;
+    max-width: 1500px;
+    margin: 0 auto 20px auto;
+    border: 0.5px solid rgba(255, 255, 255, 0.3);
+}
+
+.footer-text {
+    font-size: 0.9rem;
+    color: #a0aec0;
+    position: absolute;
+    right: 40px;
+    bottom: 15px;
     display: flex;
-    justify-content: center;
-    max-width: 1200px;
-    padding-top: 20px;
-    width: 100%;
-}
-
-.footer-content-column {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.footer-content-column:not(:last-child) {
-    border-bottom: 1px solid var(--theme-color-border);
-    padding-bottom: 20px;
-}
-
-.footer-content-column > * {
-    align-self: center;
-    display: flex;
-    text-align: center;
-    color: #FFFFFF;
-}
-
-.footer-mark a {
     align-items: center;
-    display: flex;
-    gap: 8px;
+    gap: 6px;
+    margin-right: 125px;
 }
 
-.footer-mark-light {
-    display: none;
-}
-
-.footer-mark-dark {
-    display: flex;
-}
-
-/* Responsive */
-@media (min-width: 1024px) {
-    .footer {
-        padding: 32px 16px 28px;
+    .footer-text img {
+        height: 14px;
+        vertical-align: middle;
+        opacity: 0.9;
     }
 
-    .footer-content {
-        flex-direction: row;
-        gap: 60px;
-    }
-
-    .footer-mark {
-        justify-content: end;
-        padding-top: 16px;
-    }
-
-    .footer-content-column:not(:last-child) {
-        border-bottom: 0;
-        padding-bottom: 0;
-    }
-
-    .footer-content-column {
-        flex: 50%;
-    }
-
-    .footer-content-column > * {
-        align-self: flex-start;
-        text-align: left;
-    }
-
-    .footer-content-column.right-align > * {
-        align-self: end;
-        justify-content: flex-end;
-        text-align: right;
-    }
-}
 @media (max-width: 768px) {
 
     .bookings-header {

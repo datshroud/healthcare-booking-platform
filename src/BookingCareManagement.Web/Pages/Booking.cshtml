@@ -1,0 +1,179 @@
+﻿@page "/Booking"
+@{
+    ViewData["Title"] = "Đặt lịch";
+    Layout = "~/Pages/Shared/_Layout.cshtml";
+}
+
+@section Styles {
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/booking.css" asp-append-version="true" />
+}
+
+<div class="container-fluid mt-5 pt-4">
+    <div class="row justify-content-center">
+        <!-- KHUNG TRÁI -->
+        <div id="booking-left" class="col-lg-7 col-md-8 col-sm-12 p-4 rounded-4 bg-dark text-light me-lg-3">
+            <!-- Tiêu đề bên trái -->
+            <div class="d-flex align-items-center mb-4">
+                <button id="btn-back" class="btn btn-outline-light btn-sm me-2 d-none">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <h4 class="fw-bold mb-0" id="left-title">Chọn dịch vụ</h4>
+            </div>
+
+            <!-- Ô tìm kiếm -->
+            <div class="input-group mb-4">
+                <input type="text" id="search-box" class="form-control rounded-pill px-3 search-services-booking" placeholder="Tìm kiếm dịch vụ" />
+            </div>
+
+            <!-- Danh sách dịch vụ -->
+            <div id="service-list">
+                <div class="service-item d-flex align-items-center justify-content-between p-3 mb-3 rounded-3 bg-body-tertiary text-light border border-secondary">
+                    <div class="d-flex align-items-center">
+                        <img src="https://goodbone.trafft.com/api/v1/public/media/5eb7864c-c939-47d6-83dc-8a54cd497baf?size=avatar" class="rounded me-3" alt="service" width="70" />
+                        <div>
+                            <h5 class="mb-1 fw-semibold service-name">Vật lý trị liệu</h5>
+                            <small class="text-secondary">Thời lượng <b>1h</b> &nbsp; Sức chứa <b>1</b></small>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold mb-2">$40.00</div>
+                        <button class="btn btn-success btn-sm choose-service" data-name="Vật lý trị liệu" data-duration="1h" data-price="40.00">Chọn</button>
+                    </div>
+                </div>
+
+                <div class="service-item d-flex align-items-center justify-content-between p-3 mb-3 rounded-3 bg-body-tertiary text-light border border-secondary">
+                    <div class="d-flex align-items-center">
+                        <img src="https://goodbone.trafft.com/api/v1/public/media/6aa3dfc5-27f1-45bf-aa6c-f3bd124799c8?size=avatar" class="rounded me-3" alt="service" width="70" />
+                        <div>
+                            <h5 class="mb-1 fw-semibold service-name">Giãn cơ trị liệu</h5>
+                            <small class="text-secondary">Thời lượng <b>1h</b> &nbsp; Sức chứa <b>1</b></small>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="fw-bold mb-2">$30.00</div>
+                        <button class="btn btn-success btn-sm choose-service" data-name="Giãn cơ trị liệu" data-duration="1h" data-price="30.00">Chọn</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Danh sách nhân viên -->
+            <div id="employee-list" class="d-none">
+                <div class="employee-item d-flex align-items-center justify-content-between p-3 mb-3 rounded-3 bg-body-tertiary text-light border border-secondary">
+                    <div class="d-flex align-items-center">
+                        <img src="https://randomuser.me/api/portraits/men/10.jpg" class="rounded-circle me-3" alt="employee" width="60" />
+                        <div>
+                            <h5 class="mb-1 fw-semibold employee-name">Nguyễn Văn An</h5>
+                            <small class="text-secondary">Chuyên viên trị liệu</small>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-sm choose-employee" data-name="Nguyễn Văn An">Chọn</button>
+                </div>
+
+                <div class="employee-item d-flex align-items-center justify-content-between p-3 mb-3 rounded-3 bg-body-tertiary text-light border border-secondary">
+                    <div class="d-flex align-items-center">
+                        <img src="https://randomuser.me/api/portraits/women/12.jpg" class="rounded-circle me-3" alt="employee" width="60" />
+                        <div>
+                            <h5 class="mb-1 fw-semibold employee-name">Trần Thị Bình</h5>
+                            <small class="text-secondary">Nhân viên massage</small>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-sm choose-employee" data-name="Trần Thị Bình">Chọn</button>
+                </div>
+            </div>
+
+            <!-- Danh sách ngày & giờ -->
+            <div id="datetime-list" class="d-none">
+                <div class="mb-4">
+                    <label for="date-picker" class="form-label fw-semibold">Chọn ngày</label>
+                    <input type="date" id="date-picker" class="form-control bg-dark text-light border-secondary" />
+                </div>
+
+                <div class="mb-4">
+                    <label for="time-slot" class="form-label fw-semibold">Chọn giờ</label>
+                    <select id="time-slot" class="form-select bg-dark text-light border-secondary">
+                        <option value="">-- Vui lòng chọn ngày trước --</option>
+                    </select>
+                </div>
+
+                <button id="confirm-datetime" class="btn btn-success mt-3">Xác nhận</button>
+            </div>
+
+            <!-- PHẦN THANH TOÁN -->
+            <div id="payment-section" class="d-none">
+                <h5 class="fw-bold mb-4">Thanh toán</h5>
+
+                <!-- Tổng tiền -->
+                <div class="d-flex justify-content-between align-items-center mb-3 border-bottom border-secondary pb-2">
+                    <span class="fw-semibold">Tổng tiền</span>
+                    <span class="fw-bold fs-5 text-success" id="checkout-total">$0.00</span>
+                </div>
+
+                <p class="text-secondary mb-4 small">
+                    Thanh toán sẽ được thực hiện <b>tại địa điểm đặt lịch</b>.
+                </p>
+
+                <!-- Mã khuyến mãi -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Bạn có mã giảm giá?</label>
+                    <div class="input-group">
+                        <input type="text" id="promo-code" class="form-control bg-dark text-light border-secondary" placeholder="Nhập mã khuyến mãi" />
+                        <button class="btn btn-outline-success" id="apply-promo">Áp dụng</button>
+                    </div>
+                    <small id="promo-message" class="text-warning d-none">Vui lòng nhập mã hợp lệ!</small>
+                </div>
+
+                <!-- Thông tin khách hàng -->
+                <div class="mb-3 mt-4">
+                    <label for="customer-name" class="form-label fw-semibold">Họ và tên</label>
+                    <input type="text" id="customer-name" class="form-control bg-dark text-light border-secondary" placeholder="Nhập họ và tên của bạn" />
+                </div>
+
+                <div class="mb-3">
+                    <label for="customer-phone" class="form-label fw-semibold">Số điện thoại</label>
+                    <input type="text" id="customer-phone" class="form-control bg-dark text-light border-secondary" placeholder="Nhập số điện thoại" />
+                </div>
+
+                <button id="confirm-booking" class="btn btn-success mt-3 w-100">Hoàn tất đặt lịch</button>
+            </div>
+
+
+        </div>
+
+        <!-- KHUNG PHẢI -->
+        <div id="booking-right" class="col-lg-4 col-md-10 col-sm-12 p-4 rounded-4 bg-dark text-light mt-4 mt-lg-0">
+            <h4 class="fw-bold mb-4">Chi tiết đặt lịch</h4>
+
+            <div class="border-top border-secondary py-3">
+                <i class="bi bi-briefcase me-2"></i>
+                <span class="fw-semibold">Dịch vụ</span>
+                <div id="selected-service" class="mt-2"></div>
+            </div>
+
+            <div class="border-top border-secondary py-3">
+                <i class="bi bi-person me-2"></i>
+                <span class="fw-semibold">Nhân viên</span>
+                <div id="selected-employee" class="mt-2"></div>
+            </div>
+
+            <div class="border-top border-secondary py-3">
+                <i class="bi bi-calendar-date me-2"></i>
+                <span class="fw-semibold">Ngày & Giờ</span>
+                <div id="selected-datetime" class="mt-2"></div>
+            </div>
+
+            <!-- Tổng tiền -->
+            <div id="total-section" class="pt-3 mt-3 border-top border-secondary d-none">
+                <div class="d-flex justify-content-between">
+                    <span class="fw-semibold">Tổng tiền</span>
+                    <span class="fw-bold" id="total-price">$0.00</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/booking.js" asp-append-version="true"></script>
+}
