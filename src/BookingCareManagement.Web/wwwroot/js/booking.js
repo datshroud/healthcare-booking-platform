@@ -198,42 +198,58 @@
             });
         }
     });
-    // === HOÀN TẤT ĐẶT LỊCH ===
     confirmBooking.addEventListener("click", function () {
         const name = document.getElementById("customer-name").value.trim();
         const phone = document.getElementById("customer-phone").value.trim();
 
         if (!name || !phone) {
-            alert("Vui lòng nhập đầy đủ họ tên và số điện thoại!");
+            Swal.fire({
+                background: "#1e1e1e",
+                color: "#f8f9fa",
+                icon: "warning",
+                title: "Thiếu thông tin!",
+                text: "Vui lòng nhập đầy đủ họ tên và số điện thoại.",
+                confirmButtonColor: "#f39c12"
+            });
             return;
         }
 
-        // Hiển thị thông báo đặt lịch thành công
-        const service = selectedServiceInfo?.name || "";
-        const employee = selectedEmployeeInfo?.name || "";
-        const datetime = selectedDateTime.textContent.trim();
-
-        alert(`🎉 Đặt lịch thành công!\n\nDịch vụ: ${service}\nNhân viên: ${employee}\nThời gian: ${datetime}\n\nCảm ơn ${name}!`);
-
-        // Reset toàn bộ giao diện
+        // Ẩn phần thanh toán, hiện phần cảm ơn
         document.getElementById("payment-section").classList.add("d-none");
-        serviceList.classList.remove("d-none");
-        leftTitle.textContent = "Chọn dịch vụ";
+        document.getElementById("thankyou-section").classList.remove("d-none");
+
+        // Cập nhật tiêu đề khung trái
+        leftTitle.textContent = "Hoàn tất đặt lịch";
         backButton.classList.add("d-none");
-        searchBox.classList.remove("d-none");
-        searchBox.placeholder = "Tìm kiếm dịch vụ";
-        currentStep = "service";
+        searchBox.classList.add("d-none");
 
-        // Xóa nội dung hiển thị bên phải
-        selectedService.innerHTML = "";
-        selectedEmployee.innerHTML = "";
-        selectedDateTime.innerHTML = "";
-        totalPriceSection.classList.add("d-none");
-        totalPrice.textContent = "$0.00";
-
-        // Cuộn về đầu trang
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        // Reset thông tin sau khi hiển thị trang cảm ơn
+        currentStep = "thankyou";
     });
+    // 🌙 Custom dropdown logic
+    document.querySelectorAll('.dropdown-menu .dropdown-item').forEach(item => {
+        item.addEventListener('click', e => {
+            e.preventDefault();
+            const selected = e.currentTarget;
+            document.getElementById('calendarSelected').innerHTML = selected.innerHTML;
+            document.getElementById('calendarDropdown').dataset.value = selected.dataset.value;
+        });
+    });
+
+    // 📅 Xử lý nút Add to Calendar
+    document.getElementById("add-to-calendar").addEventListener("click", () => {
+        const selectedCalendar = document.getElementById("calendarDropdown").dataset.value;
+
+        if (!selectedCalendar) {
+            alert("Please select a calendar to add your booking.");
+            return;
+        }
+
+        // Tạm thời chỉ hiển thị thông báo (sau này sẽ mở link API tương ứng)
+        console.log(`Added booking to: ${selectedCalendar}`);
+    });
+
+
 });
 
 

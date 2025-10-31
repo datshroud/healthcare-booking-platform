@@ -75,3 +75,6 @@
     min-height: 80vh; /* giữ chiều cao hợp lý */
     margin-bottom: 80px; /* tránh dính footer */
 }
+.brand-booking {
+    color: #868e96;
+}
