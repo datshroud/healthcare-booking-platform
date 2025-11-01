@@ -52,5 +52,5 @@ document.querySelector('form').addEventListener('submit', function (e) {
 
     // Có thể hiện thông báo nhỏ (nếu muốn)
     // alert('Review submitted! Rating: ' + selectedRating + ' stars');
-    window.location.href = 'Reviews/ReviewSuccess';
+    window.location.href = 'ReviewSuccess';
 });
