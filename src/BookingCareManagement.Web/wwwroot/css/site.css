@@ -155,15 +155,31 @@ body {
 
 
 /* Footer */
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+.page-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* phần chính sẽ chiếm hết khoảng trống, đẩy footer xuống cuối */
+.container {
+    flex: 1;
+}
+
+/* Footer */
 .custom-footer {
     background-color: #2d3238;
     color: #fff;
     text-align: right;
     padding: 40px 20px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-    position: relative;
-    bottom: 0;
     width: 100%;
+    margin-top: auto;
 }
 
 .footer-title {
@@ -183,13 +199,11 @@ body {
 .footer-text {
     font-size: 0.9rem;
     color: #a0aec0;
-    position: absolute;
-    right: 40px;
-    bottom: 15px;
     display: flex;
     align-items: center;
+    justify-content: flex-end;
     gap: 6px;
-    margin-right: 125px;
+    margin-right: 145px;
 }
 
     .footer-text img {
@@ -197,6 +211,7 @@ body {
         vertical-align: middle;
         opacity: 0.9;
     }
+
 
 @media (max-width: 768px) {
 
