@@ -23,4 +23,12 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Areas\Admin\" />
+    <Folder Include="Areas\Admin\Pages\" />
+    <Folder Include="Areas\Customer\Pages\MyBookings\" />
+    <Folder Include="Areas\Doctor\" />
+    <Folder Include="Areas\Doctor\Pages\" />
+  </ItemGroup>
 </Project>

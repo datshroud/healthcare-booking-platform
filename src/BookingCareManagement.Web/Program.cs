@@ -4,11 +4,29 @@ using BookingCareManagement.Infrastructure.Persistence;
 using BookingCareManagement.Infrastructure.Persistence.Seed;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddRazorPages();
+builder.Services.AddRazorPages(options =>
+{
+    options.Conventions.AuthorizeAreaFolder("Admin", "/", "AdminOnly");
+    options.Conventions.AuthorizeAreaFolder("Doctor", "/", "DoctorOrAbove");
+    options.Conventions.AuthorizeAreaFolder("Customer", "/", "CustomerOrAbove");
+
+    // options.Conventions.AddAreaPageRoute("Customer", "/Reviews/Reviews", "/my-bookings/reviews");
+
+    // // Alias cho ReviewSuccess.cshtml -> /my-bookings/reviews/success
+    // options.Conventions.AddAreaPageRoute("Customer", "/Reviews/ReviewSuccess", "/my-bookings/reviews/success");
+});
+
+builder.Services.AddAuthorization(options => {
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("DoctorOrAbove", policy => policy.RequireRole("Admin", "Doctor"));
+    options.AddPolicy("CustomerOrAbove", policy => policy.RequireRole("Admin", "Doctor", "Customer"));
+});
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -41,17 +59,22 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 var cs = builder.Configuration.GetConnectionString("DefaultConnection");
-try
+// try
+// {
+//     using var con = new SqlConnection(cs);
+//     await con.OpenAsync();
+//     Console.WriteLine("SQL connected OK");
+// }
+// catch (Exception ex)
+// {
+//     Console.WriteLine("SQL connect failed: " + ex.Message);
+//     throw;
+// }
+
+app.MapGet("/_routes", (IEnumerable<EndpointDataSource> sources) =>
 {
-    using var con = new SqlConnection(cs);
-    await con.OpenAsync();
-    Console.WriteLine("SQL connected OK");
-}
-catch (Exception ex)
-{
-    Console.WriteLine("SQL connect failed: " + ex.Message);
-    throw;
-}
+    return string.Join("\n", sources.SelectMany(s => s.Endpoints).Select(e => e.DisplayName));
+});
 
 using (var scope = app.Services.CreateScope())
 {
@@ -78,6 +101,5 @@ app.MapRazorPages()
 
 app.MapControllers();
 
-app.MapGet("/", () => Results.Redirect("/login"));
 
 app.Run();

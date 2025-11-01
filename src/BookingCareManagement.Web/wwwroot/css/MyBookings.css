@@ -1,0 +1,242 @@
+﻿
+
+/* Bookings Wrapper */
+.bookings-wrapper {
+    background-color: #212529;
+    border-radius: 15px;
+    padding: 2.5rem;
+    max-width: 1200px;
+    margin: 3rem auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    position: relative;
+    z-index: 10;
+    min-height: 500px;
+}
+
+/* Header Section */
+.bookings-header {
+    max-width: 1200px;
+    margin: 3rem auto 0 auto; /* đặt phía trên cùng của bookings-wrapper */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+
+.bookings-title {
+    color: #ffffff;
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.btn-book-now {
+    background-color: #48bb78;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+    .btn-book-now:hover {
+        background-color: #38a169;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(72, 187, 120, 0.3);
+    }
+
+/* Filter Section */
+.filter-section {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid #4a5568;
+    padding-bottom: 1.5rem;
+}
+
+.dropdown-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.filter-dropdown {
+    background-color: transparent;
+    border: 1px solid #4a5568;
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    color: #e2e8f0;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.3s;
+    min-width: 200px;
+}
+
+    .filter-dropdown:hover {
+        border-color: #48bb78;
+        background-color: rgba(72, 187, 120, 0.1);
+    }
+
+    .filter-dropdown i:first-child {
+        color: #a0aec0;
+    }
+
+    .filter-dropdown i:last-child {
+        margin-left: auto;
+        font-size: 0.8rem;
+        transition: transform 0.3s;
+    }
+
+.nav-link.active {
+    text-decoration: underline;
+    text-underline-offset: 10px;
+}
+
+
+.filter-dropdown.active i:last-child {
+    transform: rotate(180deg);
+}
+
+.dropdown-menu-custom {
+    position: absolute;
+    top: calc(100% + 0.5rem);
+    left: 0;
+    background-color: #1a202c;
+    border: 1px solid #4a5568;
+    border-radius: 8px;
+    min-width: 200px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    display: none;
+    z-index: 1000;
+    overflow: hidden;
+}
+
+    .dropdown-menu-custom.show {
+        display: block;
+    }
+
+.dropdown-item-custom {
+    padding: 0.75rem 1.25rem;
+    color: #e2e8f0;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+    .dropdown-item-custom:hover {
+        background-color: rgba(72, 187, 120, 0.1);
+        color: #48bb78;
+    }
+
+    .dropdown-item-custom.active {
+        background-color: rgba(72, 187, 120, 0.2);
+        color: #48bb78;
+        font-weight: 600;
+    }
+
+/* Empty State */
+.empty-state {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    min-height: 400px;
+}
+
+.empty-state-icon {
+    width: 150px;
+    height: 150px;
+    background-color: #1a202c;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+    .empty-state-icon i {
+        font-size: 4rem;
+        color: #e2e8f0;
+    }
+
+.empty-state-text {
+    color: #e2e8f0;
+    font-size: 1.25rem;
+    margin-bottom: 2rem;
+    font-weight: 500;
+}
+
+.btn-book-now-secondary {
+    background-color: #48bb78;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.875rem 2rem;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+    .btn-book-now-secondary:hover {
+        background-color: #38a169;
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(72, 187, 120, 0.3);
+    }
+
+
+/* Responsive */
+@media (max-width: 768px) {
+
+    .bookings-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 1rem;
+        margin: 2rem 1rem 0 1rem;
+    }
+
+    .bookings-wrapper {
+        margin: 2rem 1rem;
+        padding: 1.5rem;
+    }
+
+    .bookings-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .bookings-title {
+        font-size: 2rem;
+    }
+
+    .btn-book-now {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .empty-state {
+        padding: 3rem 1rem;
+    }
+
+    .empty-state-icon {
+        width: 120px;
+        height: 120px;
+    }
+
+        .empty-state-icon i {
+            font-size: 3rem;
+        }
+
+    .bg-shape {
+        display: none;
+    }
+}

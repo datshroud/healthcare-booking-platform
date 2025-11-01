@@ -1,31 +1,297 @@
-html {
-  font-size: 14px;
+﻿html {
+    font-size: 14px;
+}
+
+* {
+    border: 0;
+    border-style: solid;
+    border-color: #e2e8f0;
+    box-sizing: border-box;
 }
 
 @media (min-width: 768px) {
-  html {
-    font-size: 16px;
-  }
+    html {
+        font-size: 16px;
+    }
+}
+
+.h5, .h6, h5, h6 {
+    font-weight: 500;
+}
+
+.h4, .h5, h4, h5 {
+    font-size: 18px;
+    line-height: 24px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-size: inherit;
+    font-weight: inherit;
+}
+
+blockquote, dd, dl, figure, h1, h2, h3, h4, h5, h6, hr, p, pre {
+    margin: 0;
+}
+
+a, a:active, a:hover, a:visited {
+    color: inherit;
+    text-decoration: none;
+}
+
+a {
+    background-color: transparent;
+}
+
+a {
+    color: inherit;
+    text-decoration: inherit;
+}
+
+.sub, .sub-med {
+    font-size: 12px;
+    line-height: 16px;
+}
+
+.sub {
+    font-weight: 400;
+    color: #868E96;
+}
+
+img {
+    border-style: none;
+}
+
+img, video {
+    height: auto;
+    max-width: 100%;
+}
+
+audio, canvas, embed, iframe, img, object, svg, video {
+    display: block;
+    vertical-align: middle;
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
 }
 
 html {
-  position: relative;
-  min-height: 100%;
+    position: relative;
+    min-height: 100%;
 }
 
 body {
-  margin-bottom: 60px;
+    margin-bottom: 60px;
 }
 
 .form-floating > .form-control-plaintext::placeholder, .form-floating > .form-control::placeholder {
-  color: var(--bs-secondary-color);
-  text-align: end;
+    color: var(--bs-secondary-color);
+    text-align: end;
 }
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
-  text-align: start;
+    text-align: start;
+}
+
+body {
+    background-image: url("../images/background.svg");
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    position: relative;
+    overflow-x: hidden;
+}
+
+
+/* Navigation */
+.navbar {
+    background-color: #212529;
+    padding: 1rem 7rem;
+    position: relative;
+    z-index: 100;
+}
+
+.navbar-brand, .nav-link {
+    color: #cbd5e0 !important;
+    font-weight: 500;
+}
+
+    .nav-link:hover,
+    .nav-link.active {
+        color: #48bb78 !important;
+    }
+
+.user-badge {
+    background-color: #4299e1;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.user-name {
+    color: #4299e1;
+    font-weight: 500;
+}
+
+.user-info {
+    background-color: rgba(66, 153, 225, 0.15);
+    padding: 6px 12px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap; /* giữ cùng dòng */
+}
+
+
+    .user-info:hover {
+        background-color: rgba(66, 153, 225, 0.2); /* hiệu ứng hover nhẹ */
+    }
+
+
+/* Footer */
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+.page-wrapper {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* phần chính sẽ chiếm hết khoảng trống, đẩy footer xuống cuối */
+.container {
+    flex: 1;
+}
+
+/* Footer */
+.custom-footer {
+    background-color: #2d3238;
+    color: #fff;
+    text-align: right;
+    padding: 40px 20px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    width: 100%;
+    margin-top: auto;
+}
+
+.footer-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    margin-right: 150px;
+}
+
+.footer-line {
+    width: 80%;
+    max-width: 1500px;
+    margin: 0 auto 20px auto;
+    border: 0.5px solid rgba(255, 255, 255, 0.3);
+}
+
+.footer-text {
+    font-size: 0.9rem;
+    color: #a0aec0;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 6px;
+    margin-right: 145px;
+}
+
+    .footer-text img {
+        height: 14px;
+        vertical-align: middle;
+        opacity: 0.9;
+    }
+
+@media (max-width: 768px) {
+
+    .bookings-header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        gap: 1rem;
+        margin: 2rem 1rem 0 1rem;
+    }
+
+    .bookings-wrapper {
+        margin: 2rem 1rem;
+        padding: 1.5rem;
+    }
+
+    .bookings-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .bookings-title {
+        font-size: 2rem;
+    }
+
+    .btn-book-now {
+        width: 100%;
+        max-width: 300px;
+    }
+
+    .empty-state {
+        padding: 3rem 1rem;
+    }
+
+    .empty-state-icon {
+        width: 120px;
+        height: 120px;
+    }
+
+        .empty-state-icon i {
+            font-size: 3rem;
+        }
+
+    .bg-shape {
+        display: none;
+    }
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+.container {
+    flex: 1;
+}
+
+.footer {
+    position: relative;
+    z-index: 10;
+}
+
+/*Ai build login thì dùng*/
+/* Ẩn các phần layout khi ở trang login */
+body.page-login .navbar,
+body.page-login .footer {
+    display: none;
+}
+
+/* Tùy chỉnh nền và chiều cao riêng cho trang login */
+body.page-login {
+    background: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* phủ full màn hình */
 }

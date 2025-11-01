@@ -1,0 +1,61 @@
+@page
+@model ReviewSuccessModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "Review Success";
+}
+
+@section Styles {
+
+    <link rel="stylesheet" href="~/css/ReviewSuccess.css" />
+}
+
+
+    <!-- Success Card -->
+    <div class="container">
+        <div class="success-card">
+            <!-- Success Icon -->
+            <div class="success-icon-wrapper">
+                <div class="star-icon">
+                    <div class="checkmark-badge">
+                        <i class="fas fa-check"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Message -->
+            <h2 class="success-title">Thanks for your feedback!</h2>
+            <p class="success-message">
+                Your rating and review have been successfully submitted. We appreciate your valuable input. It helps us enhance our services and provide a better experience for you and others.
+            </p>
+
+            <!-- Service Information -->
+            <div class="service-info">
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-concierge-bell"></i>
+                        <span>Service</span>
+                    </div>
+                    <div class="info-value">Therapeutic Exercise</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-user"></i>
+                        <span>Employee</span>
+                    </div>
+                    <div class="info-value">Jane Doe</div>
+                </div>
+                <div class="info-row">
+                    <div class="info-label">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Date & Time</span>
+                    </div>
+                    <div class="info-value">30 October 2025 12:30</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+@section Scripts {
+    <script src="~/js/ReviewsSuccess.js"></script>
+}

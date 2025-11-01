@@ -1,0 +1,52 @@
+﻿@page
+@model MyBookingsModel
+@{
+    Layout = "_Layout";
+    ViewData["Title"] = "My Bookings";
+}
+
+
+@section Styles {
+
+    <link rel="stylesheet" href="~/css/MyBookings.css" />
+}
+
+<div class="bookings-header">
+    <h1 class="bookings-title">Bookings</h1>
+    <button class="btn-book-now">Book Now</button>
+</div>
+<!-- Main Content -->
+<div class="container">
+    <div class="bookings-wrapper">
+
+
+        <!-- Filter Dropdown -->
+        <div class="filter-section">
+            <div class="dropdown-wrapper">
+                <button class="filter-dropdown" id="filterDropdown">
+                    <i class="fas fa-bars"></i>
+                    <span>All Bookings</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu-custom" id="dropdownMenu">
+                    <div class="dropdown-item-custom active">All Bookings</div>
+                    <div class="dropdown-item-custom">Past Bookings</div>
+                    <div class="dropdown-item-custom">Upcoming Bookings</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fa fa-search"></i>
+            </div>
+            <p class="empty-state-text">No bookings for selected period</p>
+            <button class="btn-book-now-secondary">Book Now</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/MyBookings.js"></script>
+}
