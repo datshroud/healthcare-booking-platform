@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using BookingCareManagement.Application.Features.Auth.Commands;
@@ -48,9 +49,31 @@ namespace BookingCareManagement.Infrastructure.Identity
                     ValidateIssuerSigningKey = true,
                     ValidIssuer = jwt.Issuer,
                     ValidAudience = jwt.Audience,
-                    IssuerSigningKey = key
+                    IssuerSigningKey = key,
+                    RoleClaimType = ClaimTypes.Role,
+                    ClockSkew = TimeSpan.FromSeconds(30)
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = ctx =>
+                    {
+                        if (ctx.Request.Cookies.TryGetValue("access_token", out var token))
+                        {
+                            ctx.Token = token;
+                        }
+                        return Task.CompletedTask;
+                    },
+
+                    OnAuthenticationFailed = ctx =>
+                    {
+                        Console.WriteLine("JWT failed: " + ctx.Exception.Message);
+                        return Task.CompletedTask;
+                    }
                 };
             });
+
+
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
             return services;
         }

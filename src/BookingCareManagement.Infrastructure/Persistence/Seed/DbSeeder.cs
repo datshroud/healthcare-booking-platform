@@ -14,8 +14,20 @@ public class DbSeeder
         var roleMgr = scope.ServiceProvider.GetRequiredService<RoleManager<AppRole>>();
         var userMgr = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
 
-        if (!await roleMgr.RoleExistsAsync("Admin"))
-            await roleMgr.CreateAsync(new AppRole { Name = "Admin" });
+        // tao du 3 role neu co
+        string[] roles = {"Admin", "Doctor", "Customer"};
+
+        foreach (var role in roles)
+        {
+            if (!await roleMgr.RoleExistsAsync(role))
+            {
+                var createRole = await roleMgr.CreateAsync(new AppRole { Name = role });
+                if (!createRole.Succeeded)
+                    throw new Exception($"Seed role '{role}' failed: {string.Join("; ", createRole.Errors.Select(e => e.Description))}");
+            }
+        }
+
+        // tao admin mac dinh (chi can role admin)
 
         var admin = await userMgr.FindByEmailAsync("admin@local.dev");
         if (admin == null)
@@ -27,9 +39,54 @@ public class DbSeeder
                 EmailConfirmed = true,
                 FullName = "System Admin"
             };
-            await userMgr.CreateAsync(admin, "Admin123");
-            await userMgr.AddToRoleAsync(admin, "Admin");
+            var created = await userMgr.CreateAsync(admin, "Admin123");
+            if (!created.Succeeded)
+                throw new Exception($"Seed admin failed: {string.Join("; ", created.Errors.Select(e => e.Description))}");
+
+            var addRole = await userMgr.AddToRoleAsync(admin, "Admin");
+            if (!addRole.Succeeded)
+                throw new Exception($"Assign role to admin failed: {string.Join("; ", addRole.Errors.Select(e => e.Description))}");
         }
 
+        // seed user doctor
+        var doctor = await userMgr.FindByEmailAsync("doctor@local.dev");
+        if (doctor == null)
+        {
+            doctor = new AppUser
+            {
+                UserName = "doctor@local.dev",
+                Email = "doctor@local.dev",
+                EmailConfirmed = true,
+                FullName = "Default Doctor"
+            };
+
+            var created = await userMgr.CreateAsync(doctor, "Doctor123");
+            if (!created.Succeeded)
+                throw new Exception($"Seed doctor failed: {string.Join("; ", created.Errors.Select(e => e.Description))}");
+            var addRole = await userMgr.AddToRoleAsync(doctor, "Doctor");
+            if (!addRole.Succeeded)
+                throw new Exception($"Assign role to doctor failed: {string.Join("; ", addRole.Errors.Select(e => e.Description))}");
+        }
+
+
+        // seec user customer
+        var customer = await userMgr.FindByEmailAsync("customer@local.dev");
+        if (customer == null)
+        {
+            customer = new AppUser
+            {
+                UserName = "customer@local.dev",
+                Email = "customer@local.dev",
+                EmailConfirmed = true,
+                FullName = "Default Customer"
+            };
+
+            var created = await userMgr.CreateAsync(customer, "Customer123");
+            if (!created.Succeeded)
+                throw new Exception($"Seed customer failed: {string.Join("; ", created.Errors.Select(e => e.Description))}");
+            var addRole = await userMgr.AddToRoleAsync(customer, "Customer");
+            if (!addRole.Succeeded)
+                throw new Exception($"Assign role to customer failed: {string.Join("; ", addRole.Errors.Select(e => e.Description))}");
+        }
     }
 }

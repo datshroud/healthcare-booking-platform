@@ -1,10 +1,13 @@
+using System.Security.Claims;
 using BookingCareManagement.Application.Features.Auth.Commands;
 using BookingCareManagement.Infrastructure.Identity;
 using BookingCareManagement.Infrastructure.Persistence;
 using BookingCareManagement.Infrastructure.Persistence.Seed;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -15,17 +18,21 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeAreaFolder("Doctor", "/", "DoctorOrAbove");
     options.Conventions.AuthorizeAreaFolder("Customer", "/", "CustomerOrAbove");
 
-    // options.Conventions.AddAreaPageRoute("Customer", "/Reviews/Reviews", "/my-bookings/reviews");
+    options.Conventions.AddAreaPageRoute("Customer", "/Reviews/Reviews", "/reviews");
 
-    // // Alias cho ReviewSuccess.cshtml -> /my-bookings/reviews/success
-    // options.Conventions.AddAreaPageRoute("Customer", "/Reviews/ReviewSuccess", "/my-bookings/reviews/success");
+    // options.Conventions.AllowAnonymousToAreaPage("Customer", "/Reviews/Reviews");
+
 });
 
-builder.Services.AddAuthorization(options => {
+builder.Services.AddAuthorization(options =>
+{
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
     options.AddPolicy("DoctorOrAbove", policy => policy.RequireRole("Admin", "Doctor"));
     options.AddPolicy("CustomerOrAbove", policy => policy.RequireRole("Admin", "Doctor", "Customer"));
+
 });
+
+
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -71,10 +78,6 @@ var cs = builder.Configuration.GetConnectionString("DefaultConnection");
 //     throw;
 // }
 
-app.MapGet("/_routes", (IEnumerable<EndpointDataSource> sources) =>
-{
-    return string.Join("\n", sources.SelectMany(s => s.Endpoints).Select(e => e.DisplayName));
-});
 
 using (var scope = app.Services.CreateScope())
 {
@@ -82,6 +85,15 @@ using (var scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
     await DbSeeder.SeedAsync(scope.ServiceProvider);
 }
+
+app.MapGet("/_routes", (IEnumerable<EndpointDataSource> sources) =>
+{
+    var patterns = sources
+        .SelectMany(s => s.Endpoints)
+        .OfType<RouteEndpoint>()
+        .Select(e => e.RoutePattern.RawText);
+    return string.Join("\n", patterns.OrderBy(x => x));
+});
 
 app.UseCors("spa");
 

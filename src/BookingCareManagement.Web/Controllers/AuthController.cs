@@ -162,6 +162,7 @@ namespace BookingCareManagement.Controllers
 
             // upsert user theo email
             var user = await _userManager.FindByEmailAsync(email);
+            var isNew = false;
             if (user == null)
             {
                 user = new AppUser
@@ -172,14 +173,27 @@ namespace BookingCareManagement.Controllers
                     FullName = name
 
                 };
-                var create = await _userManager.CreateAsync(user);
-                if (!create.Succeeded)
-                    return BadRequest(string.Join("; ", create.Errors.Select(e => e.Description)));
+                var created = await _userManager.CreateAsync(user);
+                if (!created.Succeeded)
+                    return BadRequest(string.Join("; ", created.Errors.Select(e => e.Description)));
+                isNew = true;
             }
             else if (!user.EmailConfirmed)
             {
                 user.EmailConfirmed = true;
                 await _userManager.UpdateAsync(user);
+            }
+
+            if (isNew)
+            {
+                var roleStoreOk = await _userManager.IsInRoleAsync(user, "Customer");
+                if (!roleStoreOk)
+                    await _userManager.AddToRoleAsync(user, "Customer");
+            } else
+            {
+                var rolesNow = await _userManager.GetRolesAsync(user);
+                if (rolesNow.Count == null || rolesNow.Count == 0)
+                    await _userManager.AddToRoleAsync(user, "Customer");
             }
 
             var roles = await _userManager.GetRolesAsync(user);
