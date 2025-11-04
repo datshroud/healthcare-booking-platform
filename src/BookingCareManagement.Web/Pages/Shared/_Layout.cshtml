@@ -22,9 +22,17 @@
                     <a class="nav-link mx-3" href="#">Book Now</a>
                     <a class="nav-link mx-3" href="#">My Bookings</a>
                 </div>
-                <div class="d-flex align-items-center user-info">
-                    <div class="user-badge">L</div>
-                    <span class="user-name">Le Ngoc Bao Chan</span>
+                <div class="dropdown">
+                    <button class="btn account-btn btn-outline-light d-flex align-items-center user-info" id="userDropdown"
+                            data-bs-toggle="dropdown" aria-expanded="false" style="border: none;">
+                        <div class="user-avatar me-2">L</div>
+                        <span class="fw-semibold user-name">Le Ngoc Bao Chan</span>
+                        <i class="bi bi-caret-down-fill ms-2"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
+                        <li><a class="dropdown-item" href="#">Profile settings</a></li>
+                        <li><a class="dropdown-item text-danger" href="#">Log out</a></li>
+                    </ul>
                 </div>
             </div>
         </nav>
