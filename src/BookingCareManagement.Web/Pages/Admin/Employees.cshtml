@@ -1,0 +1,209 @@
+﻿@page
+@model EmployeesModel
+@{
+    ViewData["Title"] = "Employees";
+}
+
+@section Styles {
+
+    <link rel="stylesheet" href="~/css/Employees.css" />
+}
+
+<div class="main-container">
+    <div class="header">
+        <h1>Nhân viên (2)</h1>
+        <div class="header-buttons">
+            <span class="btn-view-employee" style="padding: 10px 16px; cursor: default;">
+                Nhân viên trong kế hoạch 2/15
+            </span>
+            <button class="btn-add-employee" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+                <i class="fas fa-plus"></i> Thêm nhân viên
+            </button>
+        </div>
+    </div>
+
+    <div class="content-card">
+        <div class="search-filter-row">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" placeholder="Tìm kiếm" id="searchInput">
+            </div>
+            <button class="btn-filter">
+                <i class="fas fa-sliders-h"></i> Bộ lọc
+            </button>
+        </div>
+
+        <table class="employee-table">
+            <thead>
+                <tr>
+                    <th><input type="checkbox" id="selectAll"></th>
+                    <th>Người lao động</th>
+                    <th>E-mail</th>
+                    <th>Điện thoại</th>
+                    <th>Trạng thái</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="checkbox"></td>
+                    <td>
+                        <div class="employee-name-cell">
+                            <div class="employee-avatar avatar-teal">D</div>
+                            <div class="employee-name">
+                                <span>.Đặng Minh Bảo</span>
+                                <i class="fas fa-check-circle verified-badge"></i>
+                            </div>
+                        </div>
+                    </td>
+                    <td>6451071002@st.utc2.edu.vn</td>
+                    <td></td>
+                    <td><span class="status-badge">Có sẵn</span></td>
+                    <td>
+                        <div class="action-menu">
+                            <button class="btn-action" onclick="toggleDropdown(this)">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <div class="dropdown-menu-custom">
+                                <button class="dropdown-item-custom">
+                                    <i class="fas fa-edit"></i> Chỉnh sửa nhân viên
+                                </button>
+                                <button class="dropdown-item-custom">
+                                    <i class="fas fa-unlock"></i> Kích hoạt hồ sơ
+                                </button>
+                                <button class="dropdown-item-custom">
+                                    <i class="fas fa-share-alt"></i> Chia sẻ Đặt chỗ
+                                </button>
+                                <button class="dropdown-item-custom">
+                                    <i class="fas fa-ban"></i> Vô hiệu hóa nhân viên
+                                </button>
+                                <button class="dropdown-item-custom text-danger">
+                                    <i class="fas fa-trash"></i> Xóa nhân viên
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
+
+
+                <tr>
+                    <td><input type="checkbox"></td>
+                    <td>
+                        <div class="employee-name-cell">
+                            <img src="https://ui-avatars.com/api/?name=Jane+Doe&background=4a90e2&color=fff&size=40&rounded=true" class="employee-avatar" alt="Jane Doe">
+                            <div class="employee-name">
+                                <span>Jane Doe</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>employee@trafft.com</td>
+                    <td></td>
+                    <td><span class="status-badge">Có sẵn</span></td>
+                    <td>
+                        <div class="action-menu">
+                            <button class="btn-action" onclick="toggleDropdown(this)">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <div class="dropdown-menu-custom">
+                                <button class="dropdown-item-custom">
+                                    <i class="fas fa-edit"></i> Chỉnh sửa nhân viên
+                                </button>
+                                <button class="dropdown-item-custom">
+                                    <i class="fas fa-unlock"></i> Kích hoạt hồ sơ
+                                </button>
+                                <button class="dropdown-item-custom">
+                                    <i class="fas fa-share-alt"></i> Chia sẻ Đặt chỗ
+                                </button>
+                                <button class="dropdown-item-custom">
+                                    <i class="fas fa-ban"></i> Vô hiệu hóa nhân viên
+                                </button>
+                                <button class="dropdown-item-custom text-danger">
+                                    <i class="fas fa-trash"></i> Xóa nhân viên
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="modal fade" id="addEmployeeModal" tabindex="-1" aria-labelledby="addEmployeeModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addEmployeeModalLabel">Thêm nhân viên</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-lg-5">
+                        <input type="file" id="fileUploadInput" hidden>
+
+                        <div class="file-upload-area">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <p>
+                                Drop file here or <br><a href="#"
+                                                         onclick="document.getElementById('fileUploadInput').click(); event.preventDefault();">click to upload</a>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-7">
+                        <form>
+                            <div class="mb-3">
+                                <label for="firstName" class="form-label">First Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="firstName" placeholder="Enter first name">
+                            </div>
+                            <div class="mb-3">
+                                <label for="lastName" class="form-label">Last Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="lastName" placeholder="Enter last name">
+                            </div>
+                            <div class="mb-3">
+                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control" id="email" placeholder="example@yourcompany.com">
+                            </div>
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Phone</label>
+                                <div class="input-group">
+                                    <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                        <img src="https://flagcdn.com/w20/vn.png" alt="VN Flag"> +84
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#"><img src="https://flagcdn.com/w20/vn.png" alt="VN Flag" class="me-2"> +84 (Vietnam)</a></li>
+                                        <li><a class="dropdown-item" href="#"><img src="https://flagcdn.com/w20/us.png" alt="US Flag" class="me-2"> +1 (USA)</a></li>
+                                    </ul>
+                                    <input type="text" class="form-control" id="phone" placeholder="Phone number">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="service" class="form-label">Dịch vụ</label>
+                                <select class="form-select" id="service" multiple>
+                                    <option value="1">Kiểm tra</option>
+                                    <option value="2">Nhổ răng</option>
+                                    <option value="3">Phẫu thuật nha khoa</option>
+                                    <option value="4">Niềng răng</option>
+                                    <option value="5">Tẩy trắng</option>
+                                </select>
+                            </div>
+
+
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light-custom" data-bs-dismiss="modal">Hủy bỏ</button>
+                <button type="button" class="btn btn-primary-custom">Thêm nhân viên</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/Employees.js"></script>
+}
