@@ -1,0 +1,82 @@
+﻿/* --- chỉnh riêng cho trang account --- */
+.account-container {
+    max-width: 1100px;
+    background-color: #212529!important;
+    color: #fff;
+}
+
+.left-menu {
+    border-right: 1px solid #343a40;
+}
+
+    .left-menu .btn {
+        width: 100%;
+        text-align: left;
+        padding: 10px 15px;
+        border-radius: 8px;
+        background-color: transparent;
+        color: #ccc;
+        border: none;
+    }
+
+    .left-menu .active-tab {
+        background-color: #343a40;
+        color: #fff;
+        border-left: 3px solid #20c997;
+    }
+
+.account-content {
+    background-color: #1b1f22;
+    border-radius: 10px;
+    padding: 20px 30px;
+    width: 100%;
+}
+
+.form-label .required {
+    color: #ff4d4d;
+    margin-left: 4px;
+}
+
+.form-control {
+    background-color: #2b3035;
+    color: #fff;
+    border: 1px solid #444;
+}
+
+    .form-control::placeholder {
+        color: #777;
+    }
+
+.btn-save {
+    background-color: #20c997;
+    border: none;
+}
+
+    .btn-save:hover {
+        background-color: #18a67a;
+    }
+
+.account-panel {
+    background-color: #212529 !important;
+    color: #fff !important;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+}
+
+::placeholder {
+    color: #adb5bd !important; /* màu xám sáng */
+    opacity: 1 !important; /* đảm bảo hiện rõ */
+}
+
+/* Tương thích cho các trình duyệt cũ */
+:-ms-input-placeholder {
+    color: #adb5bd !important;
+}
+
+::-ms-input-placeholder {
+    color: #adb5bd !important;
+}
+
+.btn-account{
+    height: 40px;
+    padding: 0 23px;
+}

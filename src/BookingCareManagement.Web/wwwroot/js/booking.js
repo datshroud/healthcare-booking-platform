@@ -44,21 +44,17 @@
         }
     });
 
-
     let currentStep = "service";
     let selectedServiceInfo = null;
     let selectedEmployeeInfo = null;
 
-    // Giả lập giờ làm việc
     const availableHours = ["08:00", "09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00"];
 
-    // Giả lập giờ đã được đặt (sau này sẽ từ DB)
     const bookedSlots = {
-        "Nguyễn Văn An": ["09:00", "14:00"], // nhân viên này đã bận 9h và 14h
+        "Nguyễn Văn An": ["09:00", "14:00"],
         "Trần Thị Bình": ["10:00", "15:00"]
     };
 
-    // === B1: CHỌN DỊCH VỤ ===
     chooseButtons.forEach(btn => {
         btn.addEventListener("click", function () {
             const name = this.dataset.name;
@@ -74,7 +70,6 @@
                 </div>
             `;
 
-
             totalPrice.textContent = `$${price}`;
             totalPriceSection.classList.remove("d-none");
 
@@ -88,7 +83,6 @@
         });
     });
 
-    // === B2: CHỌN NHÂN VIÊN ===
     document.querySelectorAll(".employee-item button").forEach(btn => {
         btn.addEventListener("click", function () {
             const employeeName = this.closest(".employee-item").querySelector(".employee-name").textContent;
@@ -102,7 +96,6 @@
             searchBox.classList.add("d-none");
             currentStep = "datetime";
 
-            // Giới hạn ngày chỉ được chọn từ hôm nay
             const today = new Date().toISOString().split("T")[0];
             datePicker.min = today;
             datePicker.value = "";
@@ -110,7 +103,6 @@
         });
     });
 
-    // === B3: CHỌN NGÀY ===
     datePicker.addEventListener("change", function () {
         const date = this.value;
         if (!date || !selectedEmployeeInfo) return;
@@ -118,13 +110,11 @@
         const empName = selectedEmployeeInfo.name;
         const booked = bookedSlots[empName] || [];
 
-        // Lọc ra giờ trống
         const freeHours = availableHours.filter(h => !booked.includes(h));
 
         timeSlot.innerHTML = freeHours.map(h => `<option value="${h}">${h}</option>`).join("");
     });
 
-    // === B4: XÁC NHẬN NGÀY GIỜ ===
     confirmBtn.addEventListener("click", function () {
         const date = datePicker.value;
         const time = timeSlot.value;
@@ -136,7 +126,6 @@
         const displayDate = new Date(date).toLocaleDateString("vi-VN");
         selectedDateTime.innerHTML = `<div>${displayDate} - ${time}</div>`;
 
-        // === B5: CHUYỂN SANG THANH TOÁN ===
         datetimeList.classList.add("d-none");
         document.getElementById("payment-section").classList.remove("d-none");
         leftTitle.textContent = "Thanh toán";
@@ -146,7 +135,6 @@
         document.getElementById("checkout-total").textContent = totalPrice.textContent;
     });
 
-    // === NÚT QUAY LẠI ===
     backButton.addEventListener("click", function () {
         if (currentStep === "datetime") {
             datetimeList.classList.add("d-none");
@@ -182,7 +170,6 @@
         }
     });
 
-    // === TÌM KIẾM ===
     searchBox.addEventListener("input", function () {
         const keyword = this.value.toLowerCase().trim();
 
@@ -198,6 +185,7 @@
             });
         }
     });
+
     confirmBooking.addEventListener("click", function () {
         const name = document.getElementById("customer-name").value.trim();
         const phone = document.getElementById("customer-phone").value.trim();
@@ -214,19 +202,16 @@
             return;
         }
 
-        // Ẩn phần thanh toán, hiện phần cảm ơn
         document.getElementById("payment-section").classList.add("d-none");
         document.getElementById("thankyou-section").classList.remove("d-none");
 
-        // Cập nhật tiêu đề khung trái
         leftTitle.textContent = "Hoàn tất đặt lịch";
         backButton.classList.add("d-none");
         searchBox.classList.add("d-none");
 
-        // Reset thông tin sau khi hiển thị trang cảm ơn
         currentStep = "thankyou";
     });
-    // 🌙 Custom dropdown logic
+
     document.querySelectorAll('.dropdown-menu .dropdown-item').forEach(item => {
         item.addEventListener('click', e => {
             e.preventDefault();
@@ -236,20 +221,12 @@
         });
     });
 
-    // 📅 Xử lý nút Add to Calendar
     document.getElementById("add-to-calendar").addEventListener("click", () => {
         const selectedCalendar = document.getElementById("calendarDropdown").dataset.value;
-
         if (!selectedCalendar) {
             alert("Please select a calendar to add your booking.");
             return;
         }
-
-        // Tạm thời chỉ hiển thị thông báo (sau này sẽ mở link API tương ứng)
         console.log(`Added booking to: ${selectedCalendar}`);
     });
-
-
 });
-
-
