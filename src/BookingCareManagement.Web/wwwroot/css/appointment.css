@@ -1,0 +1,45 @@
+﻿
+.table-group-header > td {
+    border-bottom: none !important;
+}
+
+
+.table-group-header + tr > td {
+    border-top: none !important;
+}
+
+
+#filtersContainer {
+    padding: 1rem;
+    background-color: #f8f9fa; /* Màu nền xám nhạt */
+    border-radius: 0.5rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid #dee2e6;
+}
+
+#toggleFiltersButton.active {
+    background-color: #e0e0e0;
+    border-color: #adb5bd;
+}
+
+.filter-dropdown-menu {
+    min-width: 280px; /* Độ rộng tối thiểu */
+    max-height: 300px; /* Chiều cao tối đa, sau đó sẽ cuộn */
+    overflow-y: auto;
+}
+
+.filter-options-list {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+}
+
+    .filter-options-list li {
+        padding: 0.25rem 0.5rem;
+    }
+
+    .filter-options-list .form-check-label {
+        display: block;
+        width: 100%;
+        cursor: pointer;
+    }
