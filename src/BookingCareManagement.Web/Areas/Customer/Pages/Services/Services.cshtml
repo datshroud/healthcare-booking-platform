@@ -1,0 +1,165 @@
+﻿@page "/services"
+@model BookingCareManagement.Areas.Customer.Pages.Services.ServicesModel
+@{
+    ViewData["Title"] = "Dịch vụ";
+}
+
+@section Styles {
+
+    <link rel="stylesheet" href="~/css/Services.css" />
+}
+
+    <!-- Main Content -->
+    <div class="container-custom">
+        <!-- Header Section -->
+        <div class="services-header">
+            <h1 class="services-title">Dịch vụ</h1>
+
+            <div class="header-controls">
+                <!-- Employee Filter -->
+                <div class="dropdown-wrapper">
+                    <button class="filter-button" id="employeeFilter">
+                        <i class="fas fa-user"></i>
+                        <span>Bác sĩ...</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="dropdown-menu-custom" id="employeeMenu">
+                        <div class="dropdown-item-custom">Tất cả bác sĩ</div>
+                        <div class="dropdown-item-custom">Jane Doe</div>
+                        <div class="dropdown-item-custom">John Smith</div>
+                    </div>
+                </div>
+
+                <!-- Sort Dropdown -->
+                <div class="dropdown-wrapper">
+                    <button class="filter-button" id="sortFilter">
+                        <i class="fas fa-sort"></i>
+                        <span>Sort ...</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="dropdown-menu-custom" id="sortMenu">
+                        <div class="dropdown-item-custom">Giá (thấp nhất)</div>
+                        <div class="dropdown-item-custom">Giá (cao nhất)</div>
+                        <div class="dropdown-item-custom">Độ phổ biến</div>
+                        <div class="dropdown-item-custom">Tên (tăng dần)</div>
+                        <div class="dropdown-item-custom">Tên (giảm dần)</div>
+                    </div>
+                </div>
+
+                <!-- Search Box -->
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" placeholder="Search services" id="searchInput">
+                </div>
+            </div>
+        </div>
+
+        <!-- Services Grid -->
+        <div class="services-grid">
+            <!-- Service Card 1 -->
+            <div class="service-card">
+                <div class="service-image">
+                    <img src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&h=600&fit=crop" alt="Therapeutic Exercise">
+                    <span class="service-price">$30.00</span>
+                </div>
+                <div class="service-content">
+                    <h3 class="service-name">Bài tập trị liệu</h3>
+                    <div class="service-meta">
+                        <span class="meta-item">
+                            <span class="meta-label">Thời gian</span>
+                            <span class="meta-value">1h</span>
+                        </span>
+                        <span class="meta-item">
+                            <span class="meta-label">Sức chứa</span>
+                            <span class="meta-value">1</span>
+                        </span>
+                    </div>
+                    <div class="service-actions">
+                        <button class="btn-outline">Tìm hiểu thêm</button>
+                        <button class="btn-primary">Đặt lịch ngay</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service Card 2 -->
+            <div class="service-card">
+                <div class="service-image">
+                    <img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&h=600&fit=crop" alt="Therapeutic Stretching">
+                    <span class="service-price">$30.00</span>
+                </div>
+                <div class="service-content">
+                    <h3 class="service-name">Kéo giãn trị liệu</h3>
+                    <div class="service-meta">
+                        <span class="meta-item">
+                            <span class="meta-label">Thời gian</span>
+                            <span class="meta-value">1h</span>
+                        </span>
+                        <span class="meta-item">
+                            <span class="meta-label">Sức chứa</span>
+                            <span class="meta-value">1</span>
+                        </span>
+                    </div>
+                    <div class="service-actions">
+                        <button class="btn-outline">Tìm hiểu thêm</button>
+                        <button class="btn-primary">Đặt lịch ngay</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service Card 3 -->
+            <div class="service-card">
+                <div class="service-image">
+                    <img src="https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=800&h=600&fit=crop" alt="Heat and Ice Therapy">
+                    <span class="service-price">$50.00</span>
+                </div>
+                <div class="service-content">
+                    <h3 class="service-name">Liệu pháp nhiệt và lạnh</h3>
+                    <div class="service-meta">
+                        <span class="meta-item">
+                            <span class="meta-label">Thời gian</span>
+                            <span class="meta-value">1h 30ph</span>
+                        </span>
+                        <span class="meta-item">
+                            <span class="meta-label">Sức chứa</span>
+                            <span class="meta-value">1</span>
+                        </span>
+                    </div>
+                    <div class="service-actions">
+                        <button class="btn-outline">Tìm hiểu thêm</button>
+                        <button class="btn-primary">Đặt lịch ngay</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Service Card 4 -->
+            <div class="service-card">
+                <div class="service-image">
+                    <img src="https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?w=800&h=600&fit=crop" alt="e la khong the">
+                    <span class="service-price">$36.00</span>
+                </div>
+                <div class="service-content">
+                    <h3 class="service-name">e la khong the</h3>
+                    <div class="service-meta">
+                        <span class="meta-item">
+                            <span class="meta-label">Thời gian</span>
+                            <span class="meta-value">2h</span>
+                        </span>
+                        <span class="meta-item">
+                            <span class="meta-label">Sức chứa</span>
+                            <span class="meta-value">1</span>
+                        </span>
+                    </div>
+                    <div class="service-actions">
+                        <button class="btn-outline">Tìm hiểu thêm</button>
+                        <button class="btn-primary">Đặt lịch ngay</button>
+                    </div>
+                </div>
+            </div>
+
+            
+        </div>
+    </div>
+
+@section Scripts {
+    <script src="~/js/Services.js"></script>
+}

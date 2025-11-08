@@ -10,12 +10,12 @@
 
 
 /* Navigation */
-.navbar {
+/* .navbar {
     background-color: #212529;
     padding: 1rem 4rem;
     position: relative;
     z-index: 100;
-}
+} */
 
 .navbar-brand, .nav-link {
     color: #cbd5e0 !important;

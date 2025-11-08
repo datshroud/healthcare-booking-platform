@@ -1,0 +1,80 @@
+﻿body {
+    background-color: #2b3035;
+    color: #ddd;
+}
+
+.bg-body-tertiary {
+    background-color: #3a3f44 !important;
+}
+
+.service-item:hover {
+    background-color: #444b52 !important;
+    cursor: pointer;
+    transform: scale(1.01);
+    transition: all 0.15s ease-in-out;
+}
+.service-item {
+    background-color: #444b52 !important ;
+}
+.btn-success {
+    background-color: #1abc9c;
+    border: none;
+}
+.search-services-booking {
+    background-color: #212529; 
+    border: 1px solid #868E96; 
+    color: #f8f9fa; 
+}
+.search-services-booking::placeholder {
+    color: #868E96;  
+    opacity: 1;      
+}
+.search-services-booking::placeholder:hover {
+    color: white;
+}
+
+.service-item {
+    background-color: #343A40; 
+    border: 1px solid #868E96; 
+    transition: all 0.2s ease-in-out;
+}
+.service-item img{
+    height:84px;
+    width:84px;
+}
+.search-services-booking:focus {
+    background-color: #212529;
+    box-shadow: none;
+    outline: none;
+    color: white;
+    border: 1px solid #868E96;
+}
+.btn:focus{
+    box-shadow:none;
+    outline: none;
+}
+/* Highlight dịch vụ đã chọn */
+#selected-service div {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Màu tiền */
+#selected-service div .price {
+    color: #6aff7b;
+    font-weight: bold;
+}
+
+/* Màu tổng tiền */
+#total-price {
+    color: #6aff7b !important;
+}
+
+#booking-left, #booking-right {
+    min-height: 80vh; /* giữ chiều cao hợp lý */
+    margin-bottom: 80px; /* tránh dính footer */
+}
+.brand-booking {
+    color: #868e96;
+}

@@ -39,7 +39,10 @@ namespace BookingCareManagement.Infrastructure.Identity.Jwt
             {
                 new(JwtRegisteredClaimNames.Sub, user.Id),
                 new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
-                new(JwtRegisteredClaimNames.Name, user.Email ?? "")
+                // Use FullName as the registered 'name' claim when available, fallback to email
+                new(JwtRegisteredClaimNames.Name, string.IsNullOrWhiteSpace(user.FullName) ? (user.Email ?? "") : user.FullName),
+                // also include ClaimTypes.Name for frameworks that read that
+                new(ClaimTypes.Name, string.IsNullOrWhiteSpace(user.FullName) ? (user.Email ?? "") : user.FullName)
             };
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 

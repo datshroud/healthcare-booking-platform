@@ -7,8 +7,11 @@ using System.Threading.Tasks;
 namespace BookingCareManagement.Application.Features.Auth.Dtos
 {
     public sealed record RegisterRequest(
+        string FirstName,
+        string LastName,
         string Email,
         string Password,
-        string FullName
+        string PhoneNumber,
+        DateTime? DateOfBirth
     );
 }

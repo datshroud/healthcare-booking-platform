@@ -1,0 +1,43 @@
+@page "/auth/login"
+@model BookingCareManagement.Web.Areas.Account.Pages.Auth.LoginModel
+@{
+    // Use area's _ViewStart to provide the shared layout (Areas/Public/Pages/Shared/_Layout.cshtml)
+    ViewData["BodyClass"] = "auth-page";
+}
+@section Head {
+    <link rel="stylesheet" href="~/css/login.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap-grid.min.css" asp-append-version="true" />
+    <title>Đăng nhập</title>
+}
+
+
+<div class="login-container">
+    <h2>Đăng nhập tài khoản</h2>
+    <form id="login-form">
+        <label for="email"><span class="required">*</span> Email</label>
+        <input name="email" type="email" id="email" placeholder="Nhập email" required>
+
+        <label for="password"><span class="required">*</span> Mật khẩu</label>
+        <input name="password" type="password" id="password" placeholder="Nhập mật khẩu" required>
+
+        <button id="db-login" type="submit" class="login-btn">Đăng nhập</button>
+    </form>
+
+    <div class="divider">
+        <span>OR</span>
+    </div>
+
+    <div class="social-login">
+        <button id="google-login" class="google"><img src="/img/google.png" alt=""> Đăng nhập với Google</button>
+    </div>
+
+    <div class="footer-links">
+    <p>Quên mật khẩu? <a asp-area="Account" asp-page="/auth/forgotpassword">Đặt lại mật khẩu</a></p>
+    <p>Chưa có tài khoản? <a asp-area="Account" asp-page="/auth/signup">Đăng ký ngay</a></p>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/auth.js" asp-append-version="true"></script>
+}
+

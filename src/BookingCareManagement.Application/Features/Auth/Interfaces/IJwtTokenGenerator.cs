@@ -11,6 +11,7 @@ namespace BookingCareManagement.Application.Features.Auth.Commands
     public interface IJwtTokenGenerator
     {
         (string Token, DateTime expiresAt) GenerateToken(AppUser user, IEnumerable<string> roles);
+
         ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
     }
 }

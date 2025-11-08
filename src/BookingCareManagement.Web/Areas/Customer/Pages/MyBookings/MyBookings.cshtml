@@ -1,0 +1,51 @@
+﻿@page "/my-bookings"
+@model BookingCareManagement.Areas.Customer.Pages.MyBookings.MyBookingsModel
+@{
+    ViewData["Title"] = "My Bookings";
+}
+
+
+@section Styles {
+
+    <link rel="stylesheet" href="~/css/MyBookings.css" />
+}
+
+<div class="bookings-header">
+    <h1 class="bookings-title">Bookings</h1>
+    <button class="btn-book-now">Book Now</button>
+</div>
+<!-- Main Content -->
+<div class="container">
+    <div class="bookings-wrapper">
+
+
+        <!-- Filter Dropdown -->
+        <div class="filter-section">
+            <div class="dropdown-wrapper">
+                <button class="filter-dropdown" id="filterDropdown">
+                    <i class="fas fa-bars"></i>
+                    <span>Tất cả lịch đặt</span>
+                    <i class="fas fa-chevron-down"></i>
+                </button>
+                <div class="dropdown-menu-custom" id="dropdownMenu">
+                    <div class="dropdown-item-custom active">Tất cả các lịch đặt</div>
+                    <div class="dropdown-item-custom">Lịch đặt đã qua</div>
+                    <div class="dropdown-item-custom">Lịch đặt sắp tới</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-state-icon">
+                <i class="fa fa-search"></i>
+            </div>
+            <p class="empty-state-text">Không có lịch đặt cho khoảng thời gian đã chọn</p>
+            <button class="btn-book-now-secondary">Đặt ngay</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/MyBookings.js"></script>
+}

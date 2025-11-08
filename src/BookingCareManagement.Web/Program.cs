@@ -18,7 +18,7 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeAreaFolder("Doctor", "/", "DoctorOrAbove");
     options.Conventions.AuthorizeAreaFolder("Customer", "/", "CustomerOrAbove");
 
-    options.Conventions.AddAreaPageRoute("Customer", "/Reviews/Reviews", "/reviews");
+    // options.Conventions.AddAreaPageRoute("Customer", "/Reviews/Reviews", "/reviews");
 
     // options.Conventions.AllowAnonymousToAreaPage("Customer", "/Reviews/Reviews");
 

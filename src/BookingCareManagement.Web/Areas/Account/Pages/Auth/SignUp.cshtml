@@ -1,0 +1,80 @@
+@page "/auth/signup"
+@model BookingCareManagement.Web.Areas.Account.Pages.Auth.SignUpModel
+@{
+    // Use area's _ViewStart to provide the shared layout (Areas/Public/Pages/Shared/_Layout.cshtml)
+    ViewData["BodyClass"] = "auth-page";
+}
+@section Head {
+    <link rel="stylesheet" href="~/css/signup.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap-grid.min.css" asp-append-version="true" />
+    <title>Đăng ký</title>
+}
+
+
+<div class="SignUp-container">
+    <h2>Tạo tài khoản</h2>
+    <div class="signup-content">
+        <form id="signup-form">
+            <label for="firstname"><span class="required">*</span> Họ</label>
+            <input name="firstname" type="text" id="firstname" placeholder="Nhập họ" required>
+
+            <label for="lastname"><span class="required">*</span> Tên</label>
+            <input name="lastname" type="text" id="lastname" placeholder="Nhập tên" required>
+
+            <label for="email"><span class="required">*</span> Email</label>
+            <input name="email" type="email" id="email" placeholder="Nhập email" required>
+
+            <label for="password"><span class="required">*</span> Mật khẩu</label>
+            <input name="password" type="password" id="password" placeholder="Nhập mật khẩu" required>
+
+            <label for="dateOfBirth"><span class="required">*</span>Ngày sinh</label>
+            <input name="dateOfBirth" type="date" id="dateOfBirth" placeholder="YYYY-MM-DD">    
+
+            <div class="input-group phone-group">
+                <label for="phone"><span class="required">*</span> Số điện thoại</label>
+                <div class="phone-input-wrapper">
+                    <select class="country-code">
+                        <option value="+84">🇻🇳 Vietnam (+84)</option>
+                        <option value="+1">🇺🇸 Canada/USA (+1)</option>
+                        <option value="+44">🇬🇧 UK (+44)</option>
+                        <option value="+61">🇦🇺 Australia (+61)</option>
+                        <option value="+49">🇩🇪 Germany (+49)</option>
+                        <option value="+33">🇫🇷 France (+33)</option>
+                        <option value="+81">🇯🇵 Japan (+81)</option>
+                        <option value="+86">🇨🇳 China (+86)</option>
+                        <option value="+91">🇮🇳 India (+91)</option>
+                        <option value="+62">🇮🇩 Indonesia (+62)</option>
+                        <option value="+60">🇲🇾 Malaysia (+60)</option>
+                        <option value="+63">🇵🇭 Philippines (+63)</option>
+                        <option value="+65">🇸🇬 Singapore (+65)</option>
+                        <option value="+66">🇹🇭 Thailand (+66)</option>
+                        <option value="+82">🇰🇷 South Korea (+82)</option>
+                        <option value="+7">🇷🇺 Russia/Kazakhstan (+7)</option>
+                        <option value="+55">🇧🇷 Brazil (+55)</option>
+                        <option value="+52">🇲🇽 Mexico (+52)</option>
+                        <option value="+34">🇪🇸 Spain (+34)</option>
+                        <option value="+39">🇮🇹 Italy (+39)</option>
+                    </select>
+                    <input name="phoneNumber" type="tel" id="phone" placeholder="Nhập số điện thoại" required>
+                </div>
+            </div>
+            <button id="db-signup" type="submit" class="signup-button">Đăng ký</button>
+        </form>
+    </div>
+    <div class="divider">
+        <span>OR</span>
+    </div>
+
+    <div class="social-signup">
+        <button id="google-signup" class="google"><img src="~/img/google.png" alt=""> Đăng ký với Google</button>
+    </div>
+
+    <div class="footer-links">
+        <p>Đã có tài khoản? <a asp-area="Account" asp-page="/auth/login">Đăng nhập</a></p>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/auth.js" asp-append-version="true"></script>
+}
+

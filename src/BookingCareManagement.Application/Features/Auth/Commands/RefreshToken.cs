@@ -1,4 +1,5 @@
 using System;
+using BookingCareManagement.Application.Common.Exceptions;
 using BookingCareManagement.Application.Features.Auth.Dtos;
 using BookingCareManagement.Domain.Aggregates.User;
 using Microsoft.AspNetCore.Identity;
@@ -21,7 +22,7 @@ public class RefreshTokenHandler
     {
         var user = await _userManager.Users
             .Where(u => u.RefreshTokens.Any(rt => rt.Token == req.RefreshToken && rt.IsActive))
-            .FirstOrDefaultAsync(ct) ?? throw new Exception("Refresh token không hợp lệ.");
+            .FirstOrDefaultAsync(ct) ?? throw new AuthException("Refresh token không hợp lệ.");
 
         var roles = await _userManager.GetRolesAsync(user);
         var (token, exp) = _jwt.GenerateToken(user, roles);

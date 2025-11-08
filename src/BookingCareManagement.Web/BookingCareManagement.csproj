@@ -27,8 +27,11 @@
   <ItemGroup>
     <Folder Include="Areas\Admin\" />
     <Folder Include="Areas\Admin\Pages\" />
-    <Folder Include="Areas\Customer\Pages\MyBookings\" />
     <Folder Include="Areas\Doctor\" />
     <Folder Include="Areas\Doctor\Pages\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="wwwroot\images\" />
   </ItemGroup>
 </Project>
