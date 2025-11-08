@@ -7,6 +7,12 @@
     background-color: #3a3f44 !important;
 }
 
+.content-account{
+    display: flex;
+    gap: 5px;
+    width: 100%;
+}
+
 .service-item:hover {
     background-color: #444b52 !important;
     cursor: pointer;
@@ -77,4 +83,110 @@
 }
 .brand-booking {
     color: #868e96;
+}
+
+.container-fluid > .row:first-child {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+/* === CHỈNH TỔNG THỂ KHUNG ACCOUNT === */
+.container-fluid.bg-dark {
+    background-color: #212529 !important;
+    border: 1px solid #2f3439;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+}
+
+    /* Tiêu đề tài khoản */
+    .container-fluid.bg-dark h3 {
+        font-weight: 600;
+        letter-spacing: 0.5px;
+    }
+
+/* Cột trái — sidebar */
+.user-info {
+    background-color: transparent;
+    border: none;
+    color: #f8f9fa;
+    text-align: left;
+    padding: 10px 14px;
+    border-radius: 8px;
+    transition: all 0.2s ease-in-out;
+}
+
+    .user-info:hover {
+        background-color: #2e3338;
+    }
+
+    .user-info.active-tab {
+        background-color: #3c4349 !important;
+        font-weight: 600;
+    }
+    .user-info.active-tab {
+        border-left: 3px solid #1abc9c;
+    }
+
+/* Cột phải — nội dung chi tiết */
+.account-info {
+    background-color: #1c1f23;
+    padding: 25px 25px;
+    border-radius: 10px;
+    border: 1px solid #2f3439;
+}
+
+/* Nhãn form và input */
+.form-label {
+    font-weight: 500;
+}
+
+.form-control {
+    background-color: #2b3035;
+    color: #fff;
+    border: 1px solid #495057;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+    .form-control:focus {
+        background-color: #2b3035;
+        color: #fff;
+        border-color: #1abc9c;
+        box-shadow: 0 0 0 0.1rem rgba(26, 188, 156, 0.3);
+    }
+
+/* Ảnh đại diện */
+.account-info img {
+    object-fit: cover;
+    background-color: #2e3338;
+    border: 2px solid #495057;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+/* Nút delete account */
+.btn-outline-danger {
+    background-color: transparent;
+    border-color: #dc3545;
+    color: #dc3545;
+    border-radius: 8px;
+    transition: all 0.25s ease-in-out;
+}
+
+    .btn-outline-danger:hover {
+        background-color: #dc3545;
+        color: white;
+    }
+
+/* Nút save */
+.btn-success {
+    background-color: #1abc9c;
+    border: none;
+    border-radius: 8px;
+}
+
+    .btn-success:hover {
+        background-color: #16a085;
+    }
+
+/* Tách phần delete và save */
+.border-top {
+    border-top: 1px solid #495057 !important;
 }

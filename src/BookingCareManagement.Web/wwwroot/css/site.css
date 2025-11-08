@@ -176,10 +176,10 @@ body {
     font-weight: 500;
 }
 
-    .nav-link:hover,
-    .nav-link.active {
-        color: #48bb78 !important;
-    }
+.nav-link:hover,
+.nav-link.active {
+    color: #48bb78 !important;
+}
 
 .user-badge {
     background-color: #4299e1;
@@ -208,7 +208,28 @@ body {
     gap: 8px;
     white-space: nowrap; /* giữ cùng dòng */
 }
+.account-btn {
+    background-color: rgba(66, 153, 225, 0.15)!important;
+    border: 1px solid #e0e6ef;
+    border-radius: 50px !important;
+    padding: 6px 12px;
+    transition: all 0.2s ease;
+}
+.account-btn:hover {
+    background-color: rgba(66, 153, 225, 0.2) !important;
+}
 
+.user-info:focus,
+.user-info:active,
+.btn:focus,
+.btn:active,
+.dropdown-toggle:focus {
+    outline: none !important;
+    box-shadow: none !important;
+}
+.user-info:hover {
+    background-color: rgba(66, 153, 225, 0.2); /* hiệu ứng hover nhẹ */
+}
 
 /* Footer */
 html, body {
@@ -225,6 +246,22 @@ html, body {
 /* phần chính sẽ chiếm hết khoảng trống, đẩy footer xuống cuối */
 .container {
     flex: 1;
+}
+.dropdown-menu {
+    background-color: #212529 !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+/* Màu chữ các item trong panel */
+.dropdown-menu .dropdown-item {
+    color: #fff !important;
+}
+
+/* Hiệu ứng hover: nền sáng hơn chút */
+.dropdown-menu .dropdown-item:hover {
+    background-color: #343a40 !important;
+    color: #48bb78 !important;
 }
 
 /* Footer */
@@ -264,20 +301,53 @@ html, body {
     margin-right: 145px;
 }
 
-    .footer-text img {
-        height: 14px;
-        vertical-align: middle;
-        opacity: 0.9;
-    }
+.footer-text img {
+    height: 14px;
+    vertical-align: middle;
+    opacity: 0.9;
+}
 
 @media (max-width: 768px) {
 
-    .bookings-header {
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        gap: 1rem;
-        margin: 2rem 1rem 0 1rem;
+.bookings-header {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+    margin: 2rem 1rem 0 1rem;
+}
+
+.bookings-wrapper {
+    margin: 2rem 1rem;
+    padding: 1.5rem;
+}
+
+.bookings-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+}
+
+.bookings-title {
+    font-size: 2rem;
+}
+
+.btn-book-now {
+    width: 100%;
+    max-width: 300px;
+}
+
+.empty-state {
+    padding: 3rem 1rem;
+}
+
+.empty-state-icon {
+    width: 120px;
+    height: 120px;
+}
+
+    .empty-state-icon i {
+        font-size: 3rem;
     }
     
     .bookings-wrapper {
