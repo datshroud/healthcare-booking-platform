@@ -1,0 +1,366 @@
+﻿@page
+@model ServicesAdminModel
+@{
+    ViewData["Title"] = "Services";
+}
+
+@section Styles {
+
+    <link rel="stylesheet" href="~/css/ServicesAdmin.css" />
+}
+
+<div class="main-container">
+    <div class="header">
+        <h1>Dịch vụ</h1>
+        <div class="header-buttons">
+            <button class="btn-add" data-bs-toggle="modal" data-bs-target="#addServiceModal">
+                <i class="fas fa-plus"></i>
+                Thêm vào dịch vụ
+            </button>
+        </div>
+    </div>
+
+    <div class="content-card">
+        <div class="tabs-container">
+            <button class="tab-item active">Dịch vụ</button>
+        </div>
+
+        <div class="main-content1">
+            <div class="sidebar1">
+                <div class="sidebar1-title">
+                    Danh mục <span class="sidebar1-count">(1)</span>
+                </div>
+
+                <div class="category-card">
+                    <div class="category-card-header">
+                        <div>
+                            <div class="category-name">Tất cả các dịch vụ</div>
+                            <div class="category-subtitle">Dịch vụ</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="category-card other-category">
+                    <div class="category-card-header">
+                        <div>
+                            <div class="category-name">Mặc định</div>
+                            <div class="category-subtitle">3 Dịch vụ</div>
+                        </div>
+
+                        <div style="position: relative;">
+                            <button class="btn-more-category" onclick="toggleCategoryDropdown(this)">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+
+                            <div class="dropdown-menu-category">
+                                <button class="dropdown-item-category">
+                                    <i class="fas fa-edit" style="width: 16px;"></i>
+                                    <span>Chỉnh sửa danh mục</span>
+                                </button>
+                                <button class="dropdown-item-category text-danger">
+                                    <i class="fas fa-trash" style="width: 16px;"></i>
+                                    <span>Xóa danh mục</span>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <button class="btn-add-category" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
+                    <i class="fas fa-plus"></i>
+                    Thêm danh mục
+                </button>
+            </div>
+
+            <div class="services-content">
+                <div class="services-header">
+                    <div class="services-title">
+                        Tất cả các dịch vụ <span class="services-count">(3)</span>
+                    </div>
+                    <div class="dropdown">
+                        <button class="sort-dropdown dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="display: flex; align-items: center; justify-content: space-between; width: 100%; min-width: 180px;">
+                            <div>
+                                <span>Loại:</span>
+                                <span id="current-sort-label" class="ms-1">Tên tăng dần</span>
+                            </div>
+                        </button>
+
+                        <ul class="dropdown-menu" id="sort-options-menu">
+                            <li><a class="dropdown-item active" href="#">Tên tăng dần</a></li>
+                            <li><a class="dropdown-item" href="#">Tên giảm dần</a></li>
+                            <li><a class="dropdown-item" href="#">Giá tăng dần</a></li>
+                            <li><a class="dropdown-item" href="#">Giá giảm dần</a></li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="services-table-header">
+                    <div></div>
+                    <div>Tên</div>
+                    <div>Giá</div>
+                    <div>Người lao động</div>
+                    <div></div>
+                </div>
+
+                <div class="service-item orange">
+                    <div class="drag-handle">
+                        <i class="fas fa-grip-vertical"></i>
+                    </div>
+                    <div class="service-info">
+                        <img src="https://ui-avatars.com/api/?name=Kiem+Tra&background=f9ab00&color=fff&size=40&rounded=true" class="service-avatar" alt="Service">
+                        <div class="service-details">
+                            <div class="service-name">Kiểm tra</div>
+                            <div class="service-duration">1 giờ</div>
+                        </div>
+                    </div>
+                    <div class="service-price">200,00 đ</div>
+                    <div class="service-employees">
+                        <div class="employee-avatar-small employee-avatar-teal">D</div>
+                        <img src="https://ui-avatars.com/api/?name=Jane+Doe&background=4a90e2&color=fff&size=32&rounded=true" class="employee-avatar-small" alt="Employee">
+                    </div>
+                    <div style="position: relative;">
+                        <button class="btn-more-service" onclick="toggleServiceDropdown(this)">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                        <div class="dropdown-menu-service">
+                            <button class="dropdown-item-service">
+                                <i class="fas fa-edit"></i>
+                                <span>Chỉnh sửa dịch vụ</span>
+                            </button>
+                            <button class="dropdown-item-service">
+                                <i class="fas fa-copy"></i>
+                                <span>Dịch vụ trùng lặp</span>
+                            </button>
+                            <button class="dropdown-item-service">
+                                <i class="fas fa-share-alt"></i>
+                                <span>Chia sẻ Đặt phòng</span>
+                            </button>
+                            <button class="dropdown-item-service">
+                                <i class="fas fa-ban"></i>
+                                <span>Vô hiệu hóa dịch vụ</span>
+                            </button>
+                            <button class="dropdown-item-service text-danger">
+                                <i class="fas fa-trash"></i>
+                                <span>Xóa dịch vụ</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="service-item blue">
+                    <div class="drag-handle">
+                        <i class="fas fa-grip-vertical"></i>
+                    </div>
+                    <div class="service-info">
+                        <img src="https://ui-avatars.com/api/?name=Phau+Thuat&background=1a73e8&color=fff&size=40&rounded=true" class="service-avatar" alt="Service">
+                        <div class="service-details">
+                            <div class="service-name">Phẫu thuật nha khoa</div>
+                            <div class="service-duration">4 giờ</div>
+                        </div>
+                    </div>
+                    <div class="service-price">1.000,00 đ</div>
+                    <div class="service-employees">
+                        <div class="employee-avatar-small employee-avatar-teal">D</div>
+                        <img src="https://ui-avatars.com/api/?name=Jane+Doe&background=4a90e2&color=fff&size=32&rounded=true" class="employee-avatar-small" alt="Employee">
+                    </div>
+                    <div style="position: relative;">
+                        <button class="btn-more-service" onclick="toggleServiceDropdown(this)">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                        <div class="dropdown-menu-service">
+                            <button class="dropdown-item-service">
+                                <i class="fas fa-edit"></i>
+                                <span>Chỉnh sửa dịch vụ</span>
+                            </button>
+                            <button class="dropdown-item-service">
+                                <i class="fas fa-copy"></i>
+                                <span>Dịch vụ trùng lặp</span>
+                            </button>
+                            <button class="dropdown-item-service">
+                                <i class="fas fa-share-alt"></i>
+                                <span>Chia sẻ Đặt phòng</span>
+                            </button>
+                            <button class="dropdown-item-service">
+                                <i class="fas fa-ban"></i>
+                                <span>Vô hiệu hóa dịch vụ</span>
+                            </button>
+                            <button class="dropdown-item-service text-danger">
+                                <i class="fas fa-trash"></i>
+                                <span>Xóa dịch vụ</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="service-item green">
+                    <div class="drag-handle">
+                        <i class="fas fa-grip-vertical"></i>
+                    </div>
+                    <div class="service-info">
+                        <img src="https://ui-avatars.com/api/?name=Nho+Rang&background=34a853&color=fff&size=40&rounded=true" class="service-avatar" alt="Service">
+                        <div class="service-details">
+                            <div class="service-name">Nhổ răng</div>
+                            <div class="service-duration">1 giờ</div>
+                        </div>
+                    </div>
+                    <div class="service-price">400,00 đ</div>
+                    <div class="service-employees">
+                        <div class="employee-avatar-small employee-avatar-teal">D</div>
+                        <img src="https://ui-avatars.com/api/?name=Jane+Doe&background=4a90e2&color=fff&size=32&rounded=true" class="employee-avatar-small" alt="Employee">
+                    </div>
+                    <div style="position: relative;">
+                        <button class="btn-more-service" onclick="toggleServiceDropdown(this)">
+                            <i class="fas fa-ellipsis-h"></i>
+                        </button>
+                        <div class="dropdown-menu-service">
+                            <button class="dropdown-item-service">
+                                <i class="fas fa-edit"></i>
+                                <span>Chỉnh sửa dịch vụ</span>
+                            </button>
+                            <button class="dropdown-item-service">
+                                <i class="fas fa-copy"></i>
+                                <span>Dịch vụ trùng lặp</span>
+                            </button>
+                            <button class="dropdown-item-service">
+                                <i class="fas fa-share-alt"></i>
+                                <span>Chia sẻ Đặt phòng</span>
+                            </button>
+                            <button class="dropdown-item-service">
+                                <i class="fas fa-ban"></i>
+                                <span>Vô hiệu hóa dịch vụ</span>
+                            </button>
+                            <button class="dropdown-item-service text-danger">
+                                <i class="fas fa-trash"></i>
+                                <span>Xóa dịch vụ</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addServiceModal" tabindex="-1" aria-labelledby="addServiceModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addServiceModalLabel">Thêm dịch vụ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <div class="row">
+                            <div class="col-md-5">
+                                <label class="modal-form-label">Service image</label>
+
+                                <input type="file" id="serviceImageInput" hidden accept="image/*">
+
+                                <div class="service-upload-box" id="serviceUploadBox">
+                                    <i class="fas fa-cloud-upload-alt"></i>
+                                    <p>
+                                        Drag and drop or <br>
+                                        <a href="#"
+                                           onclick="document.getElementById('serviceImageInput').click(); event.preventDefault();">choose from files</a>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col-md-7">
+                                <div class="mb-3">
+                                    <label for="serviceName" class="modal-form-label">Service name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="serviceName" placeholder="Enter name">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="serviceCategory" class="modal-form-label">Category <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="serviceCategory">
+                                        <option value="default" selected>Default</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="serviceColor" class="modal-form-label">Color</label>
+                                    <div class="color-picker-wrapper">
+                                        <input type="text" class="form-control" id="serviceColor" value="#c0eb75">
+                                        <div class="color-swatch" style="background-color: #c0eb75;">
+                                            <input type="color" value="#c0eb75" oninput="this.previousElementSibling.value = this.value; this.parentElement.style.backgroundColor = this.value;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-5">
+                        <label for="serviceDescriptionEditor" class="modal-form-label">Description</label>
+                        <textarea id="serviceDescriptionEditor" name="serviceDescriptionEditor" placeholder="Insert text here ...">
+                        </textarea>
+                        <small class="form-text text-muted mt-2 d-block">Descriptions appear on your booking page.</small>
+                    </div>
+
+                    <div class="col-12"><hr class="my-2"></div>
+
+                    <div class="col-md-6">
+                        <label for="serviceEmployees" class="modal-form-label">Employees <span class="text-danger">*</span></label>
+                        <select class="form-select" id="serviceEmployees" multiple>
+                            <option value="1">Đặng Minh Bảo</option>
+                            <option value="2">Jane Doe</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="serviceDuration" class="modal-form-label">Duration <span class="text-danger">*</span></label>
+                        <select class="form-select" id="serviceDuration">
+                            <option value="" selected>Select duration</option>
+                            <option value="3600">1 giờ</option>
+                            <option value="14400">4 giờ</option>
+                        </select>
+                        <small class="form-text text-muted mt-2 d-block" style="font-size: 12px;">
+                            If you need a different duration that isn't among the displayed ones, please visit our <a href="#">General Settings</a> and change Default Time Slot Step.
+                        </small>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label for="servicePrice" class="modal-form-label">Price <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">₫</span>
+                            <input type="text" class="form-control" id="servicePrice" placeholder="0.00" value="0.00">
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-modal-cancel" data-bs-dismiss="modal">Hủy bỏ</button>
+                <button type="button" class="btn btn-add">Thêm vào</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addCategoryModal" tabindex="-1" aria-labelledby="addCategoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addCategoryModalLabel">Thêm danh mục</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form>
+                    <div class="mb-3">
+                        <label for="categoryName" class="modal-form-label">Category Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="categoryName" placeholder="">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-modal-cancel" data-bs-dismiss="modal">Hủy bỏ</button>
+                <button type="button" class="btn btn-add">Thêm danh mục</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/ServicesAdmin.js"></script>
+}

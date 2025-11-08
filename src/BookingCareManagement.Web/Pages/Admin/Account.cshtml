@@ -1,0 +1,93 @@
+﻿@page "/Account-settings"
+@{
+    ViewData["Title"] = "Account Settings";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/account.css" />
+}
+
+<div class="account-settings-wrapper py-5 d-flex justify-content-center">
+    <div class="account-settings-container" style="max-width: 1100px; width: 100%;">
+
+        <div class="title-section mb-3 ps-3">
+            <h2 class="fw-bold mb-0 text-dark">
+                Account Settings
+                <span class="text-secondary fs-5">› Personal Info</span>
+            </h2>
+        </div>
+
+        <div class="account-card shadow rounded-4 bg-white d-flex overflow-hidden">
+
+            <div class="account-sidebar p-4 border-end">
+                <ul class="nav flex-column">
+                    <li class="nav-item mb-2">
+                        <button id="btnPersonalInfo" class="nav-link active w-100 text-start">
+                            <i class="bi bi-person-circle me-2"></i> Personal Info
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button id="btnChangePassword" class="nav-link w-100 text-start">
+                            <i class="bi bi-lock me-2"></i> Change Password
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Content -->
+            <div class="account-content flex-grow-1 p-4">
+                <!-- Personal Info -->
+                <div id="personalInfoSection">
+                    <h4 class="fw-bold mb-4 text-dark">Personal Info</h4>
+                    <div class="text-center mb-4">
+                        <img src="https://lh3.googleusercontent.com/a/ACg8ocJSWd2_t3fzfaTjrW-4vQSiZUXBJ3znLlPf7ABjCHjxbLTOQA=s360-c-mo-no" alt="Profile Picture" class="profile-image" />
+                    </div>
+
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">First Name<span class="text-danger">*</span></label>
+                            <input type="text" value="." class="form-control" placeholder="Enter first name" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Last Name<span class="text-danger">*</span></label>
+                            <input type="text" value="Le Ngoc Bao Chan" class="form-control" placeholder="Enter last name" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Email<span class="text-danger">*</span></label>
+                            <input type="email" value="6451071006@st.utc2.edu.vn" class="form-control" placeholder="Enter your email" />
+                        </div>
+
+                        <button type="submit" class="btn btn-dark mt-3 px-4">Save Changes</button>
+                    </form>
+                </div>
+
+                <!-- Change Password -->
+                <div id="changePasswordSection" class="d-none">
+                    <h4 class="fw-bold mb-4 text-dark">Change Password</h4>
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Current Password<span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" placeholder="Enter current password" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">New Password<span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" placeholder="Enter new password" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Confirm Password<span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" placeholder="Re-enter new password" />
+                        </div>
+
+                        <button type="submit" class="btn btn-dark mt-3 px-4">Update Password</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/account.js"></script>
+}

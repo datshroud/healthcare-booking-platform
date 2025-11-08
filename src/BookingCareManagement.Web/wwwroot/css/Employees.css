@@ -1,0 +1,439 @@
+﻿body {
+    background-color: #f5f5f7;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.main-container {
+    max-width: 1400px;
+    margin: 30px auto;
+    padding: 0 20px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+}
+
+    .header h1 {
+        font-size: 32px;
+        font-weight: 700;
+        color: #1d1d1f;
+        margin: 0;
+    }
+
+.header-buttons {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-view-employee {
+    background-color: #fff;
+    color: #0066cc;
+    border: 1px solid #d2d2d7;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+    .btn-view-employee:hover {
+        background-color: #f5f5f7;
+        border-color: #0066cc;
+    }
+
+.btn-add-employee {
+    background-color: #0066cc;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+    .btn-add-employee:hover {
+        background-color: #0055b3;
+    }
+
+.content-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    padding: 25px;
+    min-height: 600px; /* 👈 hoặc 90vh (90% chiều cao màn hình) */
+}
+
+
+.search-filter-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+.search-box {
+    flex: 1;
+    max-width: 400px;
+    position: relative;
+}
+
+    .search-box input {
+        width: 100%;
+        padding: 10px 15px 10px 40px;
+        border: 1px solid #d2d2d7;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: #0066cc;
+            box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+        }
+
+    .search-box i {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #86868b;
+    }
+
+.btn-filter {
+    background: white;
+    border: 1px solid #d2d2d7;
+    padding: 10px 20px;
+    border-radius: 8px;
+    color: #1d1d1f;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+    .btn-filter:hover {
+        background-color: #f5f5f7;
+    }
+
+.employee-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+    .employee-table thead th {
+        background-color: #fafafa;
+        color: #86868b;
+        font-weight: 600;
+        font-size: 13px;
+        text-transform: uppercase;
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #e5e5e7;
+    }
+
+        .employee-table thead th:first-child {
+            width: 40px;
+            border-radius: 8px 0 0 0;
+        }
+
+        .employee-table thead th:last-child {
+            border-radius: 0 8px 0 0;
+        }
+
+    .employee-table tbody tr {
+        border-bottom: 1px solid #e5e5e7;
+        transition: background-color 0.2s;
+    }
+
+        .employee-table tbody tr:hover {
+            background-color: #fafafa;
+        }
+
+    .employee-table tbody td {
+        padding: 15px;
+        color: #1d1d1f;
+        font-size: 14px;
+    }
+
+.employee-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    color: white;
+    font-size: 16px;
+}
+
+.avatar-teal {
+    background-color: #00a19d;
+}
+
+.employee-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.employee-name {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 500;
+}
+
+.verified-badge {
+    color: #0066cc;
+    font-size: 16px;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    background-color: #d4f4dd;
+    color: #0d6832;
+}
+
+.action-menu {
+    position: relative;
+}
+
+.btn-action {
+    background: none;
+    border: none;
+    color: #86868b;
+    font-size: 18px;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+    .btn-action:hover {
+        background-color: #f5f5f7;
+        color: #1d1d1f;
+    }
+
+.dropdown-menu-custom {
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: white;
+    border: 1px solid #e5e5e7;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    min-width: 200px;
+    z-index: 1000;
+    display: none;
+    margin-top: 5px;
+}
+
+    .dropdown-menu-custom.show {
+        display: block;
+    }
+
+.dropdown-item-custom {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: #1d1d1f;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background-color 0.2s;
+    border: none;
+    width: 100%;
+    background: none;
+    text-align: left;
+    cursor: pointer;
+}
+
+    .dropdown-item-custom:hover {
+        background-color: #f5f5f7;
+    }
+
+    .dropdown-item-custom.text-danger {
+        color: #dc3545;
+    }
+
+    .dropdown-item-custom i {
+        width: 16px;
+    }
+/* === BỔ SUNG CSS CHO MODAL THÊM NHÂN VIÊN === */
+.modal-content {
+    border-radius: 12px;
+    border: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.modal-header {
+    border-bottom: none;
+    padding: 1.5rem 1.5rem 0;
+}
+
+    .modal-header .modal-title {
+        font-weight: 700;
+        font-size: 1.5rem;
+        color: #1d1d1f;
+    }
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.modal-footer {
+    border-top: 1px solid #e5e5e7;
+    padding: 1rem 1.5rem;
+    background-color: #f5f5f7; /* Màu nền footer giống ảnh */
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+/* Vùng upload file */
+.file-upload-area {
+    border: 2px dashed #d2d2d7;
+    border-radius: 12px;
+    padding: 2.5rem;
+    text-align: center;
+    background-color: #fbfbfb;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+    .file-upload-area i {
+        font-size: 3rem;
+        color: #0066cc;
+        opacity: 0.7;
+        margin-bottom: 1rem;
+    }
+
+    .file-upload-area p {
+        margin: 0;
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+
+    .file-upload-area a {
+        color: #0066cc;
+        text-decoration: none;
+        font-weight: 500;
+    }
+
+/* Form styling */
+.modal-body .form-label {
+    font-weight: 500;
+    color: #333;
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+}
+
+.modal-body .form-control,
+.modal-body .form-select {
+    border-radius: 8px;
+    border-color: #d2d2d7;
+    padding: 0.75rem 1rem;
+    font-size: 0.95rem;
+}
+
+    .modal-body .form-control::placeholder {
+        color: #a1a1a6;
+    }
+
+    .modal-body .form-control:focus,
+    .modal-body .form-select:focus {
+        border-color: #0066cc;
+        box-shadow: 0 0 0 3px rgba(0,102,204,0.1);
+    }
+
+/* Nút footer */
+.btn-light-custom {
+    background-color: #e5e5e7;
+    border-color: #e5e5e7;
+    color: #1d1d1f;
+    font-weight: 500;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+    .btn-light-custom:hover {
+        background-color: #dcdcdc;
+    }
+
+.btn-primary-custom {
+    background-color: #0066cc;
+    border-color: #0066cc;
+    color: #fff;
+    font-weight: 500;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+    .btn-primary-custom:hover {
+        background-color: #0055b3;
+    }
+
+/* Phone input group */
+.input-group .dropdown-toggle {
+    background-color: #fff;
+    border-color: #d2d2d7;
+    color: #333;
+    font-size: 0.95rem;
+    padding-top: 0;
+    padding-bottom: 0;
+    display: flex;
+    align-items: center;
+}
+
+    .input-group .dropdown-toggle img {
+        margin-right: 8px;
+        width: 20px;
+    }
+
+/* Tìm đoạn này trong CSS của bạn */
+.file-upload-area {
+    border: 2px dashed #d2d2d7;
+    border-radius: 12px; /* <-- Chỉnh sửa hoặc thêm dòng này */
+    padding: 2.5rem;
+    text-align: center;
+    background-color: #fbfbfb;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    /* BỔ SUNG: Để đảm bảo hình tròn hoàn hảo */
+    width: 250px; /* Thêm một chiều rộng cố định (có thể điều chỉnh) */
+    height: 250px; /* Thêm một chiều cao cố định (bằng chiều rộng) */
+    border-radius: 50%; /* <<<<< CHỖ NÀY ĐỂ THÀNH HÌNH TRÒN */
+    overflow: hidden; /* Đảm bảo ảnh bên trong không tràn ra khỏi hình tròn */
+    position: relative; /* Quan trọng cho việc định vị nội dung bên trong */
+}
+
+    /* Thêm hoặc chỉnh sửa đoạn này cho ảnh xem trước */
+    .file-upload-area .image-preview {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Đảm bảo ảnh vừa vặn, không bị méo */
+        border-radius: 50%; /* <<<<< CHỖ NÀY ĐỂ ẢNH CŨNG TRÒN */
+        position: absolute; /* Để ảnh lấp đầy khu vực cha */
+        top: 0;
+        left: 0;
+    }
+
+    /* Khi có ảnh, các icon và text sẽ bị ẩn đi để chỉ hiện ảnh */
+    .file-upload-area.has-image .fa-cloud-upload-alt,
+    .file-upload-area.has-image p {
+        display: none;
+    }
