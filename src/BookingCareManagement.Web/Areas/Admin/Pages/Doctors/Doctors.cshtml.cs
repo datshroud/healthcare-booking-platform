@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace BookingCareManagement.Pages.Admin
+namespace BookingCareManagement.Web.Areas.Admin.Pages.Doctors
 {
-    public class EmployeesModel : PageModel
+    public class DoctorsModel : PageModel
     {
         public void OnGet()
         {

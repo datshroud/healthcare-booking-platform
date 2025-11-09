@@ -46,3 +46,25 @@ const tabs = notifMenu.querySelectorAll('[data-bs-toggle="tab"]');
             });
     }
 });
+
+// dang xuat
+const logoutBtn = document.getElementById('logout-btn');
+if (logoutBtn){
+    logoutBtn.addEventListener('click', async () => {
+        try {
+            const resp = await fetch('api/account/auth/logout', { method: 'POST', credentials: 'include' });
+            if (resp.ok){
+                // reload to update UI (cookies cleared server-side)
+                window.location.href = '/';
+                return;
+            }
+            // try to read error
+            let txt = '';
+            try { txt = await resp.text(); } catch {}
+            alert('Đăng xuất thất bại: ' + (txt || resp.status));
+        } catch (err) {
+            console.error(err); 
+            alert('Có lỗi khi đăng xuất.');
+        }
+    });
+}

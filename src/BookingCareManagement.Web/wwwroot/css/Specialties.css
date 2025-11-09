@@ -184,25 +184,25 @@
         background-color: #f8f9fa;
     }
 
-.services-content {
+.specialties-content {
     flex: 1;
     padding: 24px;
 }
 
-.services-header {
+.specialties-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
 }
 
-.services-title {
+.specialties-title {
     font-size: 18px;
     font-weight: 600;
     color: #3c4043;
 }
 
-.services-count {
+.specialties-count {
     color: #5f6368;
     font-weight: 400;
 }
@@ -224,7 +224,7 @@
         background-color: #f8f9fa;
     }
 
-.services-table-header {
+.specialties-table-header {
     display: grid;
     grid-template-columns: 50px 1fr 150px 200px 50px;
     padding: 12px 16px;
@@ -236,7 +236,7 @@
     color: #5f6368;
 }
 
-.service-item {
+.specialty-item {
     display: grid;
     grid-template-columns: 50px 1fr 150px 200px 50px;
     padding: 16px;
@@ -249,20 +249,20 @@
     cursor: pointer;
 }
 
-    .service-item:hover {
+    .specialty-item:hover {
         background-color: #f1f3f4;
         box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
 
-    .service-item.orange {
+    .specialty-item.orange {
         border-left-color: #f9ab00;
     }
 
-    .service-item.blue {
+    .specialty-item.blue {
         border-left-color: #1a73e8;
     }
 
-    .service-item.green {
+    .specialty-item.green {
         border-left-color: #34a853;
     }
 
@@ -271,48 +271,48 @@
     cursor: grab;
 }
 
-.service-info {
+.specialty-info {
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-.service-avatar {
+.specialty-avatar {
     width: 40px;
     height: 40px;
     border-radius: 50%;
     object-fit: cover;
 }
 
-.service-details {
+.specialty-details {
     flex: 1;
 }
 
-.service-name {
+.specialty-name {
     font-weight: 600;
     color: #1f1f1f;
     font-size: 14px;
     margin-bottom: 2px;
 }
 
-.service-duration {
+.specialty-duration {
     font-size: 13px;
     color: #5f6368;
 }
 
-.service-price {
+.specialty-price {
     font-size: 14px;
     color: #3c4043;
     font-weight: 500;
 }
 
-.service-employees {
+.specialty-doctors {
     display: flex;
     align-items: center;
     gap: -8px;
 }
 
-.employee-avatar-small {
+.doctor-avatar-small {
     width: 32px;
     height: 32px;
     border-radius: 50%;
@@ -320,11 +320,11 @@
     margin-left: -8px;
 }
 
-    .employee-avatar-small:first-child {
+    .doctor-avatar-small:first-child {
         margin-left: 0;
     }
 
-.employee-avatar-teal {
+.doctor-avatar-teal {
     background-color: #00a19d;
     color: white;
     display: flex;
@@ -334,7 +334,7 @@
     font-size: 14px;
 }
 
-.btn-more-service {
+.btn-more-specialty {
     background: none;
     border: none;
     color: #5f6368;
@@ -345,11 +345,11 @@
     position: relative;
 }
 
-    .btn-more-service:hover {
+    .btn-more-specialty:hover {
         background-color: #e8eaed;
     }
 
-.dropdown-menu-service {
+.dropdown-menu-specialty {
     position: absolute;
     right: 0;
     top: 100%;
@@ -363,11 +363,11 @@
     margin-top: 5px;
 }
 
-    .dropdown-menu-service.show {
+    .dropdown-menu-specialty.show {
         display: block;
     }
 
-.dropdown-item-service {
+.dropdown-item-specialty {
     padding: 12px 16px;
     display: flex;
     align-items: center;
@@ -383,11 +383,11 @@
     cursor: pointer;
 }
 
-    .dropdown-item-service:hover {
+    .dropdown-item-specialty:hover {
         background-color: #f5f5f7;
     }
 
-    .dropdown-item-service.text-danger {
+    .dropdown-item-specialty.text-danger {
         color: #dc3545;
     }
 
@@ -461,7 +461,7 @@
     }
 
 /* Vùng upload file */
-.service-upload-box {
+.specialty-upload-box {
     border: 2px dashed #dadce0;
     border-radius: 8px;
     padding: 2rem;
@@ -471,24 +471,24 @@
     transition: all 0.2s;
 }
 
-    .service-upload-box:hover {
+    .specialty-upload-box:hover {
         background-color: #f1f3f4;
         border-color: #1a73e8;
     }
 
-    .service-upload-box i {
+    .specialty-upload-box i {
         font-size: 2rem;
         color: #1a73e8;
         margin-bottom: 1rem;
     }
 
-    .service-upload-box p {
+    .specialty-upload-box p {
         margin: 0;
         font-size: 14px;
         color: #5f6368;
     }
 
-        .service-upload-box p a {
+        .specialty-upload-box p a {
             color: #1a73e8;
             text-decoration: none;
             font-weight: 500;
@@ -559,7 +559,7 @@
         background-color: #e8eaed;
     }
 
-/* Select2 (dùng cho Employees, Duration) */
+/* Select2 (dùng cho Doctor, Duration) */
 .select2-container--bootstrap-5 .select2-selection {
     border-color: #dadce0 !important;
     border-radius: 6px !important;
@@ -635,7 +635,7 @@
     border: 1px solid #e5e5e7;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    min-width: 220px; /* Giống menu service */
+    min-width: 220px; /* Giống menu specialty */
     z-index: 1000;
     display: none;
     margin-top: 5px;
@@ -670,7 +670,7 @@
     }
 
 /* CSS này để định dạng ảnh xem trước */
-.service-upload-box {
+.specialty-upload-box {
     position: relative; /* Cần thiết để định vị ảnh */
     overflow: hidden; /* Cắt ảnh thừa nếu không vừa */
     cursor: pointer; /* Biến con trỏ thành hình bàn tay */
@@ -680,7 +680,7 @@
     min-height: 180px;
 }
 
-    .service-upload-box .image-preview {
+    .specialty-upload-box .image-preview {
         position: absolute;
         top: 0;
         left: 0;
@@ -691,7 +691,7 @@
     }
 
     /* Ẩn text/icon đi khi đã có ảnh */
-    .service-upload-box.has-image > i,
-    .service-upload-box.has-image > p {
+    .specialty-upload-box.has-image > i,
+    .specialty-upload-box.has-image > p {
         display: none;
     }
