@@ -1,11 +1,11 @@
-﻿@page "/account-settings"
-@model BookingCareManagement.Web.Areas.Doctor.Pages.AccountSettings.AccountModel
+﻿@page "/account-settings/personal-info"
+@model BookingCareManagement.Web.Areas.Doctor.Pages.AccountSettings.PersonalInfoModel
 @{
-    ViewData["Title"] = "Account Settings";
+    ViewData["Title"] = "Personal Info";
 }
 
 @section Styles {
-    <link rel="stylesheet" href="~/css/account.css" />
+    <link rel="stylesheet" href="~/css/account-settings.css" />
 }
 
 <div class="account-settings-wrapper py-5 d-flex justify-content-center">
@@ -28,13 +28,12 @@
                         </button>
                     </li>
                     <li class="nav-item">
-                        <button id="btnChangePassword" class="nav-link w-100 text-start">
+                        <a id="btnChangePassword" href="/Account-settings/change-password" class="nav-link w-100 text-start">
                             <i class="bi bi-lock me-2"></i> Change Password
-                        </button>
+                        </a>
                     </li>
                 </ul>
             </div>
-
             <!-- Content -->
             <div class="account-content flex-grow-1 p-4">
                 <!-- Personal Info -->
@@ -63,32 +62,11 @@
                         <button type="submit" class="btn btn-dark mt-3 px-4">Save Changes</button>
                     </form>
                 </div>
-
-                <!-- Change Password -->
-                <div id="changePasswordSection" class="d-none">
-                    <h4 class="fw-bold mb-4 text-dark">Change Password</h4>
-                    <form>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Current Password<span class="text-danger">*</span></label>
-                            <input type="password" class="form-control" placeholder="Enter current password" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">New Password<span class="text-danger">*</span></label>
-                            <input type="password" class="form-control" placeholder="Enter new password" />
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Confirm Password<span class="text-danger">*</span></label>
-                            <input type="password" class="form-control" placeholder="Re-enter new password" />
-                        </div>
-
-                        <button type="submit" class="btn btn-dark mt-3 px-4">Update Password</button>
-                    </form>
-                </div>
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script src="~/js/account.js"></script>
+    <script src="~/js/account-settings.js"></script>
 }
