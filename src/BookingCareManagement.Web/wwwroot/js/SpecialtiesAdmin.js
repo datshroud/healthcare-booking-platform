@@ -1,7 +1,7 @@
-﻿// Toggle service dropdown
-function toggleServiceDropdown(btn) {
+﻿// Toggle specialty dropdown
+function toggleSpecialtyDropdown(btn) {
     const dropdown = btn.nextElementSibling;
-    const allDropdowns = document.querySelectorAll('.dropdown-menu-service');
+    const allDropdowns = document.querySelectorAll('.dropdown-menu-specialty');
 
     allDropdowns.forEach(d => {
         if (d !== dropdown) {
@@ -16,9 +16,9 @@ function toggleServiceDropdown(btn) {
 
 // Close dropdown when clicking outside
 document.addEventListener('click', function (e) {
-    // Đóng menu DỊCH VỤ nếu click ra ngoài
-    if (!e.target.closest('.btn-more-service')) {
-        document.querySelectorAll('.dropdown-menu-service').forEach(d => {
+    // Đóng menu CHUYÊN KHOA nếu click ra ngoài
+    if (!e.target.closest('.btn-more-specialty')) {
+        document.querySelectorAll('.dropdown-menu-specialty').forEach(d => {
             d.classList.remove('show');
         });
     }
@@ -58,24 +58,24 @@ if (sortMenu && sortLabel) {
 }
 
 // --- BỔ SUNG JS ĐỂ KHỞI TẠO CKEDITOR ---
-let serviceEditorInstance;
-const addServiceModal = document.getElementById('addServiceModal');
+let specialtyEditorInstance;
+const addSpecialtyModal = document.getElementById('addSpecialtyModal');
 
-// === THÊM VÀO: CÁC BIẾN CHO UPLOAD ẢNH DỊCH VỤ ===
-const serviceInput = document.getElementById('serviceImageInput');
-const serviceUploadBox = document.getElementById('serviceUploadBox');
-// Phải kiểm tra serviceUploadBox tồn tại không, nếu không sẽ lỗi
-const originalServiceUploadHTML = serviceUploadBox ? serviceUploadBox.innerHTML : '';
+// === THÊM VÀO: CÁC BIẾN CHO UPLOAD ẢNH CHUYÊN KHOA ===
+const specialtyInput = document.getElementById('specialtyImageInput');
+const specialtyUploadBox = document.getElementById('specialtyUploadBox');
+// Phải kiểm tra specialtyUploadBox tồn tại không, nếu không sẽ lỗi
+const originalSpecialtyUploadHTML = specialtyUploadBox ? specialtyUploadBox.innerHTML : '';
 // === KẾT THÚC THÊM BIẾN ===
 
 
-if (addServiceModal) {
+if (addSpecialtyModal) {
     // Sự kiện "shown.bs.modal" bắn ra KHI modal đã hiển thị xong
-    addServiceModal.addEventListener('shown.bs.modal', () => {
+    addSpecialtyModal.addEventListener('shown.bs.modal', () => {
         // (Code cũ của bạn) Chỉ khởi tạo nếu chưa có
-        if (!serviceEditorInstance) {
+        if (!specialtyEditorInstance) {
             ClassicEditor
-                .create(document.querySelector('#serviceDescriptionEditor'), {
+                .create(document.querySelector('#specialtyDescriptionEditor'), {
                     toolbar: [
                         'bold', 'italic', 'underline', 'strikethrough', '|',
                         'bulletedList', 'numberedList', '|',
@@ -85,7 +85,7 @@ if (addServiceModal) {
                 })
                 .then(editor => {
                     console.log('CKEditor đã được khởi tạo', editor);
-                    serviceEditorInstance = editor; // Lưu lại instance
+                    specialtyEditorInstance = editor; // Lưu lại instance
                 })
                 .catch(error => {
                     console.error('Lỗi khởi tạo CKEditor:', error);
@@ -94,14 +94,14 @@ if (addServiceModal) {
     });
 
     // (Quan trọng) Hủy editor và RESET ẢNH khi modal bị đóng
-    addServiceModal.addEventListener('hidden.bs.modal', () => {
+    addSpecialtyModal.addEventListener('hidden.bs.modal', () => {
 
         // (Code cũ của bạn) Hủy CKEditor
-        if (serviceEditorInstance) {
-            serviceEditorInstance.destroy()
+        if (specialtyEditorInstance) {
+            specialtyEditorInstance.destroy()
                 .then(() => {
                     console.log('CKEditor đã bị hủy');
-                    serviceEditorInstance = null; // Reset
+                    specialtyEditorInstance = null; // Reset
                 })
                 .catch(error => {
                     console.error('Lỗi hủy CKEditor:', error);
@@ -110,12 +110,12 @@ if (addServiceModal) {
 
         // === THÊM VÀO: LOGIC ĐỂ RESET ẢNH UPLOAD ===
         // Chúng ta gộp chung vào 1 listener 'hidden.bs.modal'
-        if (serviceUploadBox) {
-            serviceUploadBox.innerHTML = originalServiceUploadHTML;
-            serviceUploadBox.classList.remove('has-image');
+        if (specialtyUploadBox) {
+            specialtyUploadBox.innerHTML = originalSpecialtyUploadHTML;
+            specialtyUploadBox.classList.remove('has-image');
         }
-        if (serviceInput) {
-            serviceInput.value = null;
+        if (specialtyInput) {
+            specialtyInput.value = null;
         }
         // === KẾT THÚC THÊM LOGIC RESET ===
     });
@@ -123,29 +123,29 @@ if (addServiceModal) {
 
 // === THÊM VÀO: HÀM ĐỂ LẮNG NGHE SỰ KIỆN CHỌN ẢNH ===
 // (Đoạn này nằm độc lập bên ngoài)
-if (serviceInput && serviceUploadBox) {
-    serviceInput.addEventListener('change', function (e) {
+if (specialtyInput && specialtyUploadBox) {
+    specialtyInput.addEventListener('change', function (e) {
         const file = e.target.files[0];
 
         if (file && file.type.startsWith('image/')) {
             const reader = new FileReader();
 
             reader.onload = function (event) {
-                serviceUploadBox.innerHTML = ''; // Xóa icon/text
+                specialtyUploadBox.innerHTML = ''; // Xóa icon/text
                 const img = document.createElement('img');
                 img.src = event.target.result;
                 img.alt = "Xem trước ảnh dịch vụ";
                 img.className = 'image-preview'; // Áp dụng CSS xem trước
 
-                serviceUploadBox.appendChild(img);
-                serviceUploadBox.classList.add('has-image');
+                specialtyUploadBox.appendChild(img);
+                specialtyUploadBox.classList.add('has-image');
             }
 
             reader.readAsDataURL(file);
 
         } else if (file) {
             alert('Vui lòng chỉ chọn tệp hình ảnh.');
-            serviceInput.value = null;
+            specialtyInput.value = null;
         }
     });
 }
@@ -173,10 +173,10 @@ function toggleCategoryDropdown(btn) {
 }
 
 $(document).ready(function () {
-    $('#serviceEmployees').select2({
-        placeholder: "Select employees...",
+    $('#specialtyDoctors').select2({
+        placeholder: "Select doctors...",
         allowClear: true,
         width: '100%',
-        dropdownParent: $('#addServiceModal')
+        dropdownParent: $('#addSpecialtyModal')
     });
 });

@@ -32,6 +32,8 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
                 CookieHelper.SetAuthCookies(Response, resp.AccessToken, resp.ExpiresAt.ToUniversalTime(),
                     resp.RefreshToken, DateTime.UtcNow.AddDays(7));
                 // For API clients return JSON containing frontend redirect URL (avoid redirecting to API GET)
+                // hiển thị thông báo đăng ký thành công (bằng sweetalert) và chuyển hướng đến trang đăng nhập
+
                 return Ok(new { redirect = "/auth/login" });
                 
             } catch (AuthException ex) {
@@ -63,7 +65,12 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
                 CookieHelper.SetAuthCookies(Response, resp.AccessToken, resp.ExpiresAt.ToUniversalTime(),
                     resp.RefreshToken, DateTime.UtcNow.AddDays(7));
                 // Return JSON redirect so fetch-based clients can handle navigation
-                return Ok(new { redirect = "/" });
+                // nếu đăng nhập thành công với admin và doctor thì chuyển sang /dashboard, ngược lại chuyển về /
+                var userRoles = await _userManager.GetRolesAsync(await _userManager.FindByEmailAsync(req.Email));
+                if (userRoles.Contains("Admin") || userRoles.Contains("Doctor"))
+                    return Ok(new { redirect = "/dashboard" });
+                else
+                    return Ok(new { redirect = "/" });
             } catch (AuthException ex) {
                 Console.WriteLine($"Login failed for {req?.Email}: {ex.Message}");
                 return Unauthorized(new ProblemDetails {

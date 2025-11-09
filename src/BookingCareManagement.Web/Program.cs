@@ -4,6 +4,7 @@ using BookingCareManagement.Infrastructure.Identity;
 using BookingCareManagement.Infrastructure.Persistence;
 using BookingCareManagement.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Rewrite;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -56,6 +57,16 @@ builder.Services.AddCors(o =>
 );
 
 var app = builder.Build();
+
+var rewrites = new RewriteOptions()
+    .AddRedirect("^calendar/?$", "dashboard")
+    .AddRedirect("^appointments/?$", "dashboard")
+    .AddRedirect("^doctors/?$", "dashboard")
+    .AddRedirect("^customers/?$", "dashboard")
+    .AddRedirect("^specialties/?$", "dashboard")
+    .AddRedirect("^finance/?$", "dashboard");
+
+app.UseRewriter(rewrites);
 
 
 // Configure the HTTP request pipeline.
