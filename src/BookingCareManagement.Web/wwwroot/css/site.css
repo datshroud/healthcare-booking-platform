@@ -73,7 +73,6 @@ img, video {
 
 audio, canvas, embed, iframe, img, object, svg, video {
     display: block;
-    vertical-align: middle;
 }
 
 .h5, .h6, h5, h6 {
@@ -129,7 +128,6 @@ img, video {
 
 audio, canvas, embed, iframe, img, object, svg, video {
     display: block;
-    vertical-align: middle;
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {

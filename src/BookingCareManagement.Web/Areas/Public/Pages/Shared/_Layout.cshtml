@@ -1,8 +1,14 @@
 @using System.Security.Claims
 @{
     // kiem tra dang nhap
-    var authed = User.Identity.IsAuthenticated;
-    var userName = authed ? User.FindFirst(ClaimTypes.Name)?.Value : "User";
+    var principal = User;
+    var authed = principal?.Identity?.IsAuthenticated ?? false;
+    var userName = authed
+        ? (principal?.FindFirst(ClaimTypes.Name)?.Value ?? principal?.Identity?.Name ?? "User")
+        : "User";
+    var userInitial = !string.IsNullOrWhiteSpace(userName)
+        ? char.ToUpperInvariant(userName[0]).ToString()
+        : "U";
 }
 @* <!DOCTYPE html>
 <html lang="en">
@@ -33,7 +39,7 @@
                 <div class="d-flex align-items-center user-info">
                     @if (authed)
                     {
-                        <div class="user-badge">@userName.ToUpper()[0]</div>
+                        <div class="user-badge">@userInitial</div>
                         <span class="user-name">@userName</span>
                     }
                     else {

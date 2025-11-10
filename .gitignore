@@ -3,4 +3,8 @@ obj/
 .vs/
 *.user
 *.env
+.env
+.env.*
 src/BookingCareManagement.Web/appsettings.Development.json
+.DS_Store
+Thumbs.db

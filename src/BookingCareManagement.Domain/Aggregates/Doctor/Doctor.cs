@@ -5,7 +5,7 @@ namespace BookingCareManagement.Domain.Aggregates.Doctor;
 public class Doctor
 {
     public Guid Id { get; private set; } = Guid.NewGuid();
-    public string FullName { get; private set; }
+    public string FullName { get; private set; } = string.Empty;
     public bool Active { get; private set; } = true;
 
     // many-to-many
