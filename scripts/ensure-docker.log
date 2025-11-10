@@ -1,0 +1,153 @@
+[Mon 11/10/2025 23:39:30.09] ensure-docker.cmd started
+[Mon 11/10/2025 23:39:30.10] Working directory: D:\code\nam3\project\aspdotnet\BookingCareManagement
+[Mon 11/10/2025 23:39:30.18] docker executable: C:\Program Files\Docker\Docker\resources\bin\docker.exe
+[Mon 11/10/2025 23:39:30.18] Checking docker info
+[Mon 11/10/2025 23:39:30.54] docker info exit code 1
+[Mon 11/10/2025 23:39:30.54] docker info failed; dumping captured output
+Client:
+ Version:    28.4.0
+ Context:    desktop-linux
+ Debug Mode: false
+ Plugins:
+  ai: Docker AI Agent - Ask Gordon (Docker Inc.)
+    Version:  v1.9.11
+    Path:     C:\Program Files\Docker\cli-plugins\docker-ai.exe
+  buildx: Docker Buildx (Docker Inc.)
+    Version:  v0.28.0-desktop.1
+    Path:     C:\Program Files\Docker\cli-plugins\docker-buildx.exe
+  cloud: Docker Cloud (Docker Inc.)
+    Version:  v0.4.29
+    Path:     C:\Program Files\Docker\cli-plugins\docker-cloud.exe
+  compose: Docker Compose (Docker Inc.)
+    Version:  v2.39.4-desktop.1
+    Path:     C:\Program Files\Docker\cli-plugins\docker-compose.exe
+  debug: Get a shell into any image or container (Docker Inc.)
+    Version:  0.0.42
+    Path:     C:\Program Files\Docker\cli-plugins\docker-debug.exe
+  desktop: Docker Desktop commands (Docker Inc.)
+    Version:  v0.2.0
+    Path:     C:\Program Files\Docker\cli-plugins\docker-desktop.exe
+  extension: Manages Docker extensions (Docker Inc.)
+    Version:  v0.2.31
+    Path:     C:\Program Files\Docker\cli-plugins\docker-extension.exe
+  init: Creates Docker-related starter files for your project (Docker Inc.)
+    Version:  v1.4.0
+    Path:     C:\Program Files\Docker\cli-plugins\docker-init.exe
+  mcp: Docker MCP Plugin (Docker Inc.)
+    Version:  v0.21.0
+    Path:     C:\Users\ACER\.docker\cli-plugins\docker-mcp.exe
+  model: Docker Model Runner (Docker Inc.)
+    Version:  v0.1.41
+    Path:     C:\Program Files\Docker\cli-plugins\docker-model.exe
+  sbom: View the packaged-based Software Bill Of Materials (SBOM) for an image (Anchore Inc.)
+    Version:  0.6.0
+    Path:     C:\Program Files\Docker\cli-plugins\docker-sbom.exe
+  scout: Docker Scout (Docker Inc.)
+    Version:  v1.18.3
+    Path:     C:\Program Files\Docker\cli-plugins\docker-scout.exe
+
+Server:
+error during connect: Get "http://%2F%2F.%2Fpipe%2FdockerDesktopLinuxEngine/v1.51/info": open //./pipe/dockerDesktopLinuxEngine: The system cannot find the file specified.
+[Mon 11/10/2025 23:39:30.55] Docker daemon not running; attempting to start it
+[Mon 11/10/2025 23:39:30.62] Attempting to start service com.docker.service
+[Mon 11/10/2025 23:39:30.68] Waiting for docker service to report ready
+[Mon 11/10/2025 23:39:33.14] Waiting for Docker daemon (1/90)
+[Mon 11/10/2025 23:39:35.18] Waiting for Docker daemon (2/90)
+[Mon 11/10/2025 23:39:37.14] Waiting for Docker daemon (3/90)
+[Mon 11/10/2025 23:39:39.15] Waiting for Docker daemon (4/90)
+[Mon 11/10/2025 23:39:41.19] Waiting for Docker daemon (5/90)
+[Mon 11/10/2025 23:39:43.15] Waiting for Docker daemon (6/90)
+[Mon 11/10/2025 23:39:45.13] Waiting for Docker daemon (7/90)
+[Mon 11/10/2025 23:39:47.18] Waiting for Docker daemon (8/90)
+[Mon 11/10/2025 23:39:49.15] Waiting for Docker daemon (9/90)
+[Mon 11/10/2025 23:39:51.20] Waiting for Docker daemon (10/90)
+[Mon 11/10/2025 23:39:53.12] Waiting for Docker daemon (11/90)
+[Mon 11/10/2025 23:39:55.18] Waiting for Docker daemon (12/90)
+[Mon 11/10/2025 23:39:57.21] Waiting for Docker daemon (13/90)
+[Mon 11/10/2025 23:39:59.12] Waiting for Docker daemon (14/90)
+[Mon 11/10/2025 23:40:01.21] Waiting for Docker daemon (15/90)
+[Mon 11/10/2025 23:40:03.13] Waiting for Docker daemon (16/90)
+[Mon 11/10/2025 23:40:05.16] Waiting for Docker daemon (17/90)
+[Mon 11/10/2025 23:40:07.19] Waiting for Docker daemon (18/90)
+[Mon 11/10/2025 23:40:09.15] Waiting for Docker daemon (19/90)
+[Mon 11/10/2025 23:40:11.15] Waiting for Docker daemon (20/90)
+[Mon 11/10/2025 23:40:13.16] Waiting for Docker daemon (21/90)
+[Mon 11/10/2025 23:40:15.18] Waiting for Docker daemon (22/90)
+[Mon 11/10/2025 23:40:17.12] Waiting for Docker daemon (23/90)
+[Mon 11/10/2025 23:40:19.22] Waiting for Docker daemon (24/90)
+[Mon 11/10/2025 23:40:21.20] Waiting for Docker daemon (25/90)
+[Mon 11/10/2025 23:40:23.17] Waiting for Docker daemon (26/90)
+[Mon 11/10/2025 23:40:25.16] Waiting for Docker daemon (27/90)
+[Mon 11/10/2025 23:40:27.20] Waiting for Docker daemon (28/90)
+[Mon 11/10/2025 23:40:29.13] Waiting for Docker daemon (29/90)
+[Mon 11/10/2025 23:40:33.19] Waiting for Docker daemon (30/90)
+[Mon 11/10/2025 23:40:35.21] Waiting for Docker daemon (31/90)
+[Mon 11/10/2025 23:40:37.17] Waiting for Docker daemon (32/90)
+[Mon 11/10/2025 23:40:39.18] Waiting for Docker daemon (33/90)
+[Mon 11/10/2025 23:40:41.20] Waiting for Docker daemon (34/90)
+[Mon 11/10/2025 23:40:43.47] Waiting for Docker daemon (35/90)
+[Mon 11/10/2025 23:40:46.19] Waiting for Docker daemon (36/90)
+[Mon 11/10/2025 23:40:48.17] Waiting for Docker daemon (37/90)
+[Mon 11/10/2025 23:40:50.20] Waiting for Docker daemon (38/90)
+[Mon 11/10/2025 23:40:52.15] Waiting for Docker daemon (39/90)
+[Mon 11/10/2025 23:40:54.16] Waiting for Docker daemon (40/90)
+[Mon 11/10/2025 23:40:56.15] Waiting for Docker daemon (41/90)
+[Mon 11/10/2025 23:40:58.21] Waiting for Docker daemon (42/90)
+[Mon 11/10/2025 23:41:00.16] Waiting for Docker daemon (43/90)
+[Mon 11/10/2025 23:41:02.12] Waiting for Docker daemon (44/90)
+[Mon 11/10/2025 23:41:04.19] Waiting for Docker daemon (45/90)
+[Mon 11/10/2025 23:41:06.16] Waiting for Docker daemon (46/90)
+[Mon 11/10/2025 23:41:08.13] Waiting for Docker daemon (47/90)
+[Mon 11/10/2025 23:41:10.16] Waiting for Docker daemon (48/90)
+[Mon 11/10/2025 23:41:12.20] Waiting for Docker daemon (49/90)
+[Mon 11/10/2025 23:41:14.21] Waiting for Docker daemon (50/90)
+[Mon 11/10/2025 23:41:16.19] Waiting for Docker daemon (51/90)
+[Mon 11/10/2025 23:41:18.15] Waiting for Docker daemon (52/90)
+[Mon 11/10/2025 23:41:20.14] Waiting for Docker daemon (53/90)
+[Mon 11/10/2025 23:41:22.19] Waiting for Docker daemon (54/90)
+[Mon 11/10/2025 23:41:24.18] Waiting for Docker daemon (55/90)
+[Mon 11/10/2025 23:41:26.15] Waiting for Docker daemon (56/90)
+[Mon 11/10/2025 23:41:28.20] Waiting for Docker daemon (57/90)
+[Mon 11/10/2025 23:41:30.16] Waiting for Docker daemon (58/90)
+[Mon 11/10/2025 23:41:32.19] Waiting for Docker daemon (59/90)
+[Mon 11/10/2025 23:41:34.15] Waiting for Docker daemon (60/90)
+[Mon 11/10/2025 23:41:36.14] Waiting for Docker daemon (61/90)
+[Mon 11/10/2025 23:41:38.19] Waiting for Docker daemon (62/90)
+[Mon 11/10/2025 23:41:40.22] Waiting for Docker daemon (63/90)
+[Mon 11/10/2025 23:41:42.16] Waiting for Docker daemon (64/90)
+[Mon 11/10/2025 23:41:44.12] Waiting for Docker daemon (65/90)
+[Mon 11/10/2025 23:41:46.14] Waiting for Docker daemon (66/90)
+[Mon 11/10/2025 23:41:48.16] Waiting for Docker daemon (67/90)
+[Mon 11/10/2025 23:41:50.21] Waiting for Docker daemon (68/90)
+[Mon 11/10/2025 23:41:52.15] Waiting for Docker daemon (69/90)
+[Mon 11/10/2025 23:41:54.24] Waiting for Docker daemon (70/90)
+[Mon 11/10/2025 23:41:56.20] Waiting for Docker daemon (71/90)
+[Mon 11/10/2025 23:41:58.22] Waiting for Docker daemon (72/90)
+[Mon 11/10/2025 23:42:00.20] Waiting for Docker daemon (73/90)
+[Mon 11/10/2025 23:42:02.17] Waiting for Docker daemon (74/90)
+[Mon 11/10/2025 23:42:04.14] Waiting for Docker daemon (75/90)
+[Mon 11/10/2025 23:42:06.15] Waiting for Docker daemon (76/90)
+[Mon 11/10/2025 23:42:08.20] Waiting for Docker daemon (77/90)
+[Mon 11/10/2025 23:42:10.16] Waiting for Docker daemon (78/90)
+[Mon 11/10/2025 23:42:12.14] Waiting for Docker daemon (79/90)
+[Mon 11/10/2025 23:42:14.16] Waiting for Docker daemon (80/90)
+[Mon 11/10/2025 23:42:16.19] Waiting for Docker daemon (81/90)
+[Mon 11/10/2025 23:42:18.24] Waiting for Docker daemon (82/90)
+[Mon 11/10/2025 23:42:20.22] Waiting for Docker daemon (83/90)
+[Mon 11/10/2025 23:42:22.23] Waiting for Docker daemon (84/90)
+[Mon 11/10/2025 23:42:24.13] Waiting for Docker daemon (85/90)
+[Mon 11/10/2025 23:42:26.20] Waiting for Docker daemon (86/90)
+[Mon 11/10/2025 23:42:28.12] Waiting for Docker daemon (87/90)
+[Mon 11/10/2025 23:42:30.20] Waiting for Docker daemon (88/90)
+[Mon 11/10/2025 23:42:33.21] Waiting for Docker daemon (89/90)
+[Mon 11/10/2025 23:42:35.17] Waiting for Docker daemon (90/90)
+[Mon 11/10/2025 23:42:35.18] Timed out waiting for Docker daemon
+[Mon 11/10/2025 23:42:35.19] Launching Docker Desktop: C:\Program Files\Docker\Docker\Docker Desktop.exe
+[Mon 11/10/2025 23:42:35.20] Waiting for docker service to report ready
+[Mon 11/10/2025 23:42:37.17] Waiting for Docker daemon (1/90)
+[Mon 11/10/2025 23:42:39.13] Waiting for Docker daemon (2/90)
+[Mon 11/10/2025 23:42:41.16] Waiting for Docker daemon (3/90)
+[Mon 11/10/2025 23:42:43.21] Waiting for Docker daemon (4/90)
+[Mon 11/10/2025 23:43:01.12] Docker daemon is ready
+[Mon 11/10/2025 23:43:01.12] Docker available; continuing startup
+[Mon 11/10/2025 23:43:01.13] Ensuring .env exists

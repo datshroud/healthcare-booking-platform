@@ -2,4 +2,5 @@ bin/
 obj/
 .vs/
 *.user
+*.env
 src/BookingCareManagement.Web/appsettings.Development.json

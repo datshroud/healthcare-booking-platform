@@ -2,6 +2,25 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
+			"label": "Ensure Docker & Migrate",
+			"type": "shell",
+			"windows": {
+				"command": "cmd.exe",
+				"args": ["/c", "scripts\\ensure-docker.cmd"]
+			},
+			"linux": {
+				"command": "bash ${workspaceFolder}/scripts/ensure-docker.sh"
+			},
+			"osx": {
+				"command": "bash ${workspaceFolder}/scripts/ensure-docker.sh"
+			},
+			"presentation": {
+				"reveal": "always",
+				"panel": "shared"
+			},
+			"problemMatcher": []
+		},
+		{
 			"label": "build",
 			"command": "dotnet",
 			"type": "process",

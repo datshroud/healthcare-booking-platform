@@ -1,31 +1,24 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-
-        {
-            "name": ".NET Core Launch (BookingCareManagement.Web)",
-            "type": "coreclr",
-            "request": "launch",
-            // builds the project before launching
-            "preLaunchTask": "build",
-            // program points to the built DLL for the web project
-            "program": "${workspaceFolder}/src/BookingCareManagement.Web/bin/Debug/net9.0/BookingCareManagement.dll",
-            "args": [],
-            "cwd": "${workspaceFolder}/src/BookingCareManagement.Web",
-            "stopAtEntry": false,
-            "env": {
-                "ASPNETCORE_ENVIRONMENT": "Development"
-            },
-            // open the app URL in the default browser when the server is ready
-            "serverReadyAction": {
-                "action": "openExternally",
-                "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
-            },
-            "console": "integratedTerminal",
-            "internalConsoleOptions": "openOnSessionStart"
-        }
-    ]
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": ".NET Core Launch (web)",
+      "type": "coreclr",
+      "request": "launch",
+  "preLaunchTask": "Ensure Docker & Migrate",
+      "program": "${workspaceFolder}/src/BookingCareManagement.Web/bin/Debug/net9.0/BookingCareManagement.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/src/BookingCareManagement.Web",
+      "stopAtEntry": false,
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "\\bNow listening on:\\s+(https?://\\S+)"
+      },
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "openOnSessionStart"
+    }
+  ]
 }
