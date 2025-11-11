@@ -1,6 +1,4 @@
-﻿/* DÁN ĐÈ LÊN FILE: wwwroot/js/calendar.js */
-
-document.addEventListener('DOMContentLoaded', function () {
+﻿document.addEventListener('DOMContentLoaded', function () {
 
     // --- 1. DỮ LIỆU VÀ CẤU HÌNH ---
 
@@ -37,67 +35,119 @@ document.addEventListener('DOMContentLoaded', function () {
             service: 'Therapeutic Exercise',
             customer: 'Alex Smith',
             employee: 'Le Ngoc Bao Chan'
+        },
+        {
+            id: '5',
+            start: '2025-11-11T10:00:00',
+            end: '2025-11-11T11:00:00',
+            service: 'Heat and Ice Therapy',
+            customer: 'Jone Doe',
+            employee: 'Jane Doe'
         }
     ];
 
-    // Định nghĩa màu sắc
-    const colors = {
-        employee: { 'Jane Doe': '#0d6efd', 'Mark Roe': '#198754', 'Sara Smith': '#dc3545', 'Le Ngoc Bao Chan': '#6f42c1', 'default': '#6c757d' },
-        customer: { 'Jone Doe': '#ffc107', 'Alex Smith': '#fd7e14', 'default': '#6c757d' },
-        service: { 'Therapeutic Exercise': '#0dcaf0', 'Therapeutic Stretching': '#fd7e14', 'Heat and Ice Therapy': '#d63384', 'default': '#6c757d' }
+    const serviceColors = {
+        'Therapeutic Exercise': '#0dcaf0',
+        'Therapeutic Stretching': '#fd7e14',
+        'Heat and Ice Therapy': '#d63384',
+        'default': '#6c757d'
     };
 
-    let currentViewBy = 'employee';
+    let currentViewBy = 'employee'; // Mặc định là Employee
     let selectedEmployeeIds = ['all'];
 
     const calendarTitleEl = document.getElementById('calendarTitle');
-    const viewByToggleEl = document.getElementById('viewByDropdownToggle');
+    const viewByToggleEl = document.getElementById('viewByDropdownToggle'); // Nút "View by"
     const employeeFilterBar = document.querySelector('.employee-filter-bar');
-    const viewSwitchers = document.getElementById('viewSwitchers'); // Lấy DOM 1 lần
+    const viewSwitchers = document.getElementById('viewSwitchers');
+
+    // Convert hex -> rgb
+    function hexToRgb(hex) {
+        if (!hex) return { r: 0, g: 0, b: 0 };
+        let clean = hex.replace('#', '');
+        if (clean.length === 3) {
+            clean = clean.split('').map(c => c + c).join('');
+        }
+        const bigint = parseInt(clean, 16);
+        return {
+            r: (bigint >> 16) & 255,
+            g: (bigint >> 8) & 255,
+            b: bigint & 255
+        };
+    }
+
+    function rgbToHex(r, g, b) {
+        const clamp = v => Math.max(0, Math.min(255, Math.round(v)));
+        return '#' + [clamp(r), clamp(g), clamp(b)].map(c => c.toString(16).padStart(2, '0')).join('');
+    }
+
+    function lighten(hex, percent) {
+        const { r, g, b } = hexToRgb(hex);
+        const nr = Math.round(r + (255 - r) * (percent / 100));
+        const ng = Math.round(g + (255 - g) * (percent / 100));
+        const nb = Math.round(b + (255 - b) * (percent / 100));
+        return rgbToHex(nr, ng, nb);
+    }
+
+    function darken(hex, percent) {
+        const { r, g, b } = hexToRgb(hex);
+        const nr = Math.round(r * (1 - percent / 100));
+        const ng = Math.round(g * (1 - percent / 100));
+        const nb = Math.round(b * (1 - percent / 100));
+        return rgbToHex(nr, ng, nb);
+    }
+
+    function capitalizeFirst(s) {
+        if (!s) return s;
+        return s.charAt(0).toUpperCase() + s.slice(1);
+    }
 
     /**
      * Tải lại và hiển thị sự kiện
      */
     function refreshCalendarEvents() {
+        // 1. Lọc theo Nhân viên
         let filteredEvents = rawEvents;
         if (!selectedEmployeeIds.includes('all') && selectedEmployeeIds.length > 0) {
             filteredEvents = rawEvents.filter(event => selectedEmployeeIds.includes(event.employee));
         }
 
-        const processedEvents = processEvents(currentViewBy, filteredEvents);
+        // 2. Xử lý "View By" (đổi tiêu đề) và Màu (luôn theo service)
+        const processedEvents = processEvents(filteredEvents);
 
+        // 3. Cập nhật lịch
         calendar.removeAllEvents();
         calendar.addEventSource(processedEvents);
     }
 
-    /**
-     * Xử lý "View By" (đổi màu và tiêu đề)
-     */
-    function processEvents(viewBy, eventsToProcess) {
+    function processEvents(eventsToProcess) {
         return eventsToProcess.map(event => {
             let title = '';
-            let color = '';
-            let colorMap = {};
 
-            if (viewBy === 'employee') {
+            // 1. Title thay đổi theo "currentViewBy"
+            if (currentViewBy === 'employee') {
                 title = event.employee;
-                colorMap = colors.employee;
-                color = colorMap[event.employee] || colorMap['default'];
-            } else if (viewBy === 'customer') {
+            } else if (currentViewBy === 'customer') {
                 title = event.customer;
-                colorMap = colors.customer;
-                color = colorMap[event.customer] || colorMap['default'];
             } else { // service
                 title = event.service;
-                colorMap = colors.service;
-                color = colorMap[event.service] || colorMap['default'];
             }
 
+            // 2. Màu sắc LUÔN LUÔN dựa trên "service"
+            const base = serviceColors[event.service] || serviceColors['default'];
+
+            const bgLight = lighten(base, 60); 
+            const leftBorder = darken(base, 25);
+
             return {
-                ...event,
-                title: title,
-                backgroundColor: color,
-                borderColor: color
+                ...event, // Giữ lại start, end, id...
+                title: title, // Tiêu đề động
+                backgroundColor: bgLight,
+                borderColor: leftBorder,
+                textColor: '#000000',
+                fcBg: bgLight,
+                fcLeft: leftBorder,
+                fcText: '#000000'
             };
         });
     }
@@ -109,25 +159,33 @@ document.addEventListener('DOMContentLoaded', function () {
         themeSystem: 'bootstrap5',
         headerToolbar: false,
         initialView: 'dayGridMonth',
-        initialDate: '2025-11-01',
+        initialDate: '2025-11-11',
         height: 800,
         editable: true,
-
         allDaySlot: false,
-
+        firstDay: 1, // Bắt đầu từ Thứ 2
         navLinks: true,
         navLinkDayClick: 'timeGridDay',
+        nowIndicator: true,
 
-        events: processEvents(currentViewBy, rawEvents),
+        // FIX: THÊM NGÔN NGỮ TIẾNG VIỆT
+        locale: 'vi',
+        buttonText: {
+            today: 'Hôm nay',
+            month: 'Tháng',
+            week: 'Tuần',
+            day: 'Ngày'
+        },
 
+        events: processEvents(rawEvents), // Tải lần đầu (tất cả)
+
+        // Cập nhật tiêu đề VÀ nút active
         datesSet: function (dateInfo) {
             if (calendarTitleEl) {
-                calendarTitleEl.innerText = dateInfo.view.title;
+                calendarTitleEl.innerText = capitalizeFirst(dateInfo.view.title);
             }
-
-            // Cập nhật nút Month/Week/Day
             if (viewSwitchers) {
-                const currentView = dateInfo.view.type; // e.g., "timeGridDay"
+                const currentView = dateInfo.view.type;
                 viewSwitchers.querySelectorAll('button').forEach(btn => {
                     const btnView = btn.dataset.view;
                     btn.classList.remove('btn-primary', 'btn-outline-secondary');
@@ -137,6 +195,74 @@ document.addEventListener('DOMContentLoaded', function () {
         },
 
         eventClick: function (info) {
+            // (FullCalendar tự xử lý popover)
+        },
+        eventDidMount: function (arg) {
+            const fcBg = (arg.event.extendedProps && arg.event.extendedProps.fcBg) || arg.event.backgroundColor || '#f8f9fa';
+            const fcLeft = (arg.event.extendedProps && arg.event.extendedProps.fcLeft) || (arg.event.borderColor || '#6c757d');
+            const fcText = (arg.event.extendedProps && arg.event.extendedProps.fcText) || arg.event.textColor || '#000000';
+
+            try {
+                arg.el.style.setProperty('background-color', fcBg, 'important');
+                arg.el.style.setProperty('color', fcText, 'important');
+                arg.el.style.setProperty('border-left', `4px solid ${fcLeft}`, 'important');
+                arg.el.style.setProperty('border-radius', '6px', 'important');
+                arg.el.style.setProperty('padding-left', '6px', 'important');
+
+                const titleEl = arg.el.querySelector('.fc-event-main-text');
+                if (titleEl) titleEl.style.setProperty('color', fcText, 'important');
+
+                const timeEl = arg.el.querySelector('.fc-event-time-text, .fc-event-time');
+                if (timeEl) {
+                    const txt = timeEl.textContent || '';
+                    if (txt.length > 0 && /[a-zA-ZÀ-ỹ]/.test(txt.charAt(0))) {
+                        timeEl.textContent = txt.charAt(0).toUpperCase() + txt.slice(1);
+                    }
+                    timeEl.style.setProperty('color', fcText, 'important');
+                }
+            } catch (e) {
+            }
+        },
+
+        // Bỏ giờ ở chế độ Month
+        eventContent: function (arg) {
+            let content = { html: '' };
+            let title = arg.event.title;
+
+            if (arg.view.type === 'dayGridMonth') {
+                // Chế độ Month: Chỉ hiển thị tiêu đề
+                content.html = `<div class="fc-event-main-text">${title}</div>`;
+            } else {
+                // Chế độ Week/Day: Hiển thị tiêu đề VÀ giờ
+                let timeText = arg.timeText;
+                if (timeText && timeText.length > 0 && /[a-zA-ZÀ-ỹ]/.test(timeText.charAt(0))) {
+                    timeText = timeText.charAt(0).toUpperCase() + timeText.slice(1);
+                }
+                content.html = `
+                    <div class="fc-event-main-text">${title}</div>
+                    <div class="fc-event-time-text">${timeText}</div>
+                `;
+            }
+            return content;
+        },
+
+        // Thêm nút "+" vào chế độ Month
+        dayCellDidMount: function (arg) {
+            if (arg.view.type === 'dayGridMonth') {
+                let addIconEl = document.createElement('div');
+                addIconEl.className = 'day-add-icon';
+                addIconEl.innerHTML = '<i class="fa-solid fa-plus"></i>';
+                addIconEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // FIX: DỊCH CONSOLE.LOG
+                    console.log('Thêm cuộc hẹn vào ngày', arg.date);
+                    // (Mở modal/form tại đây)
+                });
+                const dayTopEl = arg.el.querySelector('.fc-daygrid-day-top');
+                if (dayTopEl) {
+                    dayTopEl.prepend(addIconEl);
+                }
+            }
         }
     });
 
@@ -150,7 +276,6 @@ document.addEventListener('DOMContentLoaded', function () {
     document.getElementById('btnToday')?.addEventListener('click', () => calendar.today());
 
     // Nút đổi chế độ xem (Month/Week/Day)
-    // (Callback 'datesSet' ở trên sẽ tự xử lý việc đổi màu active)
     viewSwitchers?.addEventListener('click', (e) => {
         if (e.target.matches('button')) {
             const view = e.target.dataset.view;
@@ -165,20 +290,24 @@ document.addEventListener('DOMContentLoaded', function () {
         e.preventDefault();
         if (e.target.matches('a.dropdown-item')) {
             const newValue = e.target.dataset.value;
-            const newText = e.target.innerHTML;
+            const newText = e.target.innerHTML; // Lấy cả icon và chữ
 
             if (newValue !== currentViewBy) {
                 currentViewBy = newValue;
+
+                // Cập nhật text của nút dropdown
                 if (viewByToggleEl) {
                     viewByToggleEl.innerHTML = newText;
                 }
-                refreshCalendarEvents(); // Tải lại sự kiện
+
+                // Tải lại sự kiện với tiêu đề mới (màu giữ nguyên)
+                refreshCalendarEvents();
             }
         }
     });
 
     // --- 4. LOGIC LỌC NHÂN VIÊN ---
-    employeeFilterBar.addEventListener('click', (e) => {
+    employeeFilterBar?.addEventListener('click', (e) => {
         const clickedButton = e.target.closest('.employee-filter-btn');
         if (!clickedButton) return;
 
