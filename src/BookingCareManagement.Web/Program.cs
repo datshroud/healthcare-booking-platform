@@ -1,7 +1,10 @@
-using System.Security.Claims;
-using BookingCareManagement.Application.Features.Auth.Commands;
+﻿using BookingCareManagement.Application.Features.Auth.Commands;
+using BookingCareManagement.Application.Features.Doctors.Commands;
+using BookingCareManagement.Application.Features.Doctors.Queries;
+using BookingCareManagement.Domain.Abstractions;
 using BookingCareManagement.Infrastructure.Identity;
 using BookingCareManagement.Infrastructure.Persistence;
+using BookingCareManagement.Infrastructure.Persistence.Repositories;
 using BookingCareManagement.Infrastructure.Persistence.Seed;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Rewrite;
@@ -9,6 +12,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,8 +60,25 @@ builder.Services.AddCors(o =>
     )
 );
 
+// ... các services.Add... khác
+
+// Đăng ký Repository
+builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
+
+// Đăng ký Handler
+builder.Services.AddScoped<GetAllDoctorsQueryHandler>();
+
+builder.Services.AddScoped<ISpecialtyRepository, SpecialtyRepository>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<CreateDoctorCommandHandler>(); // Đăng ký handler mới
+
+builder.Services.AddScoped<GetDoctorByIdQueryHandler>();
+builder.Services.AddScoped<UpdateDoctorCommandHandler>();
+builder.Services.AddScoped<DeleteDoctorCommandHandler>();
+
 var app = builder.Build();
 
+/* BẠN NÊN XÓA HOẶC COMMENT KHỐI NÀY LẠI
 var rewrites = new RewriteOptions()
     .AddRedirect("^calendar/?$", "dashboard")
     .AddRedirect("^appointments/?$", "dashboard")
@@ -67,6 +88,7 @@ var rewrites = new RewriteOptions()
     .AddRedirect("^finance/?$", "dashboard");
 
 app.UseRewriter(rewrites);
+*/
 
 
 // Configure the HTTP request pipeline.

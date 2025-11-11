@@ -44,88 +44,7 @@
                     <th></th>
                 </tr>
             </thead>
-            <tbody>
-                <tr>
-                    <td><input type="checkbox"></td>
-                    <td>
-                        <div class="employee-name-cell">
-                            <div class="employee-avatar avatar-teal">D</div>
-                            <div class="employee-name">
-                                <span>.Đặng Minh Bảo</span>
-                                <i class="fas fa-check-circle verified-badge"></i>
-                            </div>
-                        </div>
-                    </td>
-                    <td>6451071002@st.utc2.edu.vn</td>
-                    <td></td>
-                    <td><span class="status-badge">Có sẵn</span></td>
-                    <td>
-                        <div class="action-menu">
-                            <button class="btn-action" onclick="toggleDropdown(this)">
-                                <i class="fas fa-ellipsis-h"></i>
-                            </button>
-                            <div class="dropdown-menu-custom">
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-edit"></i> Chỉnh sửa nhân viên
-                                </button>
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-unlock"></i> Kích hoạt hồ sơ
-                                </button>
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-share-alt"></i> Chia sẻ Đặt chỗ
-                                </button>
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-ban"></i> Vô hiệu hóa nhân viên
-                                </button>
-                                <button class="dropdown-item-custom text-danger">
-                                    <i class="fas fa-trash"></i> Xóa nhân viên
-                                </button>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-
-
-
-                <tr>
-                    <td><input type="checkbox"></td>
-                    <td>
-                        <div class="employee-name-cell">
-                            <img src="https://ui-avatars.com/api/?name=Jane+Doe&background=4a90e2&color=fff&size=40&rounded=true" class="employee-avatar" alt="Jane Doe">
-                            <div class="employee-name">
-                                <span>Jane Doe</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>employee@trafft.com</td>
-                    <td></td>
-                    <td><span class="status-badge">Có sẵn</span></td>
-                    <td>
-                        <div class="action-menu">
-                            <button class="btn-action" onclick="toggleDropdown(this)">
-                                <i class="fas fa-ellipsis-h"></i>
-                            </button>
-                            <div class="dropdown-menu-custom">
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-edit"></i> Chỉnh sửa nhân viên
-                                </button>
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-unlock"></i> Kích hoạt hồ sơ
-                                </button>
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-share-alt"></i> Chia sẻ Đặt chỗ
-                                </button>
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-ban"></i> Vô hiệu hóa nhân viên
-                                </button>
-                                <button class="dropdown-item-custom text-danger">
-                                    <i class="fas fa-trash"></i> Xóa nhân viên
-                                </button>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-
+            <tbody id="doctor-table-body">
             </tbody>
         </table>
     </div>
@@ -198,7 +117,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light-custom" data-bs-dismiss="modal">Hủy bỏ</button>
-                <button type="button" class="btn btn-primary-custom">Thêm nhân viên</button>
+                <button type="button" class="btn btn-primary-custom" id="btn-add-employee-submit">Thêm nhân viên</button>
             </div>
         </div>
     </div>
