@@ -1,0 +1,107 @@
+﻿/* DÁN VÀO FILE: wwwroot/css/calendar.css */
+
+/* Container cho lịch. */
+#calendar {
+    min-height: 800px;
+}
+
+/* Tùy chỉnh Header của FullCalendar */
+.fc .fc-button {
+    text-transform: capitalize;
+}
+
+/* Tùy chỉnh sự kiện (event) */
+.fc-event {
+    border: 1px solid rgba(0,0,0,0.1) !important;
+    padding: 2px 5px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+    .fc-event .fc-event-time {
+        font-weight: 700;
+    }
+
+/* Tùy chỉnh Popover khi click vào sự kiện */
+.fc-popover {
+    border-radius: 10px !important;
+    border: 0 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+.fc-popover-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: 600;
+}
+
+
+/* FIX: CSS CHO BỘ LỌC NHÂN VIÊN MỚI
+*/
+.employee-filter-bar {
+    overflow-x: auto; /* Cho phép cuộn ngang nếu có quá nhiều NV */
+    -ms-overflow-style: none; /* Ẩn scrollbar (IE/Edge) */
+    scrollbar-width: none; /* Ẩn scrollbar (Firefox) */
+}
+    /* Ẩn scrollbar (Chrome/Safari) */
+    .employee-filter-bar::-webkit-scrollbar {
+        display: none;
+    }
+
+.employee-filter-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 90px;
+    height: 70px;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #555;
+    background-color: #f8f9fa;
+    transition: all 0.2s ease;
+}
+
+    .employee-filter-btn .avatar-img {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        margin-bottom: 5px;
+    }
+
+    .employee-filter-btn .avatar-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        margin-bottom: 5px;
+        background-color: #e9ecef;
+        color: #495057;
+        font-size: 1rem;
+    }
+
+    .employee-filter-btn .employee-name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+    }
+
+    .employee-filter-btn:hover {
+        background-color: #e9ecef;
+    }
+
+    .employee-filter-btn.active {
+        border-color: #0d6efd;
+        background-color: #fff;
+        color: #0d6efd;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+        .employee-filter-btn.active .avatar-icon {
+            background-color: #0d6efd;
+            color: #fff;
+        }
