@@ -1,11 +1,3 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+namespace BookingCareManagement.Web.Areas.Admin.Controllers;
 
-namespace BookingCareManagement.Areas.Admin.Controllers
-{
-    [Route("api/[controller]")]
-    [ApiController]
-    public class DoctorController : ControllerBase
-    {
-    }
-}
+// Legacy placeholder: doctor endpoints have moved to DoctorsController.

@@ -1,3 +1,5 @@
+using System.IO;
+using System.Reflection;
 using System.Security.Claims;
 using BookingCareManagement.Application.Features.Auth.Commands;
 using BookingCareManagement.Infrastructure.Identity;
@@ -37,7 +39,17 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+
+builder.Services.AddSwaggerGen(options =>
+{
+    var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+    if (File.Exists(xmlPath))
+    {
+        options.IncludeXmlComments(xmlPath, includeControllerXmlComments: true);
+    }
+});
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
