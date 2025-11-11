@@ -4,3 +4,4 @@ obj/
 *.user
 *.env
 src/BookingCareManagement.Web/appsettings.Development.json
+src/BookingCareManagement.Web/wwwroot/uploads/

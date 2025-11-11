@@ -1,6 +1,35 @@
-﻿@{
-    var authed = User?.Identity?.IsAuthenticated ?? false;
-    var userName = User?.Identity?.Name ?? "Admin User";
+﻿@using Microsoft.AspNetCore.Identity
+@using BookingCareManagement.Domain.Aggregates.User
+@inject UserManager<AppUser> UserManager
+@{
+    var userPrincipal = User;
+    var authed = userPrincipal?.Identity?.IsAuthenticated ?? false;
+    string displayName = userPrincipal?.Identity?.Name ?? "Admin User";
+    string? resolvedAvatarUrl = null;
+
+    if (authed && userPrincipal is not null)
+    {
+        var currentUser = await UserManager.GetUserAsync(userPrincipal);
+        if (!string.IsNullOrWhiteSpace(currentUser?.FullName))
+        {
+            displayName = currentUser.FullName!;
+        }
+        else if (!string.IsNullOrWhiteSpace(currentUser?.Email))
+        {
+            displayName = currentUser!.Email!;
+        }
+
+        var avatarUrl = currentUser?.AvatarUrl;
+        if (!string.IsNullOrWhiteSpace(avatarUrl))
+        {
+            resolvedAvatarUrl = avatarUrl!.StartsWith("http", System.StringComparison.OrdinalIgnoreCase)
+                ? avatarUrl
+                : Url.Content(avatarUrl.StartsWith("~") ? avatarUrl : $"~/{avatarUrl.TrimStart('/')}");
+        }
+    }
+
+    displayName = string.IsNullOrWhiteSpace(displayName) ? "Admin User" : displayName.Trim();
+    var fallbackInitial = displayName[0].ToString().ToUpperInvariant();
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -100,11 +129,15 @@
 
             <div class="dropdown account-dropdown">
                 <button class="btn btn-light d-flex align-items-center" data-bs-toggle="dropdown" id="accountDropdown">
-                    <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center"
-                         style="width:36px; height:36px;">
-                        @userName.ToUpper()[0]
-                    </div>
-                    <span class="ms-2 fw-semibold text-dark">@userName</span>
+                    @if (!string.IsNullOrWhiteSpace(resolvedAvatarUrl))
+                    {
+                        <img class="user-avatar me-2" src="@resolvedAvatarUrl" alt="@displayName avatar" />
+                    }
+                    else
+                    {
+                        <span class="user-avatar user-avatar--fallback me-2">@fallbackInitial</span>
+                    }
+                    <span class="ms-2 fw-semibold text-dark">@displayName</span>
                     <i class="bi bi-caret-down-fill ms-1 small"></i>
                 </button>
                 <div class="dropdown-menu dropdown-menu-start shadow p-2">

@@ -508,9 +508,15 @@ body.page-login {
 .user-avatar {
     width: 32px;
     height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.user-avatar--fallback {
     background: #007bff;
     color: white;
-    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;

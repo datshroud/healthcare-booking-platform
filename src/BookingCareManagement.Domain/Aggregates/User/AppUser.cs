@@ -16,6 +16,7 @@ namespace BookingCareManagement.Domain.Aggregates.User
         public string? LastName { get; set; }
         // optional date of birth
         public DateTime? DateOfBirth { get; set; }
+        public string? AvatarUrl { get; set; }
         public List<RefreshToken> RefreshTokens { get; set; } = new();
     }
 }

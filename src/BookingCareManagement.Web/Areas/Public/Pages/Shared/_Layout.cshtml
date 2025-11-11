@@ -1,8 +1,34 @@
 @using System.Security.Claims
+@using Microsoft.AspNetCore.Identity
+@using BookingCareManagement.Domain.Aggregates.User
+@inject UserManager<AppUser> UserManager
 @{
-    // kiem tra dang nhap
-    var authed = User.Identity.IsAuthenticated;
-    var userName = authed ? User.FindFirst(ClaimTypes.Name)?.Value : "User";
+    var userPrincipal = User;
+    var authed = userPrincipal?.Identity?.IsAuthenticated ?? false;
+    AppUser? currentUser = null;
+    string displayName = "User";
+    string? resolvedAvatarUrl = null;
+
+    if (authed && userPrincipal is not null)
+    {
+        currentUser = await UserManager.GetUserAsync(userPrincipal);
+        var claimedName = userPrincipal.FindFirst(ClaimTypes.Name)?.Value;
+        var candidateName = string.IsNullOrWhiteSpace(currentUser?.FullName) ? claimedName : currentUser?.FullName;
+        displayName = string.IsNullOrWhiteSpace(candidateName)
+            ? (currentUser?.Email ?? "User")
+            : candidateName!;
+
+        var avatarUrl = currentUser?.AvatarUrl;
+        if (!string.IsNullOrWhiteSpace(avatarUrl))
+        {
+            resolvedAvatarUrl = avatarUrl!.StartsWith("http", System.StringComparison.OrdinalIgnoreCase)
+                ? avatarUrl
+                : Url.Content(avatarUrl.StartsWith("~") ? avatarUrl : $"~/{avatarUrl.TrimStart('/')}");
+        }
+    }
+
+    displayName = displayName.Trim().Length == 0 ? "User" : displayName.Trim();
+    var fallbackInitial = displayName[0].ToString().ToUpperInvariant();
 }
 @* <!DOCTYPE html>
 <html lang="en">
@@ -91,10 +117,15 @@
                     <div class="dropdown">
                         <button class="btn account-btn btn-outline-light d-flex align-items-center user-info" id="userDropdown"
                                 data-bs-toggle="dropdown" aria-expanded="false" style="border: none;">
-                            
-                            <div class="user-avatar me-2">@userName.ToUpper()[0]</div>
-                            <span class="fw-semibold user-name">@userName</span>
-                            
+                            @if (!string.IsNullOrWhiteSpace(resolvedAvatarUrl))
+                            {
+                                <img class="user-avatar me-2" src="@resolvedAvatarUrl" alt="@displayName avatar" />
+                            }
+                            else
+                            {
+                                <span class="user-avatar user-avatar--fallback me-2">@fallbackInitial</span>
+                            }
+                            <span class="fw-semibold user-name">@displayName</span>
                             <i class="bi bi-caret-down-fill ms-2"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">

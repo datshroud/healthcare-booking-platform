@@ -103,14 +103,20 @@
 
 /* USER AVATAR */
 .user-avatar {
-    background-color: #17376b;
-    color: #fff;
     width: 38px;
     height: 38px;
+    border-radius: 50%;
+    object-fit: cover;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.user-avatar--fallback {
+    background-color: #17376b;
+    color: #fff;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 50%;
     font-weight: 600;
 }
 
