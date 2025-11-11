@@ -1,5 +1,5 @@
-using System;
-using BookingCareManagement.Domain.Aggregates.Doctor;
+﻿using BookingCareManagement.Domain.Aggregates.Doctor;
+using BookingCareManagement.Domain.Aggregates.User; // Cần cho AppUser
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -11,10 +11,20 @@ public class DoctorConfiguration : IEntityTypeConfiguration<Doctor>
     {
         e.ToTable("Doctors");
         e.HasKey(x => x.Id);
-        e.Property(x => x.FullName).IsRequired().HasMaxLength(200);
 
-        e.HasMany<Specialty>() // many-to-many Doctor <-> Specialty
-            .WithMany()
-            .UsingEntity(j => j.ToTable("DoctorSpecialties"));
+        // 1. Xóa cấu hình cho FullName
+        // e.Property(x => x.FullName)... (Dòng cũ đã bị xóa)
+
+        // 2. Cấu hình quan hệ 1-1 với AppUser
+        // Bảng Doctor sẽ có cột AppUserId
+        e.HasOne(d => d.AppUser)
+         .WithOne() // Không cần thuộc tính điều hướng ngược lại từ AppUser
+         .HasForeignKey<Doctor>(d => d.AppUserId)
+         .OnDelete(DeleteBehavior.Cascade); // Tùy chọn: Nếu xóa AppUser thì xóa Doctor
+
+        // 3. Cấu hình quan hệ N-N với Specialty (giữ nguyên)
+        e.HasMany(d => d.Specialties)
+         .WithMany()
+         .UsingEntity(j => j.ToTable("DoctorSpecialties"));
     }
 }

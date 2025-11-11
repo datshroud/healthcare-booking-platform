@@ -1,11 +1,23 @@
 ﻿document.addEventListener("DOMContentLoaded", function () {
-    // Sidebar active
-    document.querySelectorAll('.sidebar a').forEach(link => {
-        link.addEventListener('click', function () {
-            document.querySelectorAll('.sidebar a').forEach(a => a.classList.remove('active'));
-            this.classList.add('active');
-        });
+    const currentPath = window.location.pathname.toLowerCase();
+    const sidebarLinks = document.querySelectorAll('.sidebar a');
+
+    sidebarLinks.forEach(link => {
+        const linkPath = link.getAttribute('href').toLowerCase();
+
+        // Nếu đường dẫn trang hiện tại BẮT ĐẦU BẰNG href của link
+        // (ví dụ: /doctors/edit/123 cũng sẽ highlight link /doctors)
+        if (currentPath.startsWith(linkPath) && linkPath !== "/") {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
     });
+
+    // Xử lý riêng cho link Dashboard (vì /doctors cũng bắt đầu bằng /)
+    if (currentPath === "/dashboard" || currentPath === "/") {
+        document.querySelector('.sidebar a[href="/dashboard"]').classList.add('active');
+    }
 
 // Sao chép clipboard
 const copyBtn = document.querySelector('.dropdown-menu button.btn-outline-secondary');

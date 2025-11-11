@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BookingCareManagement.Domain.Aggregates.User;
 using BookingCareManagement.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -36,15 +37,19 @@ public sealed class DoctorsController : ControllerBase
         var doctors = await _dbContext.Doctors
             .AsNoTracking()
             .Include(d => d.Specialties)
+            .Include(d => d.AppUser)
             .Where(d => d.Active)
-            .Select(d => new DoctorSummaryResponse(
-                d.Id,
-                d.FullName,
-                d.Specialties.Select(s => s.Name).ToArray()))
-            .OrderBy(d => d.FullName)
             .ToListAsync(cancellationToken);
 
-        return Ok(doctors);
+        var response = doctors
+            .Select(d => new DoctorSummaryResponse(
+                d.Id,
+                ResolveDisplayName(d.AppUser),
+                d.Specialties.Select(s => s.Name).ToArray()))
+            .OrderBy(d => d.FullName)
+            .ToList();
+
+        return Ok(response);
     }
 
     /// <summary>
@@ -58,11 +63,8 @@ public sealed class DoctorsController : ControllerBase
         var doctor = await _dbContext.Doctors
             .AsNoTracking()
             .Include(d => d.Specialties)
+            .Include(d => d.AppUser)
             .Where(d => d.Id == id && d.Active)
-            .Select(d => new DoctorDetailsResponse(
-                d.Id,
-                d.FullName,
-                d.Specialties.Select(s => new DoctorSpecialtyResponse(s.Id, s.Name)).ToArray()))
             .FirstOrDefaultAsync(cancellationToken);
 
         if (doctor is null)
@@ -70,7 +72,12 @@ public sealed class DoctorsController : ControllerBase
             return NotFound();
         }
 
-        return Ok(doctor);
+        var response = new DoctorDetailsResponse(
+            doctor.Id,
+            ResolveDisplayName(doctor.AppUser),
+            doctor.Specialties.Select(s => new DoctorSpecialtyResponse(s.Id, s.Name)).ToArray());
+
+        return Ok(response);
     }
 
     public sealed record DoctorSummaryResponse(Guid Id, string FullName, IReadOnlyCollection<string> Specialties);
@@ -78,4 +85,28 @@ public sealed class DoctorsController : ControllerBase
     public sealed record DoctorDetailsResponse(Guid Id, string FullName, IReadOnlyCollection<DoctorSpecialtyResponse> Specialties);
 
     public sealed record DoctorSpecialtyResponse(Guid Id, string Name);
+
+    private static string ResolveDisplayName(AppUser? user)
+    {
+        if (user is null)
+        {
+            return "Unknown";
+        }
+
+        if (!string.IsNullOrWhiteSpace(user.FullName))
+        {
+            return user.FullName;
+        }
+
+        var first = user.FirstName?.Trim() ?? string.Empty;
+        var last = user.LastName?.Trim() ?? string.Empty;
+        var combined = string.Join(' ', new[] { first, last }.Where(s => !string.IsNullOrWhiteSpace(s)));
+
+        if (!string.IsNullOrWhiteSpace(combined))
+        {
+            return combined;
+        }
+
+        return user.Email ?? user.UserName ?? "Unknown";
+    }
 }

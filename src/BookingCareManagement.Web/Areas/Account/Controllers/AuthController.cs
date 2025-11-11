@@ -124,10 +124,11 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
         }
 
         [HttpGet("google/start")]
+        [HttpGet("~/api/auth/google/start")]
         public IActionResult GoogleStart([FromQuery] string? returnUrl = "/")
         {
             // Use configured RedirectUri so it exactly matches the URI registered in Google Console
-            var callback = _google.RedirectUri?.TrimEnd('/') ?? $"{Request.Scheme}://{Request.Host}/api/account/auth/google/callback";
+            var callback = _google.RedirectUri?.TrimEnd('/') ?? $"{Request.Scheme}://{Request.Host}/api/auth/google/callback";
 
             // tao state + PKCE
             var state = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
@@ -160,7 +161,8 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
             return Redirect(authUrl);
         }
 
-        [HttpGet("google/callback")]
+    [HttpGet("google/callback")]
+    [HttpGet("~/api/auth/google/callback")]
         public async Task<IActionResult> GoogleCallback([FromQuery] string code, [FromQuery] string state)
         {
             var savedState = Request.Cookies["g_state"];

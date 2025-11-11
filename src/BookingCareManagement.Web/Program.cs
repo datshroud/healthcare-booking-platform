@@ -1,16 +1,11 @@
 using System.IO;
 using System.Reflection;
-using System.Security.Claims;
-using BookingCareManagement.Application.Features.Auth.Commands;
 using BookingCareManagement.Infrastructure.Identity;
 using BookingCareManagement.Infrastructure.Persistence;
 using BookingCareManagement.Infrastructure.Persistence.Seed;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Rewrite;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
-using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -53,10 +48,6 @@ builder.Services.AddSwaggerGen(options =>
 
 builder.Services.AddInfrastructure(builder.Configuration);
 
-builder.Services.AddScoped<RegisterHandler>();
-builder.Services.AddScoped<LoginHandler>();
-builder.Services.AddScoped<RefreshTokenHandler>();
-
 builder.Services.Configure<GoogleOAuthSettings>(builder.Configuration.GetSection("GoogleOAuth"));
 
 builder.Services.AddCors(o => 
@@ -68,8 +59,11 @@ builder.Services.AddCors(o =>
     )
 );
 
+// ... các services.Add... khác
+
 var app = builder.Build();
 
+/* BẠN NÊN XÓA HOẶC COMMENT KHỐI NÀY LẠI
 var rewrites = new RewriteOptions()
     .AddRedirect("^calendar/?$", "dashboard")
     .AddRedirect("^appointments/?$", "dashboard")
@@ -79,6 +73,7 @@ var rewrites = new RewriteOptions()
     .AddRedirect("^finance/?$", "dashboard");
 
 app.UseRewriter(rewrites);
+*/
 
 
 // Configure the HTTP request pipeline.

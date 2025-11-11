@@ -1,7 +1,7 @@
 ﻿@page "/doctors"
 @model BookingCareManagement.Web.Areas.Admin.Pages.Doctors.DoctorsModel
 @{
-    ViewData["Title"] = "Doctors";
+    ViewData["Title"] = "Bác sĩ";
 }
 
 @section Styles {
@@ -11,13 +11,13 @@
 
 <div class="main-container">
     <div class="header">
-        <h1>Nhân viên (2)</h1>
+        <h1 id="doctor-count-title">Bác sĩ (0)</h1>
         <div class="header-buttons">
-            <span class="btn-view-employee" style="padding: 10px 16px; cursor: default;">
-                Nhân viên trong kế hoạch 2/15
+            <span class="btn-view-employee" id="doctor-plan-info" data-plan-limit="15" style="padding: 10px 16px; cursor: default;">
+                Bác sĩ trong gói 0/15
             </span>
             <button class="btn-add-employee" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
-                <i class="fas fa-plus"></i> Thêm nhân viên
+                <i class="fas fa-plus"></i> Thêm bác sĩ
             </button>
         </div>
     </div>
@@ -37,95 +37,14 @@
             <thead>
                 <tr>
                     <th><input type="checkbox" id="selectAll"></th>
-                    <th>Người lao động</th>
-                    <th>E-mail</th>
+                    <th>Bác sĩ</th>
+                    <th>Email</th>
                     <th>Điện thoại</th>
                     <th>Trạng thái</th>
                     <th></th>
                 </tr>
             </thead>
-            <tbody>
-                <tr>
-                    <td><input type="checkbox"></td>
-                    <td>
-                        <div class="employee-name-cell">
-                            <div class="employee-avatar avatar-teal">D</div>
-                            <div class="employee-name">
-                                <span>.Đặng Minh Bảo</span>
-                                <i class="fas fa-check-circle verified-badge"></i>
-                            </div>
-                        </div>
-                    </td>
-                    <td>6451071002@st.utc2.edu.vn</td>
-                    <td></td>
-                    <td><span class="status-badge">Có sẵn</span></td>
-                    <td>
-                        <div class="action-menu">
-                            <button class="btn-action" onclick="toggleDropdown(this)">
-                                <i class="fas fa-ellipsis-h"></i>
-                            </button>
-                            <div class="dropdown-menu-custom">
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-edit"></i> Chỉnh sửa nhân viên
-                                </button>
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-unlock"></i> Kích hoạt hồ sơ
-                                </button>
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-share-alt"></i> Chia sẻ Đặt chỗ
-                                </button>
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-ban"></i> Vô hiệu hóa nhân viên
-                                </button>
-                                <button class="dropdown-item-custom text-danger">
-                                    <i class="fas fa-trash"></i> Xóa nhân viên
-                                </button>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-
-
-
-                <tr>
-                    <td><input type="checkbox"></td>
-                    <td>
-                        <div class="employee-name-cell">
-                            <img src="https://ui-avatars.com/api/?name=Jane+Doe&background=4a90e2&color=fff&size=40&rounded=true" class="employee-avatar" alt="Jane Doe">
-                            <div class="employee-name">
-                                <span>Jane Doe</span>
-                            </div>
-                        </div>
-                    </td>
-                    <td>employee@trafft.com</td>
-                    <td></td>
-                    <td><span class="status-badge">Có sẵn</span></td>
-                    <td>
-                        <div class="action-menu">
-                            <button class="btn-action" onclick="toggleDropdown(this)">
-                                <i class="fas fa-ellipsis-h"></i>
-                            </button>
-                            <div class="dropdown-menu-custom">
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-edit"></i> Chỉnh sửa nhân viên
-                                </button>
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-unlock"></i> Kích hoạt hồ sơ
-                                </button>
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-share-alt"></i> Chia sẻ Đặt chỗ
-                                </button>
-                                <button class="dropdown-item-custom">
-                                    <i class="fas fa-ban"></i> Vô hiệu hóa nhân viên
-                                </button>
-                                <button class="dropdown-item-custom text-danger">
-                                    <i class="fas fa-trash"></i> Xóa nhân viên
-                                </button>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-
+            <tbody id="doctor-table-body">
             </tbody>
         </table>
     </div>
@@ -135,7 +54,7 @@
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="addEmployeeModalLabel">Thêm nhân viên</h5>
+                <h5 class="modal-title" id="addEmployeeModalLabel">Thêm bác sĩ</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
@@ -155,19 +74,19 @@
                     <div class="col-lg-7">
                         <form>
                             <div class="mb-3">
-                                <label for="firstName" class="form-label">First Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="firstName" placeholder="Enter first name">
+                                <label for="firstName" class="form-label">Tên <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="firstName" placeholder="Nhập tên">
                             </div>
                             <div class="mb-3">
-                                <label for="lastName" class="form-label">Last Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="lastName" placeholder="Enter last name">
+                                <label for="lastName" class="form-label">Họ <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="lastName" placeholder="Nhập họ">
                             </div>
                             <div class="mb-3">
                                 <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control" id="email" placeholder="example@yourcompany.com">
+                                <input type="email" class="form-control" id="email" placeholder="vidu@congty.com">
                             </div>
                             <div class="mb-3">
-                                <label for="phone" class="form-label">Phone</label>
+                                <label for="phone" class="form-label">Điện thoại</label>
                                 <div class="input-group">
                                     <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                                         <img src="https://flagcdn.com/w20/vn.png" alt="VN Flag"> +84
@@ -198,7 +117,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-light-custom" data-bs-dismiss="modal">Hủy bỏ</button>
-                <button type="button" class="btn btn-primary-custom">Thêm nhân viên</button>
+                <button type="button" class="btn btn-primary-custom" id="btn-add-employee-submit">Thêm bác sĩ</button>
             </div>
         </div>
     </div>
