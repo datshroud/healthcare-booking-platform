@@ -26,7 +26,21 @@ namespace BookingCareManagement.Infrastructure.Identity
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
         {
             services.AddDbContext<ApplicationDBContext>(otp =>
-                otp.UseSqlServer(config.GetConnectionString("DefaultConnection")));
+            {
+                var connectionString = config.GetConnectionString("DefaultConnection");
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new InvalidOperationException("Database connection string 'DefaultConnection' is missing or empty.");
+                }
+
+                otp.UseSqlServer(connectionString, sql =>
+                {
+                    sql.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(10),
+                        errorNumbersToAdd: null);
+                });
+            });
 
             services.AddIdentity<AppUser, AppRole>(o =>
             {
