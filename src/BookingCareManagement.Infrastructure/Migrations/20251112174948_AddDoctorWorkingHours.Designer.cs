@@ -4,6 +4,7 @@ using BookingCareManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookingCareManagement.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    partial class ApplicationDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251112174948_AddDoctorWorkingHours")]
+    partial class AddDoctorWorkingHours
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -112,39 +115,6 @@ namespace BookingCareManagement.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Doctors", (string)null);
-                });
-
-            modelBuilder.Entity("BookingCareManagement.Domain.Aggregates.Doctor.DoctorDayOff", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("DoctorId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateOnly>("EndDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
-                    b.Property<bool>("RepeatYearly")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<DateOnly>("StartDate")
-                        .HasColumnType("date");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DoctorId", "Name")
-                        .IsUnique();
-
-                    b.ToTable("DoctorDayOffs", (string)null);
                 });
 
             modelBuilder.Entity("BookingCareManagement.Domain.Aggregates.Doctor.DoctorWorkingHour", b =>
@@ -494,17 +464,6 @@ namespace BookingCareManagement.Infrastructure.Migrations
                     b.Navigation("AppUser");
                 });
 
-            modelBuilder.Entity("BookingCareManagement.Domain.Aggregates.Doctor.DoctorDayOff", b =>
-                {
-                    b.HasOne("BookingCareManagement.Domain.Aggregates.Doctor.Doctor", "Doctor")
-                        .WithMany("DaysOff")
-                        .HasForeignKey("DoctorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Doctor");
-                });
-
             modelBuilder.Entity("BookingCareManagement.Domain.Aggregates.Doctor.DoctorWorkingHour", b =>
                 {
                     b.HasOne("BookingCareManagement.Domain.Aggregates.Doctor.Doctor", "Doctor")
@@ -647,8 +606,6 @@ namespace BookingCareManagement.Infrastructure.Migrations
 
             modelBuilder.Entity("BookingCareManagement.Domain.Aggregates.Doctor.Doctor", b =>
                 {
-                    b.Navigation("DaysOff");
-
                     b.Navigation("WorkingHours");
                 });
 

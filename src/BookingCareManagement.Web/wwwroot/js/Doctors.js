@@ -198,8 +198,8 @@ document.addEventListener('DOMContentLoaded', function () {
         const editButton = e.target.closest('.btn-edit-doctor');
         if (editButton) {
             const doctorId = editButton.getAttribute('data-id');
-            // TODO: Mở modal, gọi GET /api/Doctor/{id}, điền form, đổi nút...
-            alert('Chức năng "Chỉnh sửa" sẽ được cập nhật sau!\nMã bác sĩ: ' + doctorId);
+            // Chuyển đến trang chỉnh sửa bác sĩ
+            window.location.href = `/doctors/${doctorId}/info`;
         }
     });
 

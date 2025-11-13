@@ -2,6 +2,7 @@
 using BookingCareManagement.Application.Features.Doctors.Dtos;
 using BookingCareManagement.Domain.Abstractions;
 using BookingCareManagement.Domain.Aggregates.Doctor;
+using BookingCareManagement.Domain.Aggregates.User;
 
 namespace BookingCareManagement.Application.Features.Doctors.Queries;
 
@@ -30,12 +31,11 @@ public class GetAllDoctorsQueryHandler
         {
             var firstName = d.AppUser.FirstName ?? string.Empty;
             var lastName = d.AppUser.LastName ?? string.Empty;
-            var combined = string.Join(' ', new[] { firstName, lastName }.Where(s => !string.IsNullOrWhiteSpace(s))).Trim();
-            var fullName = !string.IsNullOrWhiteSpace(d.AppUser.FullName)
-                ? d.AppUser.FullName!
-                : (!string.IsNullOrWhiteSpace(combined)
-                    ? combined
-                    : (d.AppUser.Email ?? d.AppUser.UserName ?? "Bác sĩ"));
+            var fullName = d.AppUser.GetFullName();
+            if (string.IsNullOrWhiteSpace(fullName))
+            {
+                fullName = d.AppUser.Email ?? d.AppUser.UserName ?? "Bác sĩ";
+            }
 
             return new DoctorDto
             {

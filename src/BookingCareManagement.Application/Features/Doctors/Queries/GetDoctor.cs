@@ -2,6 +2,7 @@
 using BookingCareManagement.Application.Common.Exceptions;
 using BookingCareManagement.Application.Features.Doctors.Dtos;
 using BookingCareManagement.Domain.Abstractions;
+using BookingCareManagement.Domain.Aggregates.User;
 
 namespace BookingCareManagement.Application.Features.Doctors.Queries;
 
@@ -33,12 +34,11 @@ public class GetDoctorByIdQueryHandler
         // Map sang DTO
         var firstName = doctor.AppUser.FirstName ?? string.Empty;
         var lastName = doctor.AppUser.LastName ?? string.Empty;
-        var combined = string.Join(' ', new[] { firstName, lastName }.Where(s => !string.IsNullOrWhiteSpace(s))).Trim();
-        var fullName = !string.IsNullOrWhiteSpace(doctor.AppUser.FullName)
-            ? doctor.AppUser.FullName!
-            : (!string.IsNullOrWhiteSpace(combined)
-                ? combined
-                : (doctor.AppUser.Email ?? doctor.AppUser.UserName ?? "Bác sĩ"));
+        var fullName = doctor.AppUser.GetFullName();
+        if (string.IsNullOrWhiteSpace(fullName))
+        {
+            fullName = doctor.AppUser.Email ?? doctor.AppUser.UserName ?? "Bác sĩ";
+        }
 
         return new DoctorDto
         {

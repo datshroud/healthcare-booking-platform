@@ -13,4 +13,9 @@ public interface IDoctorRepository
 
     // Dùng để SỬA/XÓA (UPDATE/DELETE) - Cần theo dõi thay đổi
     Task<Doctor?> GetByIdWithTrackingAsync(Guid id, CancellationToken cancellationToken = default);
+
+    void RemoveWorkingHours(IEnumerable<DoctorWorkingHour> workingHours);
+    void AddWorkingHours(IEnumerable<DoctorWorkingHour> workingHours);
+    void AddDayOff(DoctorDayOff dayOff);
+    void RemoveDayOff(DoctorDayOff dayOff);
 }

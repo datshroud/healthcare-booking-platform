@@ -219,12 +219,14 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
             var isNew = false;
             if (user == null)
             {
+                var (firstName, lastName) = SplitName(name);
                 user = new AppUser
                 {
                     UserName = email,
                     Email = email,
                     EmailConfirmed = true,
-                    FullName = name
+                    FirstName = firstName,
+                    LastName = lastName
                 };
 
                 var created = await _userManager.CreateAsync(user);
@@ -254,6 +256,29 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
                 await _userManager.UpdateAsync(user);
             }
 
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                var (firstName, lastName) = SplitName(name);
+                var shouldUpdateName = false;
+
+                if (!string.IsNullOrWhiteSpace(firstName) && string.IsNullOrWhiteSpace(user.FirstName))
+                {
+                    user.FirstName = firstName;
+                    shouldUpdateName = true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(lastName) && string.IsNullOrWhiteSpace(user.LastName))
+                {
+                    user.LastName = lastName;
+                    shouldUpdateName = true;
+                }
+
+                if (shouldUpdateName)
+                {
+                    await _userManager.UpdateAsync(user);
+                }
+            }
+
             if (isNew)
             {
                 var roleStoreOk = await _userManager.IsInRoleAsync(user, "Customer");
@@ -267,13 +292,6 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
             }
 
             var roles = await _userManager.GetRolesAsync(user);
-
-            // Ensure FullName is present as a claim so it's available in generated tokens and HttpContext.User
-            // var existingClaims = await _userManager.GetClaimsAsync(user);
-            // if (!existingClaims.Any(c => c.Type == "FullName") && !string.IsNullOrWhiteSpace(user.FullName))
-            // {
-            //     await _userManager.AddClaimAsync(user, new Claim("FullName", user.FullName));
-            // }
 
             var (token, exp) = _jwt.GenerateToken(user, roles);
 
@@ -295,5 +313,26 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
 
         private static string Base64UrlEncoder(byte[] input)
             => WebEncoders.Base64UrlEncode(input).Replace("=", string.Empty);
+
+        private static (string FirstName, string LastName) SplitName(string? displayName)
+        {
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                return (string.Empty, string.Empty);
+            }
+
+            var parts = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0)
+            {
+                return (displayName.Trim(), string.Empty);
+            }
+
+            if (parts.Length == 1)
+            {
+                return (parts[0].Trim(), string.Empty);
+            }
+
+            return (parts[0].Trim(), parts[^1].Trim());
+        }
     }
 }

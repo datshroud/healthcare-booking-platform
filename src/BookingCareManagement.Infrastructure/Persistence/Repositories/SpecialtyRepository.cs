@@ -26,4 +26,18 @@ public class SpecialtyRepository : ISpecialtyRepository
             .Where(s => ids.Contains(s.Id))
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<IEnumerable<Specialty>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        return await _context.Specialties
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<Specialty?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _context.Specialties
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+    }
 }

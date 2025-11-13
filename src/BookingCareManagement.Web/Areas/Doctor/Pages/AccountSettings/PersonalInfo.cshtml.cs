@@ -100,7 +100,6 @@ public class PersonalInfoModel : PageModel
 
         user.FirstName = Input.FirstName.Trim();
         user.LastName = Input.LastName.Trim();
-        user.FullName = string.Join(' ', new[] { user.FirstName, user.LastName }.Where(s => !string.IsNullOrWhiteSpace(s)));
 
         if (!string.Equals(user.Email, Input.Email, StringComparison.OrdinalIgnoreCase))
         {
@@ -147,9 +146,10 @@ public class PersonalInfoModel : PageModel
         var first = user.FirstName;
         var last = user.LastName;
 
-        if (!string.IsNullOrWhiteSpace(user.FullName))
+        var derived = user.GetFullName();
+        if (!string.IsNullOrWhiteSpace(derived))
         {
-            var parts = user.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var parts = derived.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length > 0 && string.IsNullOrWhiteSpace(first))
             {
                 first = parts[0];

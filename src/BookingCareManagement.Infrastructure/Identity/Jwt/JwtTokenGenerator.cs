@@ -35,14 +35,20 @@ namespace BookingCareManagement.Infrastructure.Identity.Jwt
         public (string Token, DateTime expiresAt) GenerateToken(AppUser user, IEnumerable<string> roles)
         {
             var now = DateTime.UtcNow;
+            var displayName = user.GetFullName();
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                displayName = user.Email ?? string.Empty;
+            }
+
             var claims = new List<Claim>
             {
                 new(JwtRegisteredClaimNames.Sub, user.Id),
                 new(JwtRegisteredClaimNames.Email, user.Email ?? ""),
-                // Use FullName as the registered 'name' claim when available, fallback to email
-                new(JwtRegisteredClaimNames.Name, string.IsNullOrWhiteSpace(user.FullName) ? (user.Email ?? "") : user.FullName),
+                // Use derived full name (first + last) as the registered 'name' claim, fallback to email
+                new(JwtRegisteredClaimNames.Name, displayName),
                 // also include ClaimTypes.Name for frameworks that read that
-                new(ClaimTypes.Name, string.IsNullOrWhiteSpace(user.FullName) ? (user.Email ?? "") : user.FullName)
+                new(ClaimTypes.Name, displayName)
             };
             claims.AddRange(roles.Select(role => new Claim(ClaimTypes.Role, role)));
 

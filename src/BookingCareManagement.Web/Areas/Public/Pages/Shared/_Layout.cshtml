@@ -13,7 +13,8 @@
     {
         currentUser = await UserManager.GetUserAsync(userPrincipal);
         var claimedName = userPrincipal.FindFirst(ClaimTypes.Name)?.Value;
-        var candidateName = string.IsNullOrWhiteSpace(currentUser?.FullName) ? claimedName : currentUser?.FullName;
+        var resolvedName = currentUser?.GetFullName();
+        var candidateName = string.IsNullOrWhiteSpace(resolvedName) ? claimedName : resolvedName;
         displayName = string.IsNullOrWhiteSpace(candidateName)
             ? (currentUser?.Email ?? "User")
             : candidateName!;

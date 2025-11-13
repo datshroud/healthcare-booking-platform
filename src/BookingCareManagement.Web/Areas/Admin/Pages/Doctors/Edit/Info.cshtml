@@ -1,0 +1,218 @@
+@page "/doctors/{doctorId}/info"
+@model BookingCareManagement.Web.Areas.Admin.Pages.Doctors.Edit.InfoModel
+@{
+    ViewData["Title"] = "Thông tin bác sĩ";
+}
+
+@section Styles {
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/account.css" asp-append-version="true" />
+    <style>
+        .doctor-edit-container {
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .left-menu a {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .left-menu a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        .left-menu a.active-tab {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .avatar-container {
+            position: relative;
+            display: inline-block;
+        }
+        .avatar-container:hover .camera-icon {
+            opacity: 1;
+        }
+        .camera-icon {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            opacity: 0.9;
+            transition: all 0.3s ease;
+        }
+        .form-control, .form-select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-radius: 10px;
+            padding: 12px 16px;
+            transition: all 0.3s ease;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            color: #fff;
+        }
+        .btn-save {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 32px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+        }
+    </style>
+}
+
+<div class="container-fluid mt-5 p-4 mb-5 doctor-edit-container text-light">
+    <!-- Header -->
+    <div class="row align-items-center justify-content-between mx-0 mb-4">
+        <div class="col-auto">
+            <h2 class="mb-0 fw-bold">
+                <i class="fa-solid fa-user-doctor me-3" style="color: #667eea;"></i>@Model.DoctorName
+            </h2>
+        </div>
+        <div class="col-auto">
+            <a href="/doctors" class="btn btn-outline-light btn-sm px-4 rounded-pill">
+                <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
+            </a>
+        </div>
+    </div>
+
+    <!-- Nội dung chính -->
+    <div class="row border-top border-secondary pt-4 g-0">
+        <!-- Cột trái -->
+        <div class="col-3 left-menu pe-3">
+            <a href="/doctors/@Model.DoctorId/info" class="btn active-tab mb-2 fw-semibold text-decoration-none">
+                <i class="fa-solid fa-user me-2"></i> Thông tin bác sĩ
+            </a>
+            <a href="/doctors/@Model.DoctorId/specialties" class="btn fw-semibold text-decoration-none">
+                <i class="fa-solid fa-briefcase-medical me-2"></i> Chuyên khoa
+            </a>
+            <a href="/doctors/@Model.DoctorId/hours" class="btn fw-semibold text-decoration-none">
+                <i class="fa-solid fa-clock me-2"></i> Giờ làm việc
+            </a>
+            <a href="/doctors/@Model.DoctorId/days-off" class="btn fw-semibold text-decoration-none">
+                <i class="fa-solid fa-calendar-xmark me-2"></i> Ngày nghỉ
+            </a>
+            <a href="/doctors/@Model.DoctorId/special-days" class="btn fw-semibold text-decoration-none">
+                <i class="fa-solid fa-star me-2"></i> Ngày đặc biệt
+            </a>
+        </div>
+
+        <!-- Cột phải -->
+        <div class="col-9 ps-4">
+            <form method="post" enctype="multipart/form-data">
+                <div class="row">
+                    <div class="col-md-4 d-flex justify-content-center align-items-start">
+                        <div class="text-center">
+                            <div class="avatar-container">
+                                <label for="avatarUpload" style="cursor: pointer;">
+                                    <img id="avatarPreview" src="@(string.IsNullOrWhiteSpace(Model.AvatarUrl) ? "~/images/default-avatar.jpg" : Model.AvatarUrl)" 
+                                         alt="Avatar" class="rounded-circle shadow-lg" width="200" height="200"
+                                         style="object-fit: cover; border: 4px solid rgba(102, 126, 234, 0.5);">
+                                    <div class="camera-icon rounded-circle p-2 shadow">
+                                        <i class="fa-solid fa-camera text-white"></i>
+                                    </div>
+                                </label>
+                            </div>
+                            <input type="file" id="avatarUpload" name="AvatarFile" accept="image/*" class="d-none">
+                            <button type="button" class="btn btn-sm btn-outline-danger mt-3 rounded-pill" 
+                                    onclick="document.getElementById('avatarPreview').src='/images/default-avatar.jpg';">
+                                <i class="fa-solid fa-trash me-2"></i>Xóa ảnh
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="col-md-8">
+                        @if (TempData["SuccessMessage"] is string successMessage)
+                        {
+                            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm" role="alert">
+                                <i class="fa-solid fa-circle-check me-2"></i>@successMessage
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        }
+                        @if (!ViewContext.ViewData.ModelState.IsValid && ViewContext.ViewData.ModelState.ErrorCount > 0)
+                        {
+                            <div class="alert alert-danger border-0 shadow-sm" role="alert">
+                                <i class="fa-solid fa-triangle-exclamation me-2"></i>Có lỗi xảy ra khi lưu thông tin bác sĩ. Vui lòng thử lại.
+                            </div>
+                        }
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label class="form-label">Tên <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="FirstName" value="@Model.FirstName" placeholder="Nhập tên" required>
+                            </div>
+                            <div class="col">
+                                <label class="form-label">Họ <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" name="LastName" value="@Model.LastName" placeholder="Nhập họ" required>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label class="form-label">Email <span class="text-danger">*</span></label>
+                                <input type="email" class="form-control bg-secondary text-muted" name="Email" value="@Model.Email" placeholder="Nhập email" required readonly>
+                                <small class="text-muted">Email này được dùng cho cài đặt tài khoản bác sĩ và thay đổi sẽ ảnh hưởng đến đăng nhập của bác sĩ.</small>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="form-label">Số điện thoại</label>
+                                <div class="input-group">
+                                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <img src="https://flagcdn.com/w20/vn.png" alt="VN" class="me-1"> +84
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#"><img src="https://flagcdn.com/w20/vn.png" alt="VN" class="me-2"> +84 (Vietnam)</a></li>
+                                        <li><a class="dropdown-item" href="#"><img src="https://flagcdn.com/w20/us.png" alt="US" class="me-2"> +1 (USA)</a></li>
+                                    </ul>
+                                    <input type="tel" class="form-control" name="PhoneNumber" value="@Model.PhoneNumber" placeholder="Nhập số điện thoại">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <label class="form-label">Mô tả</label>
+                                <textarea class="form-control" name="Description" rows="5" placeholder="Nhập mô tả về bác sĩ">@(Model.Description ?? string.Empty)</textarea>
+                                <small class="text-muted">Mô tả này sẽ được hiển thị trên trang đặt lịch cùng với thông tin bác sĩ.</small>
+                            </div>
+                        </div>
+                        <div class="text-end border-top pt-4 mt-4" style="border-color: rgba(255,255,255,0.1) !important;">
+                            <button type="submit" class="btn btn-save text-white">
+                                <i class="fa-solid fa-save me-2"></i>Lưu thay đổi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.getElementById('avatarUpload').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    document.getElementById('avatarPreview').src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            } else if (file) {
+                alert('Vui lòng chọn file ảnh hợp lệ.');
+                e.target.value = '';
+            }
+        });
+    </script>
+}

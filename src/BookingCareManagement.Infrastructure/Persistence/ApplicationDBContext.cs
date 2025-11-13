@@ -18,6 +18,8 @@ public class ApplicationDBContext : IdentityDbContext<AppUser, AppRole, string>
     public DbSet<Service> Services => Set<Service>();
     public DbSet<ClinicRoom> ClinicRooms => Set<ClinicRoom>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
+    public DbSet<DoctorWorkingHour> DoctorWorkingHours => Set<DoctorWorkingHour>();
+    public DbSet<DoctorDayOff> DoctorDayOffs => Set<DoctorDayOff>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {

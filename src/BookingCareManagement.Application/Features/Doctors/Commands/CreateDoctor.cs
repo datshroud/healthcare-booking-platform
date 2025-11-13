@@ -46,15 +46,17 @@ public class CreateDoctorCommandHandler
         {
             FirstName = command.FirstName,
             LastName = command.LastName,
-            FullName = $"{command.FirstName} {command.LastName}",
             Email = command.Email,
             UserName = command.Email, // Dùng Email làm UserName
             PhoneNumber = command.PhoneNumber,
             EmailConfirmed = true // Tạm thời để true cho dễ test
         };
 
-        // Mật khẩu mặc định cho bác sĩ mới, họ nên đổi sau
-        var result = await _userManager.CreateAsync(appUser, "Doctor123!");
+        // Tạo mật khẩu tự động từ phần username của email (trước dấu @)
+        var emailLocalPart = command.Email.Split('@')[0];
+        var defaultPassword = $"{emailLocalPart}@123";
+
+        var result = await _userManager.CreateAsync(appUser, defaultPassword);
         if (!result.Succeeded)
         {
             // Ném lỗi nếu tạo user thất bại (ví dụ: Email trùng)
@@ -90,7 +92,7 @@ public class CreateDoctorCommandHandler
             AppUserId = doctor.AppUserId,
             FirstName = appUser.FirstName ?? string.Empty,
             LastName = appUser.LastName ?? string.Empty,
-            FullName = appUser.FullName ?? string.Empty,
+            FullName = appUser.GetFullName(),
             Email = appUser.Email ?? string.Empty,
             PhoneNumber = appUser.PhoneNumber ?? string.Empty,
             Active = doctor.Active,

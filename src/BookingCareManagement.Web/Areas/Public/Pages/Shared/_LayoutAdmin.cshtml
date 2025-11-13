@@ -10,9 +10,10 @@
     if (authed && userPrincipal is not null)
     {
         var currentUser = await UserManager.GetUserAsync(userPrincipal);
-        if (!string.IsNullOrWhiteSpace(currentUser?.FullName))
+        var resolvedName = currentUser?.GetFullName();
+        if (!string.IsNullOrWhiteSpace(resolvedName))
         {
-            displayName = currentUser.FullName!;
+            displayName = resolvedName!;
         }
         else if (!string.IsNullOrWhiteSpace(currentUser?.Email))
         {

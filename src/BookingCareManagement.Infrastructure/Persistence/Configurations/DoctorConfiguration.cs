@@ -26,5 +26,24 @@ public class DoctorConfiguration : IEntityTypeConfiguration<Doctor>
         e.HasMany(d => d.Specialties)
          .WithMany()
          .UsingEntity(j => j.ToTable("DoctorSpecialties"));
+
+        e.Property(d => d.LimitAppointments)
+         .HasDefaultValue(false);
+
+        e.HasMany(d => d.WorkingHours)
+         .WithOne(h => h.Doctor)
+         .HasForeignKey(h => h.DoctorId)
+         .OnDelete(DeleteBehavior.Cascade);
+
+        e.Navigation(d => d.WorkingHours)
+         .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        e.HasMany(d => d.DaysOff)
+         .WithOne(o => o.Doctor)
+         .HasForeignKey(o => o.DoctorId)
+         .OnDelete(DeleteBehavior.Cascade);
+
+        e.Navigation(d => d.DaysOff)
+         .UsePropertyAccessMode(PropertyAccessMode.Field);
     }
 }

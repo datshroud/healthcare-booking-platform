@@ -88,25 +88,7 @@ public sealed class DoctorsController : ControllerBase
 
     private static string ResolveDisplayName(AppUser? user)
     {
-        if (user is null)
-        {
-            return "Unknown";
-        }
-
-        if (!string.IsNullOrWhiteSpace(user.FullName))
-        {
-            return user.FullName;
-        }
-
-        var first = user.FirstName?.Trim() ?? string.Empty;
-        var last = user.LastName?.Trim() ?? string.Empty;
-        var combined = string.Join(' ', new[] { first, last }.Where(s => !string.IsNullOrWhiteSpace(s)));
-
-        if (!string.IsNullOrWhiteSpace(combined))
-        {
-            return combined;
-        }
-
-        return user.Email ?? user.UserName ?? "Unknown";
+        var displayName = user.GetFullName();
+        return string.IsNullOrWhiteSpace(displayName) ? "Unknown" : displayName;
     }
 }

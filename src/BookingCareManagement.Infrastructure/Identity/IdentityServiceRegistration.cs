@@ -109,8 +109,13 @@ namespace BookingCareManagement.Infrastructure.Identity
 
             services.AddScoped<GetAllDoctorsQueryHandler>();
             services.AddScoped<GetDoctorByIdQueryHandler>();
+            services.AddScoped<GetDoctorWorkingHoursQueryHandler>();
             services.AddScoped<CreateDoctorCommandHandler>();
             services.AddScoped<UpdateDoctorCommandHandler>();
+            services.AddScoped<UpdateDoctorHoursCommandHandler>();
+            services.AddScoped<CreateDoctorDayOffCommandHandler>();
+            services.AddScoped<UpdateDoctorDayOffCommandHandler>();
+            services.AddScoped<DeleteDoctorDayOffCommandHandler>();
             services.AddScoped<DeleteDoctorCommandHandler>();
             return services;
         }

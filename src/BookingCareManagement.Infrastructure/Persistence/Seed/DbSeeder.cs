@@ -40,7 +40,8 @@ public class DbSeeder
                 UserName = "admin@local.dev",
                 Email = "admin@local.dev",
                 EmailConfirmed = true,
-                FullName = "System Admin"
+                FirstName = "System",
+                LastName = "Admin"
             };
 
             var created = await userMgr.CreateAsync(admin, "Admin123");
@@ -64,7 +65,8 @@ public class DbSeeder
                 UserName = "doctor@local.dev",
                 Email = "doctor@local.dev",
                 EmailConfirmed = true,
-                FullName = "Default Doctor"
+                FirstName = "Default",
+                LastName = "Doctor"
             };
 
             var created = await userMgr.CreateAsync(doctorUser, "Doctor123");
@@ -103,7 +105,8 @@ public class DbSeeder
                 UserName = "customer@local.dev",
                 Email = "customer@local.dev",
                 EmailConfirmed = true,
-                FullName = "Default Customer"
+                FirstName = "Default",
+                LastName = "Customer"
             };
 
             var created = await userMgr.CreateAsync(customer, "Customer123");

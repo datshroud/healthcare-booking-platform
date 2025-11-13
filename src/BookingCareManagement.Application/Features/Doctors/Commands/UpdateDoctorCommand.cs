@@ -62,7 +62,6 @@ public class UpdateDoctorCommandHandler
         var appUser = doctor.AppUser;
         appUser.FirstName = command.FirstName;
         appUser.LastName = command.LastName;
-        appUser.FullName = $"{command.FirstName} {command.LastName}";
         appUser.Email = command.Email;
         appUser.UserName = command.Email;
         appUser.PhoneNumber = command.PhoneNumber;
