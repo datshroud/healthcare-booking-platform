@@ -4,6 +4,7 @@ using BookingCareManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookingCareManagement.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    partial class ApplicationDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251113155057_Update-Specialties-And-Services-Schema")]
+    partial class UpdateSpecialtiesAndServicesSchema
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -101,79 +104,12 @@ namespace BookingCareManagement.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<bool>("LimitAppointments")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
                     b.HasKey("Id");
 
                     b.HasIndex("AppUserId")
                         .IsUnique();
 
                     b.ToTable("Doctors", (string)null);
-                });
-
-            modelBuilder.Entity("BookingCareManagement.Domain.Aggregates.Doctor.DoctorDayOff", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("DoctorId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateOnly>("EndDate")
-                        .HasColumnType("date");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
-                    b.Property<bool>("RepeatYearly")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<DateOnly>("StartDate")
-                        .HasColumnType("date");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DoctorId", "Name")
-                        .IsUnique();
-
-                    b.ToTable("DoctorDayOffs", (string)null);
-                });
-
-            modelBuilder.Entity("BookingCareManagement.Domain.Aggregates.Doctor.DoctorWorkingHour", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("DayOfWeek")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("DoctorId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<TimeSpan>("EndTime")
-                        .HasColumnType("time");
-
-                    b.Property<string>("Location")
-                        .HasMaxLength(128)
-                        .HasColumnType("nvarchar(128)");
-
-                    b.Property<TimeSpan>("StartTime")
-                        .HasColumnType("time");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DoctorId");
-
-                    b.ToTable("DoctorWorkingHours", (string)null);
                 });
 
             modelBuilder.Entity("BookingCareManagement.Domain.Aggregates.Doctor.Specialty", b =>
@@ -184,12 +120,6 @@ namespace BookingCareManagement.Infrastructure.Migrations
 
                     b.Property<bool>("Active")
                         .HasColumnType("bit");
-
-                    b.Property<string>("Color")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("#1a73e8");
 
                     b.Property<string>("Description")
                         .HasMaxLength(4000)
@@ -212,6 +142,47 @@ namespace BookingCareManagement.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Specialties", (string)null);
+                });
+
+            modelBuilder.Entity("BookingCareManagement.Domain.Aggregates.Service.Service", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Active")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Color")
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("DurationInMinutes")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ImageUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<decimal>("Price")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("SpecialtyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SpecialtyId");
+
+                    b.ToTable("Services", (string)null);
                 });
 
             modelBuilder.Entity("BookingCareManagement.Domain.Aggregates.User.AppRole", b =>
@@ -259,9 +230,6 @@ namespace BookingCareManagement.Infrastructure.Migrations
                     b.Property<DateTime?>("DateOfBirth")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Email")
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
@@ -270,6 +238,9 @@ namespace BookingCareManagement.Infrastructure.Migrations
                         .HasColumnType("bit");
 
                     b.Property<string>("FirstName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FullName")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("LastName")
@@ -321,15 +292,30 @@ namespace BookingCareManagement.Infrastructure.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("DoctorSpecialty", b =>
+            modelBuilder.Entity("DoctorService", b =>
                 {
                     b.Property<Guid>("DoctorsId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ServicesId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("DoctorsId", "ServicesId");
+
+                    b.HasIndex("ServicesId");
+
+                    b.ToTable("DoctorServices", (string)null);
+                });
+
+            modelBuilder.Entity("DoctorSpecialty", b =>
+                {
+                    b.Property<Guid>("DoctorId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("SpecialtiesId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("DoctorsId", "SpecialtiesId");
+                    b.HasKey("DoctorId", "SpecialtiesId");
 
                     b.HasIndex("SpecialtiesId");
 
@@ -453,26 +439,15 @@ namespace BookingCareManagement.Infrastructure.Migrations
                     b.Navigation("AppUser");
                 });
 
-            modelBuilder.Entity("BookingCareManagement.Domain.Aggregates.Doctor.DoctorDayOff", b =>
+            modelBuilder.Entity("BookingCareManagement.Domain.Aggregates.Service.Service", b =>
                 {
-                    b.HasOne("BookingCareManagement.Domain.Aggregates.Doctor.Doctor", "Doctor")
-                        .WithMany("DaysOff")
-                        .HasForeignKey("DoctorId")
+                    b.HasOne("BookingCareManagement.Domain.Aggregates.Doctor.Specialty", "Specialty")
+                        .WithMany()
+                        .HasForeignKey("SpecialtyId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Doctor");
-                });
-
-            modelBuilder.Entity("BookingCareManagement.Domain.Aggregates.Doctor.DoctorWorkingHour", b =>
-                {
-                    b.HasOne("BookingCareManagement.Domain.Aggregates.Doctor.Doctor", "Doctor")
-                        .WithMany("WorkingHours")
-                        .HasForeignKey("DoctorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Doctor");
+                    b.Navigation("Specialty");
                 });
 
             modelBuilder.Entity("BookingCareManagement.Domain.Aggregates.User.AppUser", b =>
@@ -516,11 +491,26 @@ namespace BookingCareManagement.Infrastructure.Migrations
                     b.Navigation("RefreshTokens");
                 });
 
-            modelBuilder.Entity("DoctorSpecialty", b =>
+            modelBuilder.Entity("DoctorService", b =>
                 {
                     b.HasOne("BookingCareManagement.Domain.Aggregates.Doctor.Doctor", null)
                         .WithMany()
                         .HasForeignKey("DoctorsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BookingCareManagement.Domain.Aggregates.Service.Service", null)
+                        .WithMany()
+                        .HasForeignKey("ServicesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("DoctorSpecialty", b =>
+                {
+                    b.HasOne("BookingCareManagement.Domain.Aggregates.Doctor.Doctor", null)
+                        .WithMany()
+                        .HasForeignKey("DoctorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -580,13 +570,6 @@ namespace BookingCareManagement.Infrastructure.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("BookingCareManagement.Domain.Aggregates.Doctor.Doctor", b =>
-                {
-                    b.Navigation("DaysOff");
-
-                    b.Navigation("WorkingHours");
                 });
 #pragma warning restore 612, 618
         }

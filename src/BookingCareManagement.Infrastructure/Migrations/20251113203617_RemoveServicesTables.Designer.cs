@@ -4,6 +4,7 @@ using BookingCareManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BookingCareManagement.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDBContext))]
-    partial class ApplicationDBContextModelSnapshot : ModelSnapshot
+    [Migration("20251113203617_RemoveServicesTables")]
+    partial class RemoveServicesTables
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -185,12 +188,6 @@ namespace BookingCareManagement.Infrastructure.Migrations
                     b.Property<bool>("Active")
                         .HasColumnType("bit");
 
-                    b.Property<string>("Color")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
-                        .HasDefaultValue("#1a73e8");
-
                     b.Property<string>("Description")
                         .HasMaxLength(4000)
                         .HasColumnType("nvarchar(4000)");
@@ -323,13 +320,13 @@ namespace BookingCareManagement.Infrastructure.Migrations
 
             modelBuilder.Entity("DoctorSpecialty", b =>
                 {
-                    b.Property<Guid>("DoctorsId")
+                    b.Property<Guid>("DoctorId")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<Guid>("SpecialtiesId")
                         .HasColumnType("uniqueidentifier");
 
-                    b.HasKey("DoctorsId", "SpecialtiesId");
+                    b.HasKey("DoctorId", "SpecialtiesId");
 
                     b.HasIndex("SpecialtiesId");
 
@@ -520,7 +517,7 @@ namespace BookingCareManagement.Infrastructure.Migrations
                 {
                     b.HasOne("BookingCareManagement.Domain.Aggregates.Doctor.Doctor", null)
                         .WithMany()
-                        .HasForeignKey("DoctorsId")
+                        .HasForeignKey("DoctorId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

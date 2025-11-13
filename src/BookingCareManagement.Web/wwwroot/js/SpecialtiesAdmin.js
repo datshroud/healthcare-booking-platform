@@ -1,182 +1,426 @@
-﻿// Toggle specialty dropdown
-function toggleSpecialtyDropdown(btn) {
-    const dropdown = btn.nextElementSibling;
-    const allDropdowns = document.querySelectorAll('.dropdown-menu-specialty');
-
-    allDropdowns.forEach(d => {
-        if (d !== dropdown) {
-            d.classList.remove('show');
-        }
-    });
-
-    if (dropdown) {
-        dropdown.classList.toggle('show');
-    }
-}
-
-// Close dropdown when clicking outside
-document.addEventListener('click', function (e) {
-    // Đóng menu CHUYÊN KHOA nếu click ra ngoài
-    if (!e.target.closest('.btn-more-specialty')) {
-        document.querySelectorAll('.dropdown-menu-specialty').forEach(d => {
-            d.classList.remove('show');
-        });
-    }
-
-    // Đóng menu DANH MỤC nếu click ra ngoài
-    if (!e.target.closest('.btn-more-category')) {
-        document.querySelectorAll('.dropdown-menu-category').forEach(d => {
-            d.classList.remove('show');
-        });
-    }
-});
-
-// Tab switching
-document.querySelectorAll('.tab-item').forEach(tab => {
-    tab.addEventListener('click', function () {
-        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
-        this.classList.add('active');
-    });
-});
-
-// --- BỔ SUNG JS ĐỂ CẬP NHẬT TEXT SORT DROPDOWN ---
-const sortMenu = document.getElementById('sort-options-menu');
-const sortLabel = document.getElementById('current-sort-label');
-
-if (sortMenu && sortLabel) {
-    sortMenu.addEventListener('click', function (e) {
-        if (e.target.tagName === 'A') {
-            e.preventDefault();
-            const selectedText = e.target.textContent;
-            sortLabel.textContent = selectedText;
-            sortMenu.querySelectorAll('.dropdown-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            e.target.classList.add('active');
-        }
-    });
-}
-
-// --- BỔ SUNG JS ĐỂ KHỞI TẠO CKEDITOR ---
+﻿const DEFAULT_SPECIALTY_COLOR = "#1a73e8";
 let specialtyEditorInstance;
-const addSpecialtyModal = document.getElementById('addSpecialtyModal');
 
-// === THÊM VÀO: CÁC BIẾN CHO UPLOAD ẢNH CHUYÊN KHOA ===
-const specialtyInput = document.getElementById('specialtyImageInput');
-const specialtyUploadBox = document.getElementById('specialtyUploadBox');
-// Phải kiểm tra specialtyUploadBox tồn tại không, nếu không sẽ lỗi
-const originalSpecialtyUploadHTML = specialtyUploadBox ? specialtyUploadBox.innerHTML : '';
-// === KẾT THÚC THÊM BIẾN ===
+const addSpecialtyModal = document.getElementById("addSpecialtyModal");
+const specialtyInput = document.getElementById("specialtyImageInput");
+const specialtyUploadBox = document.getElementById("specialtyUploadBox");
+const originalSpecialtyUploadHTML = specialtyUploadBox ? specialtyUploadBox.innerHTML : "";
+const specialtyColorInput = document.getElementById("specialtyColor");
+const specialtyColorPicker = document.getElementById("specialtyColorPicker");
+const specialtyDoctorsSelect = document.getElementById("specialtyDoctors");
 
+const specialtyListContainer = document.getElementById("specialty-list-container");
+const specialtyCountSpan = document.getElementById("specialty-count");
+const btnSaveSpecialty = document.getElementById("btn-save-specialty");
+const specialtyNameInput = document.getElementById("specialtyName");
+const specialtySlugInput = document.getElementById("specialtySlug");
+const addSpecialtyForm = document.getElementById("add-specialty-form");
 
-if (addSpecialtyModal) {
-    // Sự kiện "shown.bs.modal" bắn ra KHI modal đã hiển thị xong
-    addSpecialtyModal.addEventListener('shown.bs.modal', () => {
-        // (Code cũ của bạn) Chỉ khởi tạo nếu chưa có
-        if (!specialtyEditorInstance) {
-            ClassicEditor
-                .create(document.querySelector('#specialtyDescriptionEditor'), {
-                    toolbar: [
-                        'bold', 'italic', 'underline', 'strikethrough', '|',
-                        'bulletedList', 'numberedList', '|',
-                        'alignment', '|',
-                        'link', 'undo', 'redo'
-                    ]
-                })
-                .then(editor => {
-                    console.log('CKEditor đã được khởi tạo', editor);
-                    specialtyEditorInstance = editor; // Lưu lại instance
-                })
-                .catch(error => {
-                    console.error('Lỗi khởi tạo CKEditor:', error);
-                });
+const specialtyColorSwatch = document.querySelector("#specialtyColor")?.closest(".color-picker-wrapper")?.querySelector(".color-swatch");
+
+let doctorsCache = [];
+let specialtiesCache = [];
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+} else {
+    boot();
+}
+
+function boot() {
+    setColorValue(DEFAULT_SPECIALTY_COLOR);
+    loadSpecialties();
+    wireModalLifecycle();
+    wireFileUploadPreview();
+    wireColorInputs();
+    wireDoctorSelection();
+    wireSaveSpecialty();
+    wireListActions();
+}
+
+async function loadSpecialties() {
+    if (!specialtyListContainer) {
+        return;
+    }
+    specialtyListContainer.innerHTML = '<div class="p-3 text-center text-muted">Đang tải chuyên khoa...</div>';
+
+    try {
+        const response = await fetch("/api/Specialty");
+        if (!response.ok) {
+            throw new Error("Không thể tải chuyên khoa.");
         }
-    });
+        specialtiesCache = await response.json();
+        renderSpecialtyList(specialtiesCache);
+    } catch (error) {
+        console.error(error);
+        specialtyListContainer.innerHTML = '<p class="text-danger p-3">Lỗi tải chuyên khoa. Vui lòng thử lại.</p>';
+    }
+}
 
-    // (Quan trọng) Hủy editor và RESET ẢNH khi modal bị đóng
-    addSpecialtyModal.addEventListener('hidden.bs.modal', () => {
+async function ensureDoctorsLoaded() {
+    if (doctorsCache.length > 0) {
+        populateDoctorOptions();
+        return doctorsCache;
+    }
+    try {
+        const response = await fetch("/api/Doctor");
+        if (!response.ok) {
+            throw new Error("Không thể tải danh sách bác sĩ.");
+        }
+        doctorsCache = await response.json();
+        populateDoctorOptions();
+        return doctorsCache;
+    } catch (error) {
+        console.error(error);
+        Swal.fire("Lỗi", error.message, "error");
+        return [];
+    }
+}
 
-        // (Code cũ của bạn) Hủy CKEditor
-        if (specialtyEditorInstance) {
-            specialtyEditorInstance.destroy()
-                .then(() => {
-                    console.log('CKEditor đã bị hủy');
-                    specialtyEditorInstance = null; // Reset
-                })
-                .catch(error => {
-                    console.error('Lỗi hủy CKEditor:', error);
-                });
-        }
+function populateDoctorOptions() {
+    if (!specialtyDoctorsSelect) {
+        return;
+    }
 
-        // === THÊM VÀO: LOGIC ĐỂ RESET ẢNH UPLOAD ===
-        // Chúng ta gộp chung vào 1 listener 'hidden.bs.modal'
-        if (specialtyUploadBox) {
-            specialtyUploadBox.innerHTML = originalSpecialtyUploadHTML;
-            specialtyUploadBox.classList.remove('has-image');
-        }
-        if (specialtyInput) {
-            specialtyInput.value = null;
-        }
-        // === KẾT THÚC THÊM LOGIC RESET ===
+    const selected = new Set(Array.from(specialtyDoctorsSelect.selectedOptions).map((o) => o.value));
+    specialtyDoctorsSelect.innerHTML = "";
+    doctorsCache
+        .filter((doc) => doc.active !== false)
+        .forEach((doc) => {
+            const option = document.createElement("option");
+            option.value = doc.id;
+            const fullName = doc.fullName?.trim() || `${doc.firstName ?? ""} ${doc.lastName ?? ""}`.trim() || doc.email || "Bác sĩ";
+            option.textContent = fullName;
+            if (selected.has(option.value)) {
+                option.selected = true;
+            }
+            specialtyDoctorsSelect.appendChild(option);
+        });
+}
+
+function renderSpecialtyList(items) {
+    if (!specialtyListContainer) {
+        return;
+    }
+
+    specialtyListContainer.innerHTML = "";
+    if (specialtyCountSpan) {
+        specialtyCountSpan.textContent = `(${items.length})`;
+    }
+
+    if (items.length === 0) {
+        specialtyListContainer.innerHTML = '<p class="p-3 text-center text-muted">Chưa có chuyên khoa nào.</p>';
+        return;
+    }
+
+    items.forEach((specialty) => {
+        const color = normalizeColor(specialty.color) || DEFAULT_SPECIALTY_COLOR;
+        const statusClass = specialty.active ? "active" : "inactive";
+        const statusLabel = specialty.active ? "Hoạt động" : "Đã khóa";
+        const descriptionText = truncateText(stripHtml(specialty.description || ""), 140) || "Chưa có mô tả";
+        const doctorNames = (specialty.doctors || []).map((d) => d.fullName).filter(Boolean).join(", ");
+        const doctorsHtml = doctorNames
+            ? `<div class="specialty-doctors">${doctorNames}</div>`
+            : '<div class="specialty-doctors text-muted">Chưa gán bác sĩ</div>';
+
+        const avatarUrl = specialty.imageUrl
+            || `https://ui-avatars.com/api/?name=${encodeURIComponent(specialty.name)}&background=${color.replace("#", "")}&color=fff&rounded=true&size=40`;
+
+        const item = `
+            <div class="specialty-item ${statusClass}" data-id="${specialty.id}" style="border-left-color:${color}">
+                <div class="drag-handle"><i class="fas fa-grip-vertical"></i></div>
+                <div class="specialty-info">
+                    <div class="specialty-color-dot" style="background-color:${color}"></div>
+                    <img src="${avatarUrl}" class="specialty-avatar" alt="${specialty.name}">
+                    <div class="specialty-details">
+                        <div class="specialty-name">${specialty.name}</div>
+                        ${doctorsHtml}
+                    </div>
+                </div>
+                <div class="specialty-status ${statusClass}">${statusLabel}</div>
+                <div class="specialty-description">${descriptionText}</div>
+                <div style="position: relative;">
+                    <button class="btn-more-specialty"><i class="fas fa-ellipsis-h"></i></button>
+                    <div class="dropdown-menu-specialty">
+                        <button class="dropdown-item-specialty btn-edit-specialty" data-id="${specialty.id}">
+                            <i class="fas fa-edit"></i> <span>Chỉnh sửa</span>
+                        </button>
+                        <button class="dropdown-item-specialty text-danger btn-delete-specialty" data-id="${specialty.id}">
+                            <i class="fas fa-trash"></i> <span>Xóa chuyên khoa</span>
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+
+        specialtyListContainer.insertAdjacentHTML("beforeend", item);
     });
 }
 
-// === THÊM VÀO: HÀM ĐỂ LẮNG NGHE SỰ KIỆN CHỌN ẢNH ===
-// (Đoạn này nằm độc lập bên ngoài)
-if (specialtyInput && specialtyUploadBox) {
-    specialtyInput.addEventListener('change', function (e) {
-        const file = e.target.files[0];
+function wireListActions() {
+    if (!specialtyListContainer) {
+        return;
+    }
 
-        if (file && file.type.startsWith('image/')) {
+    specialtyListContainer.addEventListener("click", (e) => {
+        const dropdownButton = e.target.closest(".btn-more-specialty");
+        if (dropdownButton) {
+            toggleSpecialtyDropdown(dropdownButton);
+            return;
+        }
+
+        const deleteButton = e.target.closest(".btn-delete-specialty");
+        if (deleteButton) {
+            const specialtyId = deleteButton.getAttribute("data-id");
+            confirmDeleteSpecialty(specialtyId);
+            return;
+        }
+
+        const editButton = e.target.closest(".btn-edit-specialty");
+        if (editButton) {
+            Swal.fire("Thông báo", "Tính năng chỉnh sửa đang được phát triển.", "info");
+        }
+    });
+
+    document.addEventListener("click", (e) => {
+        if (!e.target.closest(".btn-more-specialty")) {
+            document.querySelectorAll(".dropdown-menu-specialty").forEach((menu) => menu.classList.remove("show"));
+        }
+    });
+}
+
+function toggleSpecialtyDropdown(button) {
+    const dropdown = button.nextElementSibling;
+    document.querySelectorAll(".dropdown-menu-specialty").forEach((menu) => {
+        if (menu !== dropdown) {
+            menu.classList.remove("show");
+        }
+    });
+    dropdown.classList.toggle("show");
+}
+
+function confirmDeleteSpecialty(specialtyId) {
+    Swal.fire({
+        title: "Xóa chuyên khoa?",
+        text: "Bạn có chắc muốn xóa chuyên khoa này?",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        confirmButtonText: "Đồng ý, xóa",
+        cancelButtonText: "Hủy"
+    }).then(async (result) => {
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/Specialty/${specialtyId}`, { method: "DELETE" });
+            if (!response.ok) {
+                throw new Error("Không thể xóa chuyên khoa.");
+            }
+            Swal.fire("Đã xóa", "Chuyên khoa đã được xóa.", "success");
+            loadSpecialties();
+        } catch (error) {
+            Swal.fire("Lỗi", error.message, "error");
+        }
+    });
+}
+
+function wireModalLifecycle() {
+    if (!addSpecialtyModal) {
+        return;
+    }
+
+    addSpecialtyModal.addEventListener("shown.bs.modal", () => {
+        ensureDoctorsLoaded();
+
+        if (!specialtyEditorInstance) {
+            ClassicEditor.create(document.querySelector("#specialtyDescriptionEditor"), {
+                toolbar: ["bold", "italic", "underline", "bulletedList", "numberedList", "link"]
+            })
+                .then((editor) => {
+                    specialtyEditorInstance = editor;
+                })
+                .catch((err) => console.error("CKEditor", err));
+        }
+    });
+
+    addSpecialtyModal.addEventListener("hidden.bs.modal", resetForm);
+}
+
+function wireFileUploadPreview() {
+    if (!specialtyInput || !specialtyUploadBox) {
+        return;
+    }
+
+    specialtyInput.addEventListener("change", (e) => {
+        const file = e.target.files?.[0];
+        if (file && file.type.startsWith("image/")) {
             const reader = new FileReader();
+            reader.onload = (event) => {
+                specialtyUploadBox.innerHTML = `<img src="${event.target?.result}" alt="Xem trước" class="image-preview">`;
+                specialtyUploadBox.classList.add("has-image");
+            };
+            reader.readAsDataURL(file);
+        } else if (file) {
+            Swal.fire("Lỗi File", "Vui lòng chỉ chọn tệp hình ảnh.", "warning");
+            specialtyInput.value = "";
+        }
+    });
+}
 
-            reader.onload = function (event) {
-                specialtyUploadBox.innerHTML = ''; // Xóa icon/text
-                const img = document.createElement('img');
-                img.src = event.target.result;
-                img.alt = "Xem trước ảnh dịch vụ";
-                img.className = 'image-preview'; // Áp dụng CSS xem trước
+function wireColorInputs() {
+    if (specialtyColorPicker) {
+        specialtyColorPicker.addEventListener("input", (e) => {
+            setColorValue(e.target.value);
+        });
+    }
 
-                specialtyUploadBox.appendChild(img);
-                specialtyUploadBox.classList.add('has-image');
+    if (specialtyColorInput) {
+        specialtyColorInput.addEventListener("input", (e) => {
+            setColorValue(e.target.value);
+        });
+    }
+}
+
+function wireDoctorSelection() {
+    if (!specialtyDoctorsSelect) {
+        return;
+    }
+
+    specialtyDoctorsSelect.addEventListener("focus", () => {
+        ensureDoctorsLoaded();
+    });
+}
+
+function wireSaveSpecialty() {
+    if (!btnSaveSpecialty) {
+        return;
+    }
+
+    btnSaveSpecialty.addEventListener("click", async () => {
+        const name = specialtyNameInput?.value.trim();
+        if (!name) {
+            Swal.fire("Lỗi", "Tên chuyên khoa là bắt buộc.", "warning");
+            return;
+        }
+
+        btnSaveSpecialty.disabled = true;
+        btnSaveSpecialty.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Đang lưu...';
+
+        try {
+            let imageUrl = null;
+            const file = specialtyInput?.files?.[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append("file", file);
+                const uploadRes = await fetch("/api/Upload", { method: "POST", body: formData });
+                if (!uploadRes.ok) {
+                    throw new Error("Tải ảnh thất bại.");
+                }
+                const result = await uploadRes.json();
+                imageUrl = result.avatarUrl;
             }
 
-            reader.readAsDataURL(file);
+            const selectedDoctorIds = specialtyDoctorsSelect
+                ? Array.from(specialtyDoctorsSelect.selectedOptions).map((opt) => opt.value)
+                : [];
 
-        } else if (file) {
-            alert('Vui lòng chỉ chọn tệp hình ảnh.');
-            specialtyInput.value = null;
+            const description = specialtyEditorInstance ? specialtyEditorInstance.getData() : "";
+
+            const command = {
+                name,
+                slug: specialtySlugInput?.value.trim() || null,
+                description: description || null,
+                imageUrl,
+                color: normalizeColor(specialtyColorInput?.value) || DEFAULT_SPECIALTY_COLOR,
+                doctorIds: selectedDoctorIds
+            };
+
+            const response = await fetch("/api/Specialty", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(command)
+            });
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                throw new Error(err.detail || "Không thể tạo chuyên khoa.");
+            }
+
+            Swal.fire("Thành công", "Đã tạo chuyên khoa mới.", "success");
+            bootstrap.Modal.getInstance(addSpecialtyModal)?.hide();
+            resetForm();
+            loadSpecialties();
+        } catch (error) {
+            Swal.fire("Lỗi", error.message, "error");
+        } finally {
+            btnSaveSpecialty.disabled = false;
+            btnSaveSpecialty.innerHTML = "Thêm chuyên khoa";
         }
     });
 }
-// === KẾT THÚC HÀM CHỌN ẢNH ===
 
+function resetForm() {
+    addSpecialtyForm?.reset();
+    setColorValue(DEFAULT_SPECIALTY_COLOR);
 
-// --- BỔ SUNG JS CHO DROPDOWN DANH MỤC ---
-function toggleCategoryDropdown(btn) {
-    const dropdown = btn.nextElementSibling;
-    const allDropdowns = document.querySelectorAll('.dropdown-menu-category');
+    if (specialtyEditorInstance) {
+        specialtyEditorInstance.setData("");
+    }
 
-    allDropdowns.forEach(d => {
-        if (d !== dropdown) {
-            d.classList.remove('show');
-        }
-    });
+    if (specialtyDoctorsSelect) {
+        Array.from(specialtyDoctorsSelect.options).forEach((opt) => (opt.selected = false));
+    }
 
-    document.querySelectorAll('.dropdown-menu-service').forEach(d => {
-        d.classList.remove('show');
-    });
+    if (specialtyUploadBox) {
+        specialtyUploadBox.innerHTML = originalSpecialtyUploadHTML;
+        specialtyUploadBox.classList.remove("has-image");
+    }
 
-    if (dropdown) {
-        dropdown.classList.toggle('show');
+    if (specialtyInput) {
+        specialtyInput.value = "";
     }
 }
 
-$(document).ready(function () {
-    $('#specialtyDoctors').select2({
-        placeholder: "Select doctors...",
-        allowClear: true,
-        width: '100%',
-        dropdownParent: $('#addSpecialtyModal')
-    });
-});
+function normalizeColor(value) {
+    if (!value) {
+        return DEFAULT_SPECIALTY_COLOR;
+    }
+
+    let normalized = value.trim();
+    if (!normalized.startsWith("#")) {
+        normalized = `#${normalized.replace(/#/g, "")}`;
+    }
+
+    if (normalized.length === 4) {
+        normalized = `#${normalized[1]}${normalized[1]}${normalized[2]}${normalized[2]}${normalized[3]}${normalized[3]}`;
+    }
+
+    return normalized.slice(0, 7);
+}
+
+function setColorValue(value) {
+    const normalized = normalizeColor(value);
+    if (specialtyColorInput) {
+        specialtyColorInput.value = normalized;
+    }
+    if (specialtyColorPicker) {
+        specialtyColorPicker.value = normalized;
+    }
+    if (specialtyColorSwatch) {
+        specialtyColorSwatch.style.backgroundColor = normalized;
+    }
+}
+
+function stripHtml(html) {
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    return div.textContent || div.innerText || "";
+}
+
+function truncateText(text, maxLength) {
+    if (!text) {
+        return "";
+    }
+    return text.length > maxLength ? `${text.substring(0, maxLength)}…` : text;
+}

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using BookingCareManagement.Domain.Abstractions;
 using BookingCareManagement.Domain.Aggregates.Doctor;
 using Microsoft.EntityFrameworkCore;
@@ -51,6 +52,23 @@ public class DoctorRepository : IDoctorRepository
             .Include(d => d.WorkingHours)
             .Include(d => d.DaysOff)
             .SingleOrDefaultAsync(d => d.Id == id, cancellationToken);
+    }
+
+    public async Task<List<Doctor>> GetByIdsWithTrackingAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        var idList = ids?.Distinct().ToArray() ?? Array.Empty<Guid>();
+        if (idList.Length == 0)
+        {
+            return new List<Doctor>();
+        }
+
+        return await _context.Doctors
+            .Include(d => d.AppUser)
+            .Include(d => d.Specialties)
+            .Include(d => d.WorkingHours)
+            .Include(d => d.DaysOff)
+            .Where(d => idList.Contains(d.Id))
+            .ToListAsync(cancellationToken);
     }
 
     public void RemoveWorkingHours(IEnumerable<DoctorWorkingHour> workingHours)

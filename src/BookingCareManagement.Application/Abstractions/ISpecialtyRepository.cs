@@ -1,13 +1,26 @@
-﻿using System;
-
-using BookingCareManagement.Domain.Aggregates.Doctor;
+﻿using BookingCareManagement.Domain.Aggregates.Doctor;
 
 namespace BookingCareManagement.Domain.Abstractions;
 
 public interface ISpecialtyRepository
 {
-    // Hàm này để tìm các chuyên khoa khi chúng ta tạo bác sĩ mới
+    // Hàm này bạn đã có:
     Task<List<Specialty>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default);
+
+    // THÊM CÁC HÀM MỚI:
+
+    // Dùng cho GET (All)
     Task<IEnumerable<Specialty>> GetAllAsync(CancellationToken cancellationToken = default);
+
+    // Dùng cho GET (by ID) - Bản NoTracking
     Task<Specialty?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+
+    // Dùng cho Update/Delete - Bản CÓ Tracking
+    Task<Specialty?> GetByIdWithTrackingAsync(Guid id, CancellationToken cancellationToken = default);
+
+    // Dùng cho POST (Create)
+    void Add(Specialty specialty);
+
+    // Dùng cho DELETE
+    void Remove(Specialty specialty);
 }

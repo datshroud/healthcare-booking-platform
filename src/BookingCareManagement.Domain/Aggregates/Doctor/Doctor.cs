@@ -42,6 +42,15 @@ public class Doctor
         if (_specialties.All(x => x.Id != s.Id)) _specialties.Add(s);
     }
 
+    public void RemoveSpecialty(Guid specialtyId)
+    {
+        var existing = _specialties.FirstOrDefault(x => x.Id == specialtyId);
+        if (existing is not null)
+        {
+            _specialties.Remove(existing);
+        }
+    }
+
     // Giữ nguyên logic ClearSpecialties
     public void ClearSpecialties()
     {

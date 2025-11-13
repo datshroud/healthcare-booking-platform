@@ -4,9 +4,13 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using BookingCareManagement.Application.Features.Appointments.Commands;
+using BookingCareManagement.Application.Features.Appointments.Queries;
 using BookingCareManagement.Application.Features.Auth.Commands;
 using BookingCareManagement.Application.Features.Doctors.Commands;
 using BookingCareManagement.Application.Features.Doctors.Queries;
+using BookingCareManagement.Application.Features.Specialties.Commands;
+using BookingCareManagement.Application.Features.Specialties.Queries;
 using BookingCareManagement.Domain.Aggregates.User;
 using BookingCareManagement.Domain.Abstractions;
 using BookingCareManagement.Infrastructure.Identity.Jwt;
@@ -105,6 +109,7 @@ namespace BookingCareManagement.Infrastructure.Identity
 
             services.AddScoped<IDoctorRepository, DoctorRepository>();
             services.AddScoped<ISpecialtyRepository, SpecialtyRepository>();
+            services.AddScoped<IAppointmentRepository, AppointmentRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
 
             services.AddScoped<GetAllDoctorsQueryHandler>();
@@ -117,6 +122,20 @@ namespace BookingCareManagement.Infrastructure.Identity
             services.AddScoped<UpdateDoctorDayOffCommandHandler>();
             services.AddScoped<DeleteDoctorDayOffCommandHandler>();
             services.AddScoped<DeleteDoctorCommandHandler>();
+
+            // Specialty handlers
+            services.AddScoped<GetAllSpecialtiesQueryHandler>();
+            services.AddScoped<CreateSpecialtyCommandHandler>();
+            services.AddScoped<UpdateSpecialtyCommandHandler>();
+            services.AddScoped<DeleteSpecialtyCommandHandler>();
+
+            // Appointment handlers
+            services.AddScoped<GetAllAppointmentsQueryHandler>();
+            services.AddScoped<GetAppointmentByIdQueryHandler>();
+            services.AddScoped<CreateAppointmentCommandHandler>();
+            services.AddScoped<CancelAppointmentCommandHandler>();
+            services.AddScoped<DeleteAppointmentCommandHandler>();
+
             return services;
         }
     }

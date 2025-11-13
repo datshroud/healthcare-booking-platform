@@ -24,7 +24,7 @@ public class DoctorConfiguration : IEntityTypeConfiguration<Doctor>
 
         // 3. Cấu hình quan hệ N-N với Specialty (giữ nguyên)
         e.HasMany(d => d.Specialties)
-         .WithMany()
+         .WithMany(s => s.Doctors)
          .UsingEntity(j => j.ToTable("DoctorSpecialties"));
 
         e.Property(d => d.LimitAppointments)

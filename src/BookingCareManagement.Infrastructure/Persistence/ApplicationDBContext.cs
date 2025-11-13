@@ -2,7 +2,6 @@ using System;
 using BookingCareManagement.Domain.Aggregates.Appointment;
 using BookingCareManagement.Domain.Aggregates.ClinicRoom;
 using BookingCareManagement.Domain.Aggregates.Doctor;
-using BookingCareManagement.Domain.Aggregates.Service;
 using BookingCareManagement.Domain.Aggregates.User;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -15,7 +14,6 @@ public class ApplicationDBContext : IdentityDbContext<AppUser, AppRole, string>
 
     public DbSet<Doctor> Doctors => Set<Doctor>();
     public DbSet<Specialty> Specialties => Set<Specialty>();
-    public DbSet<Service> Services => Set<Service>();
     public DbSet<ClinicRoom> ClinicRooms => Set<ClinicRoom>();
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<DoctorWorkingHour> DoctorWorkingHours => Set<DoctorWorkingHour>();

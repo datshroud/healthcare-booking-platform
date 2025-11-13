@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using BookingCareManagement.Domain.Abstractions;
+﻿using BookingCareManagement.Domain.Abstractions;
 using BookingCareManagement.Domain.Aggregates.Doctor;
 using Microsoft.EntityFrameworkCore;
 
@@ -19,17 +13,21 @@ public class SpecialtyRepository : ISpecialtyRepository
         _context = context;
     }
 
+    // Hàm cũ:
     public async Task<List<Specialty>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
     {
-        // Tìm tất cả chuyên khoa có ID nằm trong danh sách
         return await _context.Specialties
             .Where(s => ids.Contains(s.Id))
             .ToListAsync(cancellationToken);
     }
 
+    // THÊM CÁC HÀM MỚI:
+
     public async Task<IEnumerable<Specialty>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         return await _context.Specialties
+            .Include(s => s.Doctors)
+                .ThenInclude(d => d.AppUser)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
     }
@@ -37,7 +35,27 @@ public class SpecialtyRepository : ISpecialtyRepository
     public async Task<Specialty?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await _context.Specialties
+            .Include(s => s.Doctors)
+                .ThenInclude(d => d.AppUser)
             .AsNoTracking()
-            .FirstOrDefaultAsync(s => s.Id == id, cancellationToken);
+            .SingleOrDefaultAsync(s => s.Id == id, cancellationToken);
+    }
+
+    public async Task<Specialty?> GetByIdWithTrackingAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await _context.Specialties
+            .Include(s => s.Doctors)
+                .ThenInclude(d => d.AppUser)
+            .SingleOrDefaultAsync(s => s.Id == id, cancellationToken);
+    }
+
+    public void Add(Specialty specialty)
+    {
+        _context.Specialties.Add(specialty);
+    }
+
+    public void Remove(Specialty specialty)
+    {
+        _context.Specialties.Remove(specialty);
     }
 }
