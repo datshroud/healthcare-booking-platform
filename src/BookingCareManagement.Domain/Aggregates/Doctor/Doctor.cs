@@ -31,6 +31,8 @@ public class Doctor
     {
         if (_specialties.All(x => x.Id != s.Id)) _specialties.Add(s);
     }
+    private readonly List<Service.Service> _services = new();
+    public IReadOnlyCollection<Service.Service> Services => _services;
 
     // Giữ nguyên logic ClearSpecialties
     public void ClearSpecialties()

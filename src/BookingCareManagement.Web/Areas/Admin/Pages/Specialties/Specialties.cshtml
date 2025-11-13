@@ -5,8 +5,12 @@
 }
 
 @section Styles {
-
     <link rel="stylesheet" href="~/css/Specialties.css" />
+    <style>
+        .select2-container--open {
+            z-index: 1056; /* Đảm bảo Select2 hiển thị trên modal */
+        }
+    </style>
 }
 
 <div class="main-container">
@@ -28,43 +32,11 @@
         <div class="main-content1">
             <div class="sidebar1">
                 <div class="sidebar1-title">
-                    Danh mục <span class="sidebar1-count">(1)</span>
+                    Danh mục <span class="sidebar1-count" id="category-count">(0)</span>
                 </div>
 
-                <div class="category-card">
-                    <div class="category-card-header">
-                        <div>
-                            <div class="category-name">Tất cả các chuyên khoa</div>
-                            <div class="category-subtitle">Chuyên khoa</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="category-card other-category">
-                    <div class="category-card-header">
-                        <div>
-                            <div class="category-name">Mặc định</div>
-                            <div class="category-subtitle">3 Dịch vụ</div>
-                        </div>
-
-                        <div style="position: relative;">
-                            <button class="btn-more-category" onclick="toggleCategoryDropdown(this)">
-                                <i class="fas fa-ellipsis-h"></i>
-                            </button>
-
-                            <div class="dropdown-menu-category">
-                                <button class="dropdown-item-category">
-                                    <i class="fas fa-edit" style="width: 16px;"></i>
-                                    <span>Chỉnh sửa danh mục</span>
-                                </button>
-                                <button class="dropdown-item-category text-danger">
-                                    <i class="fas fa-trash" style="width: 16px;"></i>
-                                    <span>Xóa danh mục</span>
-                                </button>
-                            </div>
-                        </div>
-
-                    </div>
+                <div id="category-list-container">
+                    <div class="p-3 text-center text-muted">Đang tải danh mục...</div>
                 </div>
 
                 <button class="btn-add-category" data-bs-toggle="modal" data-bs-target="#addCategoryModal">
@@ -76,21 +48,12 @@
             <div class="specialties-content">
                 <div class="specialties-header">
                     <div class="specialties-title">
-                        Tất cả các chuyên khoa <span class="specialties-count">(3)</span>
+                        Tất cả các chuyên khoa <span class="specialties-count" id="service-count">(0)</span>
                     </div>
                     <div class="dropdown">
-                        <button class="sort-dropdown dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="display: flex; align-items: center; justify-content: space-between; width: 100%; min-width: 180px;">
-                            <div>
-                                <span>Loại:</span>
-                                <span id="current-sort-label" class="ms-1">Tên tăng dần</span>
-                            </div>
+                        <button class="sort-dropdown dropdown-toggle" ...>
                         </button>
-
                         <ul class="dropdown-menu" id="sort-options-menu">
-                            <li><a class="dropdown-item active" href="#">Tên tăng dần</a></li>
-                            <li><a class="dropdown-item" href="#">Tên giảm dần</a></li>
-                            <li><a class="dropdown-item" href="#">Giá tăng dần</a></li>
-                            <li><a class="dropdown-item" href="#">Giá giảm dần</a></li>
                         </ul>
                     </div>
                 </div>
@@ -103,139 +66,8 @@
                     <div></div>
                 </div>
 
-                <div class="specialty-item orange">
-                    <div class="drag-handle">
-                        <i class="fas fa-grip-vertical"></i>
-                    </div>
-                    <div class="specialty-info">
-                        <img src="https://ui-avatars.com/api/?name=Kiem+Tra&background=f9ab00&color=fff&size=40&rounded=true" class="specialty-avatar" alt="Specialty">
-                        <div class="specialty-details">
-                            <div class="specialty-name">Kiểm tra</div>
-                            <div class="specialty-duration">1 giờ</div>
-                        </div>
-                    </div>
-                    <div class="specialty-price">200,00 đ</div>
-                    <div class="specialty-doctors">
-                        <div class="doctor-avatar-small doctor-avatar-teal">D</div>
-                        <img src="https://ui-avatars.com/api/?name=Jane+Doe&background=4a90e2&color=fff&size=32&rounded=true" class="doctor-avatar-small" alt="Doctor">
-                    </div>
-                    <div style="position: relative;">
-                        <button class="btn-more-specialty" onclick="toggleSpecialtyDropdown(this)">
-                            <i class="fas fa-ellipsis-h"></i>
-                        </button>
-                        <div class="dropdown-menu-specialty">
-                            <button class="dropdown-item-specialty">
-                                <i class="fas fa-edit"></i>
-                                <span>Chỉnh sửa dịch vụ</span>
-                            </button>
-                            <button class="dropdown-item-specialty">
-                                <i class="fas fa-copy"></i>
-                                <span>Dịch vụ trùng lặp</span>
-                            </button>
-                            <button class="dropdown-item-specialty">
-                                <i class="fas fa-share-alt"></i>
-                                <span>Chia sẻ Đặt phòng</span>
-                            </button>
-                            <button class="dropdown-item-specialty">
-                                <i class="fas fa-ban"></i>
-                                <span>Vô hiệu hóa dịch vụ</span>
-                            </button>
-                            <button class="dropdown-item-specialty text-danger">
-                                <i class="fas fa-trash"></i>
-                                <span>Xóa dịch vụ</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="specialty-item blue">
-                    <div class="drag-handle">
-                        <i class="fas fa-grip-vertical"></i>
-                    </div>
-                    <div class="specialty-info">
-                        <img src="https://ui-avatars.com/api/?name=Phau+Thuat&background=1a73e8&color=fff&size=40&rounded=true" class="specialty-avatar" alt="Specialty">
-                        <div class="specialty-details">
-                            <div class="specialty-name">Phẫu thuật nha khoa</div>
-                            <div class="specialty-duration">4 giờ</div>
-                        </div>
-                    </div>
-                    <div class="specialty-price">1.000,00 đ</div>
-                    <div class="specialty-doctors">
-                        <div class="doctor-avatar-small doctor-avatar-teal">D</div>
-                        <img src="https://ui-avatars.com/api/?name=Jane+Doe&background=4a90e2&color=fff&size=32&rounded=true" class="doctor-avatar-small" alt="Doctor">
-                    </div>
-                    <div style="position: relative;">
-                        <button class="btn-more-specialty" onclick="toggleSpecialtyDropdown(this)">
-                            <i class="fas fa-ellipsis-h"></i>
-                        </button>
-                        <div class="dropdown-menu-specialty">
-                            <button class="dropdown-item-specialty">
-                                <i class="fas fa-edit"></i>
-                                <span>Chỉnh sửa chuyên khoa</span>
-                            </button>
-                            <button class="dropdown-item-specialty">
-                                <i class="fas fa-copy"></i>
-                                <span>Chuyên khoa trùng lặp</span>
-                            </button>
-                            <button class="dropdown-item-specialty">
-                                <i class="fas fa-share-alt"></i>
-                                <span>Chia sẻ Đặt phòng</span>
-                            </button>
-                            <button class="dropdown-item-specialty">
-                                <i class="fas fa-ban"></i>
-                                <span>Vô hiệu hóa chuyên khoa</span>
-                            </button>
-                            <button class="dropdown-item-specialty text-danger">
-                                <i class="fas fa-trash"></i>
-                                <span>Xóa chuyên khoa</span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="specialty-item green">
-                    <div class="drag-handle">
-                        <i class="fas fa-grip-vertical"></i>
-                    </div>
-                    <div class="specialty-info">
-                        <img src="https://ui-avatars.com/api/?name=Nho+Rang&background=34a853&color=fff&size=40&rounded=true" class="specialty-avatar" alt="Specialty">
-                        <div class="specialty-details">
-                            <div class="specialty-name">Nhổ răng</div>
-                            <div class="specialty-duration">1 giờ</div>
-                        </div>
-                    </div>
-                    <div class="specialty-price">400,00 đ</div>
-                    <div class="specialty-doctors">
-                        <div class="doctor-avatar-small doctor-avatar-teal">D</div>
-                        <img src="https://ui-avatars.com/api/?name=Jane+Doe&background=4a90e2&color=fff&size=32&rounded=true" class="doctor-avatar-small" alt="Doctor">
-                    </div>
-                    <div style="position: relative;">
-                        <button class="btn-more-specialty" onclick="toggleSpecialtyDropdown(this)">
-                            <i class="fas fa-ellipsis-h"></i>
-                        </button>
-                        <div class="dropdown-menu-specialty">
-                            <button class="dropdown-item-specialty">
-                                <i class="fas fa-edit"></i>
-                                <span>Chỉnh sửa chuyên khoa</span>
-                            </button>
-                            <button class="dropdown-item-specialty">
-                                <i class="fas fa-copy"></i>
-                                <span>Chuyên khoa trùng lặp</span>
-                            </button>
-                            <button class="dropdown-item-specialty">
-                                <i class="fas fa-share-alt"></i>
-                                <span>Chia sẻ Đặt phòng</span>
-                            </button>
-                            <button class="dropdown-item-specialty">
-                                <i class="fas fa-ban"></i>
-                                <span>Vô hiệu hóa chuyên khoa</span>
-                            </button>
-                            <button class="dropdown-item-specialty text-danger">
-                                <i class="fas fa-trash"></i>
-                                <span>Xóa chuyên khoa</span>
-                            </button>
-                        </div>
-                    </div>
+                <div id="service-list-container">
+                    <div class="p-3 text-center text-muted">Đang tải dịch vụ...</div>
                 </div>
             </div>
         </div>
@@ -250,89 +82,86 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="row g-4">
-                    <div class="col-lg-7">
-                        <div class="row">
-                            <div class="col-md-5">
-                                <label class="modal-form-label">Hình ảnh chuyên khoa</label>
-
-                                <input type="file" id="specialtyImageInput" hidden accept="image/*">
-
-                                <div class="specialty-upload-box" id="specialtyUploadBox">
-                                    <i class="fas fa-cloud-upload-alt"></i>
-                                    <p>
-                                        Kéo và thả hoặc <br>
-                                        <a href="#"
-                                           onclick="document.getElementById('specialtyImageInput').click(); event.preventDefault();">choose from files</a>
-                                    </p>
+                <form id="add-service-form">
+                    <div class="row g-4">
+                        <div class="col-lg-7">
+                            <div class="row">
+                                <div class="col-md-5">
+                                    <label class="modal-form-label">Hình ảnh chuyên khoa</label>
+                                    <input type="file" id="specialtyImageInput" hidden accept="image/*">
+                                    <div class="specialty-upload-box" id="specialtyUploadBox">
+                                        <i class="fas fa-cloud-upload-alt"></i>
+                                        <p>Kéo và thả hoặc <br><a href="#" onclick="document.getElementById('specialtyImageInput').click(); event.preventDefault();">chọn từ tệp</a></p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="col-md-7">
-                                <div class="mb-3">
-                                    <label for="specialtyName" class="modal-form-label">Tên chuyên khoa <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="specialtyName" placeholder="Nhập tên">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="specialtyCategory" class="modal-form-label">Danh mục <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="specialtyCategory">
-                                        <option value="default" selected>Mặc định</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="specialtyColor" class="modal-form-label">Màu sắc</label>
-                                    <div class="color-picker-wrapper">
-                                        <input type="text" class="form-control" id="specialtyColor" value="#c0eb75">
-                                        <div class="color-swatch" style="background-color: #c0eb75;">
-                                            <input type="color" value="#c0eb75" oninput="this.previousElementSibling.value = this.value; this.parentElement.style.backgroundColor = this.value;">
+                                <div class="col-md-7">
+                                    <div class="mb-3">
+                                        <label for="specialtyName" class="modal-form-label">Tên chuyên khoa <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="specialtyName" placeholder="Nhập tên">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="specialtyCategory" class="modal-form-label">Danh mục <span class="text-danger">*</span></label>
+                                        <select class="form-select" id="specialtyCategory">
+                                        </select>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="specialtyColor" class="modal-form-label">Màu sắc</label>
+                                        <div class="color-picker-wrapper">
+                                            <input type="text" class="form-control" id="specialtyColor" value="#c0eb75">
+                                            <div class="color-swatch" style="background-color: #c0eb75;">
+                                                <input type="color" value="#c0eb75" oninput="this.previousElementSibling.value = this.value; this.parentElement.style.backgroundColor = this.value;">
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="col-lg-5">
-                        <label for="specialtyDescriptionEditor" class="modal-form-label">Mô tả</label>
-                        <textarea id="specialtyDescriptionEditor" name="specialtyDescriptionEditor" placeholder="Nhập mô tả ở đây ...">
-                        </textarea>
-                        <small class="form-text text-muted mt-2 d-block">Mô tả sẽ xuất hiện trên trang đặt lịch của bạn.</small>
-                    </div>
+                        <div class="col-lg-5">
+                            <label for="specialtyDescriptionEditor" class="modal-form-label">Mô tả</label>
+                            <textarea id="specialtyDescriptionEditor" name="specialtyDescriptionEditor" placeholder="Nhập mô tả ở đây ..."></textarea>
+                            <small class="form-text text-muted mt-2 d-block">Mô tả sẽ xuất hiện trên trang đặt lịch của bạn.</small>
+                        </div>
 
-                    <div class="col-12"><hr class="my-2"></div>
+                        <div class="col-12"><hr class="my-2"></div>
 
-                    <div class="col-md-6">
-                        <label for="specialtyDoctors" class="modal-form-label">Bác sĩ <span class="text-danger">*</span></label>
-                        <select class="form-select" id="specialtyDoctors" multiple>
-                            <option value="1">Đặng Minh Bảo</option>
-                            <option value="2">Jane Doe</option>
-                        </select>
-                    </div>
+                        <div class="col-md-6">
+                            <label for="specialtyDoctors" class="modal-form-label">Bác sĩ <span class="text-danger">*</span></label>
+                            <select class="form-select" id="specialtyDoctors" multiple>
+                            </select>
+                        </div>
 
-                    <div class="col-md-6">
-                        <label for="specialtyDuration" class="modal-form-label">Thời gian <span class="text-danger">*</span></label>
-                        <select class="form-select" id="specialtyDuration">
-                            <option value="" selected>Chọn thời gian</option>
-                            <option value="3600">1 giờ</option>
-                            <option value="14400">4 giờ</option>
-                        </select>
-                        <small class="form-text text-muted mt-2 d-block" style="font-size: 12px;">
-                            Nếu bạn cần một khoảng thời gian khác không có trong danh sách, vui lòng truy cập <a href="#">Cài đặt chung</a> và thay đổi Bước thời gian mặc định.
-                        </small>
-                    </div>
+                        <div class="col-md-6">
+                            <label for="specialtyDuration" class="modal-form-label">Thời gian <span class="text-danger">*</span></label>
+                            <select class="form-select" id="specialtyDuration">
+                                <option value="" selected>Chọn thời gian</option>
+                                <option value="30">30 phút</option>
+                                <option value="60">1 giờ</option>
+                                <option value="90">1 giờ 30 phút</option>
+                                <option value="120">2 giờ</option>
+                                <option value="150">2 giờ 30 phút</option>
+                                <option value="180">3 giờ</option>
+                                <option value="210">3 giờ 30 phút</option>
+                                <option value="240">4 giờ</option>
+                            </select>
+                            <small class="form-text text-muted mt-2 d-block" style="font-size: 12px;">
+                                Nếu bạn cần một khoảng thời gian khác...
+                            </small>
+                        </div>
 
-                    <div class="col-md-6">
-                        <label for="specialtyPrice" class="modal-form-label">Giá <span class="text-danger">*</span></label>
-                        <div class="input-group">
-                            <span class="input-group-text">₫</span>
-                            <input type="text" class="form-control" id="specialtyPrice" placeholder="0.00" value="0.00">
+                        <div class="col-md-6">
+                            <label for="specialtyPrice" class="modal-form-label">Giá <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <span class="input-group-text">₫</span>
+                                <input type="text" class="form-control" id="specialtyPrice" placeholder="0.00" value="0.00">
+                            </div>
                         </div>
                     </div>
-
-                </div>
+                </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-modal-cancel" data-bs-dismiss="modal">Hủy bỏ</button>
-                <button type="button" class="btn btn-add">Thêm vào</button>
+                <button type="button" class="btn btn-add" id="btn-add-service-submit">Thêm vào</button>
             </div>
         </div>
     </div>
@@ -346,21 +175,21 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form>
+                <form id="add-category-form">
                     <div class="mb-3">
-                        <label for="categoryName" class="modal-form-label">Tên danh mục <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="categoryName" placeholder="">
+                        <label for="categoryNameInput" class="modal-form-label">Tên danh mục <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="categoryNameInput" placeholder="">
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-modal-cancel" data-bs-dismiss="modal">Hủy bỏ</button>
-                <button type="button" class="btn btn-add">Thêm danh mục</button>
+                <button type="button" class="btn btn-add" id="btn-add-category-submit">Thêm danh mục</button>
             </div>
         </div>
     </div>
 </div>
 
 @section Scripts {
-    <script src="~/js/SpecialtiesAdmin.js"></script>
+    <script src="~/js/SpecialtiesAdmin.js" asp-append-version="true"></script>
 }

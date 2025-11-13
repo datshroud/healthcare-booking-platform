@@ -1,6 +1,4 @@
-using System;
-using BookingCareManagement.Domain.Aggregates.Doctor;
-using BookingCareManagement.Domain.Aggregates.Service;
+﻿using BookingCareManagement.Domain.Aggregates.Service;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,10 +11,21 @@ public class ServiceConfiguration : IEntityTypeConfiguration<Service>
         e.ToTable("Services");
         e.HasKey(x => x.Id);
         e.Property(x => x.Name).IsRequired().HasMaxLength(200);
-        e.Property(x => x.Price).HasPrecision(10, 2);
+        e.Property(s => s.Price).HasColumnType("decimal(18,2)");
 
-        e.HasMany<Specialty>() // many-to-many Service <-> Specialty
-            .WithMany()
-            .UsingEntity(j => j.ToTable("ServiceSpecialties"));
+        // THÊM 2 DÒNG NÀY:
+        e.Property(x => x.Color).HasMaxLength(10); // Cho mã hex #RRGGBB
+        e.Property(x => x.ImageUrl).HasMaxLength(500);
+
+        // Cấu hình quan hệ 1-N với Specialty (Danh mục) (CÓ THỂ BẠN ĐÃ CÓ)
+        e.HasOne(s => s.Specialty)
+         .WithMany() // Nếu Specialty không cần list Services
+         .HasForeignKey(s => s.SpecialtyId);
+
+        // THÊM CẤU HÌNH M-N VỚI DOCTOR:
+        // Tự động tạo bảng "DoctorServices"
+        e.HasMany(s => s.Doctors)
+         .WithMany(d => d.Services)
+         .UsingEntity(j => j.ToTable("DoctorServices"));
     }
 }
