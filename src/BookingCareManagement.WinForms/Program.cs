@@ -16,7 +16,7 @@ static class Program
         ApplicationConfiguration.Initialize();
 
         using var host = CreateHostBuilder().Build();
-        var mainForm = host.Services.GetRequiredService<Form1>();
+        var mainForm = host.Services.GetRequiredService<MainForm>();
         System.Windows.Forms.Application.Run(mainForm);
     }
 
@@ -47,7 +47,7 @@ static class Program
                         ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
                     };
                 });
-                services.AddTransient<Form1>();
+                services.AddTransient<MainForm>();
             });
     }
 }
