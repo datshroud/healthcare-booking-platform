@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 
 namespace BookingCareManagement.Domain.Aggregates.Appointment;
 
@@ -12,7 +12,7 @@ public class Appointment
     public DateTime EndUtc { get; private set; }
     public string PatientName { get; private set; }
     public string Status { get; private set; } = "Confirmed";
-
+    public string PatientId { get; set; } // Khóa ngoại trỏ đến AppUser.Id
     private Appointment() { }
     public Appointment(Guid doctorId, Guid serviceId, Guid roomId, DateTime startUtc, TimeSpan duration, string patientName)
     {
