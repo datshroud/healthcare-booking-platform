@@ -143,7 +143,7 @@ namespace BookingCareManagement.WinForms
             Panel searchPanel = new Panel
             {
                 Location = new Point(0, 0),
-                Size = new Size(1310, 70),
+                Size = new Size(1210, 70),
                 BackColor = Color.White
             };
 
