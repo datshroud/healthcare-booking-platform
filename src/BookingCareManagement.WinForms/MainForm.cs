@@ -376,7 +376,7 @@ namespace BookingCareManagement.WinForms
                 "✅ Cuộc hẹn",
                 "👥 Bác sĩ",
                 "👤 Khách hàng",
-                "🎯 Dịch vụ",
+                "🎯 Chuyên khoa",
                 "📍 Địa điểm",
                 "💰 Tài chính",
                 "⚙️ Cài đặt"
