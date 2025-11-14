@@ -65,12 +65,19 @@ public class SpecialtiesModel : PageModel
             return Page();
         }
 
-        var specialty = await _specialtyRepository.GetByIdAsync(selectedSpecialtyId.Value);
+        var specialty = await _specialtyRepository.GetByIdWithTrackingAsync(selectedSpecialtyId.Value);
         if (specialty == null)
         {
             ModelState.AddModelError(string.Empty, "Chuyên khoa đã chọn không hợp lệ.");
             await PopulatePageStateAsync(doctor);
             return Page();
+        }
+
+        var alreadyAssigned = doctor.Specialties.Any(s => s.Id == specialty.Id);
+        if (alreadyAssigned && doctor.Specialties.Count == 1)
+        {
+            StatusMessage = "Chuyên khoa không thay đổi.";
+            return RedirectToPage(new { doctorId = DoctorId });
         }
 
         doctor.ClearSpecialties();

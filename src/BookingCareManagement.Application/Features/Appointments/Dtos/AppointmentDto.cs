@@ -11,5 +11,6 @@ public class AppointmentDto
     public DateTime StartUtc { get; set; }
     public DateTime EndUtc { get; set; }
     public string PatientName { get; set; } = string.Empty;
+    public string CustomerPhone { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
 }

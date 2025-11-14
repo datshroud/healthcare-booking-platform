@@ -13,6 +13,7 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
         e.ToTable("Appointments");
         e.HasKey(x => x.Id);
         e.Property(x => x.PatientName).IsRequired().HasMaxLength(200);
+        e.Property(x => x.CustomerPhone).IsRequired().HasMaxLength(30);
         e.Property(x => x.Status).HasMaxLength(30).HasDefaultValue("Confirmed");
         e.HasIndex(x => new { x.DoctorId, x.StartUtc, x.EndUtc });
         e.HasIndex(x => new { x.ClinicRoomId, x.StartUtc, x.EndUtc });

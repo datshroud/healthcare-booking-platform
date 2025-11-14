@@ -14,6 +14,7 @@ public class CreateAppointmentCommand
     public DateTime StartUtc { get; set; }
     public int DurationMinutes { get; set; } = 30;
     public string PatientName { get; set; } = string.Empty;
+    public string CustomerPhone { get; set; } = string.Empty;
 }
 
 public class CreateAppointmentCommandHandler
@@ -41,13 +42,19 @@ public class CreateAppointmentCommandHandler
             throw new ValidationException("Patient name is required.");
         }
 
+        if (string.IsNullOrWhiteSpace(command.CustomerPhone))
+        {
+            throw new ValidationException("Customer phone is required.");
+        }
+
         var appointment = new Appointment(
             command.DoctorId,
             command.ServiceId,
             command.ClinicRoomId,
             command.StartUtc,
             TimeSpan.FromMinutes(command.DurationMinutes),
-            command.PatientName.Trim());
+            command.PatientName.Trim(),
+            command.CustomerPhone.Trim());
 
         _appointmentRepository.Add(appointment);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

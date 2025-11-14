@@ -15,6 +15,7 @@ public static class AppointmentMappingExtensions
             StartUtc = appointment.StartUtc,
             EndUtc = appointment.EndUtc,
             PatientName = appointment.PatientName,
+            CustomerPhone = appointment.CustomerPhone,
             Status = appointment.Status
         };
     }

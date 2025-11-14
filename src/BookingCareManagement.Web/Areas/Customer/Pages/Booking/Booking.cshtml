@@ -17,67 +17,25 @@
                 <button id="btn-back" class="btn btn-outline-light btn-sm me-2 d-none">
                     <i class="fa-solid fa-arrow-left"></i>
                 </button>
-                <h4 class="fw-bold mb-0" id="left-title">Chọn dịch vụ</h4>
+                <h4 class="fw-bold mb-0" id="left-title">Chọn chuyên khoa</h4>
             </div>
 
             <!-- Ô tìm kiếm -->
             <div class="input-group mb-4">
-                <input type="text" id="search-box" class="form-control rounded-pill px-3 search-services-booking" placeholder="Tìm kiếm dịch vụ" />
+                <input type="text" id="search-box" class="form-control rounded-pill px-3 search-services-booking" placeholder="Tìm kiếm chuyên khoa" />
             </div>
 
-            <!-- Danh sách dịch vụ -->
+            <!-- Danh sách chuyên khoa -->
             <div id="service-list">
-                <div class="service-item d-flex align-items-center justify-content-between p-3 mb-3 rounded-3 bg-body-tertiary text-light border border-secondary">
-                    <div class="d-flex align-items-center">
-                        <img src="https://goodbone.trafft.com/api/v1/public/media/5eb7864c-c939-47d6-83dc-8a54cd497baf?size=avatar" class="rounded me-3" alt="service" width="70" />
-                        <div>
-                            <h5 class="mb-1 fw-semibold service-name">Vật lý trị liệu</h5>
-                            <small class="text-secondary">Thời lượng <b>1h</b> &nbsp; Sức chứa <b>1</b></small>
-                        </div>
-                    </div>
-                    <div class="text-end">
-                        <div class="fw-bold mb-2">$40.00</div>
-                        <button class="btn btn-success btn-sm choose-service" data-name="Vật lý trị liệu" data-duration="1h" data-price="40.00">Chọn</button>
-                    </div>
-                </div>
-
-                <div class="service-item d-flex align-items-center justify-content-between p-3 mb-3 rounded-3 bg-body-tertiary text-light border border-secondary">
-                    <div class="d-flex align-items-center">
-                        <img src="https://goodbone.trafft.com/api/v1/public/media/6aa3dfc5-27f1-45bf-aa6c-f3bd124799c8?size=avatar" class="rounded me-3" alt="service" width="70" />
-                        <div>
-                            <h5 class="mb-1 fw-semibold service-name">Giãn cơ trị liệu</h5>
-                            <small class="text-secondary">Thời lượng <b>1h</b> &nbsp; Sức chứa <b>1</b></small>
-                        </div>
-                    </div>
-                    <div class="text-end">
-                        <div class="fw-bold mb-2">$30.00</div>
-                        <button class="btn btn-success btn-sm choose-service" data-name="Giãn cơ trị liệu" data-duration="1h" data-price="30.00">Chọn</button>
-                    </div>
+                <div class="text-center text-secondary py-5">
+                    Đang tải danh sách chuyên khoa...
                 </div>
             </div>
 
-            <!-- Danh sách nhân viên -->
+            <!-- Danh sách bác sĩ -->
             <div id="employee-list" class="d-none">
-                <div class="employee-item d-flex align-items-center justify-content-between p-3 mb-3 rounded-3 bg-body-tertiary text-light border border-secondary">
-                    <div class="d-flex align-items-center">
-                        <img src="https://randomuser.me/api/portraits/men/10.jpg" class="rounded-circle me-3" alt="employee" width="60" />
-                        <div>
-                            <h5 class="mb-1 fw-semibold employee-name">Nguyễn Văn An</h5>
-                            <small class="text-secondary">Chuyên viên trị liệu</small>
-                        </div>
-                    </div>
-                    <button class="btn btn-primary btn-sm choose-employee" data-name="Nguyễn Văn An">Chọn</button>
-                </div>
-
-                <div class="employee-item d-flex align-items-center justify-content-between p-3 mb-3 rounded-3 bg-body-tertiary text-light border border-secondary">
-                    <div class="d-flex align-items-center">
-                        <img src="https://randomuser.me/api/portraits/women/12.jpg" class="rounded-circle me-3" alt="employee" width="60" />
-                        <div>
-                            <h5 class="mb-1 fw-semibold employee-name">Trần Thị Bình</h5>
-                            <small class="text-secondary">Nhân viên massage</small>
-                        </div>
-                    </div>
-                    <button class="btn btn-primary btn-sm choose-employee" data-name="Trần Thị Bình">Chọn</button>
+                <div class="text-center text-secondary py-5">
+                    Vui lòng chọn chuyên khoa trước.
                 </div>
             </div>
 
@@ -90,7 +48,7 @@
 
                 <div class="mb-4">
                     <label for="time-slot" class="form-label fw-semibold">Chọn giờ</label>
-                    <select id="time-slot" class="form-select bg-dark text-light border-secondary">
+                    <select id="time-slot" class="form-select bg-dark text-light border-secondary" disabled>
                         <option value="">-- Vui lòng chọn ngày trước --</option>
                     </select>
                 </div>
@@ -207,7 +165,7 @@
 
             <div class="border-top border-secondary py-3">
                 <i class="bi bi-briefcase me-2"></i>
-                <span class="fw-semibold brand-booking">Dịch vụ</span>
+                <span class="fw-semibold brand-booking">Chuyên khoa</span>
                 <div id="selected-service" class="mt-2"></div>
             </div>
 

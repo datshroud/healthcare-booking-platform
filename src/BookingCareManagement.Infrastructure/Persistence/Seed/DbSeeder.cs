@@ -1,4 +1,5 @@
 using System.Linq;
+using BookingCareManagement.Domain.Aggregates.ClinicRoom;
 using BookingCareManagement.Domain.Aggregates.Doctor;
 using BookingCareManagement.Domain.Aggregates.User;
 using BookingCareManagement.Infrastructure.Persistence;
@@ -96,6 +97,12 @@ public class DbSeeder
         }
 
         await dbContext.SaveChangesAsync();
+
+        if (!await dbContext.ClinicRooms.AsNoTracking().AnyAsync())
+        {
+            dbContext.ClinicRooms.Add(new ClinicRoom("CR-001", 1));
+            await dbContext.SaveChangesAsync();
+        }
 
         var customer = await userMgr.FindByEmailAsync("customer@local.dev");
         if (customer is null)

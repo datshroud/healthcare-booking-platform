@@ -11,13 +11,26 @@ public class Appointment
     public DateTime StartUtc { get; private set; }
     public DateTime EndUtc { get; private set; }
     public string PatientName { get; private set; }
+    public string CustomerPhone { get; private set; } = string.Empty;
     public string Status { get; private set; } = "Confirmed";
 
     private Appointment() { }
-    public Appointment(Guid doctorId, Guid serviceId, Guid roomId, DateTime startUtc, TimeSpan duration, string patientName)
+    public Appointment(
+        Guid doctorId,
+        Guid serviceId,
+        Guid roomId,
+        DateTime startUtc,
+        TimeSpan duration,
+        string patientName,
+        string customerPhone)
     {
-        DoctorId = doctorId; ServiceId = serviceId; ClinicRoomId = roomId;
-        StartUtc = startUtc; EndUtc = startUtc.Add(duration); PatientName = patientName;
+        DoctorId = doctorId;
+        ServiceId = serviceId;
+        ClinicRoomId = roomId;
+        StartUtc = startUtc;
+        EndUtc = startUtc.Add(duration);
+        PatientName = patientName;
+        CustomerPhone = customerPhone;
     }
 
     public void Cancel() => Status = "Cancelled";
