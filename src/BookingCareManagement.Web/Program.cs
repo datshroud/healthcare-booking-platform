@@ -1,5 +1,8 @@
 
+using BookingCareManagement.Application.Abstractions;
 using BookingCareManagement.Application.Features.Auth.Commands;
+using BookingCareManagement.Application.Features.Customers.Commands;
+using BookingCareManagement.Application.Features.Customers.Queries;
 using BookingCareManagement.Application.Features.Doctors.Commands;
 using BookingCareManagement.Application.Features.Doctors.Queries;
 using BookingCareManagement.Application.Features.Services.Commands;
@@ -18,7 +21,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
-using BookingCareManagement.Application.Abstractions;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -87,6 +89,12 @@ builder.Services.AddScoped<GetAllSpecialtiesQueryHandler>();
 builder.Services.AddScoped<CreateSpecialtyCommandHandler>();
 builder.Services.AddScoped<UpdateSpecialtyCommandHandler>();
 builder.Services.AddScoped<DeleteSpecialtyCommandHandler>();
+
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<GetAllCustomersQueryHandler>();
+builder.Services.AddScoped<CreateCustomerCommandHandler>();
+builder.Services.AddScoped<UpdateCustomerCommandHandler>();
+builder.Services.AddScoped<DeleteCustomerCommandHandler>();
 
 var app = builder.Build();
 

@@ -1,0 +1,178 @@
+﻿@page "/customers"
+@model BookingCareManagement.Web.Areas.Doctor.Pages.Customers.customersModel
+@{
+    ViewData["Title"] = "Customers";
+}
+
+@section Styles {
+
+  
+    <link rel="stylesheet" href="~/css/customer.css" />
+}
+
+<div class="customer-page container-fluid">
+    <div class="header-custom">
+        <h1>Customers (<span id="customerCount">0</span>)</h1>
+        <div class="header-buttons">
+            <button id="exportBtn" class="btn btn-custom">
+                <i class="fas fa-download"></i> Export Data
+            </button>
+            <button id="importBtn" class="btn btn-custom">
+                <i class="fas fa-upload"></i> Import Data
+            </button>
+            <button id="openAddBtn" class="btn btn-custom btn-primary-custom">
+                <i class="fas fa-plus"></i> Add Customer
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="search-box">
+            <div class="search-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-input" id="searchInput" placeholder="Search">
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">
+                            <input type="checkbox" id="selectAll">
+                        </th>
+                        <th>Customer</th>
+                        <th># of Appointments</th>
+                        <th>Last Appointment</th>
+                        <th>Created</th>
+                        <th style="width: 50px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="customerTableBody">
+                    <tr>
+                        <td colspan="6" class="text-center">Đang tải dữ liệu...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer-custom">
+            Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
+        </div>
+    </div>
+</div>
+
+<div id="editModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-custom">
+        <div class="modal-header-custom">
+            <h3 id="modalTitle">Edit Customer</h3>
+            <div class="modal-actions-right">
+                <button id="modalDeleteBtn" class="btn btn-danger btn-sm">Delete Customer</button>
+                <button id="modalCloseBtn" class="btn btn-light btn-sm">Close</button>
+            </div>
+        </div>
+
+        <div class="modal-body-custom">
+            <form id="editCustomerForm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">First Name*</label>
+                        <input id="firstNameInput" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Last Name*</label>
+                        <input id="lastNameInput" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Email*</label>
+                        <input id="emailInput" class="form-control" type="email" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Phone</label>
+                        <input id="phoneInput" class="form-control" type="tel">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Gender</label>
+                        <select id="genderSelect" class="form-control">
+                            <option value="">Select gender</option>
+                            <option>Male</option>
+                            <option>Female</option>
+                            <option>Other</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Date of birth</label>
+                        <input id="dobInput" class="form-control" type="date">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Internal Customer Note</label>
+                        <textarea id="noteTextarea" class="form-control" rows="4" placeholder="This note is invisible to your customers"></textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <a href="#" class="btn btn-outline-secondary btn-sm">Customer Information (Custom Fields)</a>
+                    </div>
+
+                    <div class="col-12 text-end">
+                        <button id="saveCustomerBtn" type="submit" class="btn btn-primary">Save</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div id="addModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-custom modal-small">
+        <div class="modal-header-custom">
+            <h3>Add Customer</h3>
+            <button id="addModalCloseX" class="btn btn-light btn-sm">×</button>
+        </div>
+        <div class="modal-body-custom">
+            <form id="addCustomerForm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">First Name*</label>
+                        <input id="addFirstName" class="form-control" placeholder="Enter first name" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Last Name*</label>
+                        <input id="addLastName" class="form-control" placeholder="Enter last name" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Email*</label>
+                        <input id="addEmail" class="form-control" type="email" placeholder="example@yourcompany.com" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Phone</label>
+                        <input id="addPhone" class="form-control" type="tel" placeholder="Phone number">
+                    </div>
+
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input id="sendLoginCheck" class="form-check-input" type="checkbox">
+                            <label class="form-check-label" for="sendLoginCheck">Send an email with the customer's login details</label>
+                        </div>
+                        <small class="text-muted">Option requires email address.</small>
+                    </div>
+
+                    <div class="col-12 text-end">
+                        <button id="addCancelBtn" type="button" class="btn btn-outline-secondary">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Add Customer</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- hidden file input for import -->
+<input id="importFile" type="file" accept="text/csv,.csv" style="display:none">
+
+@section Scripts {
+    <!-- Page-specific scripts -->
+    
+    <script src="~/js/customer.js"></script>
+}
