@@ -114,9 +114,12 @@ namespace BookingCareManagement.Infrastructure.Identity
 
             services.AddScoped<GetAllDoctorsQueryHandler>();
             services.AddScoped<GetDoctorByIdQueryHandler>();
+            services.AddScoped<GetDoctorProfileQueryHandler>();
             services.AddScoped<GetDoctorWorkingHoursQueryHandler>();
+            services.AddScoped<GetDoctorDayOffsQueryHandler>();
             services.AddScoped<CreateDoctorCommandHandler>();
             services.AddScoped<UpdateDoctorCommandHandler>();
+            services.AddScoped<UpdateDoctorProfileCommandHandler>();
             services.AddScoped<UpdateDoctorHoursCommandHandler>();
             services.AddScoped<CreateDoctorDayOffCommandHandler>();
             services.AddScoped<UpdateDoctorDayOffCommandHandler>();
@@ -125,6 +128,7 @@ namespace BookingCareManagement.Infrastructure.Identity
 
             // Specialty handlers
             services.AddScoped<GetAllSpecialtiesQueryHandler>();
+            services.AddScoped<GetSpecialtyByIdQueryHandler>();
             services.AddScoped<CreateSpecialtyCommandHandler>();
             services.AddScoped<UpdateSpecialtyCommandHandler>();
             services.AddScoped<DeleteSpecialtyCommandHandler>();

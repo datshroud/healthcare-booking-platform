@@ -54,6 +54,11 @@ public class SpecialtyRepository : ISpecialtyRepository
         _context.Specialties.Add(specialty);
     }
 
+    public void Update(Specialty specialty)
+    {
+        _context.Specialties.Update(specialty);
+    }
+
     public void Remove(Specialty specialty)
     {
         _context.Specialties.Remove(specialty);

@@ -21,6 +21,9 @@ public interface ISpecialtyRepository
     // Dùng cho POST (Create)
     void Add(Specialty specialty);
 
+    // Dùng cho PUT (Update)
+    void Update(Specialty specialty);
+
     // Dùng cho DELETE
     void Remove(Specialty specialty);
 }

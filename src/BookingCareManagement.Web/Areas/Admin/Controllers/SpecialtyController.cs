@@ -20,6 +20,23 @@ public class SpecialtyController : ControllerBase
         return Ok(specialties);
     }
 
+    [HttpGet("{id:guid}")]
+    public async Task<ActionResult<SpecialtyDto>> GetById(
+        [FromServices] GetSpecialtyByIdQueryHandler handler,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var dto = await handler.Handle(new GetSpecialtyByIdQuery { Id = id }, cancellationToken);
+            return Ok(dto);
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new ProblemDetails { Title = "Not Found", Detail = ex.Message });
+        }
+    }
+
     // POST: /api/Specialty
     [HttpPost]
     public async Task<ActionResult<SpecialtyDto>> Create(
@@ -30,7 +47,7 @@ public class SpecialtyController : ControllerBase
         try
         {
             var dto = await handler.Handle(command, cancellationToken);
-            return Ok(dto);
+            return CreatedAtAction(nameof(GetById), new { id = dto.Id }, dto);
         }
         catch (Exception ex)
         {
@@ -40,21 +57,22 @@ public class SpecialtyController : ControllerBase
 
     // PUT: /api/Specialty/{id}
     [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(
+    public async Task<ActionResult<SpecialtyDto>> Update(
         [FromServices] UpdateSpecialtyCommandHandler handler,
         Guid id,
         [FromBody] UpdateSpecialtyCommand command,
         CancellationToken cancellationToken)
     {
-        if (id != command.Id)
-        {
-            return BadRequest(new ProblemDetails { Title = "ID mismatch" });
-        }
+        command.Id = id;
 
         try
         {
-            await handler.Handle(command, cancellationToken);
-            return NoContent();
+            var dto = await handler.Handle(command, cancellationToken);
+            return Ok(dto);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(new ProblemDetails { Title = "Validation Failed", Detail = ex.Message });
         }
         catch (NotFoundException ex)
         {
@@ -73,6 +91,10 @@ public class SpecialtyController : ControllerBase
         {
             await handler.Handle(new DeleteSpecialtyCommand { Id = id }, cancellationToken);
             return NoContent();
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(new ProblemDetails { Title = "Validation Failed", Detail = ex.Message });
         }
         catch (NotFoundException ex)
         {
