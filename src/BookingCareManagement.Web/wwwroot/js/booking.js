@@ -1,12 +1,12 @@
 ﻿document.addEventListener("DOMContentLoaded", () => {
     const dom = {
-        serviceList: document.getElementById("service-list"),
+        specialtyList: document.getElementById("specialty-list"),
         doctorList: document.getElementById("employee-list"),
         datetimeList: document.getElementById("datetime-list"),
         leftTitle: document.getElementById("left-title"),
         backButton: document.getElementById("btn-back"),
         searchBox: document.getElementById("search-box"),
-        selectedService: document.getElementById("selected-service"),
+        selectedSpecialty: document.getElementById("selected-specialty"),
         selectedDoctor: document.getElementById("selected-employee"),
         selectedDateTime: document.getElementById("selected-datetime"),
         totalSection: document.getElementById("total-section"),
@@ -35,11 +35,13 @@
         slots: [],
         selectedSpecialty: null,
         selectedDoctor: null,
-        selectedSlot: null
+        selectedSlot: null,
+        profile: null
     };
 
     const currency = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", minimumFractionDigits: 0 });
     const apiBase = "/api/customer-booking";
+    const MIN_LEAD_DAYS = 2;
 
     const fetchJson = async (url, options) => {
         const response = await fetch(url, {
@@ -102,6 +104,20 @@
         return `${minutes} phút`;
     };
 
+    const getMinBookingDate = () => {
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        now.setDate(now.getDate() + MIN_LEAD_DAYS);
+        return now;
+    };
+
+    const formatDateInputValue = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        return `${year}-${month}-${day}`;
+    };
+
     const setStep = (nextStep) => {
         state.step = nextStep;
         switch (nextStep) {
@@ -110,7 +126,7 @@
                 dom.backButton.classList.add("d-none");
                 dom.searchBox.classList.remove("d-none");
                 dom.searchBox.placeholder = "Tìm kiếm chuyên khoa";
-                dom.serviceList.classList.remove("d-none");
+                dom.specialtyList.classList.remove("d-none");
                 dom.doctorList.classList.add("d-none");
                 dom.datetimeList.classList.add("d-none");
                 dom.paymentSection.classList.add("d-none");
@@ -121,7 +137,7 @@
                 dom.backButton.classList.remove("d-none");
                 dom.searchBox.classList.remove("d-none");
                 dom.searchBox.placeholder = "Tìm kiếm bác sĩ";
-                dom.serviceList.classList.add("d-none");
+                dom.specialtyList.classList.add("d-none");
                 dom.doctorList.classList.remove("d-none");
                 dom.datetimeList.classList.add("d-none");
                 dom.paymentSection.classList.add("d-none");
@@ -131,7 +147,7 @@
                 dom.leftTitle.textContent = "Chọn ngày & giờ";
                 dom.backButton.classList.remove("d-none");
                 dom.searchBox.classList.add("d-none");
-                dom.serviceList.classList.add("d-none");
+                dom.specialtyList.classList.add("d-none");
                 dom.doctorList.classList.add("d-none");
                 dom.datetimeList.classList.remove("d-none");
                 dom.paymentSection.classList.add("d-none");
@@ -140,7 +156,7 @@
             case "payment":
                 dom.leftTitle.textContent = "Thanh toán";
                 dom.backButton.classList.remove("d-none");
-                dom.serviceList.classList.add("d-none");
+                dom.specialtyList.classList.add("d-none");
                 dom.doctorList.classList.add("d-none");
                 dom.datetimeList.classList.add("d-none");
                 dom.paymentSection.classList.remove("d-none");
@@ -150,7 +166,7 @@
                 dom.leftTitle.textContent = "Hoàn tất đặt lịch";
                 dom.backButton.classList.add("d-none");
                 dom.searchBox.classList.add("d-none");
-                dom.serviceList.classList.add("d-none");
+                dom.specialtyList.classList.add("d-none");
                 dom.doctorList.classList.add("d-none");
                 dom.datetimeList.classList.add("d-none");
                 dom.paymentSection.classList.add("d-none");
@@ -161,14 +177,14 @@
 
     const renderSpecialties = (specialties) => {
         if (!specialties.length) {
-            showEmpty(dom.serviceList, "Hiện chưa có chuyên khoa khả dụng.");
+            showEmpty(dom.specialtyList, "Hiện chưa có chuyên khoa khả dụng.");
             return;
         }
 
-        dom.serviceList.innerHTML = "";
+        dom.specialtyList.innerHTML = "";
         specialties.forEach((sp) => {
             const card = document.createElement("div");
-            card.className = "service-item d-flex align-items-center justify-content-between p-3 mb-3 rounded-3 bg-body-tertiary text-light border border-secondary";
+            card.className = "specialty-item d-flex align-items-center justify-content-between p-3 mb-3 rounded-3 bg-body-tertiary text-light border border-secondary";
             card.dataset.search = `${sp.name} ${sp.description ?? ""}`.toLowerCase();
 
             card.innerHTML = `
@@ -186,7 +202,7 @@
                 </div>`;
 
             card.querySelector("button").addEventListener("click", () => selectSpecialty(sp));
-            dom.serviceList.appendChild(card);
+            dom.specialtyList.appendChild(card);
         });
     };
 
@@ -240,7 +256,7 @@
         state.slots = [];
         state.selectedSlot = null;
 
-        dom.selectedService.innerHTML = `
+        dom.selectedSpecialty.innerHTML = `
             <div class="d-flex justify-content-between align-items-start">
                 <div>
                     <span class="d-block">${specialty.name}</span>
@@ -264,15 +280,15 @@
         state.selectedSlot = null;
         dom.selectedDoctor.innerHTML = `<div>${doctor.fullName}</div>`;
 
-        const today = new Date();
-        const isoToday = today.toISOString().split("T")[0];
-        dom.datePicker.value = "";
-        dom.datePicker.min = isoToday;
-        dom.timeSlot.innerHTML = `<option value="">-- Vui lòng chọn ngày trước --</option>`;
+        const minIso = formatDateInputValue(getMinBookingDate());
+        dom.datePicker.value = minIso;
+        dom.datePicker.min = minIso;
+        dom.timeSlot.innerHTML = `<option value="">Đang tải...</option>`;
         dom.timeSlot.disabled = true;
         dom.selectedDateTime.innerHTML = "";
 
         setStep("datetime");
+        loadSlots();
     };
 
     const selectSlot = () => {
@@ -421,7 +437,7 @@
 
     const handleSearch = () => {
         const keyword = dom.searchBox.value.trim().toLowerCase();
-        const selector = state.step === "doctor" ? "#employee-list .employee-item" : "#service-list .service-item";
+        const selector = state.step === "doctor" ? "#employee-list .employee-item" : "#specialty-list .specialty-item";
         document.querySelectorAll(selector).forEach(item => {
             const target = item.dataset.search || "";
             item.style.display = target.includes(keyword) ? "flex" : "none";
@@ -429,12 +445,12 @@
     };
 
     const loadSpecialties = async () => {
-        showLoading(dom.serviceList);
+        showLoading(dom.specialtyList);
         try {
             state.specialties = await fetchJson(`${apiBase}/specialties`);
             renderSpecialties(state.specialties);
         } catch (error) {
-            showEmpty(dom.serviceList, error.message);
+            showEmpty(dom.specialtyList, error.message);
         }
     };
 
@@ -453,6 +469,10 @@
             return;
         }
 
+        if (dom.datePicker.min && dom.datePicker.value < dom.datePicker.min) {
+            dom.datePicker.value = dom.datePicker.min;
+        }
+
         dom.timeSlot.innerHTML = `<option value="">Đang tải...</option>`;
         dom.timeSlot.disabled = true;
 
@@ -465,10 +485,38 @@
         }
     };
 
+    const loadCustomerProfile = async () => {
+        try {
+            const response = await fetch(`${apiBase}/profile`, {
+                headers: { "Content-Type": "application/json" }
+            });
+
+            if (!response.ok) {
+                return;
+            }
+
+            const profile = await response.json();
+            state.profile = profile;
+
+            if (profile.fullName && !dom.customerName.value) {
+                dom.customerName.value = profile.fullName;
+            }
+
+            if (profile.phoneNumber && !dom.customerPhone.value) {
+                dom.customerPhone.value = profile.phoneNumber;
+            }
+        } catch (_error) {
+            /* Silent fail to avoid interrupting guests */
+        }
+    };
+
     // Event bindings
     dom.backButton.addEventListener("click", handleBack);
     dom.searchBox.addEventListener("input", handleSearch);
     dom.datePicker.addEventListener("change", () => {
+        if (dom.datePicker.value && dom.datePicker.min && dom.datePicker.value < dom.datePicker.min) {
+            dom.datePicker.value = dom.datePicker.min;
+        }
         state.selectedSlot = null;
         loadSlots();
     });
@@ -501,4 +549,5 @@
     // Init
     setStep("specialty");
     loadSpecialties();
+    loadCustomerProfile();
 });

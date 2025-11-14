@@ -15,6 +15,7 @@ public class CreateAppointmentCommand
     public int DurationMinutes { get; set; } = 30;
     public string PatientName { get; set; } = string.Empty;
     public string CustomerPhone { get; set; } = string.Empty;
+    public string PatientId { get; set; } = string.Empty;
 }
 
 public class CreateAppointmentCommandHandler
@@ -54,7 +55,8 @@ public class CreateAppointmentCommandHandler
             command.StartUtc,
             TimeSpan.FromMinutes(command.DurationMinutes),
             command.PatientName.Trim(),
-            command.CustomerPhone.Trim());
+            command.CustomerPhone.Trim(),
+            command.PatientId);
 
         _appointmentRepository.Add(appointment);
         await _unitOfWork.SaveChangesAsync(cancellationToken);

@@ -1,3 +1,5 @@
+using System.Globalization;
+using System.Security.Claims;
 using BookingCareManagement.Application.Common.Exceptions;
 using BookingCareManagement.Application.Features.Appointments.Commands;
 using BookingCareManagement.Application.Features.Appointments.Dtos;
@@ -9,6 +11,7 @@ using BookingCareManagement.Domain.Aggregates.Doctor;
 using BookingCareManagement.Domain.Aggregates.User;
 using BookingCareManagement.Infrastructure.Persistence;
 using BookingCareManagement.Web.Areas.Customer.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -63,10 +66,15 @@ public class CustomerBookingController : ControllerBase
         Guid doctorId,
         [FromQuery] DateOnly? date,
         [FromServices] IDoctorRepository doctorRepository,
-        [FromServices] IAppointmentRepository appointmentRepository,
         CancellationToken cancellationToken)
     {
-        var targetDate = date ?? DateOnly.FromDateTime(DateTime.Now);
+        var minLeadDate = DateOnly.FromDateTime(DateTime.Now.AddDays(2));
+        var targetDate = date ?? minLeadDate;
+        if (targetDate < minLeadDate)
+        {
+            return BadRequest(new ProblemDetails { Title = "Ngày đặt phải cách hiện tại ít nhất 2 ngày" });
+        }
+
         var doctor = await doctorRepository.GetByIdAsync(doctorId, cancellationToken);
         if (doctor is null)
         {
@@ -83,23 +91,23 @@ public class CustomerBookingController : ControllerBase
             return Ok(Array.Empty<DoctorTimeSlotDto>());
         }
 
-        var existingAppointments = await appointmentRepository.GetAllAsync(cancellationToken);
-        var taken = existingAppointments
-            .Where(a => a.DoctorId == doctorId)
-            .Select(a =>
+        var dayStartLocal = DateTime.SpecifyKind(targetDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Local);
+        var dayEndLocal = dayStartLocal.AddDays(1);
+        var dayStartUtc = dayStartLocal.ToUniversalTime();
+        var dayEndUtc = dayEndLocal.ToUniversalTime();
+
+        var takenEntries = await _dbContext.Appointments
+            .AsNoTracking()
+            .Where(a => a.DoctorId == doctorId && a.StartUtc >= dayStartUtc && a.StartUtc < dayEndUtc)
+            .Select(a => new
             {
-                var startUtc = DateTime.SpecifyKind(a.StartUtc, DateTimeKind.Utc);
-                var endUtc = DateTime.SpecifyKind(a.EndUtc, DateTimeKind.Utc);
-                var startLocal = startUtc.ToLocalTime();
-                return new
-                {
-                    StartUtc = startUtc,
-                    EndUtc = endUtc,
-                    StartLocal = startLocal
-                };
+                StartUtc = DateTime.SpecifyKind(a.StartUtc, DateTimeKind.Utc),
+                EndUtc = DateTime.SpecifyKind(a.EndUtc, DateTimeKind.Utc)
             })
-            .Where(entry => DateOnly.FromDateTime(entry.StartLocal) == targetDate)
-            .Select(entry => (Start: entry.StartUtc, End: entry.EndUtc))
+            .ToArrayAsync(cancellationToken);
+
+        var taken = takenEntries
+            .Select(a => (a.StartUtc, a.EndUtc))
             .ToArray();
 
         var slots = BuildSlots(targetDate, windows, taken);
@@ -129,14 +137,28 @@ public class CustomerBookingController : ControllerBase
             return BadRequest(new ProblemDetails { Title = "Chưa chọn thời gian" });
         }
 
-        if (string.IsNullOrWhiteSpace(request.CustomerName))
+        var trimmedName = request.CustomerName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(trimmedName))
         {
             return BadRequest(new ProblemDetails { Title = "Vui lòng nhập họ tên" });
         }
 
-        if (string.IsNullOrWhiteSpace(request.CustomerPhone))
+        var trimmedPhone = request.CustomerPhone?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(trimmedPhone))
         {
             return BadRequest(new ProblemDetails { Title = "Vui lòng nhập số điện thoại" });
+        }
+
+        var slotStartUtc = DateTime.SpecifyKind(request.SlotStartUtc, DateTimeKind.Utc);
+        var durationMinutes = request.DurationMinutes <= 0 ? 30 : request.DurationMinutes;
+        var slotEndUtc = slotStartUtc.AddMinutes(durationMinutes);
+
+        var minLeadLocal = DateTime.SpecifyKind(DateTime.Now.Date.AddDays(2), DateTimeKind.Local);
+        var minLeadUtc = minLeadLocal.ToUniversalTime();
+        if (slotStartUtc < minLeadUtc)
+        {
+            var limitMessage = $"Ngày đặt phải từ {minLeadLocal.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)} trở đi";
+            return BadRequest(new ProblemDetails { Title = limitMessage });
         }
 
         var specialty = await specialtyRepository.GetByIdAsync(request.SpecialtyId, cancellationToken);
@@ -169,18 +191,89 @@ public class CustomerBookingController : ControllerBase
             clinicRoomId = fallbackRoom.Id;
         }
 
+        var slotTaken = await _dbContext.Appointments
+            .AsNoTracking()
+            .AnyAsync(
+                a => a.DoctorId == doctor.Id && slotStartUtc < a.EndUtc && a.StartUtc < slotEndUtc,
+                cancellationToken);
+
+        if (slotTaken)
+        {
+            return Conflict(new ProblemDetails { Title = "Khung giờ này đã được đặt" });
+        }
+
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+
         var command = new CreateAppointmentCommand
         {
             DoctorId = request.DoctorId,
             ServiceId = request.SpecialtyId,
             ClinicRoomId = clinicRoomId,
-            StartUtc = DateTime.SpecifyKind(request.SlotStartUtc, DateTimeKind.Utc),
-            DurationMinutes = request.DurationMinutes <= 0 ? 30 : request.DurationMinutes,
-            PatientName = request.CustomerName.Trim(),
-            CustomerPhone = request.CustomerPhone.Trim()
+            StartUtc = slotStartUtc,
+            DurationMinutes = durationMinutes,
+            PatientName = trimmedName,
+            CustomerPhone = trimmedPhone,
+            PatientId = currentUserId
         };
 
         var dto = await handler.Handle(command, cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(currentUserId))
+        {
+            var currentUser = await _dbContext.Users
+                .FirstOrDefaultAsync(u => u.Id == currentUserId, cancellationToken);
+
+            if (currentUser is not null)
+            {
+                var updated = false;
+
+                if (!string.Equals(currentUser.FullName, trimmedName, StringComparison.Ordinal))
+                {
+                    currentUser.FullName = trimmedName;
+                    updated = true;
+                }
+
+                if (!string.Equals(currentUser.PhoneNumber, trimmedPhone, StringComparison.Ordinal))
+                {
+                    currentUser.PhoneNumber = trimmedPhone;
+                    updated = true;
+                }
+
+                if (updated)
+                {
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+                }
+            }
+        }
+
+        return Ok(dto);
+    }
+
+    [HttpGet("profile")]
+    [Authorize]
+    public async Task<ActionResult<CustomerProfileDto>> GetProfile(CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized();
+        }
+
+        var user = await _dbContext.Users
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Id == userId, cancellationToken);
+
+        if (user is null)
+        {
+            return NotFound(new ProblemDetails { Title = "Không tìm thấy thông tin người dùng" });
+        }
+
+        var dto = new CustomerProfileDto
+        {
+            FullName = user.FullName ?? string.Empty,
+            PhoneNumber = user.PhoneNumber ?? string.Empty
+        };
+
         return Ok(dto);
     }
 
