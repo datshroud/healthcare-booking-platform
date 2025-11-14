@@ -6,7 +6,7 @@ public class AppointmentDto
 {
     public Guid Id { get; set; }
     public Guid DoctorId { get; set; }
-    public Guid ServiceId { get; set; }
+    public Guid SpecialtyId { get; set; }
     public Guid ClinicRoomId { get; set; }
     public DateTime StartUtc { get; set; }
     public DateTime EndUtc { get; set; }

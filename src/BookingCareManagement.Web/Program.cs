@@ -5,8 +5,6 @@ using BookingCareManagement.Application.Features.Customers.Commands;
 using BookingCareManagement.Application.Features.Customers.Queries;
 using BookingCareManagement.Application.Features.Doctors.Commands;
 using BookingCareManagement.Application.Features.Doctors.Queries;
-using BookingCareManagement.Application.Features.Services.Commands;
-using BookingCareManagement.Application.Features.Services.Queries;
 using BookingCareManagement.Application.Features.Specialties.Commands;
 using BookingCareManagement.Application.Features.Specialties.Queries;
 using BookingCareManagement.Domain.Abstractions;

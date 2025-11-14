@@ -10,7 +10,7 @@ public static class AppointmentMappingExtensions
         {
             Id = appointment.Id,
             DoctorId = appointment.DoctorId,
-            ServiceId = appointment.ServiceId,
+            SpecialtyId = appointment.SpecialtyId,
             ClinicRoomId = appointment.ClinicRoomId,
             StartUtc = appointment.StartUtc,
             EndUtc = appointment.EndUtc,

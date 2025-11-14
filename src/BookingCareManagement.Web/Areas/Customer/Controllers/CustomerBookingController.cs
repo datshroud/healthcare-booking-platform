@@ -1,11 +1,15 @@
+using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Security.Claims;
+using System.Linq;
 using BookingCareManagement.Application.Common.Exceptions;
 using BookingCareManagement.Application.Features.Appointments.Commands;
 using BookingCareManagement.Application.Features.Appointments.Dtos;
 using BookingCareManagement.Application.Features.Specialties.Dtos;
 using BookingCareManagement.Application.Features.Specialties.Queries;
 using BookingCareManagement.Domain.Abstractions;
+using BookingCareManagement.Domain.Aggregates.Appointment;
 using BookingCareManagement.Domain.Aggregates.ClinicRoom;
 using BookingCareManagement.Domain.Aggregates.Doctor;
 using BookingCareManagement.Domain.Aggregates.User;
@@ -22,6 +26,17 @@ namespace BookingCareManagement.Web.Areas.Customer.Controllers;
 public class CustomerBookingController : ControllerBase
 {
     private readonly ApplicationDBContext _dbContext;
+    private static readonly CultureInfo VietnamCulture = CultureInfo.GetCultureInfo("vi-VN");
+    private static readonly TimeZoneInfo VietnamTimeZone = ResolveVietnamTimeZone();
+    private static readonly IReadOnlyDictionary<string, CustomerBookingStatusPresentation> StatusPresentationMap =
+        new Dictionary<string, CustomerBookingStatusPresentation>(StringComparer.OrdinalIgnoreCase)
+        {
+            [AppointmentStatus.Pending] = new(AppointmentStatus.Pending, "Chờ xác nhận", "pending", "fa-clock"),
+            [AppointmentStatus.Approved] = new(AppointmentStatus.Approved, "Đã xác nhận", "approved", "fa-circle-check"),
+            [AppointmentStatus.Canceled] = new(AppointmentStatus.Canceled, "Đã hủy", "canceled", "fa-ban"),
+            [AppointmentStatus.Rejected] = new(AppointmentStatus.Rejected, "Bị từ chối", "rejected", "fa-circle-xmark"),
+            [AppointmentStatus.NoShow] = new(AppointmentStatus.NoShow, "Vắng mặt", "noshow", "fa-user-xmark")
+        };
 
     public CustomerBookingController(ApplicationDBContext dbContext)
     {
@@ -112,6 +127,55 @@ public class CustomerBookingController : ControllerBase
 
         var slots = BuildSlots(targetDate, windows, taken);
         return Ok(slots);
+    }
+
+    [HttpGet("my-bookings")]
+    [Authorize]
+    public async Task<ActionResult<IReadOnlyCollection<CustomerBookingSummaryDto>>> GetMyBookings(
+        [FromQuery] string? filter,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized();
+        }
+
+        var normalizedFilter = NormalizeFilter(filter);
+        var nowUtc = DateTime.UtcNow;
+
+        var query =
+            from appointment in _dbContext.Appointments.AsNoTracking()
+            where appointment.PatientId == userId
+            join doctor in _dbContext.Doctors.AsNoTracking() on appointment.DoctorId equals doctor.Id
+            join doctorUser in _dbContext.Users.AsNoTracking() on doctor.AppUserId equals doctorUser.Id
+            join specialty in _dbContext.Specialties.AsNoTracking() on appointment.SpecialtyId equals specialty.Id
+            join room in _dbContext.ClinicRooms.AsNoTracking() on appointment.ClinicRoomId equals room.Id into roomGroup
+            from room in roomGroup.DefaultIfEmpty()
+            select new
+            {
+                Appointment = appointment,
+                DoctorUser = doctorUser,
+                Specialty = specialty,
+                ClinicRoom = room
+            };
+
+        query = normalizedFilter switch
+        {
+            "past" => query.Where(x => x.Appointment.StartUtc < nowUtc),
+            "upcoming" => query.Where(x => x.Appointment.StartUtc >= nowUtc),
+            _ => query
+        };
+
+        var records = await query
+            .OrderByDescending(x => x.Appointment.StartUtc)
+            .ToListAsync(cancellationToken);
+
+        var dtos = records
+            .Select(x => ToCustomerBookingSummaryDto(x.Appointment, x.Specialty, x.DoctorUser, x.ClinicRoom))
+            .ToArray();
+
+        return Ok(dtos);
     }
 
     [HttpPost]
@@ -207,7 +271,7 @@ public class CustomerBookingController : ControllerBase
         var command = new CreateAppointmentCommand
         {
             DoctorId = request.DoctorId,
-            ServiceId = request.SpecialtyId,
+            SpecialtyId = request.SpecialtyId,
             ClinicRoomId = clinicRoomId,
             StartUtc = slotStartUtc,
             DurationMinutes = durationMinutes,
@@ -249,6 +313,107 @@ public class CustomerBookingController : ControllerBase
         return Ok(dto);
     }
 
+    [HttpPost("{appointmentId:guid}/reschedule")]
+    [Authorize]
+    public async Task<ActionResult<CustomerBookingSummaryDto>> RescheduleBooking(
+        Guid appointmentId,
+        [FromBody] RescheduleCustomerBookingRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized();
+        }
+
+        if (request is null || request.SlotStartUtc == default)
+        {
+            return BadRequest(new ProblemDetails { Title = "Vui lòng chọn thời gian mới" });
+        }
+
+        var appointment = await _dbContext.Appointments
+            .FirstOrDefaultAsync(a => a.Id == appointmentId && a.PatientId == userId, cancellationToken);
+
+        if (appointment is null)
+        {
+            return NotFound(new ProblemDetails { Title = "Không tìm thấy lịch hẹn" });
+        }
+
+        if (appointment.StartUtc <= DateTime.UtcNow)
+        {
+            return BadRequest(new ProblemDetails { Title = "Không thể đổi lịch cho cuộc hẹn đã diễn ra" });
+        }
+
+        var durationMinutes = request.DurationMinutes <= 0 ? 30 : request.DurationMinutes;
+        var newStartUtc = DateTime.SpecifyKind(request.SlotStartUtc, DateTimeKind.Utc);
+        var newEndUtc = newStartUtc.AddMinutes(durationMinutes);
+
+        var minLeadLocal = DateTime.SpecifyKind(DateTime.Now.Date.AddDays(2), DateTimeKind.Local);
+        var minLeadUtc = minLeadLocal.ToUniversalTime();
+        if (newStartUtc < minLeadUtc)
+        {
+            var limitMessage = $"Ngày đổi lịch phải từ {minLeadLocal.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)} trở đi";
+            return BadRequest(new ProblemDetails { Title = limitMessage });
+        }
+
+        var slotTaken = await _dbContext.Appointments
+            .AsNoTracking()
+            .AnyAsync(
+                a => a.DoctorId == appointment.DoctorId && a.Id != appointment.Id && newStartUtc < a.EndUtc && a.StartUtc < newEndUtc,
+                cancellationToken);
+
+        if (slotTaken)
+        {
+            return Conflict(new ProblemDetails { Title = "Khung giờ này đã được đặt" });
+        }
+
+        appointment.Reschedule(newStartUtc, TimeSpan.FromMinutes(durationMinutes));
+        appointment.ResetToPending();
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var dto = await BuildCustomerBookingSummary(appointment.Id, cancellationToken);
+        return dto is null ? NotFound() : Ok(dto);
+    }
+
+    [HttpPost("{appointmentId:guid}/cancel")]
+    [Authorize]
+    public async Task<ActionResult<CustomerBookingSummaryDto>> CancelBooking(
+        Guid appointmentId,
+        CancellationToken cancellationToken)
+    {
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return Unauthorized();
+        }
+
+        var appointment = await _dbContext.Appointments
+            .FirstOrDefaultAsync(a => a.Id == appointmentId && a.PatientId == userId, cancellationToken);
+
+        if (appointment is null)
+        {
+            return NotFound(new ProblemDetails { Title = "Không tìm thấy lịch hẹn" });
+        }
+
+        if (appointment.StartUtc <= DateTime.UtcNow)
+        {
+            return BadRequest(new ProblemDetails { Title = "Không thể hủy lịch đã diễn ra" });
+        }
+
+        var normalizedStatus = AppointmentStatus.NormalizeOrDefault(appointment.Status);
+        if (normalizedStatus == AppointmentStatus.Canceled)
+        {
+            return BadRequest(new ProblemDetails { Title = "Lịch hẹn đã được hủy trước đó" });
+        }
+
+        appointment.Cancel();
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var dto = await BuildCustomerBookingSummary(appointment.Id, cancellationToken);
+        return dto is null ? NotFound() : Ok(dto);
+    }
+
     [HttpGet("profile")]
     [Authorize]
     public async Task<ActionResult<CustomerProfileDto>> GetProfile(CancellationToken cancellationToken)
@@ -275,6 +440,135 @@ public class CustomerBookingController : ControllerBase
         };
 
         return Ok(dto);
+    }
+
+    private async Task<CustomerBookingSummaryDto?> BuildCustomerBookingSummary(
+        Guid appointmentId,
+        CancellationToken cancellationToken)
+    {
+        var record = await (
+            from appointment in _dbContext.Appointments.AsNoTracking()
+            where appointment.Id == appointmentId
+            join doctor in _dbContext.Doctors.AsNoTracking() on appointment.DoctorId equals doctor.Id
+            join doctorUser in _dbContext.Users.AsNoTracking() on doctor.AppUserId equals doctorUser.Id
+            join specialty in _dbContext.Specialties.AsNoTracking() on appointment.SpecialtyId equals specialty.Id
+            join room in _dbContext.ClinicRooms.AsNoTracking() on appointment.ClinicRoomId equals room.Id into roomGroup
+            from room in roomGroup.DefaultIfEmpty()
+            select new
+            {
+                Appointment = appointment,
+                DoctorUser = doctorUser,
+                Specialty = specialty,
+                ClinicRoom = room
+            }).FirstOrDefaultAsync(cancellationToken);
+
+        if (record is null)
+        {
+            return null;
+        }
+
+        return ToCustomerBookingSummaryDto(record.Appointment, record.Specialty, record.DoctorUser, record.ClinicRoom);
+    }
+
+    private static CustomerBookingSummaryDto ToCustomerBookingSummaryDto(
+        Domain.Aggregates.Appointment.Appointment appointment,
+        Specialty specialty,
+        AppUser doctorUser,
+        ClinicRoom? clinicRoom)
+    {
+        var startUtc = DateTime.SpecifyKind(appointment.StartUtc, DateTimeKind.Utc);
+        var endUtc = DateTime.SpecifyKind(appointment.EndUtc, DateTimeKind.Utc);
+        var startLocal = TimeZoneInfo.ConvertTimeFromUtc(startUtc, VietnamTimeZone);
+        var endLocal = TimeZoneInfo.ConvertTimeFromUtc(endUtc, VietnamTimeZone);
+
+        var statusCode = AppointmentStatus.NormalizeOrDefault(appointment.Status);
+        if (!StatusPresentationMap.TryGetValue(statusCode, out var presentation))
+        {
+            presentation = StatusPresentationMap[AppointmentStatus.Pending];
+        }
+
+        return new CustomerBookingSummaryDto
+        {
+            Id = appointment.Id,
+            DoctorId = appointment.DoctorId,
+            SpecialtyId = appointment.SpecialtyId,
+            DoctorName = doctorUser.GetFullName(),
+            DoctorAvatarUrl = doctorUser.AvatarUrl ?? string.Empty,
+            SpecialtyName = specialty.Name,
+            SpecialtyColor = specialty.Color,
+            ClinicRoom = BuildClinicRoomLabel(clinicRoom),
+            DateText = BuildDateLabel(startLocal),
+            TimeText = $"{startLocal:HH:mm} - {endLocal:HH:mm}",
+            Status = presentation.Code,
+            StatusLabel = presentation.Label,
+            StatusTone = presentation.Tone,
+            StatusIcon = presentation.Icon,
+            PatientName = appointment.PatientName,
+            DurationMinutes = (int)Math.Round((appointment.EndUtc - appointment.StartUtc).TotalMinutes),
+            StartUtc = startUtc,
+            EndUtc = endUtc
+        };
+    }
+
+    private static string BuildClinicRoomLabel(ClinicRoom? room)
+    {
+        if (room is null)
+        {
+            return "Tư vấn trực tuyến";
+        }
+
+        return string.IsNullOrWhiteSpace(room.Code) ? "Phòng khám" : $"Phòng khám {room.Code}";
+    }
+
+    private static string BuildDateLabel(DateTime startLocal)
+    {
+        var dayName = CapitalizeFirst(VietnamCulture.DateTimeFormat.GetDayName(startLocal.DayOfWeek));
+        return $"{dayName}, {startLocal:dd/MM/yyyy}";
+    }
+
+    private static string NormalizeFilter(string? filter)
+    {
+        return filter?.Trim().ToLowerInvariant() switch
+        {
+            "past" => "past",
+            "upcoming" => "upcoming",
+            _ => "all"
+        };
+    }
+
+    private static string CapitalizeFirst(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return string.Empty;
+        }
+
+        if (value.Length == 1)
+        {
+            return value.ToUpper(VietnamCulture);
+        }
+
+        return char.ToUpper(value[0], VietnamCulture) + value[1..];
+    }
+
+    private static TimeZoneInfo ResolveVietnamTimeZone()
+    {
+        var candidates = new[] { "Asia/Ho_Chi_Minh", "SE Asia Standard Time" };
+        foreach (var candidate in candidates)
+        {
+            try
+            {
+                return TimeZoneInfo.FindSystemTimeZoneById(candidate);
+            }
+            catch (TimeZoneNotFoundException)
+            {
+            }
+            catch (InvalidTimeZoneException)
+            {
+            }
+        }
+
+        return TimeZoneInfo.Local;
     }
 
     private static CustomerSpecialtyDto ToCustomerSpecialty(SpecialtyDto specialty)
@@ -337,4 +631,6 @@ public class CustomerBookingController : ControllerBase
 
         return slots;
     }
+
+    private sealed record CustomerBookingStatusPresentation(string Code, string Label, string Tone, string Icon);
 }

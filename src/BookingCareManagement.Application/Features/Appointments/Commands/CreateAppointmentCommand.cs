@@ -9,7 +9,7 @@ namespace BookingCareManagement.Application.Features.Appointments.Commands;
 public class CreateAppointmentCommand
 {
     public Guid DoctorId { get; set; }
-    public Guid ServiceId { get; set; }
+    public Guid SpecialtyId { get; set; }
     public Guid ClinicRoomId { get; set; }
     public DateTime StartUtc { get; set; }
     public int DurationMinutes { get; set; } = 30;
@@ -50,7 +50,7 @@ public class CreateAppointmentCommandHandler
 
         var appointment = new Appointment(
             command.DoctorId,
-            command.ServiceId,
+            command.SpecialtyId,
             command.ClinicRoomId,
             command.StartUtc,
             TimeSpan.FromMinutes(command.DurationMinutes),
