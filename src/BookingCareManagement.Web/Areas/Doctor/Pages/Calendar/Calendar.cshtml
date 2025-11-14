@@ -1,0 +1,94 @@
+﻿@page "/Admin/Calendar"
+@{
+    ViewData["Title"] = "Lịch";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/calendar.css" />
+}
+
+<div class="calendar-page-wrapper" style="margin-top: 50px; padding: 2rem;">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0 fw-bold">Lịch</h2>
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary">
+                <i class="fa-solid fa-plus me-1"></i> Cuộc hẹn mới
+            </button>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="border-radius: 12px; overflow: hidden;">
+        <div class="card-body p-0">
+
+            <div class="calendar-controls p-4">
+                <div class="employee-filter-bar d-flex align-items-center gap-2 mb-4 pb-3 border-bottom">
+                    <button class="employee-filter-btn btn active" data-employee-id="all">
+                        <span class="avatar-icon d-flex align-items-center justify-content-center">
+                            <i class="fa-solid fa-users"></i>
+                        </span>
+                        <span class="employee-name">Tất cả nhân viên</span>
+                    </button>
+                    <button class="employee-filter-btn btn" data-employee-id="Le Ngoc Bao Chan">
+                        <img src="https://i.pravatar.cc/40?u=le" class="avatar-img" alt="Le Ngoc Bao Chan">
+                        <span class="employee-name">Le Ngoc B...</span>
+                    </button>
+                    <button class="employee-filter-btn btn" data-employee-id="Jane Doe">
+                        <img src="https://i.pravatar.cc/40?u=jane" class="avatar-img" alt="Jane Doe">
+                        <span class="employee-name">Jane Doe</span>
+                    </button>
+                    <button class="employee-filter-btn btn" data-employee-id="Mark Roe">
+                        <img src="https://i.pravatar.cc/40?u=mark" class="avatar-img" alt="Mark Roe">
+                        <span class="employee-name">Mark Roe</span>
+                    </button>
+                    <button class="employee-filter-btn btn" data-employee-id="Sara Smith">
+                        <img src="https://i.pravatar.cc/40?u=sara" class="avatar-img" alt="Sara Smith">
+                        <span class="employee-name">Sara Smith</span>
+                    </button>
+                </div>
+
+                <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="btn-group">
+                            <button class="btn btn-outline-secondary" id="btnPrev">
+                                <i class="fa-solid fa-chevron-left"></i>
+                            </button>
+                            <button class="btn btn-outline-secondary" id="btnNext">
+                                <i class="fa-solid fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <button class="btn btn-outline-secondary" id="btnToday">Hôm nay</button>
+                        <h5 class="mb-0 ms-3 fw-bold" id="calendarTitle"></h5>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3">
+
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="viewByDropdownToggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fa-solid fa-user-tie me-2"></i> Nhân viên
+                            </button>
+                            <ul class="dropdown-menu" id="viewByDropdownMenu" aria-labelledby="viewByDropdownToggle">
+                                <li><a class="dropdown-item" href="#" data-value="employee"><i class="fa-solid fa-user-tie fa-fw me-2 text-muted"></i> Nhân viên</a></li>
+                                <li><a class="dropdown-item" href="#" data-value="customer"><i class="fa-solid fa-user fa-fw me-2 text-muted"></i> Khách hàng</a></li>
+                                <li><a class="dropdown-item" href="#" data-value="service"><i class="fa-solid fa-calendar-check fa-fw me-2 text-muted"></i> Dịch vụ</a></li>
+                            </ul>
+                        </div>
+
+                        <div class="btn-group" id="viewSwitchers">
+                            <button class="btn btn-primary" data-view="dayGridMonth">Tháng</button>
+                            <button class="btn btn-outline-secondary" data-view="timeGridWeek">Tuần</button>
+                            <button class="btn btn-outline-secondary" data-view="timeGridDay">Ngày</button>
+                        </div>
+                    </div>
+                </div>
+            </div> <div id="calendar"></div>
+
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script src="~/js/calendar.js"></script>
+}
