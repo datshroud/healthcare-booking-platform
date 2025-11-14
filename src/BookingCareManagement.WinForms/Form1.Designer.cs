@@ -28,64 +28,77 @@ partial class Form1
     /// </summary>
     private void InitializeComponent()
     {
-        this.components = new System.ComponentModel.Container();
-        this.doctorsGrid = new System.Windows.Forms.DataGridView();
-        this.refreshButton = new System.Windows.Forms.Button();
-        this.loadingIndicator = new System.Windows.Forms.Label();
-        ((System.ComponentModel.ISupportInitialize)(this.doctorsGrid)).BeginInit();
-        this.SuspendLayout();
+        doctorsGrid = new DataGridView();
+        refreshButton = new Button();
+        loadingIndicator = new Label();
+        button1 = new Button();
+        ((System.ComponentModel.ISupportInitialize)doctorsGrid).BeginInit();
+        SuspendLayout();
         // 
         // doctorsGrid
         // 
-        this.doctorsGrid.AllowUserToAddRows = false;
-        this.doctorsGrid.AllowUserToDeleteRows = false;
-        this.doctorsGrid.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-                    | System.Windows.Forms.AnchorStyles.Left) 
-                    | System.Windows.Forms.AnchorStyles.Right)));
-        this.doctorsGrid.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-        this.doctorsGrid.Location = new System.Drawing.Point(12, 51);
-        this.doctorsGrid.MultiSelect = false;
-        this.doctorsGrid.Name = "doctorsGrid";
-        this.doctorsGrid.ReadOnly = true;
-        this.doctorsGrid.RowHeadersVisible = false;
-        this.doctorsGrid.RowTemplate.Height = 25;
-        this.doctorsGrid.Size = new System.Drawing.Size(776, 387);
-        this.doctorsGrid.TabIndex = 0;
+        doctorsGrid.AllowUserToAddRows = false;
+        doctorsGrid.AllowUserToDeleteRows = false;
+        doctorsGrid.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        doctorsGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+        doctorsGrid.Location = new Point(14, 387);
+        doctorsGrid.Margin = new Padding(3, 4, 3, 4);
+        doctorsGrid.MultiSelect = false;
+        doctorsGrid.Name = "doctorsGrid";
+        doctorsGrid.ReadOnly = true;
+        doctorsGrid.RowHeadersVisible = false;
+        doctorsGrid.RowHeadersWidth = 51;
+        doctorsGrid.RowTemplate.Height = 25;
+        doctorsGrid.Size = new Size(887, 197);
+        doctorsGrid.TabIndex = 0;
         // 
         // refreshButton
         // 
-        this.refreshButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-        this.refreshButton.Location = new System.Drawing.Point(687, 12);
-        this.refreshButton.Name = "refreshButton";
-        this.refreshButton.Size = new System.Drawing.Size(101, 27);
-        this.refreshButton.TabIndex = 1;
-        this.refreshButton.Text = "Làm mới";
-        this.refreshButton.UseVisualStyleBackColor = true;
+        refreshButton.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+        refreshButton.Location = new Point(785, 16);
+        refreshButton.Margin = new Padding(3, 4, 3, 4);
+        refreshButton.Name = "refreshButton";
+        refreshButton.Size = new Size(115, 36);
+        refreshButton.TabIndex = 1;
+        refreshButton.Text = "Làm mới";
+        refreshButton.UseVisualStyleBackColor = true;
         // 
         // loadingIndicator
         // 
-        this.loadingIndicator.AutoSize = true;
-        this.loadingIndicator.Location = new System.Drawing.Point(12, 18);
-        this.loadingIndicator.Name = "loadingIndicator";
-        this.loadingIndicator.Size = new System.Drawing.Size(137, 15);
-        this.loadingIndicator.TabIndex = 2;
-        this.loadingIndicator.Text = "Đang tải dữ liệu bác sĩ...";
-        this.loadingIndicator.Visible = false;
+        loadingIndicator.AutoSize = true;
+        loadingIndicator.Location = new Point(14, 24);
+        loadingIndicator.Name = "loadingIndicator";
+        loadingIndicator.Size = new Size(167, 20);
+        loadingIndicator.TabIndex = 2;
+        loadingIndicator.Text = "Đang tải dữ liệu bác sĩ...";
+        loadingIndicator.Visible = false;
+        // 
+        // button1
+        // 
+        button1.Location = new Point(163, 166);
+        button1.Name = "button1";
+        button1.Size = new Size(94, 29);
+        button1.TabIndex = 3;
+        button1.Text = "button1";
+        button1.UseVisualStyleBackColor = true;
+        button1.Click += button1_Click;
         // 
         // Form1
         // 
-        this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-        this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-        this.ClientSize = new System.Drawing.Size(800, 450);
-        this.Controls.Add(this.loadingIndicator);
-        this.Controls.Add(this.refreshButton);
-        this.Controls.Add(this.doctorsGrid);
-        this.Name = "Form1";
-        this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-        this.Text = "BookingCare - Quản lý bác sĩ";
-        ((System.ComponentModel.ISupportInitialize)(this.doctorsGrid)).EndInit();
-        this.ResumeLayout(false);
-        this.PerformLayout();
+        AutoScaleDimensions = new SizeF(8F, 20F);
+        AutoScaleMode = AutoScaleMode.Font;
+        ClientSize = new Size(914, 600);
+        Controls.Add(button1);
+        Controls.Add(loadingIndicator);
+        Controls.Add(refreshButton);
+        Controls.Add(doctorsGrid);
+        Margin = new Padding(3, 4, 3, 4);
+        Name = "Form1";
+        StartPosition = FormStartPosition.CenterScreen;
+        Text = "BookingCare - Quản lý bác sĩ";
+        ((System.ComponentModel.ISupportInitialize)doctorsGrid).EndInit();
+        ResumeLayout(false);
+        PerformLayout();
     }
 
     #endregion
@@ -93,4 +106,5 @@ partial class Form1
     private System.Windows.Forms.DataGridView doctorsGrid;
     private System.Windows.Forms.Button refreshButton;
     private System.Windows.Forms.Label loadingIndicator;
+    private Button button1;
 }

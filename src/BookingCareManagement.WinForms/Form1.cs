@@ -50,5 +50,10 @@ public partial class Form1 : Form
         loadingIndicator.Visible = isLoading;
     }
 
+    private void button1_Click(object sender, EventArgs e)
+    {
+
+    }
+
     private sealed record DoctorDisplayRow(Guid Id, string FullName, string Specialties);
 }
