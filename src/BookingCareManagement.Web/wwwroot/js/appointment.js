@@ -64,10 +64,7 @@ function applyFilters() {
     updateAllCounts();
 }
 
-/**
- * Cập nhật số đếm, ẩn/hiện bảng & thông báo “No appointments”
- * (CODE CỦA BẠN - ĐÃ ĐÚNG)
- */
+
 function updateAllCounts() {
     let totalVisibleCount = 0;
     const dateHeaders = document.querySelectorAll("#appointmentsTableBody tr.table-group-header");
@@ -86,7 +83,6 @@ function updateAllCounts() {
 
     document.getElementById('totalAppointmentsCount').innerText = totalVisibleCount;
 
-    // --- FIX CỦA BẠN (ĐÃ ĐÚNG) ---
     const tableContainer = document.getElementById('appointmentsTableContainer');
     const noAppointmentsBlock = document.getElementById('noAppointmentsBlock');
 
@@ -95,7 +91,6 @@ function updateAllCounts() {
         tableContainer.classList.toggle("d-none", !anyVisible);
         noAppointmentsBlock.classList.toggle("d-none", anyVisible);
 
-        // Sửa lỗi layout (thêm display flex cho noAppointmentsBlock nếu nó được hiện)
         if (!anyVisible) {
             noAppointmentsBlock.classList.add("d-flex");
         } else {
@@ -214,9 +209,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
         });
     });
 
-    // 
-    // FIX 3: THAY THẾ CODE XỬ LÝ NOTE MODAL BẰNG NOTE DROPDOWN
-    //
     function closeNoteDropdown(button) {
         const dropdownButton = button.closest('.dropdown').querySelector('[data-bs-toggle="dropdown"]');
         const dropdownInstance = bootstrap.Dropdown.getInstance(dropdownButton);
@@ -225,36 +217,116 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }
     }
 
-    // Xử lý nút "Save Note" (dùng class)
     document.querySelectorAll('.save-note-btn').forEach(button => {
         button.addEventListener('click', function () {
             const dropdownMenu = this.closest('.dropdown-menu');
             const noteTextarea = dropdownMenu.querySelector('.note-textarea');
-
             console.log("Note saved:", noteTextarea.value);
-
-            // (Đây là nơi bạn sẽ gọi API để lưu)
-
-            // Xóa text
             noteTextarea.value = '';
-
-            // Đóng dropdown
             closeNoteDropdown(this);
         });
     });
 
-    // Xử lý nút "Cancel Note" (dùng class)
     document.querySelectorAll('.cancel-note-btn').forEach(button => {
         button.addEventListener('click', function () {
             const dropdownMenu = this.closest('.dropdown-menu');
             const noteTextarea = dropdownMenu.querySelector('.note-textarea');
-
-            // Xóa text (nếu người dùng đã gõ gì đó)
             noteTextarea.value = '';
-
-            // Đóng dropdown
             closeNoteDropdown(this);
         });
     });
+
+
+    let tomService = null;
+    let tomEmployee = null;
+    let tomTime = null;
+    let tomCustomer = null;
+    let fpModalDate = null;
+
+    // 5.1. Hàm tạo các lựa chọn thời gian (9:00 AM - 4:00 PM, 30 phút)
+    function generateTimeOptions() {
+        const options = [];
+        const startTime = 9 * 60; // 9:00 AM
+        const endTime = 16 * 60; // 4:00 PM (16:00)
+        const interval = 30; // 30 phút
+
+        for (let minutes = startTime; minutes <= endTime; minutes += interval) {
+            const hour = Math.floor(minutes / 60);
+            const min = minutes % 60;
+            const ampm = hour >= 12 ? 'PM' : 'AM';
+            const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+            const displayMin = min === 0 ? '00' : min;
+
+            const timeValue = `${displayHour}:${displayMin} ${ampm}`;
+            options.push({
+                value: timeValue,
+                text: timeValue
+            });
+        }
+        return options;
+    }
+
+    if (typeof TomSelect !== 'undefined') {
+        const tomSettings = {
+            create: false,
+            sortField: { field: "text", direction: "asc" }
+        };
+
+        tomService = new TomSelect("#modalServiceSelect", tomSettings);
+        tomEmployee = new TomSelect("#modalEmployeeSelect", tomSettings);
+        tomCustomer = new TomSelect("#modalCustomerSelect", tomSettings);
+
+        tomTime = new TomSelect("#modalTimeSelect", {
+            options: generateTimeOptions(), 
+            create: false,
+        });
+    }
+
+    // Khởi tạo Flatpickr cho Date
+    fpModalDate = flatpickr("#modalDateSelect", {
+        dateFormat: "Y-m-d", 
+    });
+
+
+    const newApptModalEl = document.getElementById('newAppointmentModal');
+    const newApptForm = document.getElementById('newAppointmentForm');
+    const saveApptButton = document.getElementById('saveAppointmentButton');
+
+    if (newApptModalEl) {
+        newApptModalEl.addEventListener('hidden.bs.modal', function () {
+            if (newApptForm) {
+                newApptForm.reset();
+            }
+
+            if (tomService) tomService.clear();
+            if (tomEmployee) tomEmployee.clear();
+            if (tomTime) tomTime.clear();
+            if (tomCustomer) tomCustomer.clear();
+
+            if (fpModalDate) fpModalDate.clear();
+        });
+    }
+
+    if (saveApptButton) {
+        saveApptButton.addEventListener('click', function () {
+            const service = tomService.getValue();
+            const employee = tomEmployee.getValue();
+            const time = tomTime.getValue();
+            const customer = tomCustomer.getValue();
+            const date = fpModalDate.selectedDates[0];
+
+            console.log("Saving new appointment:", {
+                customer,
+                employee,
+                service,
+                date,
+                time
+            });
+
+            const modalInstance = bootstrap.Modal.getInstance(newApptModalEl);
+            modalInstance.hide();
+
+        });
+    }
 
 });
