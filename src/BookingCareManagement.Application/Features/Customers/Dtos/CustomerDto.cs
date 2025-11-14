@@ -1,4 +1,6 @@
-﻿namespace BookingCareManagement.Application.Features.Customers.Dtos;
+﻿using System;
+
+namespace BookingCareManagement.Application.Features.Customers.Dtos;
 
 public class CustomerDto
 {

@@ -13,7 +13,7 @@ public class Appointment
     public string PatientName { get; private set; }
     public string CustomerPhone { get; private set; } = string.Empty;
     public string Status { get; private set; } = "Confirmed";
-    public string PatientId { get; private set; } = string.Empty; // Khóa ngoại trỏ đến AppUser.Id
+    public string? PatientId { get; private set; } // Khóa ngoại trỏ đến AppUser.Id
     private Appointment() { }
     public Appointment(
         Guid doctorId,
@@ -32,7 +32,7 @@ public class Appointment
         EndUtc = startUtc.Add(duration);
         PatientName = patientName;
         CustomerPhone = customerPhone;
-        PatientId = patientId ?? string.Empty;
+        PatientId = string.IsNullOrWhiteSpace(patientId) ? null : patientId.Trim();
     }
 
     public void Cancel() => Status = "Cancelled";

@@ -23,6 +23,7 @@
     const editForm = document.getElementById('editCustomerForm');
     const closeModalBtn = document.getElementById('modalCloseBtn');
     const modalDeleteBtn = document.getElementById('modalDeleteBtn');
+    const saveCustomerBtn = document.getElementById('saveCustomerBtn');
 
     // Biến cache
     let allCustomersCache = []; // Lưu trữ data gốc từ API
@@ -63,25 +64,35 @@
 
         customers.forEach(customer => {
             const tr = document.createElement('tr');
+            const firstName = (customer.firstName || '').trim();
+            const lastName = (customer.lastName || '').trim();
+            const dtoFullName = (customer.fullName || '').trim();
+            const composedName = `${firstName} ${lastName}`.trim();
+            const displayName = dtoFullName || composedName || (customer.email || 'Unknown');
+            const appointmentCount = Number.isFinite(customer.appointmentCount)
+                ? customer.appointmentCount
+                : 0;
+            const formattedAppointmentCount = appointmentCount.toLocaleString('vi-VN');
+
             // Lưu ID và data vào `dataset` để "Edit"
             tr.dataset.id = customer.id;
-            tr.dataset.firstName = customer.firstName;
-            tr.dataset.lastName = customer.lastName;
-            tr.dataset.email = customer.email;
+            tr.dataset.firstName = firstName;
+            tr.dataset.lastName = lastName;
+            const email = customer.email || '';
+            tr.dataset.email = email;
             tr.dataset.phone = customer.phoneNumber || '';
             tr.dataset.gender = customer.gender || '';
             tr.dataset.dob = customer.dateOfBirth ? customer.dateOfBirth.split('T')[0] : '';
             tr.dataset.note = customer.internalNote || '';
+            tr.dataset.fullName = displayName;
 
-            const firstLetter = (customer.fullName ? customer.fullName[0] : 'U').toUpperCase();
+            const firstLetter = (displayName ? displayName[0] : 'U').toUpperCase();
             const colors = ['#6f42c1', '#198754', '#0d6efd', '#e83e8c', '#fd7e14'];
             const color = colors[(firstLetter.charCodeAt(0) || 0) % colors.length];
 
             // Định dạng ngày
-            const created = new Date(customer.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-            const lastApp = customer.lastAppointment
-                ? new Date(customer.lastAppointment).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-                : '';
+            const created = formatDate(customer.createdAt);
+            const lastApp = formatDate(customer.lastAppointment);
 
             tr.innerHTML = `
                 <td><input type="checkbox" class="selectRow"></td>
@@ -92,12 +103,12 @@
                     : `<div class="avatar" style="background:${color}">${firstLetter}</div>`
                 }
                         <div class="customer-details">
-                            <div class="customer-name">${customer.fullName}</div>
-                            <div class="customer-email">${customer.email}</div>
+                            <div class="customer-name">${displayName}</div>
+                            <div class="customer-email">${email}</div>
                         </div>
                     </div>
                 </td>
-                <td>${customer.appointmentCount}</td>
+                <td>${formattedAppointmentCount}</td>
                 <td>${lastApp}</td>
                 <td>${created}</td>
                 <td>
@@ -164,8 +175,10 @@
             ev.preventDefault();
             if (!currentEditCustomerId) return closeEditModal();
 
-            saveCustomerBtn.disabled = true;
-            saveCustomerBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+            if (saveCustomerBtn) {
+                saveCustomerBtn.disabled = true;
+                saveCustomerBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Saving...';
+            }
 
             // Lấy dữ liệu từ CSDL đã thêm (Gender, DOB, Note)
             const command = {
@@ -198,8 +211,10 @@
             } catch (error) {
                 Swal.fire('Lỗi!', error.message, 'error');
             } finally {
-                saveCustomerBtn.disabled = false;
-                saveCustomerBtn.innerHTML = 'Save';
+                if (saveCustomerBtn) {
+                    saveCustomerBtn.disabled = false;
+                    saveCustomerBtn.innerHTML = 'Save';
+                }
             }
         });
     }
@@ -242,6 +257,7 @@
 
     // Mở modal Edit
     function openEditModal(row) {
+        if (!editModal) return;
         currentEditCustomerId = row.dataset.id; // Lấy ID
 
         // Điền data từ `dataset` (đã lưu khi render)
@@ -258,6 +274,7 @@
     }
 
     function closeEditModal() {
+        if (!editModal) return;
         editModal.classList.remove('show');
         editModal.setAttribute('aria-hidden', 'true');
         currentEditCustomerId = null;
@@ -351,10 +368,18 @@
         }
 
         const filtered = allCustomersCache.filter(c => {
-            const name = (c.fullName || '').toLowerCase();
+            const fullName = (c.fullName || '').toLowerCase();
+            const firstName = (c.firstName || '').toLowerCase();
+            const lastName = (c.lastName || '').toLowerCase();
             const email = (c.email || '').toLowerCase();
             const phone = (c.phoneNumber || '').toLowerCase();
-            return name.includes(q) || email.includes(q) || phone.includes(q);
+            const composed = `${firstName} ${lastName}`.trim();
+            return (
+                fullName.includes(q) ||
+                composed.includes(q) ||
+                email.includes(q) ||
+                phone.includes(q)
+            );
         });
 
         renderCustomerTable(filtered); // Hiển thị kết quả lọc
@@ -375,6 +400,13 @@
             closeAddModal();
         }
     });
+
+    function formatDate(value) {
+        if (!value) return '';
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return '';
+        return date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    }
 
     // (Code Export/Import CSV giữ nguyên)
     // ...

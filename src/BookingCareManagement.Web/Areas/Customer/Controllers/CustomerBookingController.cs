@@ -202,7 +202,7 @@ public class CustomerBookingController : ControllerBase
             return Conflict(new ProblemDetails { Title = "Khung giờ này đã được đặt" });
         }
 
-        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
         var command = new CreateAppointmentCommand
         {
@@ -213,7 +213,7 @@ public class CustomerBookingController : ControllerBase
             DurationMinutes = durationMinutes,
             PatientName = trimmedName,
             CustomerPhone = trimmedPhone,
-            PatientId = currentUserId
+            PatientId = string.IsNullOrWhiteSpace(currentUserId) ? null : currentUserId
         };
 
         var dto = await handler.Handle(command, cancellationToken);

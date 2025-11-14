@@ -1,4 +1,6 @@
-﻿using BookingCareManagement.Application.Common.Exceptions;
+﻿using System;
+using System.Linq;
+using BookingCareManagement.Application.Common.Exceptions;
 using BookingCareManagement.Domain.Aggregates.User;
 using Microsoft.AspNetCore.Identity;
 
@@ -34,9 +36,13 @@ public class UpdateCustomerCommandHandler
         }
 
         // Cập nhật thông tin
-        user.FirstName = command.FirstName;
-        user.LastName = command.LastName;
-        user.FullName = $"{command.FirstName} {command.LastName}";
+        var firstName = command.FirstName?.Trim() ?? string.Empty;
+        var lastName = command.LastName?.Trim() ?? string.Empty;
+        var fullName = string.Join(" ", new[] { firstName, lastName }.Where(x => !string.IsNullOrWhiteSpace(x)));
+
+        user.FirstName = firstName;
+        user.LastName = lastName;
+        user.FullName = string.IsNullOrWhiteSpace(fullName) ? user.Email : fullName;
         user.Email = command.Email;
         user.UserName = command.Email;
         user.PhoneNumber = command.PhoneNumber;

@@ -1,4 +1,6 @@
-﻿using BookingCareManagement.Application.Features.Customers.Dtos;
+﻿using System;
+using System.Linq;
+using BookingCareManagement.Application.Features.Customers.Dtos;
 using BookingCareManagement.Domain.Aggregates.User;
 using Microsoft.AspNetCore.Identity;
 
@@ -23,16 +25,20 @@ public class CreateCustomerCommandHandler
 
     public async Task<CustomerDto> Handle(CreateCustomerCommand command, CancellationToken cancellationToken)
     {
+        var firstName = command.FirstName?.Trim() ?? string.Empty;
+        var lastName = command.LastName?.Trim() ?? string.Empty;
+        var fullName = string.Join(" ", new[] { firstName, lastName }.Where(x => !string.IsNullOrWhiteSpace(x)));
+
         var appUser = new AppUser
         {
-            FirstName = command.FirstName,
-            LastName = command.LastName,
-            FullName = $"{command.FirstName} {command.LastName}",
+            FirstName = firstName,
+            LastName = lastName,
+            FullName = string.IsNullOrWhiteSpace(fullName) ? command.Email : fullName,
             Email = command.Email,
             UserName = command.Email,
             PhoneNumber = command.PhoneNumber,
-            EmailConfirmed = true // Tạm thời xác nhận luôn
-            // CreatedAt = DateTime.UtcNow // Gán ngày tạo
+            EmailConfirmed = true,
+            CreatedAt = DateTime.UtcNow
         };
 
         // Mật khẩu tạm thời
@@ -50,10 +56,10 @@ public class CreateCustomerCommandHandler
             Id = appUser.Id,
             FirstName = appUser.FirstName,
             LastName = appUser.LastName,
-            FullName = appUser.FullName,
-            Email = appUser.Email,
-            PhoneNumber = appUser.PhoneNumber,
-            // CreatedAt = appUser.CreatedAt
+            FullName = appUser.FullName ?? appUser.Email ?? string.Empty,
+            Email = appUser.Email ?? string.Empty,
+            PhoneNumber = appUser.PhoneNumber ?? string.Empty,
+            CreatedAt = appUser.CreatedAt
         };
     }
 }
