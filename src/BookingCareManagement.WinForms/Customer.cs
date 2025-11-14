@@ -25,28 +25,28 @@ namespace BookingCareManagement.WinForms
 
         private void InitializeComponents()
         {
-            // Form settings
+            // Cài đặt form
             this.Text = "Customers";
             this.Size = new Size(1400, 800);
             this.BackColor = Color.FromArgb(243, 244, 246);
             this.StartPosition = FormStartPosition.CenterScreen;
 
-            // Header Panel
+            // Panel Header (phần tiêu đề)
             headerPanel = new Panel
             {
                 Dock = DockStyle.Top,
                 Height = 80,
                 BackColor = Color.FromArgb(243, 244, 246),
-                Padding = new Padding(30, 20, 30, 0)
+                Padding = new Padding(30, 20, 30, 20)
             };
             CreateHeader();
 
-            // Content Panel
+            // Panel Nội dung
             contentPanel = new Panel
             {
                 Dock = DockStyle.Fill,
                 BackColor = Color.FromArgb(243, 244, 246),
-                Padding = new Padding(30, 10, 30, 30)
+                Padding = new Padding(30, 10, 30, 1000)
             };
             CreateContent();
 
@@ -56,7 +56,7 @@ namespace BookingCareManagement.WinForms
 
         private void CreateHeader()
         {
-            // Title
+            // Tiêu đề
             Label title = new Label
             {
                 Text = "Customers (1)",
@@ -66,7 +66,7 @@ namespace BookingCareManagement.WinForms
                 ForeColor = Color.FromArgb(17, 24, 39)
             };
 
-            // Export Data Button
+            // Nút xuất dữ liệu
             RoundedButton exportBtn = new RoundedButton
             {
                 Text = "⬇  Export Data",
@@ -82,7 +82,7 @@ namespace BookingCareManagement.WinForms
             exportBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
             exportBtn.Click += (s, e) => MessageBox.Show("Export Data", "Info");
 
-            // Import Data Button
+            // Nút nhập dữ liệu
             RoundedButton importBtn = new RoundedButton
             {
                 Text = "📄  Import Data",
@@ -98,7 +98,7 @@ namespace BookingCareManagement.WinForms
             importBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
             importBtn.Click += (s, e) => MessageBox.Show("Import Data", "Info");
 
-            // Add Customer Button
+            // Nút thêm khách hàng
             RoundedButton addBtn = new RoundedButton
             {
                 Text = "+  Add Customer",
@@ -113,7 +113,7 @@ namespace BookingCareManagement.WinForms
             addBtn.FlatAppearance.BorderSize = 0;
             addBtn.Click += (s, e) => MessageBox.Show("Add Customer", "Info");
 
-            // Handle resize
+            // Xử lý khi resize form
             this.Resize += (s, e) =>
             {
                 int formWidth = this.ClientSize.Width;
@@ -130,28 +130,29 @@ namespace BookingCareManagement.WinForms
 
         private void CreateContent()
         {
-            // Main white panel
+            // Panel trắng chính (dock fill để các control con dock đúng)
+            // Có padding hai bên để DataGridView không chiếm 100% chiều rộng
             Panel whitePanel = new Panel
             {
-                Location = new Point(30, 10),
-                Size = new Size(1310, 650),
-                BackColor = Color.White,
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
+                Dock = DockStyle.Fill,
+                BackColor = Color.FromArgb(243, 244, 246),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
+                Padding = new Padding(30, 10, 30, 50)
             };
 
-            // Search panel
+            // Panel tìm kiếm (dock top)
             Panel searchPanel = new Panel
             {
-                Location = new Point(0, 0),
-                Size = new Size(1210, 70),
+                Dock = DockStyle.Top,
+                Height = 70,
                 BackColor = Color.White
             };
 
-            // Search icon and textbox
+            // Icon và textbox tìm kiếm
             Label searchIcon = new Label
             {
-                Text = "🔍",
-                Location = new Point(25, 25),
+                Text = "🔍 ",
+                Location = new Point(20, 25),
                 Size = new Size(20, 20),
                 Font = new Font("Segoe UI", 12)
             };
@@ -167,6 +168,7 @@ namespace BookingCareManagement.WinForms
             searchBox.ForeColor = Color.Gray;
             searchBox.GotFocus += (s, e) =>
             {
+                // Khi click vào thì xóa placeholder
                 if (searchBox.Text == "Search")
                 {
                     searchBox.Text = "";
@@ -175,6 +177,7 @@ namespace BookingCareManagement.WinForms
             };
             searchBox.LostFocus += (s, e) =>
             {
+                // Khi bỏ focus thì trả lại placeholder
                 if (string.IsNullOrWhiteSpace(searchBox.Text))
                 {
                     searchBox.Text = "Search";
@@ -182,23 +185,23 @@ namespace BookingCareManagement.WinForms
                 }
             };
 
-            // Search underline
+            // Gạch dưới của ô tìm kiếm
             Panel searchUnderline = new Panel
             {
-                Location = new Point(20, 55),
+                Location = new Point(50, 55),
                 Size = new Size(340, 1),
                 BackColor = Color.FromArgb(229, 231, 235)
             };
 
-            searchPanel.Controls.Add(searchIcon);
             searchPanel.Controls.Add(searchBox);
             searchPanel.Controls.Add(searchUnderline);
+            searchPanel.Controls.Add(searchIcon);
+            searchIcon.BringToFront(); // đảm bảo icon luôn nằm trên cùng
 
-            // DataGridView for customers
+            // DataGridView khách hàng – fill toàn bộ phần còn lại
             customersDataGridView = new DataGridView
             {
-                Location = new Point(0, 70),
-                Size = new Size(1310, 580),
+                Dock = DockStyle.Fill,
                 BackgroundColor = Color.White,
                 BorderStyle = BorderStyle.None,
                 AllowUserToAddRows = false,
@@ -211,11 +214,10 @@ namespace BookingCareManagement.WinForms
                 ColumnHeadersHeight = 50,
                 RowTemplate = { Height = 70 },
                 GridColor = Color.FromArgb(243, 244, 246),
-                Font = new Font("Segoe UI", 10),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom
+                Font = new Font("Segoe UI", 10)
             };
 
-            // Style header
+            // Style tiêu đề cột
             customersDataGridView.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
             {
                 BackColor = Color.White,
@@ -225,7 +227,7 @@ namespace BookingCareManagement.WinForms
                 Padding = new Padding(15, 0, 0, 0)
             };
 
-            // Style cells
+            // Style ô dữ liệu
             customersDataGridView.DefaultCellStyle = new DataGridViewCellStyle
             {
                 BackColor = Color.White,
@@ -235,21 +237,28 @@ namespace BookingCareManagement.WinForms
                 Padding = new Padding(15, 10, 0, 10)
             };
 
+            // Style hàng xen kẽ
             customersDataGridView.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
             {
                 BackColor = Color.FromArgb(249, 250, 251)
             };
 
-            // Add columns
+            // Thêm các cột
             AddCheckBoxColumn();
             AddCustomerColumn();
             AddTextColumn("# of Appointments", "Appointments");
             AddTextColumn("Last Appointment", "LastAppointment");
             AddTextColumn("Created", "Created");
-            AddActionColumn();
 
-            whitePanel.Controls.Add(searchPanel);
+            // Đảm bảo chiều rộng tối thiểu
+            foreach (DataGridViewColumn col in customersDataGridView.Columns)
+            {
+                col.MinimumWidth = 50;
+            }
+
+            // Thêm control vào whitePanel
             whitePanel.Controls.Add(customersDataGridView);
+            whitePanel.Controls.Add(searchPanel);
             contentPanel.Controls.Add(whitePanel);
         }
 
@@ -259,8 +268,7 @@ namespace BookingCareManagement.WinForms
             {
                 Name = "Select",
                 HeaderText = "",
-                Width = 60,
-                FillWeight = 5
+                FillWeight = 5 // tỉ lệ nhỏ
             };
             customersDataGridView.Columns.Add(checkCol);
         }
@@ -282,7 +290,7 @@ namespace BookingCareManagement.WinForms
             {
                 Name = name,
                 HeaderText = headerText,
-                FillWeight = 20
+                FillWeight = 15
             };
             customersDataGridView.Columns.Add(col);
         }
@@ -295,32 +303,31 @@ namespace BookingCareManagement.WinForms
                 HeaderText = "",
                 Text = "⋮",
                 UseColumnTextForButtonValue = true,
-                Width = 60,
-                FillWeight = 5
+                FillWeight = 8
             };
             customersDataGridView.Columns.Add(actionCol);
         }
 
         private void LoadSampleData()
         {
-            
+            // (Hàm này hiện tại bỏ trống)
         }
 
-        // Cell painting for custom styling
+        // Vẽ tùy chỉnh cho cell chứa thông tin customer
         private void customersDataGridView_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
-            if (e.ColumnIndex == 1 && e.RowIndex >= 0) // Customer column
+            if (e.ColumnIndex == 1 && e.RowIndex >= 0) // cột Customer
             {
                 e.PaintBackground(e.CellBounds, true);
 
-                // Draw avatar circle
+                // Vẽ avatar hình tròn
                 using (SolidBrush brush = new SolidBrush(Color.FromArgb(147, 197, 253)))
                 {
                     e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
                     e.Graphics.FillEllipse(brush, e.CellBounds.X + 15, e.CellBounds.Y + 10, 50, 50);
                 }
 
-                // Draw initials
+                // Vẽ chữ viết tắt
                 using (Font font = new Font("Segoe UI", 12, FontStyle.Bold))
                 using (SolidBrush textBrush = new SolidBrush(Color.White))
                 {
@@ -333,7 +340,7 @@ namespace BookingCareManagement.WinForms
                     e.Graphics.DrawString("JD", font, textBrush, avatarRect, sf);
                 }
 
-                // Draw name and email
+                // Vẽ tên + email
                 string[] lines = e.Value?.ToString().Split('\n') ?? new string[] { "", "" };
                 using (Font nameFont = new Font("Segoe UI", 11, FontStyle.Bold))
                 using (Font emailFont = new Font("Segoe UI", 9))
@@ -350,6 +357,7 @@ namespace BookingCareManagement.WinForms
 
         public Customer(bool attachEvents) : this()
         {
+            // Gắn event nếu có yêu cầu
             if (attachEvents)
             {
                 customersDataGridView.CellPainting += customersDataGridView_CellPainting;
@@ -357,7 +365,7 @@ namespace BookingCareManagement.WinForms
         }
     }
 
-    // Rounded Button Control
+    // Nút bo góc
     public class RoundedButton : Button
     {
         protected override void OnPaint(PaintEventArgs e)
@@ -366,6 +374,7 @@ namespace BookingCareManagement.WinForms
             int radius = 8;
             Rectangle rect = new Rectangle(0, 0, Width - 1, Height - 1);
 
+            // Vẽ bo góc
             path.AddArc(rect.X, rect.Y, radius, radius, 180, 90);
             path.AddArc(rect.X + rect.Width - radius, rect.Y, radius, radius, 270, 90);
             path.AddArc(rect.X + rect.Width - radius, rect.Y + rect.Height - radius, radius, radius, 0, 90);
@@ -380,6 +389,7 @@ namespace BookingCareManagement.WinForms
                 e.Graphics.FillPath(brush, path);
             }
 
+            // Vẽ viền nếu có
             if (this.FlatAppearance.BorderSize > 0)
             {
                 using (Pen pen = new Pen(this.FlatAppearance.BorderColor, this.FlatAppearance.BorderSize))
@@ -388,6 +398,7 @@ namespace BookingCareManagement.WinForms
                 }
             }
 
+            // Vẽ text
             TextRenderer.DrawText(e.Graphics, this.Text, this.Font,
                 this.ClientRectangle, this.ForeColor,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
