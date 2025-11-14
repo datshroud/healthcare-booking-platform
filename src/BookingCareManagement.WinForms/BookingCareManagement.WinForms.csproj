@@ -19,4 +19,11 @@
     </None>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Areas\" />
+    <Folder Include="Doctor\" />
+    <Folder Include="Customer\" />
+    <Folder Include="Account\" />
+  </ItemGroup>
+
 </Project>
