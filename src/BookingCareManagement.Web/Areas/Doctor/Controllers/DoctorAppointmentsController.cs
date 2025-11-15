@@ -11,6 +11,7 @@ using BookingCareManagement.Domain.Aggregates.Doctor;
 using BookingCareManagement.Domain.Aggregates.User;
 using BookingCareManagement.Infrastructure.Persistence;
 using BookingCareManagement.Web.Areas.Doctor.Dtos;
+using BookingCareManagement.Web.Features.Calendar;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -55,6 +56,7 @@ public class DoctorAppointmentsController : ControllerBase
         {
             DoctorId = doctor.Id,
             DoctorName = doctor.AppUser.GetFullName(),
+            DoctorAvatarUrl = ResolveDoctorAvatar(doctor.AppUser),
             Specialties = doctor.Specialties
                 .OrderBy(s => s.Name)
                 .Select(s => new DoctorAppointmentSpecialtyOptionDto
@@ -77,6 +79,51 @@ public class DoctorAppointmentsController : ControllerBase
         };
 
         return Ok(dto);
+    }
+
+    [HttpGet("calendar")]
+    public async Task<ActionResult<IReadOnlyCollection<CalendarEventDto>>> GetCalendarEvents(
+        [FromQuery] DateOnly? from,
+        [FromQuery] DateOnly? to,
+        CancellationToken cancellationToken)
+    {
+        var doctor = await FindDoctorForCurrentUserAsync(includeUser: true, cancellationToken: cancellationToken);
+        if (doctor is null || doctor.AppUser is null)
+        {
+            return Forbid();
+        }
+
+        var query =
+            from appointment in _dbContext.Appointments.AsNoTracking()
+            where appointment.DoctorId == doctor.Id
+            join specialty in _dbContext.Specialties.AsNoTracking() on appointment.SpecialtyId equals specialty.Id
+            join room in _dbContext.ClinicRooms.AsNoTracking() on appointment.ClinicRoomId equals room.Id into roomGroup
+            from room in roomGroup.DefaultIfEmpty()
+            select new { appointment, specialty, room };
+
+        if (from.HasValue)
+        {
+            var fromLocal = DateTime.SpecifyKind(from.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Local);
+            var fromUtc = fromLocal.ToUniversalTime();
+            query = query.Where(x => x.appointment.StartUtc >= fromUtc);
+        }
+
+        if (to.HasValue)
+        {
+            var toLocal = DateTime.SpecifyKind(to.Value.ToDateTime(new TimeOnly(23, 59, 59)), DateTimeKind.Local);
+            var toUtc = toLocal.ToUniversalTime();
+            query = query.Where(x => x.appointment.StartUtc <= toUtc);
+        }
+
+        var records = await query
+            .OrderBy(x => x.appointment.StartUtc)
+            .ToListAsync(cancellationToken);
+
+        var events = records
+            .Select(x => ToCalendarEventDto(x.appointment, x.specialty, doctor.Id, doctor.AppUser!, x.room))
+            .ToArray();
+
+        return Ok(events);
     }
 
     [HttpGet]
@@ -427,6 +474,40 @@ public class DoctorAppointmentsController : ControllerBase
             TimeLabel = timeLabel,
             DurationMinutes = (int)Math.Round((endUtc - startUtc).TotalMinutes),
             ClinicRoom = BuildClinicRoomLabel(room)
+        };
+    }
+
+    private CalendarEventDto ToCalendarEventDto(
+        Domain.Aggregates.Appointment.Appointment appointment,
+        Specialty specialty,
+        Guid doctorId,
+        AppUser doctorUser,
+        ClinicRoom? room)
+    {
+        var statusCode = AppointmentStatus.NormalizeOrDefault(appointment.Status);
+        if (!StatusPresentationMap.TryGetValue(statusCode, out var presentation))
+        {
+            presentation = StatusPresentationMap[AppointmentStatus.Pending];
+        }
+
+        return new CalendarEventDto
+        {
+            Id = appointment.Id,
+            DoctorId = doctorId,
+            DoctorName = doctorUser.GetFullName(),
+            DoctorAvatarUrl = ResolveDoctorAvatar(doctorUser),
+            SpecialtyId = specialty.Id,
+            SpecialtyName = specialty.Name,
+            SpecialtyColor = string.IsNullOrWhiteSpace(specialty.Color) ? "#0ea5e9" : specialty.Color,
+            PatientName = appointment.PatientName,
+            CustomerPhone = appointment.CustomerPhone,
+            Status = presentation.Code,
+            StatusLabel = presentation.Label,
+            StatusTone = presentation.Tone,
+            StatusIcon = presentation.Icon,
+            ClinicRoom = BuildClinicRoomLabel(room),
+            StartUtc = DateTime.SpecifyKind(appointment.StartUtc, DateTimeKind.Utc),
+            EndUtc = DateTime.SpecifyKind(appointment.EndUtc, DateTimeKind.Utc)
         };
     }
 

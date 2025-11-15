@@ -31,6 +31,7 @@ public class DoctorAppointmentMetadataDto
 {
     public Guid DoctorId { get; set; }
     public string DoctorName { get; set; } = string.Empty;
+    public string DoctorAvatarUrl { get; set; } = string.Empty;
     public IReadOnlyCollection<DoctorAppointmentSpecialtyOptionDto> Specialties { get; set; }
         = Array.Empty<DoctorAppointmentSpecialtyOptionDto>();
     public IReadOnlyCollection<DoctorAppointmentStatusOptionDto> Statuses { get; set; }

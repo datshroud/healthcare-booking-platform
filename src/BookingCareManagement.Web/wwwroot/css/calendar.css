@@ -2,6 +2,22 @@
     min-height: 800px;
 }
 
+:root {
+    --calendar-slot-height: 36px;
+    --fc-slot-min-height: var(--calendar-slot-height);
+}
+
+.fc .fc-timegrid-slot {
+    min-height: var(--calendar-slot-height);
+    height: var(--calendar-slot-height);
+}
+
+.fc .fc-timegrid-slot-label-frame {
+    min-height: var(--calendar-slot-height);
+    height: var(--calendar-slot-height);
+    line-height: var(--calendar-slot-height);
+}
+
 /* --- XỬ LÝ TRÀN VIỀN --- */
 .fc {
     border-top: none;
@@ -132,6 +148,36 @@
     .fc-event .fc-event-time {
         font-weight: 700;
     }
+
+.fc-timegrid-event {
+    overflow: hidden;
+    border-radius: 6px !important;
+}
+
+.fc-timegrid-event .fc-event-main-frame {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 4px 6px;
+}
+
+.fc-timegrid-event .fc-event-main-text,
+.fc-timegrid-event .fc-event-time-text,
+.fc-timegrid-event .fc-event-time {
+    display: block;
+    width: 100%;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.fc-timegrid-event .fc-event-time-text {
+    font-size: 0.8rem;
+    opacity: 0.85;
+}
 
 .fc-popover {
     border-radius: 10px !important;
