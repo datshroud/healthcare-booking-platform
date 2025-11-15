@@ -38,6 +38,7 @@ public class AdminAppointmentDoctorOptionDto
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;
     public string AvatarUrl { get; set; } = string.Empty;
+    public IReadOnlyCollection<Guid> SpecialtyIds { get; set; } = Array.Empty<Guid>();
 }
 
 public class AdminAppointmentPatientOptionDto
@@ -45,4 +46,17 @@ public class AdminAppointmentPatientOptionDto
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
+}
+
+public class AdminAppointmentCreateRequest
+{
+    public Guid DoctorId { get; set; }
+    public Guid SpecialtyId { get; set; }
+    public string? PatientId { get; set; }
+    public string PatientName { get; set; } = string.Empty;
+    public string CustomerPhone { get; set; } = string.Empty;
+    public DateTime SlotStartUtc { get; set; }
+    public int DurationMinutes { get; set; } = 30;
+    public string? Status { get; set; }
+    public Guid? ClinicRoomId { get; set; }
 }

@@ -13,6 +13,7 @@ using BookingCareManagement.Web.Areas.Admin.Dtos;
 using BookingCareManagement.Web.Areas.Doctor.Dtos;
 using BookingCareManagement.Web.Features.Calendar;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -69,6 +70,7 @@ public sealed class AdminAppointmentsController : ControllerBase
 
         var doctors = await _dbContext.Doctors
             .AsNoTracking()
+            .Include(d => d.Specialties)
             .Where(d => d.Active)
             .OrderBy(d => d.AppUser.FirstName)
             .ThenBy(d => d.AppUser.LastName)
@@ -79,7 +81,8 @@ public sealed class AdminAppointmentsController : ControllerBase
                 d.AppUser.LastName,
                 d.AppUser.Email,
                 d.AppUser.UserName,
-                d.AppUser.AvatarUrl
+                d.AppUser.AvatarUrl,
+                SpecialtyIds = d.Specialties.Select(s => s.Id).ToArray()
             })
             .ToListAsync(cancellationToken);
 
@@ -88,7 +91,8 @@ public sealed class AdminAppointmentsController : ControllerBase
             {
                 Id = d.Id,
                 Name = BuildDisplayName(d.FirstName, d.LastName, d.Email, d.UserName),
-                AvatarUrl = d.AvatarUrl ?? string.Empty
+                AvatarUrl = d.AvatarUrl ?? string.Empty,
+                SpecialtyIds = d.SpecialtyIds
             })
             .ToArray();
 
@@ -226,6 +230,183 @@ public sealed class AdminAppointmentsController : ControllerBase
             .ToArray();
 
         return Ok(dtos);
+    }
+
+    [HttpPost]
+    public async Task<ActionResult<DoctorAppointmentListItemDto>> Create(
+        [FromBody] AdminAppointmentCreateRequest request,
+        CancellationToken cancellationToken)
+    {
+        var (result, problem) = await ValidateCreateRequestAsync(request, cancellationToken);
+        if (problem is not null)
+        {
+            return problem.Status == StatusCodes.Status409Conflict
+                ? Conflict(problem)
+                : BadRequest(problem);
+        }
+
+        var appointment = new Domain.Aggregates.Appointment.Appointment(
+            result!.Doctor.Id,
+            result.Specialty.Id,
+            result.ClinicRoomId,
+            result.SlotStartUtc,
+            TimeSpan.FromMinutes(result.DurationMinutes),
+            result.PatientName,
+            result.CustomerPhone,
+            result.PatientId);
+
+        appointment.SetStatus(result.Status);
+        await _dbContext.Appointments.AddAsync(appointment, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var dto = await BuildListItemDtoAsync(appointment.Id, cancellationToken);
+        return dto is null ? Problem("Không thể tải dữ liệu cuộc hẹn vừa tạo") : Ok(dto);
+    }
+
+    private async Task<(AdminCreateValidationResult? Result, ProblemDetails? Problem)> ValidateCreateRequestAsync(
+        AdminAppointmentCreateRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (request.DoctorId == Guid.Empty)
+        {
+            return (null, new ProblemDetails { Title = "Vui lòng chọn bác sĩ" });
+        }
+
+        if (request.SpecialtyId == Guid.Empty)
+        {
+            return (null, new ProblemDetails { Title = "Vui lòng chọn chuyên khoa" });
+        }
+
+        var doctor = await _dbContext.Doctors
+            .Include(d => d.Specialties)
+            .Include(d => d.AppUser)
+            .FirstOrDefaultAsync(d => d.Id == request.DoctorId, cancellationToken);
+
+        if (doctor is null || doctor.AppUser is null)
+        {
+            return (null, new ProblemDetails { Title = "Không tìm thấy bác sĩ" });
+        }
+
+        var specialty = doctor.Specialties.FirstOrDefault(s => s.Id == request.SpecialtyId);
+        if (specialty is null)
+        {
+            return (null, new ProblemDetails { Title = "Bác sĩ không thuộc chuyên khoa được chọn" });
+        }
+
+        var slotStartUtc = DateTime.SpecifyKind(request.SlotStartUtc, DateTimeKind.Utc);
+        if (slotStartUtc == default)
+        {
+            return (null, new ProblemDetails { Title = "Vui lòng chọn thời gian khám" });
+        }
+
+        var durationMinutes = request.DurationMinutes > 0 ? request.DurationMinutes : 30;
+        var minLeadLocal = DateTime.SpecifyKind(DateTime.Now.Date.AddDays(2), DateTimeKind.Local);
+        var minLeadUtc = minLeadLocal.ToUniversalTime();
+        if (slotStartUtc < minLeadUtc)
+        {
+            return (null, new ProblemDetails { Title = $"Ngày đặt phải từ {minLeadLocal:dd/MM/yyyy} trở đi" });
+        }
+
+        var slotEndUtc = slotStartUtc.AddMinutes(durationMinutes);
+        var hasOverlap = await _dbContext.Appointments
+            .AsNoTracking()
+            .AnyAsync(
+                a => a.DoctorId == doctor.Id && slotStartUtc < a.EndUtc && a.StartUtc < slotEndUtc,
+                cancellationToken);
+
+        if (hasOverlap)
+        {
+            return (null, new ProblemDetails
+            {
+                Title = "Khung giờ đã có cuộc hẹn khác",
+                Status = StatusCodes.Status409Conflict
+            });
+        }
+
+        var clinicRoomId = await ResolveClinicRoomIdAsync(request.ClinicRoomId, cancellationToken);
+
+        var patientName = request.PatientName?.Trim();
+        var customerPhone = request.CustomerPhone?.Trim();
+        if (!string.IsNullOrWhiteSpace(request.PatientId))
+        {
+            var patientUser = await _dbContext.Users
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == request.PatientId, cancellationToken);
+
+            if (patientUser is not null)
+            {
+                if (string.IsNullOrWhiteSpace(patientName))
+                {
+                    patientName = BuildDisplayName(patientUser.FirstName, patientUser.LastName, patientUser.Email, patientUser.UserName);
+                }
+
+                if (string.IsNullOrWhiteSpace(customerPhone))
+                {
+                    customerPhone = patientUser.PhoneNumber?.Trim();
+                }
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(patientName))
+        {
+            return (null, new ProblemDetails { Title = "Vui lòng chọn bệnh nhân" });
+        }
+
+        if (string.IsNullOrWhiteSpace(customerPhone))
+        {
+            return (null, new ProblemDetails { Title = "Vui lòng nhập số điện thoại" });
+        }
+
+        var normalizedStatus = AppointmentStatus.NormalizeOrDefault(request.Status);
+
+        return (new AdminCreateValidationResult(
+            doctor,
+            doctor.AppUser,
+            specialty,
+            clinicRoomId,
+            slotStartUtc,
+            durationMinutes,
+            patientName,
+            customerPhone,
+            string.IsNullOrWhiteSpace(request.PatientId) ? null : request.PatientId,
+            normalizedStatus), null);
+    }
+
+    private async Task<Guid> ResolveClinicRoomIdAsync(Guid? requestedRoomId, CancellationToken cancellationToken)
+    {
+        if (requestedRoomId.HasValue && requestedRoomId.Value != Guid.Empty)
+        {
+            var exists = await _dbContext.ClinicRooms.AsNoTracking().AnyAsync(r => r.Id == requestedRoomId.Value, cancellationToken);
+            if (exists)
+            {
+                return requestedRoomId.Value;
+            }
+        }
+
+        var fallback = await _dbContext.ClinicRooms.AsNoTracking().Select(r => r.Id).FirstOrDefaultAsync(cancellationToken);
+        if (fallback != Guid.Empty)
+        {
+            return fallback;
+        }
+
+        var defaultRoom = new ClinicRoom("CR-ADMIN-01");
+        await _dbContext.ClinicRooms.AddAsync(defaultRoom, cancellationToken);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return defaultRoom.Id;
+    }
+
+    private async Task<DoctorAppointmentListItemDto?> BuildListItemDtoAsync(Guid appointmentId, CancellationToken cancellationToken)
+    {
+        return await (
+            from appointment in _dbContext.Appointments.AsNoTracking()
+            where appointment.Id == appointmentId
+            join specialty in _dbContext.Specialties.AsNoTracking() on appointment.SpecialtyId equals specialty.Id
+            join doctor in _dbContext.Doctors.AsNoTracking() on appointment.DoctorId equals doctor.Id
+            join doctorUser in _dbContext.Users.AsNoTracking() on doctor.AppUserId equals doctorUser.Id
+            join room in _dbContext.ClinicRooms.AsNoTracking() on appointment.ClinicRoomId equals room.Id into roomGroup
+            from room in roomGroup.DefaultIfEmpty()
+            select ToListItemDto(appointment, specialty, doctorUser, room))
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     private static DoctorAppointmentListItemDto ToListItemDto(
@@ -394,4 +575,16 @@ public sealed class AdminAppointmentsController : ControllerBase
     }
 
     private sealed record AppointmentStatusPresentation(string Code, string Label, string Tone, string Icon);
+
+    private sealed record AdminCreateValidationResult(
+        Domain.Aggregates.Doctor.Doctor Doctor,
+        AppUser DoctorUser,
+        Specialty Specialty,
+        Guid ClinicRoomId,
+        DateTime SlotStartUtc,
+        int DurationMinutes,
+        string PatientName,
+        string CustomerPhone,
+        string? PatientId,
+        string Status);
 }

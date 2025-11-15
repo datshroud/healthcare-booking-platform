@@ -6,6 +6,9 @@ let tomEmployee = null;
 let tomTime = null;
 let tomCustomer = null;
 let fpModalDate = null;
+let manualPhoneWrapper = null;
+let manualPhoneInput = null;
+let adminModalEventsBound = false;
 
 const MIN_APPOINTMENT_LEAD_DAYS = 2;
 
@@ -367,17 +370,33 @@ document.addEventListener('DOMContentLoaded', (event) => {
             sortField: { field: "text", direction: "asc" }
         };
 
-        tomService = new TomSelect("#modalServiceSelect", tomSettings);
-        tomEmployee = new TomSelect("#modalEmployeeSelect", tomSettings);
-        tomCustomer = new TomSelect("#modalCustomerSelect", tomSettings);
+        const serviceSelect = document.getElementById('modalServiceSelect');
+        const doctorSelect = document.getElementById('modalEmployeeSelect');
+        const patientSelect = document.getElementById('modalCustomerSelect');
+        const timeSelect = document.getElementById('modalTimeSelect');
+
+        if (serviceSelect) {
+            tomService = new TomSelect(serviceSelect, tomSettings);
+        }
+
+        if (doctorSelect) {
+            tomEmployee = new TomSelect(doctorSelect, tomSettings);
+        }
+
+        if (patientSelect) {
+            tomCustomer = new TomSelect(patientSelect, tomSettings);
+        }
+
         [tomService, tomEmployee, tomCustomer].forEach(instance => instance?.disable());
 
-        tomTime = new TomSelect("#modalTimeSelect", {
-            options: [],
-            create: false,
-            placeholder: 'Chọn khung giờ...'
-        });
-        resetModalTimeSelect(tomTime);
+        if (timeSelect) {
+            tomTime = new TomSelect(timeSelect, {
+                options: [],
+                create: false,
+                placeholder: 'Chọn khung giờ...'
+            });
+            resetModalTimeSelect(tomTime);
+        }
     }
 
     // Khởi tạo Flatpickr cho Date
@@ -393,6 +412,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const newApptModalEl = document.getElementById('newAppointmentModal');
     const newApptForm = document.getElementById('newAppointmentForm');
     const saveApptButton = document.getElementById('saveAppointmentButton');
+    manualPhoneWrapper = document.getElementById('manualPhoneWrapper');
+    manualPhoneInput = document.getElementById('manualPhoneInput');
 
     if (newApptModalEl) {
         newApptModalEl.addEventListener('hidden.bs.modal', function () {
@@ -411,6 +432,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             }
 
             showNewAppointmentAlert(null);
+            resetManualPhoneCapture();
         });
 
         newApptModalEl.addEventListener('show.bs.modal', function () {
@@ -421,18 +443,21 @@ document.addEventListener('DOMContentLoaded', (event) => {
             }
             resetModalTimeSelect(tomTime);
             showNewAppointmentAlert(null);
+            resetManualPhoneCapture();
         });
     }
 
     if (saveApptButton) {
-        saveApptButton.addEventListener('click', function () {
+        const originalButtonText = saveApptButton.innerHTML;
+        saveApptButton.addEventListener('click', async function () {
             const specialtyId = tomService?.getValue();
-            const employee = tomEmployee?.getValue();
+            const doctorId = tomEmployee?.getValue();
             const time = tomTime?.getValue();
-            const customer = tomCustomer?.getValue();
+            const patientId = tomCustomer?.getValue();
             const date = fpModalDate?.selectedDates?.[0];
+            const manualPhone = (manualPhoneInput?.value || '').trim();
 
-            if (!specialtyId || !employee || !customer) {
+            if (!specialtyId || !doctorId || !patientId) {
                 showNewAppointmentAlert('Vui lòng chọn đầy đủ chuyên khoa, bác sĩ và bệnh nhân.');
                 return;
             }
@@ -453,21 +478,48 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 return;
             }
 
-            showNewAppointmentAlert(null);
-
-            console.log("Đang tạo cuộc hẹn:", {
-                customer,
-                employee,
-                specialtyId,
-                date,
-                time
-            });
-
-            const modalInstance = bootstrap.Modal.getInstance(newApptModalEl);
-            if (modalInstance) {
-                modalInstance.hide();
+            const slotStartIso = combineDateAndTimeToUtcIso(date, time);
+            if (!slotStartIso) {
+                showNewAppointmentAlert('Khung giờ bạn chọn không hợp lệ, vui lòng thử lại.');
+                return;
             }
 
+            if (appointmentState.mode === 'admin' && patientRequiresManualPhone(patientId) && !manualPhone) {
+                showNewAppointmentAlert('Bệnh nhân chưa có số điện thoại, vui lòng nhập để tiếp tục.');
+                manualPhoneInput?.classList.add('is-invalid');
+                manualPhoneInput?.focus();
+                return;
+            }
+
+            let requestPayload;
+            try {
+                requestPayload = buildCreateAppointmentRequest({
+                    specialtyId,
+                    doctorId,
+                    patientId,
+                    slotStartIso,
+                    manualPhone
+                });
+            } catch (error) {
+                showNewAppointmentAlert(error?.message || 'Không thể chuẩn bị dữ liệu cuộc hẹn.');
+                return;
+            }
+
+            saveApptButton.disabled = true;
+            saveApptButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Đang lưu...';
+            showNewAppointmentAlert(null);
+
+            try {
+                await submitNewAppointment(requestPayload);
+                const modalInstance = bootstrap.Modal.getInstance(newApptModalEl);
+                modalInstance?.hide();
+                await reloadDoctorAppointments();
+            } catch (error) {
+                showNewAppointmentAlert(error?.message || 'Không thể tạo cuộc hẹn mới.', 'danger');
+            } finally {
+                saveApptButton.disabled = false;
+                saveApptButton.innerHTML = originalButtonText;
+            }
         });
     }
 
@@ -1040,10 +1092,19 @@ function mapStatusDto(source) {
 }
 
 function mapDoctorOptionDto(source) {
+    const rawId = source?.id ?? source?.Id ?? '';
+    const rawSpecialtyIds = source?.specialtyIds ?? source?.SpecialtyIds ?? [];
+    const normalizedSpecialtyIds = Array.isArray(rawSpecialtyIds)
+        ? rawSpecialtyIds
+            .filter(id => id !== null && id !== undefined && id !== '')
+            .map(id => String(id))
+        : [];
+
     return {
-        id: source.id ?? source.Id ?? '',
+        id: rawId !== null && rawId !== undefined ? String(rawId) : '',
         name: source.name ?? source.Name ?? '',
-        avatarUrl: source.avatarUrl ?? source.AvatarUrl ?? ''
+        avatarUrl: source.avatarUrl ?? source.AvatarUrl ?? '',
+        specialtyIds: normalizedSpecialtyIds
     };
 }
 
@@ -1064,18 +1125,16 @@ function populateAdminNewAppointmentOptions(metadata) {
         value: item.id != null ? String(item.id) : '',
         text: item.name
     }));
-    const doctorOptions = (metadata?.doctors ?? []).map(item => ({
-        value: item.id != null ? String(item.id) : '',
-        text: item.name
-    }));
     const patientOptions = (metadata?.patients ?? []).map(item => ({
         value: item.id != null ? String(item.id) : '',
         text: buildPatientOptionLabel(item)
     }));
 
     refreshTomSelectOptions(tomService, specialtyOptions, 'Chọn chuyên khoa khám');
-    refreshTomSelectOptions(tomEmployee, doctorOptions, 'Chọn bác sĩ phụ trách');
     refreshTomSelectOptions(tomCustomer, patientOptions, 'Chọn bệnh nhân');
+    updateAdminDoctorSelect(tomService?.getValue() || '');
+    handleAdminPatientSelectionChange(tomCustomer?.getValue() || '');
+    bindAdminModalEvents();
 }
 
 function refreshTomSelectOptions(instance, options, placeholder) {
@@ -1129,4 +1188,284 @@ function handleDateRangeChanged() {
     if (appointmentState.metadata) {
         reloadDoctorAppointments();
     }
+}
+
+function combineDateAndTimeToUtcIso(dateObj, timeLabel) {
+    if (!(dateObj instanceof Date) || !timeLabel) {
+        return null;
+    }
+
+    const timeInfo = parseTimeLabel(timeLabel);
+    if (!timeInfo) {
+        return null;
+    }
+
+    const localDate = new Date(dateObj.getTime());
+    localDate.setHours(timeInfo.hours, timeInfo.minutes, 0, 0);
+    return localDate.toISOString();
+}
+
+function parseTimeLabel(label) {
+    if (!label) {
+        return null;
+    }
+
+    const match = label.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (!match) {
+        return null;
+    }
+
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const period = match[3].toUpperCase();
+
+    if (period === 'PM' && hours < 12) {
+        hours += 12;
+    }
+    if (period === 'AM' && hours === 12) {
+        hours = 0;
+    }
+
+    return { hours, minutes };
+}
+
+function buildCreateAppointmentRequest({ specialtyId, doctorId, patientId, slotStartIso, manualPhone }) {
+    if (!specialtyId) {
+        throw new Error('Vui lòng chọn chuyên khoa.');
+    }
+
+    if (appointmentState.mode === 'admin' && (!doctorId || !patientId)) {
+        throw new Error('Vui lòng chọn đầy đủ bác sĩ và bệnh nhân.');
+    }
+
+    const durationMinutes = 30;
+    const endpoints = resolveAppointmentEndpoints();
+
+    if (appointmentState.mode === 'admin') {
+        const patient = findPatientOptionById(patientId);
+        if (!patient) {
+            throw new Error('Không tìm thấy thông tin bệnh nhân.');
+        }
+
+        const storedPhone = (patient.phoneNumber || '').trim();
+        const fallbackPhone = (manualPhone || '').trim();
+        const resolvedPhone = storedPhone || fallbackPhone;
+
+        if (!resolvedPhone) {
+            throw new Error('Bệnh nhân chưa có số điện thoại, vui lòng nhập để tiếp tục.');
+        }
+
+        return {
+            endpoint: endpoints.root,
+            body: {
+                doctorId,
+                specialtyId,
+                patientId: patient.id || patientId,
+                patientName: patient.name || '',
+                customerPhone: resolvedPhone,
+                slotStartUtc: slotStartIso,
+                durationMinutes
+            }
+        };
+    }
+
+    const patient = findPatientOptionById(patientId);
+    if (!patient?.name || !patient?.phoneNumber) {
+        throw new Error('Vui lòng đảm bảo hồ sơ bệnh nhân có đầy đủ tên và số điện thoại.');
+    }
+
+    return {
+        endpoint: endpoints.root,
+        body: {
+            specialtyId,
+            patientName: patient.name,
+            customerPhone: patient.phoneNumber,
+            slotStartUtc: slotStartIso,
+            durationMinutes
+        }
+    };
+}
+
+function findPatientOptionById(id) {
+    if (!id || !appointmentState.metadata?.patients) {
+        return null;
+    }
+
+    return appointmentState.metadata.patients.find(option => String(option.id ?? option.Id ?? '') === String(id)) || null;
+}
+
+async function submitNewAppointment(payload) {
+    const response = await fetch(payload.endpoint, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify(payload.body)
+    });
+
+    if (!response.ok) {
+        throw await buildApiError(response);
+    }
+
+    return await response.json();
+}
+
+function bindAdminModalEvents() {
+    if (adminModalEventsBound || appointmentState.mode !== 'admin') {
+        return;
+    }
+
+    if (tomService) {
+        tomService.on('change', (value) => {
+            const normalizedValue = normalizeTomSelectValue(value);
+            if (tomEmployee) {
+                tomEmployee.clear(true);
+            }
+            updateAdminDoctorSelect(normalizedValue);
+        });
+    }
+
+    if (tomCustomer) {
+        tomCustomer.on('change', (value) => {
+            const normalizedValue = normalizeTomSelectValue(value);
+            handleAdminPatientSelectionChange(normalizedValue);
+        });
+    }
+
+    if (manualPhoneInput) {
+        manualPhoneInput.addEventListener('input', () => {
+            manualPhoneInput.classList.remove('is-invalid');
+        });
+    }
+
+    adminModalEventsBound = true;
+}
+
+function updateAdminDoctorSelect(selectedSpecialtyId) {
+    if (appointmentState.mode !== 'admin') {
+        return;
+    }
+
+    const normalizedSpecialtyId = normalizeTomSelectValue(selectedSpecialtyId);
+    const doctors = getDoctorsForSpecialtyId(normalizedSpecialtyId);
+    const hasSpecialty = !!normalizeGuidValue(normalizedSpecialtyId);
+    const placeholder = doctors.length
+        ? 'Chọn bác sĩ phụ trách'
+        : hasSpecialty
+            ? 'Chưa có bác sĩ thuộc chuyên khoa này'
+            : 'Chưa có bác sĩ khả dụng';
+
+    refreshTomSelectOptions(tomEmployee, buildDoctorSelectOptions(doctors), placeholder);
+}
+
+function getDoctorsForSpecialtyId(specialtyId) {
+    const doctors = appointmentState.metadata?.doctors ?? [];
+    const normalizedSpecialtyId = normalizeGuidValue(specialtyId);
+    if (!normalizedSpecialtyId) {
+        return doctors;
+    }
+
+    return doctors.filter(doc =>
+        (doc?.specialtyIds ?? []).some(id => normalizeGuidValue(id) === normalizedSpecialtyId));
+}
+
+function buildDoctorSelectOptions(doctors) {
+    if (!Array.isArray(doctors)) {
+        return [];
+    }
+
+    return doctors
+        .filter(doc => doc && doc.id)
+        .map(doc => ({
+            value: String(doc.id),
+            text: doc.name || 'Bác sĩ'
+        }));
+}
+
+function normalizeTomSelectValue(value) {
+    if (Array.isArray(value)) {
+        return value[0] ?? '';
+    }
+    return value ?? '';
+}
+
+function normalizeGuidValue(value) {
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value).trim().toLowerCase();
+}
+
+function patientRequiresManualPhone(patientId) {
+    if (appointmentState.mode !== 'admin') {
+        return false;
+    }
+
+    const normalizedId = normalizeTomSelectValue(patientId);
+    if (!normalizedId) {
+        return false;
+    }
+
+    const patient = findPatientOptionById(normalizedId);
+    if (!patient) {
+        return false;
+    }
+
+    return !(patient.phoneNumber && patient.phoneNumber.trim().length > 0);
+}
+
+function handleAdminPatientSelectionChange(patientId) {
+    if (appointmentState.mode !== 'admin') {
+        return;
+    }
+
+    const normalizedId = normalizeTomSelectValue(patientId);
+    if (!normalizedId) {
+        resetManualPhoneCapture();
+        return;
+    }
+
+    if (patientRequiresManualPhone(normalizedId)) {
+        showManualPhoneCapture();
+        return;
+    }
+
+    hideManualPhoneCapture();
+}
+
+function showManualPhoneCapture() {
+    if (!manualPhoneWrapper) {
+        return;
+    }
+
+    const wasHidden = manualPhoneWrapper.classList.contains('d-none');
+    manualPhoneWrapper.classList.remove('d-none');
+    manualPhoneWrapper.dataset.requiresPhone = '1';
+
+    if (manualPhoneInput) {
+        if (wasHidden) {
+            manualPhoneInput.value = '';
+        }
+        manualPhoneInput.classList.remove('is-invalid');
+        manualPhoneInput.focus();
+    }
+}
+
+function hideManualPhoneCapture() {
+    if (!manualPhoneWrapper) {
+        return;
+    }
+
+    manualPhoneWrapper.classList.add('d-none');
+    manualPhoneWrapper.dataset.requiresPhone = '0';
+
+    if (manualPhoneInput) {
+        manualPhoneInput.value = '';
+        manualPhoneInput.classList.remove('is-invalid');
+    }
+}
+
+function resetManualPhoneCapture() {
+    hideManualPhoneCapture();
 }
