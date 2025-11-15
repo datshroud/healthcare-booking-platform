@@ -37,29 +37,64 @@
     // --- 4. GẮN SỰ KIỆN CLICK  ---
     document.getElementById('invoicesTableBody')?.addEventListener('click', async function (e) {
 
-        // Xử lý nút "Set as Paid"
+        // Xử lý nút "Set as Paid" -> now calls backend API
         const setAsPaidButton = e.target.closest('.action-set-as-paid a');
         if (setAsPaidButton) {
             e.preventDefault();
             const row = setAsPaidButton.closest('tr.invoice-row');
             if (!row) return;
 
-            const statusBadge = row.querySelector('.invoice-status-badge');
-            if (statusBadge) {
-                statusBadge.classList.remove('status-pending');
-                statusBadge.classList.add('status-paid');
-                statusBadge.textContent = 'Đã thanh toán'; // Đã dịch
+            const invoiceId = row.dataset.invoiceId;
+            if (!invoiceId) {
+                alert('Invoice id not found');
+                return;
             }
 
-            const paidLi = setAsPaidButton.closest('li.action-set-as-paid');
-            if (paidLi) {
-                paidLi.style.display = 'none';
-                const divider = paidLi.nextElementSibling;
-                if (divider && divider.classList.contains('action-divider')) {
-                    divider.style.display = 'none';
+            const originalHtml = setAsPaidButton.innerHTML;
+            setAsPaidButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin fa-fw me-2"></i> Đang xử lý...';
+            setAsPaidButton.classList.add('disabled');
+
+            try {
+                const resp = await fetch(`/api/invoice/${invoiceId}/mark-as-paid`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!resp.ok) {
+                    let errText = 'Không thể cập nhật hóa đơn.';
+                    try {
+                        const j = await resp.json();
+                        errText = j?.detail || j?.title || errText;
+                    } catch { }
+                    throw new Error(errText);
                 }
+
+                // update UI after success
+                const statusBadge = row.querySelector('.invoice-status-badge');
+                if (statusBadge) {
+                    statusBadge.classList.remove('status-pending');
+                    statusBadge.classList.add('status-paid');
+                    statusBadge.textContent = 'Đã thanh toán';
+                }
+
+                const paidLi = setAsPaidButton.closest('li.action-set-as-paid');
+                if (paidLi) {
+                    paidLi.style.display = 'none';
+                    const divider = paidLi.nextElementSibling;
+                    if (divider && divider.classList.contains('action-divider')) {
+                        divider.style.display = 'none';
+                    }
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert(err.message || 'Lỗi khi cập nhật hóa đơn.');
+            } finally {
+                setAsPaidButton.innerHTML = originalHtml;
+                setAsPaidButton.classList.remove('disabled');
             }
-            return; 
+
+            return;
         }
 
         // Xử lý nút "Download"
@@ -271,7 +306,7 @@ async function generateInvoicePDF(data) {
         }
     });
 
-    // --- 4. Tổng cộng (Total) ---
+    // --- 4. Tổng cùng (Total) ---
     const finalY = doc.lastAutoTable.finalY + 10;
 
     doc.setFillColor(lightBlueBg[0], lightBlueBg[1], lightBlueBg[2]);
@@ -280,7 +315,7 @@ async function generateInvoicePDF(data) {
     doc.setFont('Roboto', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(textColor);
-    doc.text("Tổng cộng", 150, finalY, { align: "right" });
+    doc.text("Tổng cùng", 150, finalY, { align: "right" });
     doc.text(data.total, 210 - margin, finalY, { align: "right" });
 
     // --- 5. Lưu file ---

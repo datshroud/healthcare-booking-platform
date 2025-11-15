@@ -3,6 +3,7 @@ using BookingCareManagement.Domain.Aggregates.Appointment;
 using BookingCareManagement.Domain.Aggregates.ClinicRoom;
 using BookingCareManagement.Domain.Aggregates.Doctor;
 using BookingCareManagement.Domain.Aggregates.User;
+using BookingCareManagement.Domain.Aggregates.Invoice;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -18,6 +19,7 @@ public class ApplicationDBContext : IdentityDbContext<AppUser, AppRole, string>
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<DoctorWorkingHour> DoctorWorkingHours => Set<DoctorWorkingHour>();
     public DbSet<DoctorDayOff> DoctorDayOffs => Set<DoctorDayOff>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
