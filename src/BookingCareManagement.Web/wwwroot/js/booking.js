@@ -28,6 +28,9 @@
         calendarSelected: document.getElementById("calendarSelected")
     };
 
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialSpecialtyId = urlParams.get("specialtyId");
+
     const state = {
         step: "specialty",
         specialties: [],
@@ -36,7 +39,8 @@
         selectedSpecialty: null,
         selectedDoctor: null,
         selectedSlot: null,
-        profile: null
+        profile: null,
+        prefilledSpecialty: false
     };
 
     const currency = new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND", minimumFractionDigits: 0 });
@@ -444,11 +448,27 @@
         });
     };
 
+    const tryPreselectSpecialty = () => {
+        if (state.prefilledSpecialty || !initialSpecialtyId) {
+            return;
+        }
+
+        const normalizedId = initialSpecialtyId.trim().toLowerCase();
+        const specialty = state.specialties.find((sp) => sp.id?.toLowerCase() === normalizedId);
+        if (!specialty) {
+            return;
+        }
+
+        state.prefilledSpecialty = true;
+        selectSpecialty(specialty);
+    };
+
     const loadSpecialties = async () => {
         showLoading(dom.specialtyList);
         try {
             state.specialties = await fetchJson(`${apiBase}/specialties`);
             renderSpecialties(state.specialties);
+            tryPreselectSpecialty();
         } catch (error) {
             showEmpty(dom.specialtyList, error.message);
         }
