@@ -1,4 +1,4 @@
-﻿document.addEventListener('DOMContentLoaded', (event) => {
+﻿document.addEventListener('DOMContentLoaded', async (event) => {
 
     // --- 1. NÚT TOGGLE BỘ LỌC CHÍNH ---
     const toggleBtn = document.getElementById("toggleFiltersButton");
@@ -132,6 +132,9 @@
             }
         }
     });
+
+    // --- FETCH & RENDER FILTER OPTIONS ---
+    await loadInvoiceFilters();
 
 }); 
 
@@ -320,4 +323,58 @@ async function generateInvoicePDF(data) {
 
     // --- 5. Lưu file ---
     doc.save(`HoaDon-${data.invoiceId}.pdf`);
+}
+
+/**
+ * FETCH AND RENDER FILTER OPTIONS
+ */
+async function loadInvoiceFilters() {
+    await Promise.all([
+        fetchAndRenderFilter('services', '#filterService'),
+        fetchAndRenderFilter('employees', '#filterEmployee'),
+        fetchAndRenderFilter('customers', '#filterCustomer'),
+        fetchAndRenderFilter('statuses', '#filterStatus')
+    ]);
+}
+
+async function fetchAndRenderFilter(type, containerSelector) {
+    let url = `/api/invoice/filters/${type}`;
+    try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('Lỗi tải dữ liệu bộ lọc');
+        const data = await resp.json();
+        renderFilterOptions(type, data, containerSelector);
+    } catch (err) {
+        console.error(`Lỗi tải bộ lọc ${type}:`, err);
+    }
+}
+
+function renderFilterOptions(type, items, containerSelector) {
+    const container = document.querySelector(containerSelector);
+    if (!container) return;
+    const list = container.querySelector('.filter-options-list');
+    if (!list) return;
+    list.innerHTML = '';
+    items.forEach((item, idx) => {
+        const id = `${type}_${idx}`;
+        let label = item;
+        if (type === 'statuses') {
+            // Map status to Vietnamese if needed
+            if (item.toLowerCase() === 'paid') label = 'Đã thanh toán';
+            else if (item.toLowerCase() === 'pending') label = 'Đang chờ';
+            else if (item.toLowerCase() === 'archived') label = 'Đã lưu trữ';
+        }
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <div class="form-check">
+                <input class="form-check-input filter-checkbox" type="checkbox" value="${item}" id="${id}">
+                <label class="form-check-label" for="${id}">${label}</label>
+            </div>
+        `;
+        list.appendChild(li);
+    });
+    // Gắn lại sự kiện cho checkbox mới
+    list.querySelectorAll('.filter-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', applyInvoiceFilters);
+    });
 }

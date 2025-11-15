@@ -31,9 +31,22 @@ public class InvoiceFilterController : ControllerBase
     [HttpGet("employees")]
     public async Task<IActionResult> GetEmployees(CancellationToken ct)
     {
-        var q = from d in _context.Doctors.AsNoTracking()
+        // L?y danh sách AppointmentId t? Invoices
+        var apptIds = await _context.Invoices
+            .Select(i => i.AppointmentId)
+            .ToListAsync(ct);
+
+        // Join Appointment -> Doctor -> AppUser
+        var q = from appt in _context.Appointments.AsNoTracking()
+                where apptIds.Contains(appt.Id)
+                join d in _context.Doctors.AsNoTracking() on appt.DoctorId equals d.Id
                 join u in _context.Users.AsNoTracking() on d.AppUserId equals u.Id
-                select (u.FullName ?? ((u.FirstName ?? "") + " " + (u.LastName ?? "")).Trim());
+                select
+                    !string.IsNullOrWhiteSpace(u.FullName)
+                        ? u.FullName
+                        : !string.IsNullOrWhiteSpace(((u.FirstName ?? "") + " " + (u.LastName ?? "")).Trim())
+                            ? ((u.FirstName ?? "") + " " + (u.LastName ?? "")).Trim()
+                            : u.Email;
 
         var items = await q.Distinct().OrderBy(x => x).ToListAsync(ct);
         return Ok(items);
