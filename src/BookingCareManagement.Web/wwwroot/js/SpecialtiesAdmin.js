@@ -74,18 +74,22 @@ async function loadSpecialties() {
     }
 }
 
-async function ensureDoctorsLoaded() {
+// THAY ĐỔI 1: Hàm này giờ sẽ nhận 'currentDoctorIds' (các bác sĩ thuộc CK đang sửa)
+async function ensureDoctorsLoaded(currentDoctorIds = new Set()) {
     if (doctorsCache.length > 0) {
-        populateDoctorOptions();
+        // Nếu đã có cache, chỉ cần lọc lại danh sách hiển thị
+        populateDoctorOptions(currentDoctorIds);
         return doctorsCache;
     }
     try {
+        // Nếu chưa có cache, tải mới
         const response = await fetch("/api/Doctor");
         if (!response.ok) {
             throw new Error("Không thể tải danh sách bác sĩ.");
         }
         doctorsCache = await response.json();
-        populateDoctorOptions();
+        // Lọc danh sách ngay khi tải về
+        populateDoctorOptions(currentDoctorIds);
         return doctorsCache;
     } catch (error) {
         console.error(error);
@@ -94,26 +98,42 @@ async function ensureDoctorsLoaded() {
     }
 }
 
-function populateDoctorOptions() {
+// THAY ĐỔI 2: Hàm này nhận 'currentDoctorIds' và lọc dựa trên đó
+function populateDoctorOptions(currentDoctorIds = new Set()) {
     if (!specialtyDoctorsSelect) {
         return;
     }
 
-    const selected = new Set(Array.from(specialtyDoctorsSelect.selectedOptions).map((o) => o.value));
-    specialtyDoctorsSelect.innerHTML = "";
+    specialtyDoctorsSelect.innerHTML = ""; // Xóa danh sách cũ
+
     doctorsCache
-        .filter((doc) => doc.active !== false)
+        .filter((doc) => {
+            // Lọc 1: Bác sĩ không hoạt động -> Ẩn
+            if (doc.active === false) {
+                return false;
+            }
+
+            // Lọc 2: Kiểm tra xem bác sĩ đã có chuyên khoa chưa
+            // (Giả định DTO bác sĩ từ /api/Doctor có mảng 'specialties')
+            const doctorHasSpecialty = doc.specialties && doc.specialties.length > 0;
+
+            // Lọc 3: Kiểm tra xem bác sĩ có thuộc chuyên khoa *hiện tại* đang sửa không
+            const belongsToThisSpecialty = currentDoctorIds.has(doc.id);
+
+            // CHỈ HIỂN THỊ BÁC SĨ NẾU:
+            // 1. Họ chưa có chuyên khoa (còn trống)
+            // 2. HOẶC họ đã thuộc về chính chuyên khoa này (để còn sửa)
+            return !doctorHasSpecialty || belongsToThisSpecialty;
+        })
         .forEach((doc) => {
             const option = document.createElement("option");
             option.value = doc.id;
             const fullName = doc.fullName?.trim() || `${doc.firstName ?? ""} ${doc.lastName ?? ""}`.trim() || doc.email || "Bác sĩ";
             option.textContent = fullName;
-            if (selected.has(option.value)) {
-                option.selected = true;
-            }
             specialtyDoctorsSelect.appendChild(option);
         });
 }
+
 
 function renderSpecialtyList(items) {
     if (!specialtyListContainer) {
@@ -138,7 +158,12 @@ function renderSpecialtyList(items) {
         const statusClass = specialty.active ? "active" : "inactive";
         const statusLabel = specialty.active ? "Hoạt động" : "Đã khóa";
         const descriptionText = truncateText(stripHtml(specialty.description || ""), 140) || "Chưa có mô tả";
-        const doctorNames = (specialty.doctors || []).map((d) => d.fullName).filter(Boolean).join(", ");
+
+        // SỬA LỖI HIỂN THỊ: Đảm bảo 'specialty.doctors' là một mảng
+        const doctorNames = Array.isArray(specialty.doctors)
+            ? specialty.doctors.map((d) => d.fullName).filter(Boolean).join(", ")
+            : "";
+
         const doctorsHtml = doctorNames
             ? `<div class="specialty-doctors">${doctorNames}</div>`
             : '<div class="specialty-doctors text-muted">Chưa gán bác sĩ</div>';
@@ -247,6 +272,7 @@ function confirmDeleteSpecialty(specialtyId) {
     });
 }
 
+// THAY ĐỔI 3: Cập nhật hàm này để truyền 'currentDoctorIds'
 async function openEditSpecialtyModal(specialtyId) {
     if (!specialtyId) {
         return;
@@ -281,8 +307,15 @@ async function openEditSpecialtyModal(specialtyId) {
         setColorValue(specialty.color || DEFAULT_SPECIALTY_COLOR);
         setEditorContent(specialty.description || "");
 
-        await ensureDoctorsLoaded();
-        setDoctorSelections((specialty.doctors || []).map((d) => d.id));
+        // Lấy danh sách ID bác sĩ của chuyên khoa NÀY
+        const currentDoctorIds = new Set((specialty.doctors || []).map((d) => d.id));
+
+        // Tải danh sách bác sĩ VỚI thông tin lọc
+        await ensureDoctorsLoaded(currentDoctorIds);
+
+        // Chọn các bác sĩ thuộc chuyên khoa này
+        setDoctorSelections(Array.from(currentDoctorIds));
+
         updateUploadPreview(editingSpecialtyImageUrl);
 
         if (addSpecialtyModalTitle) {
@@ -311,13 +344,25 @@ function setDoctorSelections(doctorIds = []) {
     });
 }
 
+// THAY ĐỔI 4: Cập nhật hàm này để truyền Set rỗng khi THÊM MỚI
 function wireModalLifecycle() {
     if (!addSpecialtyModal) {
         return;
     }
 
     addSpecialtyModal.addEventListener("shown.bs.modal", () => {
-        ensureDoctorsLoaded();
+        // Khi modal mở, gọi ensureDoctorsLoaded
+        // Nếu là modal Thêm mới (editingSpecialtyId = null),
+        // chúng ta truyền một Set rỗng, nó sẽ chỉ lọc ra các bác sĩ chưa có chuyên khoa
+        const currentDoctorIds = new Set();
+        if (editingSpecialtyId) {
+            // Trường hợp này đã được xử lý trong openEditSpecialtyModal,
+            // nhưng chúng ta vẫn có thể gọi lại để đảm bảo
+            // (Tuy nhiên, logic của openEdit đã gọi ensureDoctorsLoaded rồi)
+        } else {
+            // Đây là modal THÊM MỚI
+            ensureDoctorsLoaded(currentDoctorIds);
+        }
 
         if (!specialtyEditorInstance) {
             ClassicEditor.create(document.querySelector("#specialtyDescriptionEditor"), {
@@ -374,7 +419,14 @@ function wireDoctorSelection() {
     }
 
     specialtyDoctorsSelect.addEventListener("focus", () => {
-        ensureDoctorsLoaded();
+        // Khi focus, chúng ta cần biết ID chuyên khoa đang sửa
+        const currentDoctorIds = new Set();
+        if (editingSpecialtyId) {
+            // Nếu đang sửa, tìm các bác sĩ đã được chọn
+            const ids = Array.from(specialtyDoctorsSelect.selectedOptions).map((opt) => opt.value);
+            ids.forEach(id => currentDoctorIds.add(id));
+        }
+        ensureDoctorsLoaded(currentDoctorIds);
     });
 }
 
