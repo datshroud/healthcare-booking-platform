@@ -80,6 +80,7 @@ public class CustomerBookingController : ControllerBase
     public async Task<ActionResult<IEnumerable<DoctorTimeSlotDto>>> GetDoctorSlots(
         Guid doctorId,
         [FromQuery] DateOnly? date,
+        [FromQuery] Guid? excludeAppointmentId,
         [FromServices] IDoctorRepository doctorRepository,
         CancellationToken cancellationToken)
     {
@@ -111,9 +112,13 @@ public class CustomerBookingController : ControllerBase
         var dayStartUtc = dayStartLocal.ToUniversalTime();
         var dayEndUtc = dayEndLocal.ToUniversalTime();
 
+        var targetAppointmentId = excludeAppointmentId ?? Guid.Empty;
+
         var takenEntries = await _dbContext.Appointments
             .AsNoTracking()
-            .Where(a => a.DoctorId == doctorId && a.StartUtc >= dayStartUtc && a.StartUtc < dayEndUtc)
+            .Where(a => a.DoctorId == doctorId
+                && (targetAppointmentId == Guid.Empty || a.Id != targetAppointmentId)
+                && a.StartUtc >= dayStartUtc && a.StartUtc < dayEndUtc)
             .Select(a => new
             {
                 StartUtc = DateTime.SpecifyKind(a.StartUtc, DateTimeKind.Utc),

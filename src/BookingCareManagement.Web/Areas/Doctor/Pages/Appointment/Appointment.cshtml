@@ -1,7 +1,7 @@
 ﻿@page "/appointment"
 @model BookingCareManagement.Web.Areas.Doctor.Pages.Appointment.AppointmentModel
 @{
-    ViewData["Title"] = "Appointment";
+    ViewData["Title"] = "Quản lý cuộc hẹn";
 }
 
 @section Styles {
@@ -11,13 +11,13 @@
 <div style="margin-top: 50px; padding: 2rem;">
 
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
-        <h2 class="h4 mb-0">Appointments (<span id="totalAppointmentsCount">3</span>)</h2>
+        <h2 class="h4 mb-0">Cuộc hẹn (<span id="totalAppointmentsCount">0</span>)</h2>
         <div class="d-flex gap-2">
             <button class="btn btn-outline-secondary">
-                <i class="fa-solid fa-upload me-1"></i> Export Data
+                <i class="fa-solid fa-upload me-1"></i> Xuất dữ liệu
             </button>
             <button class="btn btn-primary">
-                <i class="fa-solid fa-plus me-1"></i> New Appointment
+                <i class="fa-solid fa-plus me-1"></i> Thêm cuộc hẹn
             </button>
         </div>
     </div>
@@ -30,20 +30,20 @@
                     <span class="input-group-text bg-light border-0" id="basic-addon1">
                         <i class="fa-solid fa-search"></i>
                     </span>
-                    <input type="text" class="form-control bg-light border-0" id="mainSearchInput"
-                           placeholder="Search appointments (Service, Customer, Employee...)" aria-label="Search">
+                          <input type="text" class="form-control bg-light border-0" id="mainSearchInput"
+                              placeholder="Tìm kiếm cuộc hẹn (Dịch vụ, bệnh nhân, bác sĩ...)" aria-label="Search">
                 </div>
             </div>
             <div class="col-md-auto">
                 <div class="d-flex flex-wrap align-items-center gap-3">
                     <div class="d-flex align-items-center gap-2 text-nowrap">
                         <i class="fa-solid fa-calendar-days text-muted"></i>
-                        <input type="text" class="form-control" id="startDate" placeholder="From Date" style="width: 120px;">
+                        <input type="text" class="form-control" id="startDate" placeholder="Từ ngày" style="width: 120px;">
                         <span>-</span>
-                        <input type="text" class="form-control" id="endDate" placeholder="To Date" style="width: 120px;">
+                        <input type="text" class="form-control" id="endDate" placeholder="Đến ngày" style="width: 120px;">
                     </div>
                     <button class="btn btn-outline-secondary" id="toggleFiltersButton">
-                        <i class="fa-solid fa-filter me-1"></i> Filters
+                        <i class="fa-solid fa-filter me-1"></i> Bộ lọc
                     </button>
                 </div>
             </div>
@@ -54,115 +54,47 @@
 
                 <div class="dropdown" id="filterService">
                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                        <i class="fa-solid fa-calendar-check me-1"></i> Service
+                        <i class="fa-solid fa-calendar-check me-1"></i> Dịch vụ
                     </button>
                     <div class="dropdown-menu filter-dropdown-menu p-3">
-                        <input type="text" class="form-control form-control-sm mb-2" placeholder="Search...">
+                        <input type="text" class="form-control form-control-sm mb-2" placeholder="Tìm kiếm...">
                         <ul class="filter-options-list">
-                            <li>
-                                <div class="form-check">
-                                    <input class="form-check-input filter-checkbox" type="checkbox" value="Heat and Ice Therapy" id="svc1">
-                                    <label class="form-check-label" for="svc1">Heat and Ice Therapy</label>
-                                </div>
-                            </li>
-                            <li>
-                                <div class="form-check">
-                                    <input class="form-check-input filter-checkbox" type="checkbox" value="Therapeutic Exercise" id="svc2">
-                                    <label class="form-check-label" for="svc2">Therapeutic Exercise</label>
-                                </div>
-                            </li>
-                            <li>
-                                <div class="form-check">
-                                    <input class="form-check-input filter-checkbox" type="checkbox" value="Therapeutic Stretching" id="svc3">
-                                    <label class="form-check-label" for="svc3">Therapeutic Stretching</label>
-                                </div>
-                            </li>
+                            <li class="text-muted small px-1" data-empty-state>Chưa có dữ liệu</li>
                         </ul>
                     </div>
                 </div>
 
                 <div class="dropdown" id="filterCustomer">
                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                        <i class="fa-solid fa-user me-1"></i> Customer
+                        <i class="fa-solid fa-user me-1"></i> Bệnh nhân
                     </button>
                     <div class="dropdown-menu filter-dropdown-menu p-3">
-                        <input type="text" class="form-control form-control-sm mb-2" placeholder="Search...">
+                        <input type="text" class="form-control form-control-sm mb-2" placeholder="Tìm kiếm...">
                         <ul class="filter-options-list">
-                            <li>
-                                <div class="form-check">
-                                    <input class="form-check-input filter-checkbox" type="checkbox" value="Jone Doe" id="cust1">
-                                    <label class="form-check-label" for="cust1">Jone Doe</label>
-                                </div>
-                            </li>
+                            <li class="text-muted small px-1" data-empty-state>Chưa có dữ liệu</li>
                         </ul>
                     </div>
                 </div>
 
                 <div class="dropdown" id="filterEmployee">
                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                        <i class="fa-solid fa-user-tie me-1"></i> Employee
+                        <i class="fa-solid fa-user-doctor me-1"></i> Bác sĩ
                     </button>
                     <div class="dropdown-menu filter-dropdown-menu p-3">
-                        <input type="text" class="form-control form-control-sm mb-2" placeholder="Search...">
+                        <input type="text" class="form-control form-control-sm mb-2" placeholder="Tìm kiếm...">
                         <ul class="filter-options-list">
-                            <li>
-                                <div class="form-check">
-                                    <input class="form-check-input filter-checkbox" type="checkbox" value="Jane Doe" id="emp1">
-                                    <label class="form-check-label" for="emp1">Jane Doe</label>
-                                </div>
-                            </li>
-                            <li>
-                                <div class="form-check">
-                                    <input class="form-check-input filter-checkbox" type="checkbox" value="Mark Roe" id="emp2">
-                                    <label class="form-check-label" for="emp2">Mark Roe</label>
-                                </div>
-                            </li>
-                            <li>
-                                <div class="form-check">
-                                    <input class="form-check-input filter-checkbox" type="checkbox" value="Sara Smith" id="emp3">
-                                    <label class="form-check-label" for="emp3">Sara Smith</label>
-                                </div>
-                            </li>
+                            <li class="text-muted small px-1" data-empty-state>Chưa có dữ liệu</li>
                         </ul>
                     </div>
                 </div>
 
                 <div class="dropdown" id="filterStatus">
                     <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
-                        <i class="fa-solid fa-circle-dot me-1"></i> Status
+                        <i class="fa-solid fa-circle-dot me-1"></i> Trạng thái
                     </button>
                     <div class="dropdown-menu filter-dropdown-menu p-3">
                         <ul class="filter-options-list">
-                            <li>
-                                <div class="form-check">
-                                    <input class="form-check-input filter-checkbox" type="checkbox" value="Approved" id="f_stat1">
-                                    <label class="form-check-label" for="f_stat1">Approved</label>
-                                </div>
-                            </li>
-                            <li>
-                                <div class="form-check">
-                                    <input class="form-check-input filter-checkbox" type="checkbox" value="Pending" id="f_stat2">
-                                    <label class="form-check-label" for="f_stat2">Pending</label>
-                                </div>
-                            </li>
-                            <li>
-                                <div class="form-check">
-                                    <input class="form-check-input filter-checkbox" type="checkbox" value="Canceled" id="f_stat3">
-                                    <label class="form-check-label" for="f_stat3">Canceled</label>
-                                </div>
-                            </li>
-                            <li>
-                                <div class="form-check">
-                                    <input class="form-check-input filter-checkbox" type="checkbox" value="Rejected" id="f_stat4">
-                                    <label class="form-check-label" for="f_stat4">Rejected</label>
-                                </div>
-                            </li>
-                            <li>
-                                <div class="form-check">
-                                    <input class="form-check-input filter-checkbox" type="checkbox" value="No Show" id="f_stat5">
-                                    <label class="form-check-label" for="f_stat5">No Show</label>
-                                </div>
-                            </li>
+                            <li class="text-muted small px-1" data-empty-state>Chưa có dữ liệu</li>
                         </ul>
                     </div>
                 </div>
@@ -170,294 +102,42 @@
             </div>
         </div>
 
+        <div id="appointmentsError" class="alert alert-danger d-none" role="alert"></div>
+
 
         <div class="tab-content flex-grow-1" id="myTabContent">
             <div class="tab-pane fade show active d-flex flex-column h-100" id="appointments-pane">
 
-                <div class="table-responsive flex-grow-1" id="appointmentsTableContainer" style="min-height: 500px;">
+                <div class="table-responsive flex-grow-1 d-none" id="appointmentsTableContainer" style="min-height: 500px;">
                     <table class="table align-middle">
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 5%;"><input class="form-check-input" type="checkbox" id="checkAllRows"></th>
-                                <th>Time</th>
-                                <th>Service</th>
-                                <th>Customers</th>
-                                <th>Duration</th>
-                                <th>Status</th>
-                                <th>Employee</th>
-                                <th>Note</th>
+                                <th>Thời gian</th>
+                                <th>Dịch vụ</th>
+                                <th>Bệnh nhân</th>
+                                <th>Thời lượng</th>
+                                <th>Trạng thái</th>
+                                <th>Bác sĩ</th>
+                                <th>Ghi chú</th>
                                 <th style="width: 5%;"></th>
                             </tr>
                         </thead>
-
-                        <tbody id="appointmentsTableBody">
-
-                            <tr class="table-group-header" data-date-group="2025-11-03">
-                                <td colspan="9" class="pt-4 pb-1 small text-muted fw-bold" style="text-transform: uppercase;">
-                                    November 3, 2025 (<span class="day-count">1</span>)
-                                </td>
-                            </tr>
-                            <tr class="appointment-row"
-                                data-date-group="2025-11-03"
-                                data-date-iso="2025-11-03"
-                                data-service="Therapeutic Exercise"
-                                data-customer="Jone Doe"
-                                data-employee="Jane Doe"
-                                data-status="Approved">
-                                <td><input class="form-check-input" type="checkbox"></td>
-                                <td>10:00 AM</td>
-                                <td>Therapeutic Exercise</td>
-                                <td>Jone Doe</td>
-                                <td>1h</td>
-                                <td>
-                                    <div class="dropdown status-dropdown">
-                                        <button class="btn btn-sm btn-outline-light dropdown-toggle d-flex align-items-center gap-2 rounded-pill status-badge text-success border-success-subtle"
-                                                type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-container="body" data-bs-strategy="fixed">
-                                            <i class="fa-solid fa-circle-check"></i> Approved
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item status-option" href="#" data-value="Approved" data-class="text-success border-success-subtle" data-icon="fa-circle-check"><i class="fa-solid fa-circle-check text-success me-2"></i> Approved</a></li>
-                                            <li><a class="dropdown-item status-option" href="#" data-value="Pending" data-class="text-warning border-warning-subtle" data-icon="fa-clock"><i class="fa-solid fa-clock text-warning me-2"></i> Pending</a></li>
-                                            <li><a class="dropdown-item status-option" href="#" data-value="Canceled" data-class="text-secondary border-secondary-subtle" data-icon="fa-ban"><i class="fa-solid fa-ban text-secondary me-2"></i> Canceled</a></li>
-                                            <li><a class="dropdown-item status-option" href="#" data-value="Rejected" data-class="text-danger border-danger-subtle" data-icon="fa-circle-xmark"><i class="fa-solid fa-circle-xmark text-danger me-2"></i> Rejected</a></li>
-                                            <li><a class="dropdown-item status-option" href="#" data-value="No Show" data-class="text-dark border-dark-subtle" data-icon="fa-eye-slash"><i class="fa-solid fa-eye-slash text-dark me-2"></i> No Show</a></li>
-                                        </ul>
-                                    </div>
-                                </td>
-                                <td>
-                                    <img src="https://i.pravatar.cc/40?u=jane" alt="Employee" class="rounded-circle"
-                                         width="32" height="32" data-bs-toggle="tooltip" data-bs-title="Jane Doe">
-                                </td>
-                                <td>
-                                    <div class="dropdown">
-                                        <button class="btn btn-link text-muted p-0" type="button"
-                                                data-bs-toggle="dropdown"
-                                                data-bs-auto-close="outside"
-                                                data-bs-container="body"
-                                                data-bs-strategy="fixed"
-                                                aria-expanded="false">
-                                            <i class="fa-solid fa-comment-dots fs-5"></i>
-                                        </button>
-                                        <div class="dropdown-menu shadow-lg border-0 p-3" style="width: 300px; border-radius: 12px;">
-                                            <h6 class="fw-bold mb-2">Add Appointment Note</h6>
-                                            <p class="small text-muted mb-2" style="font-size: 0.8rem;">
-                                                Note is hidden from customers unless a placeholder is added to notifications
-                                            </p>
-                                            <textarea class="form-control note-textarea" rows="4"></textarea>
-                                            <div class="d-flex justify-content-end gap-2 mt-3">
-                                                <button type="button" class="btn btn-sm btn-outline-secondary cancel-note-btn">Cancel</button>
-                                                <button type="button" class="btn btn-sm btn-primary save-note-btn">Save Note</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="text-end">
-                                    <div class="dropdown">
-                                        <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-container="body" data-bs-strategy="fixed">
-                                            <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 10px;">
-                                            <li>
-                                                <a class="dropdown-item" href="#">
-                                                    <i class="fa-solid fa-pencil fa-fw me-2 text-muted"></i> Edit Appointment
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="#">
-                                                    <i class="fa-solid fa-copy fa-fw me-2 text-muted"></i> Duplicate Appointment
-                                                </a>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <a class="dropdown-item text-danger" href="#">
-                                                    <i class="fa-solid fa-trash-can fa-fw me-2"></i> Delete Appointment
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-
-                            <tr class="table-group-header" data-date-group="2025-11-04">
-                                <td colspan="9" class="pt-4 pb-1 small text-muted fw-bold" style="text-transform: uppercase;">
-                                    November 4, 2025 (<span class="day-count">1</span>)
-                                </td>
-                            </tr>
-                            <tr class="appointment-row"
-                                data-date-group="2025-11-04"
-                                data-date-iso="2025-11-04"
-                                data-service="Therapeutic Stretching"
-                                data-customer="Jone Doe"
-                                data-employee="Mark Roe"
-                                data-status="Approved">
-                                <td><input class="form-check-input" type="checkbox"></td>
-                                <td>10:30 AM</td>
-                                <td>Therapeutic Stretching</td>
-                                <td>Jone Doe</td>
-                                <td>1h</td>
-                                <td>
-                                    <div class="dropdown status-dropdown">
-                                        <button class="btn btn-sm btn-outline-light dropdown-toggle d-flex align-items-center gap-2 rounded-pill status-badge text-success border-success-subtle"
-                                                type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-container="body" data-bs-strategy="fixed">
-                                            <i class="fa-solid fa-circle-check"></i> Approved
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item status-option" href="#" data-value="Approved" data-class="text-success border-success-subtle" data-icon="fa-circle-check"><i class="fa-solid fa-circle-check text-success me-2"></i> Approved</a></li>
-                                            <li><a class="dropdown-item status-option" href="#" data-value="Pending" data-class="text-warning border-warning-subtle" data-icon="fa-clock"><i class="fa-solid fa-clock text-warning me-2"></i> Pending</a></li>
-                                            <li><a class="dropdown-item status-option" href="#" data-value="Canceled" data-class="text-secondary border-secondary-subtle" data-icon="fa-ban"><i class="fa-solid fa-ban text-secondary me-2"></i> Canceled</a></li>
-                                            <li><a class="dropdown-item status-option" href="#" data-value="Rejected" data-class="text-danger border-danger-subtle" data-icon="fa-circle-xmark"><i class="fa-solid fa-circle-xmark text-danger me-2"></i> Rejected</a></li>
-                                            <li><a class="dropdown-item status-option" href="#" data-value="No Show" data-class="text-dark border-dark-subtle" data-icon="fa-eye-slash"><i class="fa-solid fa-eye-slash text-dark me-2"></i> No Show</a></li>
-                                        </ul>
-                                    </div>
-                                </td>
-                                <td>
-                                    <img src="https://i.pravatar.cc/40?u=mark" alt="Employee" class="rounded-circle"
-                                         width="32" height="32" data-bs-toggle="tooltip" data-bs-title="Mark Roe">
-                                </td>
-                                <td>
-                                    <div class="dropdown">
-                                        <button class="btn btn-link text-muted p-0" type="button"
-                                                data-bs-toggle="dropdown"
-                                                data-bs-auto-close="outside"
-                                                data-bs-container="body"
-                                                data-bs-strategy="fixed"
-                                                aria-expanded="false">
-                                            <i class="fa-solid fa-comment-dots fs-5"></i>
-                                        </button>
-                                        <div class="dropdown-menu shadow-lg border-0 p-3" style="width: 300px; border-radius: 12px;">
-                                            <h6 class="fw-bold mb-2">Add Appointment Note</h6>
-                                            <p class="small text-muted mb-2" style="font-size: 0.8rem;">
-                                                Note is hidden from customers unless a placeholder is added to notifications
-                                            </p>
-                                            <textarea class="form-control note-textarea" rows="4"></textarea>
-                                            <div class="d-flex justify-content-end gap-2 mt-3">
-                                                <button type="button" class="btn btn-sm btn-outline-secondary cancel-note-btn">Cancel</button>
-                                                <button type="button" class="btn btn-sm btn-primary save-note-btn">Save Note</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="text-end">
-                                    <div class="dropdown">
-                                        <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-container="body" data-bs-strategy="fixed">
-                                            <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 10px;">
-                                            <li>
-                                                <a class="dropdown-item" href="#">
-                                                    <i class="fa-solid fa-pencil fa-fw me-2 text-muted"></i> Edit Appointment
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="#">
-                                                    <i class="fa-solid fa-copy fa-fw me-2 text-muted"></i> Duplicate Appointment
-                                                </a>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <a class="dropdown-item text-danger" href="#">
-                                                    <i class="fa-solid fa-trash-can fa-fw me-2"></i> Delete Appointment
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-
-                            <tr class="table-group-header" data-date-group="2025-11-05">
-                                <td colspan="9" class="pt-4 pb-1 small text-muted fw-bold" style="text-transform: uppercase;">
-                                    November 5, 2025 (<span class="day-count">1</span>)
-                                </td>
-                            </tr>
-                            <tr class="appointment-row"
-                                data-date-group="2025-11-05"
-                                data-date-iso="2025-11-05"
-                                data-service="Heat and Ice Therapy"
-                                data-customer="Jone Doe"
-                                data-employee="Sara Smith"
-                                data-status="Approved">
-                                <td><input class="form-check-input" type="checkbox"></td>
-                                <td>11:00 AM</td>
-                                <td>Heat and Ice Therapy</td>
-                                <td>Jone Doe</td>
-                                <td>1h 30min</td>
-                                <td>
-                                    <div class="dropdown status-dropdown">
-                                        <button class="btn btn-sm btn-outline-light dropdown-toggle d-flex align-items-center gap-2 rounded-pill status-badge text-success border-success-subtle"
-                                                type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-container="body" data-bs-strategy="fixed">
-                                            <i class="fa-solid fa-circle-check"></i> Approved
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item status-option" href="#" data-value="Approved" data-class="text-success border-success-subtle" data-icon="fa-circle-check"><i class="fa-solid fa-circle-check text-success me-2"></i> Approved</a></li>
-                                            <li><a class="dropdown-item status-option" href="#" data-value="Pending" data-class="text-warning border-warning-subtle" data-icon="fa-clock"><i class="fa-solid fa-clock text-warning me-2"></i> Pending</a></li>
-                                            <li><a class="dropdown-item status-option" href="#" data-value="Canceled" data-class="text-secondary border-secondary-subtle" data-icon="fa-ban"><i class="fa-solid fa-ban text-secondary me-2"></i> Canceled</a></li>
-                                            <li><a class="dropdown-item status-option" href="#" data-value="Rejected" data-class="text-danger border-danger-subtle" data-icon="fa-circle-xmark"><i class="fa-solid fa-circle-xmark text-danger me-2"></i> Rejected</a></li>
-                                            <li><a class="dropdown-item status-option" href="#" data-value="No Show" data-class="text-dark border-dark-subtle" data-icon="fa-eye-slash"><i class="fa-solid fa-eye-slash text-dark me-2"></i> No Show</a></li>
-                                        </ul>
-                                    </div>
-                                </td>
-                                <td>
-                                    <img src="https://i.pravatar.cc/40?u=sara" alt="Employee" class="rounded-circle"
-                                         width="32" height="32" data-bs-toggle="tooltip" data-bs-title="Sara Smith">
-                                </td>
-                                <td>
-                                    <div class="dropdown">
-                                        <button class="btn btn-link text-muted p-0" type="button"
-                                                data-bs-toggle="dropdown"
-                                                data-bs-auto-close="outside"
-                                                data-bs-container="body"
-                                                data-bs-strategy="fixed"
-                                                aria-expanded="false">
-                                            <i class="fa-solid fa-comment-dots fs-5"></i>
-                                        </button>
-                                        <div class="dropdown-menu shadow-lg border-0 p-3" style="width: 300px; border-radius: 12px;">
-                                            <h6 class="fw-bold mb-2">Add Appointment Note</h6>
-                                            <p class="small text-muted mb-2" style="font-size: 0.8rem;">
-                                                Note is hidden from customers unless a placeholder is added to notifications
-                                            </p>
-                                            <textarea class="form-control note-textarea" rows="4"></textarea>
-                                            <div class="d-flex justify-content-end gap-2 mt-3">
-                                                <button type="button" class="btn btn-sm btn-outline-secondary cancel-note-btn">Cancel</button>
-                                                <button type="button" class="btn btn-sm btn-primary save-note-btn">Save Note</button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="text-end">
-                                    <div class="dropdown">
-                                        <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-container="body" data-bs-strategy="fixed">
-                                            <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 10px;">
-                                            <li>
-                                                <a class="dropdown-item" href="#">
-                                                    <i class="fa-solid fa-pencil fa-fw me-2 text-muted"></i> Edit Appointment
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="#">
-                                                    <i class="fa-solid fa-copy fa-fw me-2 text-muted"></i> Duplicate Appointment
-                                                </a>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <a class="dropdown-item text-danger" href="#">
-                                                    <i class="fa-solid fa-trash-can fa-fw me-2"></i> Delete Appointment
-                                                </a>
-                                            </li>
-                                        </ul>
-                                    </div>
-                                </td>
-                            </tr>
-
-                        </tbody>
+                        <tbody id="appointmentsTableBody"></tbody>
                     </table>
+                </div>
+
+                <div id="appointmentsLoadingState" class="text-center flex-grow-1 d-flex flex-column justify-content-center align-items-center" style="min-height: 300px;">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <p class="text-muted mb-0">Đang tải dữ liệu cuộc hẹn...</p>
                 </div>
 
                 <div id="noAppointmentsBlock" class="text-center flex-grow-1 d-flex flex-column justify-content-center align-items-center" style="display: none; min-height: 400px;">
                     <img src="https://healthcaress.admin.trafft.com/api/v1/settings/dashboard/image/illustrations/empty-appointments.svg" style="height:160px; width:160px" />
-                    <h5 class="fw-bold">No appointments found.</h5>
-                    <p class="text-muted">We couldn't find any results for that search criteria.<br>Try adjusting your search or filters to find what you are looking for.</p>
+                    <h5 class="fw-bold">Không có cuộc hẹn nào.</h5>
+                    <p class="text-muted">Vui lòng điều chỉnh bộ lọc hoặc từ khóa tìm kiếm để xem các cuộc hẹn phù hợp.</p>
                 </div>
 
             </div>
@@ -466,5 +146,8 @@
 </div>
 
 @section Scripts {
+    <script>
+        document.body.dataset.appointmentMode = 'doctor';
+    </script>
     <script src="~/js/appointment.js" asp-append-version="true"></script>
 }

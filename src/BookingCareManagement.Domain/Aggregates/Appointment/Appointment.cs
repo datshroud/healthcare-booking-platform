@@ -51,4 +51,45 @@ public class Appointment
         StartUtc = newStartUtc;
         EndUtc = newStartUtc.Add(duration);
     }
+
+    public void UpdatePatientProfile(string patientName, string customerPhone)
+    {
+        if (string.IsNullOrWhiteSpace(patientName))
+        {
+            throw new ArgumentException("Patient name is required.", nameof(patientName));
+        }
+
+        if (string.IsNullOrWhiteSpace(customerPhone))
+        {
+            throw new ArgumentException("Customer phone is required.", nameof(customerPhone));
+        }
+
+        PatientName = patientName.Trim();
+        CustomerPhone = customerPhone.Trim();
+    }
+
+    public void ChangeSpecialty(Guid specialtyId)
+    {
+        if (specialtyId == Guid.Empty)
+        {
+            throw new ArgumentException("SpecialtyId is required.", nameof(specialtyId));
+        }
+
+        SpecialtyId = specialtyId;
+    }
+
+    public void AssignClinicRoom(Guid clinicRoomId)
+    {
+        if (clinicRoomId == Guid.Empty)
+        {
+            throw new ArgumentException("ClinicRoomId is required.", nameof(clinicRoomId));
+        }
+
+        ClinicRoomId = clinicRoomId;
+    }
+
+    public void SetStatus(string status)
+    {
+        Status = AppointmentStatus.NormalizeOrDefault(status);
+    }
 }
