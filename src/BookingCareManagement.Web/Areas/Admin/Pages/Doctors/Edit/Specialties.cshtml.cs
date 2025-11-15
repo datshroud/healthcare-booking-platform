@@ -1,101 +1,104 @@
+using BookingCareManagement.Domain.Abstractions;
+using BookingCareManagement.Domain.Aggregates.Doctor;
+using BookingCareManagement.Domain.Aggregates.User; // Đảm bảo using này tồn tại
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
-using BookingCareManagement.Domain.Abstractions;
-using BookingCareManagement.Domain.Aggregates.User;
-using BookingCareManagement.Domain.Aggregates.Doctor;
-using Microsoft.AspNetCore.Identity;
-using DoctorEntity = BookingCareManagement.Domain.Aggregates.Doctor.Doctor;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace BookingCareManagement.Web.Areas.Admin.Pages.Doctors.Edit;
-
-public class SpecialtiesModel : PageModel
+namespace BookingCareManagement.Web.Areas.Admin.Pages.Doctors.Edit
 {
-    private readonly IDoctorRepository _doctorRepository;
-    private readonly ISpecialtyRepository _specialtyRepository;
-    private readonly UserManager<AppUser> _userManager;
-    private readonly IUnitOfWork _unitOfWork;
-
-    public SpecialtiesModel(
-        IDoctorRepository doctorRepository,
-        ISpecialtyRepository specialtyRepository,
-        UserManager<AppUser> userManager,
-        IUnitOfWork unitOfWork)
+    public class SpecialtiesModel : PageModel
     {
-        _doctorRepository = doctorRepository;
-        _specialtyRepository = specialtyRepository;
-        _userManager = userManager;
-        _unitOfWork = unitOfWork;
-    }
+        private readonly IDoctorRepository _doctorRepository;
+        private readonly ISpecialtyRepository _specialtyRepository;
+        private readonly IUnitOfWork _unitOfWork;
 
-    [BindProperty(SupportsGet = true)]
-    public Guid DoctorId { get; set; }
-
-    public string DoctorName { get; set; } = string.Empty;
-    public List<Specialty> AllSpecialties { get; set; } = new();
-    public Guid? AssignedSpecialtyId { get; set; }
-
-    [TempData]
-    public string? StatusMessage { get; set; }
-
-    public async Task<IActionResult> OnGetAsync()
-    {
-        var doctor = await _doctorRepository.GetByIdWithTrackingAsync(DoctorId);
-        if (doctor == null)
+        public SpecialtiesModel(
+            IDoctorRepository doctorRepository,
+            ISpecialtyRepository specialtyRepository,
+            IUnitOfWork unitOfWork)
         {
-            return NotFound();
+            _doctorRepository = doctorRepository;
+            _specialtyRepository = specialtyRepository;
+            _unitOfWork = unitOfWork;
         }
 
-        await PopulatePageStateAsync(doctor);
+        // --- Properties cho hiển thị (GET) ---
 
-        return Page();
-    }
+        [BindProperty(SupportsGet = true)]
+        public Guid DoctorId { get; set; }
 
-    public async Task<IActionResult> OnPostAsync(Guid? selectedSpecialtyId)
-    {
-        var doctor = await _doctorRepository.GetByIdWithTrackingAsync(DoctorId);
-        if (doctor == null)
+        public string DoctorName { get; set; } = "Bác sĩ";
+        public List<Specialty> AllSpecialties { get; set; } = new();
+
+        public Guid? AssignedSpecialtyId { get; set; }
+
+        [TempData]
+        public string StatusMessage { get; set; }
+
+        // --- Handlers ---
+
+        public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
         {
-            return NotFound();
-        }
+            var doctor = await _doctorRepository.GetByIdAsync(DoctorId, cancellationToken);
+            if (doctor == null)
+            {
+                return NotFound($"Không tìm thấy bác sĩ với ID {DoctorId}");
+            }
 
-        if (!selectedSpecialtyId.HasValue || selectedSpecialtyId == Guid.Empty)
-        {
-            ModelState.AddModelError(string.Empty, "Vui lòng chọn một chuyên khoa.");
-            await PopulatePageStateAsync(doctor);
+            await PopulatePageStateAsync(doctor, cancellationToken);
             return Page();
         }
 
-        var specialty = await _specialtyRepository.GetByIdWithTrackingAsync(selectedSpecialtyId.Value);
-        if (specialty == null)
+        public async Task<IActionResult> OnPostAsync(Guid? selectedSpecialtyId, CancellationToken cancellationToken)
         {
-            ModelState.AddModelError(string.Empty, "Chuyên khoa đã chọn không hợp lệ.");
-            await PopulatePageStateAsync(doctor);
-            return Page();
-        }
+            var doctor = await _doctorRepository.GetByIdWithTrackingAsync(DoctorId, cancellationToken);
+            if (doctor == null)
+            {
+                return NotFound($"Không tìm thấy bác sĩ với ID {DoctorId}");
+            }
 
-        var alreadyAssigned = doctor.Specialties.Any(s => s.Id == specialty.Id);
-        if (alreadyAssigned && doctor.Specialties.Count == 1)
-        {
-            StatusMessage = "Chuyên khoa không thay đổi.";
+            doctor.ClearSpecialties();
+
+            if (selectedSpecialtyId.HasValue && selectedSpecialtyId.Value != Guid.Empty)
+            {
+                var specialty = await _specialtyRepository.GetByIdAsync(selectedSpecialtyId.Value, cancellationToken);
+                if (specialty != null)
+                {
+                    doctor.AddSpecialty(specialty);
+                }
+                else
+                {
+                    ModelState.AddModelError(string.Empty, "Chuyên khoa đã chọn không hợp lệ.");
+                    // Chỗ 'doctor' bị gạch đỏ là ở đây, vì trình biên dịch không hiểu 'doctor' là kiểu gì
+                    await PopulatePageStateAsync(doctor, cancellationToken);
+                    return Page();
+                }
+            }
+
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+            StatusMessage = "Cập nhật chuyên khoa cho bác sĩ thành công.";
             return RedirectToPage(new { doctorId = DoctorId });
         }
 
-        doctor.ClearSpecialties();
-        doctor.AddSpecialty(specialty);
+        // 
+        // ⭐️⭐️⭐️ SỬA LỖI Ở ĐÂY ⭐️⭐️⭐️
+        //
+        // Hàm private helper để tránh lặp code
+        // Ghi rõ đầy đủ namespace (BookingCareManagement.Domain.Aggregates.Doctor.Doctor)
+        // để trình biên dịch không nhầm lẫn với thư mục 'Doctors'
+        private async Task PopulatePageStateAsync(BookingCareManagement.Domain.Aggregates.Doctor.Doctor doctor, CancellationToken cancellationToken)
+        {
+            var allSpecs = await _specialtyRepository.GetAllAsync(cancellationToken);
 
-        await _unitOfWork.SaveChangesAsync();
-
-        StatusMessage = "Đã lưu chuyên khoa thành công.";
-        return RedirectToPage(new { doctorId = DoctorId });
-    }
-
-    private async Task PopulatePageStateAsync(DoctorEntity doctor)
-    {
-        var user = await _userManager.FindByIdAsync(doctor.AppUserId);
-        var displayName = user.GetFullName();
-        DoctorName = string.IsNullOrWhiteSpace(displayName) ? (user?.Email ?? "Bác sĩ") : displayName;
-
-        AllSpecialties = (await _specialtyRepository.GetAllAsync()).ToList();
-        AssignedSpecialtyId = doctor.Specialties.Select(s => (Guid?)s.Id).FirstOrDefault();
+            DoctorName = doctor.AppUser.GetFullName() ?? doctor.AppUser.Email;
+            AllSpecialties = allSpecs.OrderBy(s => s.Name).ToList();
+            AssignedSpecialtyId = doctor.Specialties.Select(s => (Guid?)s.Id).FirstOrDefault();
+        }
     }
 }

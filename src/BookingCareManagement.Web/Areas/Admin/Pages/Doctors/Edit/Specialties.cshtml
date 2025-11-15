@@ -14,6 +14,7 @@
             border-radius: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
+
         .left-menu a {
             transition: all 0.3s ease;
             border-radius: 12px;
@@ -21,14 +22,17 @@
             margin-bottom: 8px;
             display: block;
         }
-        .left-menu a:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateX(5px);
-        }
-        .left-menu a.active-tab {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
+
+            .left-menu a:hover {
+                background: rgba(255, 255, 255, 0.1);
+                transform: translateX(5px);
+            }
+
+            .left-menu a.active-tab {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+
         .specialty-card {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
@@ -37,11 +41,13 @@
             transition: all 0.3s ease;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-        .specialty-card:hover {
-            background: rgba(255, 255, 255, 0.08);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
-        }
+
+            .specialty-card:hover {
+                background: rgba(255, 255, 255, 0.08);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+            }
+
         .specialty-avatar {
             width: 50px;
             height: 50px;
@@ -51,15 +57,18 @@
             align-items: center;
             justify-content: center;
         }
+
         .form-check-input {
             width: 3em;
             height: 1.5em;
             cursor: pointer;
         }
-        .form-check-input:checked {
-            background-color: #667eea;
-            border-color: #667eea;
-        }
+
+            .form-check-input:checked {
+                background-color: #667eea;
+                border-color: #667eea;
+            }
+
         .btn-save {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             border: none;
@@ -69,20 +78,25 @@
             transition: all 0.3s ease;
             box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
         }
-        .btn-save:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
-        }
+
+            .btn-save:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+            }
+
         .specialty-selected {
             background: rgba(102, 126, 234, 0.15) !important;
             border-color: rgba(102, 126, 234, 0.4) !important;
         }
+
         .specialty-list-header {
             font-size: 0.875rem;
             font-weight: 600;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
+
+        /* SỬA LẠI CSS CHO RADIO (thay vì checkbox) */
         .form-check-input[type="radio"] {
             width: 3em;
             height: 1.5em;
@@ -92,30 +106,32 @@
             border: 1px solid rgba(255, 255, 255, 0.2);
             position: relative;
         }
-        .form-check-input[type="radio"]:checked {
-            background-color: #667eea;
-            border-color: #667eea;
-        }
-        .form-check-input[type="radio"]::before {
-            content: '';
-            position: absolute;
-            width: 1.2em;
-            height: 1.2em;
-            background: white;
-            border-radius: 50%;
-            top: 50%;
-            left: 0.15em;
-            transform: translateY(-50%);
-            transition: left 0.2s ease;
-        }
-        .form-check-input[type="radio"]:checked::before {
-            left: calc(100% - 1.35em);
-        }
+
+            .form-check-input[type="radio"]:checked {
+                background-color: #667eea;
+                border-color: #667eea;
+            }
+
+            .form-check-input[type="radio"]::before {
+                content: '';
+                position: absolute;
+                width: 1.2em;
+                height: 1.2em;
+                background: white;
+                border-radius: 50%;
+                top: 50%;
+                left: 0.15em;
+                transform: translateY(-50%);
+                transition: left 0.2s ease;
+            }
+
+            .form-check-input[type="radio"]:checked::before {
+                left: calc(100% - 1.35em);
+            }
     </style>
 }
 
 <div class="container-fluid mt-5 p-4 mb-5 doctor-edit-container text-light">
-    <!-- Header -->
     <div class="row align-items-center justify-content-between mx-0 mb-4">
         <div class="col-auto">
             <h2 class="mb-0 fw-bold">
@@ -129,9 +145,7 @@
         </div>
     </div>
 
-    <!-- Nội dung chính -->
     <div class="row border-top border-secondary pt-4 g-0">
-        <!-- Cột trái -->
         <div class="col-3 left-menu pe-3">
             <a href="/doctors/@Model.DoctorId/info" class="btn mb-2 fw-semibold text-decoration-none">
                 <i class="fa-solid fa-user me-2"></i> Thông tin bác sĩ
@@ -150,7 +164,6 @@
             </a>
         </div>
 
-        <!-- Cột phải -->
         <div class="col-9 ps-4">
             <div class="mb-4">
                 <h4 class="mb-2 fw-bold">
@@ -203,7 +216,7 @@
                             </div>
                             <div style="width: 100px; text-align: center;">
                                 <div class="form-check form-switch d-inline-block">
-                                    <input class="form-check-input" type="radio" name="SelectedSpecialtyId" value="@specialty.Id"
+                                    <input class="form-check-input" type="radio" name="selectedSpecialtyId" value="@specialty.Id"
                                            id="specialty_@specialty.Id" checked="@isSelected">
                                     <label class="form-check-label" for="specialty_@specialty.Id"></label>
                                 </div>
