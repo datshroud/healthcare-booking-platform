@@ -17,8 +17,12 @@ namespace BookingCareManagement.WinForms
         private Panel userPanel;
         private Panel navigationPanel;
         private Panel calendarPanel;
+        private Panel contentPanel;
         private DateTime currentDate;
         private string currentView = "Month";
+        private RoundedButton1 monthBtn;
+        private RoundedButton1 weekBtn;
+        private RoundedButton1 dayBtn;
 
         public Calendar()
         {
@@ -34,7 +38,7 @@ namespace BookingCareManagement.WinForms
             this.StartPosition = FormStartPosition.CenterScreen;
             this.WindowState = FormWindowState.Maximized;
 
-            // Header Panel
+            // Panel tiêu đề
             headerPanel = new Panel
             {
                 Dock = DockStyle.Top,
@@ -44,7 +48,7 @@ namespace BookingCareManagement.WinForms
             };
             CreateHeader();
 
-            // User Panel
+            // Panel người dùng
             userPanel = new Panel
             {
                 Dock = DockStyle.Top,
@@ -54,7 +58,7 @@ namespace BookingCareManagement.WinForms
             };
             CreateUserPanel();
 
-            // Navigation Panel
+            // Panel điều hướng
             navigationPanel = new Panel
             {
                 Dock = DockStyle.Top,
@@ -64,7 +68,7 @@ namespace BookingCareManagement.WinForms
             };
             CreateNavigationPanel();
 
-            // Calendar Panel
+            // Panel lịch chính
             calendarPanel = new Panel
             {
                 Dock = DockStyle.Fill,
@@ -72,6 +76,10 @@ namespace BookingCareManagement.WinForms
                 Padding = new Padding(15),
                 AutoScroll = true
             };
+
+            // contentPanel dùng chung cho Week/Day
+            contentPanel = calendarPanel;
+
             CreateCalendar();
 
             this.Controls.Add(calendarPanel);
@@ -91,6 +99,7 @@ namespace BookingCareManagement.WinForms
                 ForeColor = Color.FromArgb(17, 24, 39)
             };
 
+            // Nút tạo lịch hẹn mới
             RoundedButton1 newAppointmentBtn = new RoundedButton1
             {
                 Name = "newAppointmentBtn",
@@ -103,8 +112,9 @@ namespace BookingCareManagement.WinForms
                 Cursor = Cursors.Hand
             };
             newAppointmentBtn.FlatAppearance.BorderSize = 0;
-            newAppointmentBtn.Click += (s, e) => MessageBox.Show("New Appointment", "Info");
+            newAppointmentBtn.Click += (s, e) => MessageBox.Show("Thêm lịch hẹn mới", "Thông báo");
 
+            // Căn chỉnh khi resize
             this.Resize += (s, e) =>
             {
                 if (headerPanel.Controls["newAppointmentBtn"] != null)
@@ -119,7 +129,7 @@ namespace BookingCareManagement.WinForms
 
         private void CreateUserPanel()
         {
-            // User avatar (circular)
+            // Avatar tròn
             CircularPictureBox avatar = new CircularPictureBox
             {
                 Location = new Point(30, 10),
@@ -156,7 +166,7 @@ namespace BookingCareManagement.WinForms
 
         private void CreateNavigationPanel()
         {
-            // Today button
+            // Nút Today
             RoundedButton1 todayBtn = new RoundedButton1
             {
                 Text = "Today",
@@ -176,7 +186,7 @@ namespace BookingCareManagement.WinForms
                 RefreshCalendar();
             };
 
-            // Previous button
+            // Nút tháng trước
             Button prevBtn = new Button
             {
                 Text = "◀",
@@ -195,7 +205,7 @@ namespace BookingCareManagement.WinForms
                 RefreshCalendar();
             };
 
-            // Month/Year label
+            // Label tháng/năm
             Label monthLabel = new Label
             {
                 Name = "monthLabel",
@@ -207,7 +217,7 @@ namespace BookingCareManagement.WinForms
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
-            // Next button
+            // Nút tháng sau
             Button nextBtn = new Button
             {
                 Text = "▶",
@@ -226,14 +236,14 @@ namespace BookingCareManagement.WinForms
                 RefreshCalendar();
             };
 
-            // View buttons and filters on the right
+            // Tính vị trí phía bên phải
             int rightX = this.ClientSize.Width - 600;
 
-            // Options dropdown
+            // Nút Options
             RoundedButton1 optionsBtn = new RoundedButton1
             {
                 Name = "optionsBtn",
-                Text = "Options  ▼",
+                Text = "Options ▼",
                 Size = new Size(120, 40),
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(55, 65, 81),
@@ -244,8 +254,8 @@ namespace BookingCareManagement.WinForms
             optionsBtn.FlatAppearance.BorderSize = 1;
             optionsBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
 
-            // Month button
-            RoundedButton1 monthBtn = new RoundedButton1
+            // ===== NÚT VIEW (MONTH / WEEK / DAY) =====
+            monthBtn = new RoundedButton1
             {
                 Name = "monthBtn",
                 Text = "Month",
@@ -264,8 +274,7 @@ namespace BookingCareManagement.WinForms
                 RefreshCalendar();
             };
 
-            // Week button
-            RoundedButton1 weekBtn = new RoundedButton1
+            weekBtn = new RoundedButton1
             {
                 Name = "weekBtn",
                 Text = "Week",
@@ -285,8 +294,7 @@ namespace BookingCareManagement.WinForms
                 RefreshCalendar();
             };
 
-            // Day button
-            RoundedButton1 dayBtn = new RoundedButton1
+            dayBtn = new RoundedButton1
             {
                 Name = "dayBtn",
                 Text = "Day",
@@ -306,7 +314,7 @@ namespace BookingCareManagement.WinForms
                 RefreshCalendar();
             };
 
-            // Filters button
+            // Nút Filters
             RoundedButton1 filtersBtn = new RoundedButton1
             {
                 Name = "filtersBtn",
@@ -321,6 +329,7 @@ namespace BookingCareManagement.WinForms
             filtersBtn.FlatAppearance.BorderSize = 1;
             filtersBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
 
+            // Update vị trí khi form thay đổi kích thước
             this.Resize += (s, e) =>
             {
                 rightX = this.ClientSize.Width - 600;
@@ -341,9 +350,11 @@ namespace BookingCareManagement.WinForms
             navigationPanel.Controls.Add(dayBtn);
             navigationPanel.Controls.Add(filtersBtn);
         }
+
+        // Highlight nút view được chọn
         private void HighlightViewButtons(RoundedButton1 monthBtn, RoundedButton1 weekBtn, RoundedButton1 dayBtn)
         {
-            // Reset all
+            // Reset
             monthBtn.BackColor = Color.White;
             monthBtn.ForeColor = Color.FromArgb(55, 65, 81);
 
@@ -353,7 +364,7 @@ namespace BookingCareManagement.WinForms
             dayBtn.BackColor = Color.White;
             dayBtn.ForeColor = Color.FromArgb(55, 65, 81);
 
-            // Apply highlight
+            // Áp dụng màu theo view hiện tại
             if (currentView == "Month")
             {
                 monthBtn.BackColor = Color.FromArgb(37, 99, 235);
@@ -371,11 +382,12 @@ namespace BookingCareManagement.WinForms
             }
         }
 
+        // ======================= MONTH VIEW ==========================
         private void CreateCalendar()
         {
             calendarPanel.Controls.Clear();
 
-            // Day headers
+            // Header thứ trong tuần
             string[] dayNames = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
             int headerY = 15;
             int cellWidth = (this.ClientSize.Width - 60) / 7;
@@ -394,19 +406,19 @@ namespace BookingCareManagement.WinForms
                 calendarPanel.Controls.Add(dayHeader);
             }
 
-            // Calendar grid
+            // Tạo ô lịch
             DateTime firstDay = new DateTime(currentDate.Year, currentDate.Month, 1);
             int daysInMonth = DateTime.DaysInMonth(currentDate.Year, currentDate.Month);
             int startDay = (int)firstDay.DayOfWeek;
-            if (startDay == 0) startDay = 7; // Sunday
-            startDay--; // Adjust for Monday start
+            if (startDay == 0) startDay = 7;
+            startDay--;
 
             int cellHeight = 150;
             int currentRow = 0;
             int currentCol = startDay;
             int dayCounter = 1;
 
-            // Previous month days
+            // Ngày tháng trước
             DateTime prevMonth = currentDate.AddMonths(-1);
             int prevMonthDays = DateTime.DaysInMonth(prevMonth.Year, prevMonth.Month);
             int prevStart = prevMonthDays - startDay + 1;
@@ -417,38 +429,24 @@ namespace BookingCareManagement.WinForms
                 calendarPanel.Controls.Add(dayCell);
             }
 
-            // Current month days
+            // Ngày tháng hiện tại
             while (dayCounter <= daysInMonth)
             {
-                bool isToday = (dayCounter == 14 && currentDate.Month == 11 && currentDate.Year == 2025);
                 Panel dayCell = CreateDayCell(dayCounter, false, currentCol, currentRow, cellWidth, cellHeight);
 
-                // Add sample appointments
-                if (dayCounter == 3)
-                {
-                    AddAppointment(dayCell, "Accounting assistance", Color.FromArgb(254, 243, 199));
-                }
-                else if (dayCounter == 4)
-                {
-                    AddAppointment(dayCell, "Bookkeeping", Color.FromArgb(220, 252, 231));
-                }
-                else if (dayCounter == 5)
-                {
-                    AddAppointment(dayCell, "Payroll and sales taxes", Color.FromArgb(219, 234, 254));
-                }
-                else if (isToday)
-                {
-                    // Mark today with blue dot
-                    Label todayMarker = new Label
-                    {
-                        Text = "●",
-                        Location = new Point(10, 5),
-                        Size = new Size(20, 20),
-                        Font = new Font("Segoe UI", 12),
-                        ForeColor = Color.FromArgb(37, 99, 235)
-                    };
-                    dayCell.Controls.Add(todayMarker);
-                }
+                // Thêm lịch mẫu
+                //if (dayCounter == 3)
+                //{
+                //    AddAppointment(dayCell, "", Color.FromArgb(254, 243, 199));
+                //}
+                //else if (dayCounter == 4)
+                //{
+                //    AddAppointment(dayCell, "", Color.FromArgb(220, 252, 231));
+                //}
+                //else if (dayCounter == 5)
+                //{
+                //    AddAppointment(dayCell, "", Color.FromArgb(219, 234, 254));
+                //}
 
                 calendarPanel.Controls.Add(dayCell);
 
@@ -461,7 +459,7 @@ namespace BookingCareManagement.WinForms
                 }
             }
 
-            // Next month days
+            // Ngày tháng sau
             int nextDay = 1;
             while (currentCol < 7)
             {
@@ -471,28 +469,19 @@ namespace BookingCareManagement.WinForms
                 currentCol++;
             }
         }
+
+        // ============= WEEK VIEW =============
         private void CreateWeekView()
         {
             contentPanel.Controls.Clear();
 
-            // Week start (Monday)
             DateTime startOfWeek = currentDate.AddDays(-(int)currentDate.DayOfWeek + 1);
             if (startOfWeek > currentDate) startOfWeek = startOfWeek.AddDays(-7);
 
-            Panel main = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.White
-            };
+            Panel main = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
             contentPanel.Controls.Add(main);
 
-            // === HEADER: 7 ngày trên cùng ===
-            Panel header = new Panel
-            {
-                Height = 60,
-                Dock = DockStyle.Top,
-                BackColor = Color.White
-            };
+            Panel header = new Panel { Height = 60, Dock = DockStyle.Top, BackColor = Color.White };
             main.Controls.Add(header);
 
             string[] days = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
@@ -511,22 +500,16 @@ namespace BookingCareManagement.WinForms
                     Font = new Font("Segoe UI", 10),
                     ForeColor = (day.Date == DateTime.Today ? Color.FromArgb(37, 99, 235) : Color.Black)
                 };
-                lbl.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
                 header.Controls.Add(lbl);
             }
 
-            // === BODY GRID ===
-            Panel grid = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.White
-            };
+            // GRID
+            Panel grid = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
             main.Controls.Add(grid);
 
-            int hours = 12; // 8:00 → 20:00
+            int hours = 12;
             int startHour = 8;
 
-            // Create time labels
             for (int h = 0; h < hours; h++)
             {
                 Label time = new Label
@@ -542,7 +525,6 @@ namespace BookingCareManagement.WinForms
                 grid.Controls.Add(time);
             }
 
-            // GRID LINES
             for (int h = 0; h < hours; h++)
             {
                 for (int d = 0; d < 7; d++)
@@ -554,23 +536,19 @@ namespace BookingCareManagement.WinForms
                         Location = new Point(60 + d * ((grid.Width - 60) / 7), h * 50),
                         BorderStyle = BorderStyle.FixedSingle
                     };
-                    cell.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
                     grid.Controls.Add(cell);
                 }
             }
         }
+
+        // ============= DAY VIEW =============
         private void CreateDayView()
         {
             contentPanel.Controls.Clear();
 
-            Panel main = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.White
-            };
+            Panel main = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
             contentPanel.Controls.Add(main);
 
-            // === HEADER ===
             Label header = new Label
             {
                 Text = $"{currentDate:dddd, dd MMMM yyyy}",
@@ -582,20 +560,14 @@ namespace BookingCareManagement.WinForms
             };
             main.Controls.Add(header);
 
-            Panel body = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.White
-            };
+            Panel body = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
             main.Controls.Add(body);
 
-            int hours = 12; // 8:00 → 20:00
+            int hours = 12;
             int startHour = 8;
 
-            // TIME & GRID
             for (int h = 0; h < hours; h++)
             {
-                // Time label
                 Label time = new Label
                 {
                     Text = $"{startHour + h}:00",
@@ -608,7 +580,6 @@ namespace BookingCareManagement.WinForms
                 };
                 body.Controls.Add(time);
 
-                // Grid box
                 Panel cell = new Panel
                 {
                     Width = body.Width - 70,
@@ -616,7 +587,6 @@ namespace BookingCareManagement.WinForms
                     Location = new Point(70, h * 60),
                     BorderStyle = BorderStyle.FixedSingle
                 };
-                cell.Anchor = AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top;
                 body.Controls.Add(cell);
             }
         }
@@ -666,9 +636,7 @@ namespace BookingCareManagement.WinForms
         {
             Label monthLabel = navigationPanel.Controls["monthLabel"] as Label;
             if (monthLabel != null)
-            {
                 monthLabel.Text = currentDate.ToString("MMMM yyyy");
-            }
 
             if (currentView == "Month")
                 CreateCalendar();
@@ -679,7 +647,7 @@ namespace BookingCareManagement.WinForms
         }
     }
 
-    // Circular Picture Box
+    // Hình tròn avatar
     public class CircularPictureBox : PictureBox
     {
         protected override void OnPaint(PaintEventArgs e)
@@ -696,7 +664,7 @@ namespace BookingCareManagement.WinForms
         }
     }
 
-    // Rounded Button
+    // Nút bo góc
     public class RoundedButton1 : Button
     {
         protected override void OnPaint(PaintEventArgs e)
@@ -727,9 +695,14 @@ namespace BookingCareManagement.WinForms
                 }
             }
 
-            TextRenderer.DrawText(e.Graphics, this.Text, this.Font,
-                this.ClientRectangle, this.ForeColor,
-                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            TextRenderer.DrawText(
+                e.Graphics,
+                this.Text,
+                this.Font,
+                this.ClientRectangle,
+                this.ForeColor,
+                TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter
+            );
         }
     }
 }

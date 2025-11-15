@@ -16,8 +16,8 @@ static class Program
         ApplicationConfiguration.Initialize();
 
         using var host = CreateHostBuilder().Build();
-        var Calendar = host.Services.GetRequiredService<Calendar>();
-        System.Windows.Forms.Application.Run(Calendar);
+        var MainForm = host.Services.GetRequiredService<MainForm>();
+        System.Windows.Forms.Application.Run(MainForm);
     }
 
     private static IHostBuilder CreateHostBuilder()
@@ -47,7 +47,7 @@ static class Program
                         ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
                     };
                 });
-                services.AddTransient<Calendar>();
+                services.AddTransient<MainForm>();
             });
     }
 }

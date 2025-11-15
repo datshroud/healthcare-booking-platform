@@ -411,6 +411,10 @@ namespace BookingCareManagement.WinForms
                     {
                         OpenChildForm(new Customer());
                     }
+                    if (btn.Text.Contains("Lịch"))
+                    {
+                        OpenChildForm(new Calendar());
+                    }
                 };
 
                 sidebarPanel.Controls.Add(btn);
