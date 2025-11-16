@@ -421,6 +421,11 @@ namespace BookingCareManagement.WinForms
                         if (!(activeChildForm is Calendar))   // ❗ tránh mở lại chính nó
                             OpenChildForm(new Calendar());
                     }
+                    if (btn.Text.Contains("Cuộc hẹn")) 
+                    { 
+                        // Mở form Cuộc hẹn (AppointmentEditorForm)
+                        OpenChildForm(new Areas.Admin.Forms.AppointmentEditorForm());
+                    }
                 };
 
                 sidebarPanel.Controls.Add(btn);
