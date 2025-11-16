@@ -36,7 +36,7 @@ namespace BookingCareManagement.WinForms
             this.Size = new Size(1600, 900);
             this.BackColor = Color.FromArgb(243, 244, 246);
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.WindowState = FormWindowState.Maximized;
+            
 
             // Panel tiêu đề
             headerPanel = new Panel
