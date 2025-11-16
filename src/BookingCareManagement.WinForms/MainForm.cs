@@ -13,68 +13,35 @@ namespace BookingCareManagement.WinForms
 {
     public partial class MainForm : Form
     {
-
-
         private Panel sidebarPanel;
         private Panel navbarPanel;
         private Panel contentPanel;
         private SidebarButton activeButton;
         private Form activeChildForm = null;
 
+        // Biến cho chức năng kéo thả
+        private SidebarButton draggedButton = null;
+        private Point dragStartPoint;
+        private Panel dragIndicator;
+        private int dragInsertIndex = -1;
 
         public MainForm()
         {
-            InitializeComponents();
+            InitializeComponent();
+            InitializeCustomComponents();
             this.Load += (s, e) =>
             {
                 OpenChildForm(new Calendar());
             };
         }
 
-        private void InitializeComponents()
+        private void InitializeCustomComponents()
         {
-            // Cài đặt cho Form
-            this.Text = "Booking Website";
-            this.Size = new Size(1400, 800);
-            this.MinimumSize = new Size(1000, 600);
-            this.StartPosition = FormStartPosition.CenterScreen;
-            this.BackColor = Color.FromArgb(240, 242, 245);
-            this.WindowState = FormWindowState.Maximized;
+            // Không cần tạo panels nữa vì đã có trong Designer
+            // Chỉ cần cấu hình thêm các thành phần
 
-
-            // Panel Sidebar
-            sidebarPanel = new Panel
-            {
-                Dock = DockStyle.Left,
-                Width = 250,
-                BackColor = Color.FromArgb(15, 23, 42),
-                Padding = new Padding(0, 10, 0, 0),
-                AutoScroll = true
-            };
-            CreateSidebar();
-
-            // Panel Thanh điều hướng trên (Navbar)
-            navbarPanel = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = Color.White
-            };
+            //CreateSidebar();
             CreateNavbar();
-
-            // Panel Nội dung
-            contentPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(240, 242, 245),
-                Padding = new Padding(20),
-                AutoScroll = true
-            };
-
-            // Thêm các panel vào form
-            this.Controls.Add(contentPanel);
-            this.Controls.Add(navbarPanel);
-            this.Controls.Add(sidebarPanel);
 
             // Sự kiện khi thay đổi kích thước cửa sổ
             this.Resize += MainForm_Resize;
@@ -83,11 +50,25 @@ namespace BookingCareManagement.WinForms
             this.Click += (s, e) => CloseAccountMenu();
             contentPanel.Click += (s, e) => CloseAccountMenu();
             sidebarPanel.Click += (s, e) => CloseAccountMenu();
+
+            // Tạo drag indicator
+            dragIndicator = new Panel
+            {
+                Height = 3,
+                Width = 230,
+                BackColor = Color.FromArgb(59, 130, 246),
+                Visible = false
+            };
+            sidebarPanel.Controls.Add(dragIndicator);
+            dragIndicator.BringToFront();
+
+            // Sự kiện kéo thả cho sidebar
+            sidebarPanel.DragOver += SidebarPanel_DragOver;
+            sidebarPanel.DragDrop += SidebarPanel_DragDrop;
         }
 
         private void CloseAccountMenu()
         {
-            // Tìm accountMenu trong form hoặc navbarPanel
             Panel accountMenu = this.Controls["accountMenu"] as Panel
                                 ?? navbarPanel.Controls["accountMenu"] as Panel;
 
@@ -99,7 +80,6 @@ namespace BookingCareManagement.WinForms
 
         private void MainForm_Resize(object sender, EventArgs e)
         {
-            // Điều chỉnh lại vị trí các nút trên Navbar khi thay đổi kích thước form
             AdjustNavbarButtons();
         }
 
@@ -109,19 +89,16 @@ namespace BookingCareManagement.WinForms
 
             int formWidth = this.ClientSize.Width;
 
-            // Nút Upgrade — cách mép phải 200px
             if (navbarPanel.Controls["upgradeBtn"] != null)
             {
                 navbarPanel.Controls["upgradeBtn"].Location = new Point(formWidth - 390, 12);
             }
 
-            // Nút Share — cách mép phải 80px
             if (navbarPanel.Controls["shareBtn"] != null)
             {
                 navbarPanel.Controls["shareBtn"].Location = new Point(formWidth - 270, 12);
             }
 
-            // Avatar — cách mép phải 40px
             if (navbarPanel.Controls["avatar"] != null)
             {
                 navbarPanel.Controls["avatar"].Location = new Point(formWidth - 350, 12);
@@ -132,7 +109,6 @@ namespace BookingCareManagement.WinForms
                 navbarPanel.Controls["avatarText"].Location = new Point(formWidth - 310, 12);
             }
 
-            // Menu tài khoản — canh ngay dưới Navbar
             Panel accountMenu = this.Controls["accountMenu"] as Panel
                                 ?? navbarPanel.Controls["accountMenu"] as Panel;
 
@@ -151,7 +127,6 @@ namespace BookingCareManagement.WinForms
                 BorderStyle = BorderStyle.FixedSingle
             };
 
-            // Khu vực thông tin người dùng
             Panel userInfo = new Panel
             {
                 Location = new Point(10, 10),
@@ -203,7 +178,6 @@ namespace BookingCareManagement.WinForms
             userInfo.Controls.Add(userEmail);
             userAvatarText.BringToFront();
 
-            // Đường kẻ ngăn cách
             Panel divider1 = new Panel
             {
                 Location = new Point(10, 95),
@@ -211,7 +185,6 @@ namespace BookingCareManagement.WinForms
                 BackColor = Color.FromArgb(226, 232, 240)
             };
 
-            // Nút Cài đặt tài khoản
             Button accountSettingsBtn = new Button
             {
                 Text = "⚙️  Cài đặt tài khoản",
@@ -233,7 +206,6 @@ namespace BookingCareManagement.WinForms
                 MessageBox.Show("Bạn đã nhấn Cài đặt tài khoản!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
             };
 
-            // Đường kẻ ngăn cách
             Panel divider2 = new Panel
             {
                 Location = new Point(10, 145),
@@ -241,7 +213,6 @@ namespace BookingCareManagement.WinForms
                 BackColor = Color.FromArgb(226, 232, 240)
             };
 
-            // Nút Đăng xuất
             Button logoutBtn = new Button
             {
                 Text = "🚪  Đăng xuất",
@@ -280,14 +251,14 @@ namespace BookingCareManagement.WinForms
 
             return menu;
         }
+
         private void OpenChildForm(Form childForm)
         {
-            // Nếu đã có form con mở, đóng nó
             if (activeChildForm != null)
                 activeChildForm.Close();
 
             activeChildForm = childForm;
-            childForm.TopLevel = false; // quan trọng
+            childForm.TopLevel = false;
             childForm.FormBorderStyle = FormBorderStyle.None;
             childForm.Dock = DockStyle.Fill;
             contentPanel.Controls.Add(childForm);
@@ -295,9 +266,9 @@ namespace BookingCareManagement.WinForms
             childForm.BringToFront();
             childForm.Show();
         }
+
         private void ToggleAccountMenu()
         {
-            // Tìm menu tài khoản trong Form (ưu tiên) hoặc navbarPanel
             Panel accountMenu = this.Controls["accountMenu"] as Panel
                                 ?? navbarPanel.Controls["accountMenu"] as Panel;
 
@@ -313,7 +284,6 @@ namespace BookingCareManagement.WinForms
 
         private void CreateNavbar()
         {
-            // Nút Booking Website (có dropdown)
             RoundedButton bookingBtn = new RoundedButton
             {
                 Name = "bookingBtn",
@@ -328,8 +298,6 @@ namespace BookingCareManagement.WinForms
             };
             bookingBtn.FlatAppearance.BorderSize = 0;
 
-
-            // Avatar người dùng
             CircularPictureBox avatar = new CircularPictureBox
             {
                 Name = "avatar",
@@ -350,12 +318,10 @@ namespace BookingCareManagement.WinForms
                 Cursor = Cursors.Hand
             };
 
-            // Tạo menu tài khoản
             Panel accountMenu = CreateAccountMenu();
             accountMenu.Visible = false;
             accountMenu.Name = "accountMenu";
 
-            // Sự kiện click vào avatar
             avatar.Click += (s, e) => ToggleAccountMenu();
             avatarText.Click += (s, e) => ToggleAccountMenu();
 
@@ -363,13 +329,11 @@ namespace BookingCareManagement.WinForms
             navbarPanel.Controls.Add(avatar);
             navbarPanel.Controls.Add(avatarText);
 
-            // Thêm menu tài khoản vào form (để hiển thị không bị che)
             this.Controls.Add(accountMenu);
             accountMenu.BringToFront();
 
             avatarText.BringToFront();
 
-            // Căn chỉnh vị trí lần đầu
             AdjustNavbarButtons();
         }
 
@@ -402,13 +366,14 @@ namespace BookingCareManagement.WinForms
                     TextAlign = ContentAlignment.MiddleLeft,
                     FlatStyle = FlatStyle.Flat,
                     Cursor = Cursors.Hand,
-                    Padding = new Padding(15, 0, 0, 0)
+                    Padding = new Padding(15, 0, 0, 0),
+                    AllowDrop = true
                 };
 
                 btn.FlatAppearance.BorderSize = 0;
                 btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, 41, 59);
 
-                // Khi nhấn nút sidebar
+                // Sự kiện click
                 btn.Click += (s, e) =>
                 {
                     SetActiveButton(btn);
@@ -418,16 +383,22 @@ namespace BookingCareManagement.WinForms
                     }
                     if (btn.Text.Contains("Lịch"))
                     {
-                        if (!(activeChildForm is Calendar))   // ❗ tránh mở lại chính nó
+                        if (!(activeChildForm is Calendar))
                             OpenChildForm(new Calendar());
                     }
                 };
+
+                // Sự kiện kéo thả
+                btn.MouseDown += Button_MouseDown;
+                btn.MouseMove += Button_MouseMove;
+                btn.DragOver += Button_DragOver;
+                btn.DragDrop += Button_DragDrop;
+                btn.QueryContinueDrag += Button_QueryContinueDrag;
 
                 sidebarPanel.Controls.Add(btn);
 
                 yPos += item.Contains("\n") ? 60 : 50;
 
-                // Mặc định chọn mục "Lịch"
                 if (item.Contains("Lịch"))
                 {
                     SetActiveButton(btn);
@@ -435,23 +406,154 @@ namespace BookingCareManagement.WinForms
             }
         }
 
+        // Sự kiện kéo thả cho sidebar buttons
+        private void Button_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left)
+            {
+                SidebarButton btn = sender as SidebarButton;
+                dragStartPoint = e.Location;
+                draggedButton = btn;
+            }
+        }
+
+        private void Button_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Left && draggedButton != null)
+            {
+                // Kiểm tra xem chuột đã di chuyển đủ xa chưa
+                if (Math.Abs(e.X - dragStartPoint.X) > 5 || Math.Abs(e.Y - dragStartPoint.Y) > 5)
+                {
+                    draggedButton.DoDragDrop(draggedButton, DragDropEffects.Move);
+                }
+            }
+        }
+
+        private void Button_DragOver(object sender, DragEventArgs e)
+        {
+            e.Effect = DragDropEffects.Move;
+        }
+
+        private void Button_DragDrop(object sender, DragEventArgs e)
+        {
+            // Xử lý trong SidebarPanel_DragDrop
+        }
+
+        private void Button_QueryContinueDrag(object sender, QueryContinueDragEventArgs e)
+        {
+            if (e.EscapePressed)
+            {
+                e.Action = DragAction.Cancel;
+                dragIndicator.Visible = false;
+                draggedButton = null;
+            }
+        }
+
+        private void SidebarPanel_DragOver(object sender, DragEventArgs e)
+        {
+            if (draggedButton == null) return;
+
+            e.Effect = DragDropEffects.Move;
+
+            // Tính toán vị trí chèn
+            Point pt = sidebarPanel.PointToClient(new Point(e.X, e.Y));
+
+            List<SidebarButton> buttons = sidebarPanel.Controls.OfType<SidebarButton>()
+                .OrderBy(b => b.Top).ToList();
+
+            dragInsertIndex = -1;
+
+            for (int i = 0; i < buttons.Count; i++)
+            {
+                SidebarButton btn = buttons[i];
+                int btnMiddle = btn.Top + btn.Height / 2;
+
+                if (pt.Y < btnMiddle)
+                {
+                    dragInsertIndex = i;
+                    break;
+                }
+            }
+
+            if (dragInsertIndex == -1)
+            {
+                dragInsertIndex = buttons.Count;
+            }
+
+            // Hiển thị drag indicator
+            if (dragInsertIndex < buttons.Count)
+            {
+                dragIndicator.Location = new Point(10, buttons[dragInsertIndex].Top - 2);
+            }
+            else if (buttons.Count > 0)
+            {
+                SidebarButton lastBtn = buttons[buttons.Count - 1];
+                dragIndicator.Location = new Point(10, lastBtn.Bottom + 3);
+            }
+
+            dragIndicator.Visible = true;
+            dragIndicator.BringToFront();
+        }
+
+        private void SidebarPanel_DragDrop(object sender, DragEventArgs e)
+        {
+            if (draggedButton == null || dragInsertIndex == -1)
+            {
+                dragIndicator.Visible = false;
+                return;
+            }
+
+            // Lấy danh sách các button
+            List<SidebarButton> buttons = sidebarPanel.Controls.OfType<SidebarButton>()
+                .OrderBy(b => b.Top).ToList();
+
+            int oldIndex = buttons.IndexOf(draggedButton);
+
+            if (oldIndex == dragInsertIndex || oldIndex + 1 == dragInsertIndex)
+            {
+                dragIndicator.Visible = false;
+                draggedButton = null;
+                return;
+            }
+
+            // Xóa button khỏi vị trí cũ
+            buttons.RemoveAt(oldIndex);
+
+            // Điều chỉnh index nếu cần
+            int newIndex = dragInsertIndex;
+            if (oldIndex < dragInsertIndex)
+            {
+                newIndex--;
+            }
+
+            // Chèn vào vị trí mới
+            buttons.Insert(newIndex, draggedButton);
+
+            // Cập nhật lại vị trí tất cả các button
+            int yPos = 20;
+            foreach (SidebarButton btn in buttons)
+            {
+                btn.Location = new Point(10, yPos);
+                yPos += btn.Height + 5;
+            }
+
+            dragIndicator.Visible = false;
+            draggedButton = null;
+        }
+
         private void SetActiveButton(SidebarButton btn)
         {
-            // Reset nút cũ
             if (activeButton != null)
             {
                 activeButton.BackColor = Color.Transparent;
                 activeButton.Font = new Font("Segoe UI", 10, FontStyle.Regular);
             }
 
-            // Set nút mới
             activeButton = btn;
             activeButton.BackColor = Color.FromArgb(30, 41, 59);
             activeButton.Font = new Font("Segoe UI", 10, FontStyle.Bold);
         }
 
-
-        // Nút bo góc tùy chỉnh
         public class RoundedButton : Button
         {
             protected override void OnPaint(PaintEventArgs e)
@@ -479,7 +581,6 @@ namespace BookingCareManagement.WinForms
             }
         }
 
-        // Nút Sidebar tùy chỉnh
         public class SidebarButton : Button
         {
             protected override void OnPaint(PaintEventArgs e)
@@ -489,7 +590,6 @@ namespace BookingCareManagement.WinForms
             }
         }
 
-        // Ảnh đại diện hình tròn
         public class CircularPictureBox : PictureBox
         {
             protected override void OnPaint(PaintEventArgs e)
@@ -507,6 +607,25 @@ namespace BookingCareManagement.WinForms
             }
         }
 
+        private void btnLich_Click(object sender, EventArgs e)
+        {
+            if (this.Visible)
+            {
+                OpenChildForm(new Calendar());
+            }
+        }
+
+        private void btnBangDieuKhien_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void btnKhachHang_Click(object sender, EventArgs e)
+        {
+            if (this.Visible)
+            {
+                OpenChildForm(new Customer());
+            }
+        }
     }
 }
-
