@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Windows.Forms;
-using BookingCareManagement.WinForms.Areas.Admin.Forms;
 using BookingCareManagement.WinForms.Startup;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -17,7 +16,7 @@ static class Program
         ApplicationConfiguration.Initialize();
 
         using var host = CreateHostBuilder().Build();
-        var mainForm = host.Services.GetRequiredService<AdminShellForm>();
+        var mainForm = host.Services.GetRequiredService<MainForm>();
         Application.Run(mainForm);
     }
 
@@ -32,6 +31,7 @@ static class Program
             .ConfigureServices((context, services) =>
             {
                 services.AddWinFormsInfrastructure(context.Configuration);
+                services.AddTransient<MainForm>();
             });
     }
 }
