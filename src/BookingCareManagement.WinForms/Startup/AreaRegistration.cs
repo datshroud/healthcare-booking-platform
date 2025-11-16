@@ -1,8 +1,10 @@
 using BookingCareManagement.WinForms.Areas.Account.Controllers;
 using BookingCareManagement.WinForms.Areas.Account.Forms;
 using BookingCareManagement.WinForms.Areas.Account.ViewModels;
+using BookingCareManagement.WinForms.Areas.Admin.Controls;
 using BookingCareManagement.WinForms.Areas.Admin.Controllers;
 using BookingCareManagement.WinForms.Areas.Admin.Forms;
+using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms.Areas.Admin.ViewModels;
 using BookingCareManagement.WinForms.Areas.Customer.Controllers;
 using BookingCareManagement.WinForms.Areas.Customer.Forms;
@@ -23,6 +25,10 @@ public static class AreaRegistration
     {
         services
             .AddSingleton<AdminDashboardViewModel>()
+            .AddTransient<AdminDoctorApiClient>()
+            .AddTransient<AdminSpecialtyApiClient>()
+            .AddTransient<SpecialtyManagementControl>()
+            .AddTransient<DoctorManagementControl>()
             .AddTransient<AdminNavigationController>()
             .AddTransient<AdminShellForm>();
         return services;

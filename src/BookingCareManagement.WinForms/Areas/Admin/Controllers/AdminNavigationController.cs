@@ -1,7 +1,9 @@
 using System;
 using System.Windows.Forms;
+using BookingCareManagement.WinForms.Areas.Admin.Controls;
 using BookingCareManagement.WinForms.Areas.Admin.ViewModels;
 using BookingCareManagement.WinForms.Shared.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Controllers;
 
@@ -30,13 +32,19 @@ public sealed class AdminNavigationController
     public void ShowSpecialties(Control host)
     {
         host.Controls.Clear();
-        host.Controls.Add(BuildPlaceholderPanel("Đang triển khai màn hình quản lý chuyên khoa"));
+        var control = _serviceProvider.GetRequiredService<SpecialtyManagementControl>();
+        control.Dock = DockStyle.Fill;
+        host.Controls.Add(control);
+        _ = control.InitializeAsync();
     }
 
     public void ShowDoctors(Control host)
     {
         host.Controls.Clear();
-        host.Controls.Add(BuildPlaceholderPanel("Đang triển khai màn hình quản lý bác sĩ"));
+        var control = _serviceProvider.GetRequiredService<DoctorManagementControl>();
+        control.Dock = DockStyle.Fill;
+        host.Controls.Add(control);
+        _ = control.InitializeAsync();
     }
 
     public void ShowSettings(Control host)

@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Windows.Forms;
 using BookingCareManagement.WinForms.Areas.Admin.Forms;
 using BookingCareManagement.WinForms.Startup;
@@ -25,6 +26,7 @@ static class Program
         return Host.CreateDefaultBuilder()
             .ConfigureAppConfiguration((context, config) =>
             {
+                config.SetBasePath(AppContext.BaseDirectory);
                 config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
             })
             .ConfigureServices((context, services) =>

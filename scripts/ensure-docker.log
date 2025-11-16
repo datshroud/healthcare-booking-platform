@@ -1,7 +1,7 @@
-[Sat 11/15/2025 15:57:41.28] ensure-docker.cmd started
-[Sat 11/15/2025 15:57:41.29] Working directory: D:\code\nam3\project\aspdotnet\hospital-booking-system-web
-[Sat 11/15/2025 15:57:41.36] docker executable: C:\Program Files\Docker\Docker\resources\bin\docker.exe
-[Sat 11/15/2025 15:57:41.36] Checking docker info
-[Sat 11/15/2025 15:57:41.73] docker info exit code 0
-[Sat 11/15/2025 15:57:41.74] Docker available; continuing startup
-[Sat 11/15/2025 15:57:41.75] Ensuring .env exists
+[Sun 11/16/2025  2:37:05.17] ensure-docker.cmd started
+[Sun 11/16/2025  2:37:05.18] Working directory: D:\code\nam3\project\aspdotnet\hospital-booking-system-web
+[Sun 11/16/2025  2:37:05.29] docker executable: C:\Program Files\Docker\Docker\resources\bin\docker.exe
+[Sun 11/16/2025  2:37:05.29] Checking docker info
+[Sun 11/16/2025  2:37:05.65] docker info exit code 0
+[Sun 11/16/2025  2:37:05.65] Docker available; continuing startup
+[Sun 11/16/2025  2:37:05.66] Ensuring .env exists
