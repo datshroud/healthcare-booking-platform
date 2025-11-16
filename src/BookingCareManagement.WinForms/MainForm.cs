@@ -21,9 +21,14 @@ namespace BookingCareManagement.WinForms
         private SidebarButton activeButton;
         private Form activeChildForm = null;
 
+
         public MainForm()
         {
             InitializeComponents();
+            this.Load += (s, e) =>
+            {
+                OpenChildForm(new Calendar());
+            };
         }
 
         private void InitializeComponents()
@@ -413,7 +418,8 @@ namespace BookingCareManagement.WinForms
                     }
                     if (btn.Text.Contains("Lịch"))
                     {
-                        OpenChildForm(new Calendar());
+                        if (!(activeChildForm is Calendar))   // ❗ tránh mở lại chính nó
+                            OpenChildForm(new Calendar());
                     }
                 };
 
