@@ -18,6 +18,7 @@ public sealed class UpdateSpecialtyCommand
     public string? Description { get; set; }
     public string? ImageUrl { get; set; }
     public string? Color { get; set; }
+    public decimal? Price { get; set; }
     public IEnumerable<Guid>? DoctorIds { get; set; }
 }
 
@@ -58,7 +59,9 @@ public sealed class UpdateSpecialtyCommandHandler
         var imageUrl = NormalizeOptionalText(command.ImageUrl);
         var color = NormalizeOptionalText(command.Color);
 
-        specialty.Update(trimmedName, slug, description, imageUrl, color);
+        var price = NormalizePrice(command.Price);
+
+        specialty.Update(trimmedName, slug, description, imageUrl, color, price);
 
         var doctorIds = FilterDoctorIds(command.DoctorIds);
         if (doctorIds.Length > 0)
@@ -102,5 +105,20 @@ public sealed class UpdateSpecialtyCommandHandler
     private static string? NormalizeOptionalText(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static decimal NormalizePrice(decimal? price)
+    {
+        if (!price.HasValue)
+        {
+            return 0m;
+        }
+
+        if (price.Value < 0)
+        {
+            throw new ValidationException("Giá chuyên khoa không được âm.");
+        }
+
+        return decimal.Round(price.Value, 0, MidpointRounding.AwayFromZero);
     }
 }

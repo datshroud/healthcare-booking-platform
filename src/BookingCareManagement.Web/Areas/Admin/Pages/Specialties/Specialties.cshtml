@@ -42,7 +42,8 @@
 
                 <div class="specialties-table-header">
                     <div></div>
-                    <div>Tên</div>
+                    <div>Tên chuyên khoa</div>
+                    <div>Giá khám</div>
                     <div>Trạng thái</div>
                     <div>Mô tả</div>
                     <div></div>
@@ -91,6 +92,11 @@
                                         <input type="color" id="specialtyColorPicker" value="#1a73e8">
                                     </div>
                                 </div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="specialtyPrice" class="modal-form-label">Giá khám (VND)</label>
+                                <input type="number" min="0" step="1000" class="form-control" id="specialtyPrice" placeholder="Ví dụ: 150000">
+                                <small class="form-text text-muted mt-2 d-block">Giá hiển thị cho bệnh nhân khi đặt lịch.</small>
                             </div>
                             <div class="mb-3">
                                 <label for="specialtyDescriptionEditor" class="modal-form-label">Mô tả</label>

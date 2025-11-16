@@ -11,7 +11,7 @@ using BookingCareManagement.Domain.Aggregates.User;
 using BookingCareManagement.Infrastructure.Persistence;
 using BookingCareManagement.Web.Areas.Admin.Dtos;
 using BookingCareManagement.Web.Areas.Doctor.Dtos;
-using BookingCareManagement.Web.Features.Calendar;
+using BookingCareManagement.Application.Features.Calendar;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

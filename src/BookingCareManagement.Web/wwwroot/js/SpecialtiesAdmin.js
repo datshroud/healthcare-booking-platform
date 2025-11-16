@@ -22,8 +22,15 @@ const defaultSaveSpecialtyText = btnSaveSpecialty ? btnSaveSpecialty.textContent
 const specialtyNameInput = document.getElementById("specialtyName");
 const specialtySlugInput = document.getElementById("specialtySlug");
 const addSpecialtyForm = document.getElementById("add-specialty-form");
+const specialtyPriceInput = document.getElementById("specialtyPrice");
 
 const specialtyColorSwatch = document.querySelector("#specialtyColor")?.closest(".color-picker-wrapper")?.querySelector(".color-swatch");
+
+const currencyFormatter = new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0
+});
 
 let doctorsCache = [];
 let specialtiesCache = [];
@@ -137,13 +144,16 @@ function renderSpecialtyList(items) {
         const color = normalizeColor(specialty.color) || DEFAULT_SPECIALTY_COLOR;
         const statusClass = specialty.active ? "active" : "inactive";
         const statusLabel = specialty.active ? "Hoạt động" : "Đã khóa";
+        const toggleLabel = specialty.active ? "Khóa chuyên khoa" : "Mở khóa chuyên khoa";
+        const toggleIcon = specialty.active ? "fa-lock" : "fa-unlock";
         const descriptionText = truncateText(stripHtml(specialty.description || ""), 140) || "Chưa có mô tả";
         const doctorNames = Array.isArray(specialty.doctors)
             ? specialty.doctors.map((d) => d.fullName).filter(Boolean).join(", ")
             : "";
         const doctorsHtml = doctorNames
-            ? `<div class="specialty-doctors">${doctorNames}</div>`
-            : '<div class="specialty-doctors text-muted">Chưa gán bác sĩ</div>';
+            ? `<div class="specialty-doctors"><span class="specialty-doctors-label">Nhân sự:</span> ${doctorNames}</div>`
+            : '<div class="specialty-doctors text-muted">Chưa gán nhân sự</div>';
+        const priceLabel = formatCurrency(specialty.price);
 
         // ⭐️ SỬA LỖI HIỂN THỊ AVATAR: Kiểm tra 'imageUrl' có rỗng/null không
         const avatarUrl = (specialty.imageUrl && specialty.imageUrl.trim() !== "")
@@ -161,11 +171,15 @@ function renderSpecialtyList(items) {
                         ${doctorsHtml}
                     </div>
                 </div>
+                <div class="specialty-price">${priceLabel}</div>
                 <div class="specialty-status ${statusClass}">${statusLabel}</div>
                 <div class="specialty-description">${descriptionText}</div>
                 <div style="position: relative;">
                     <button class="btn-more-specialty"><i class="fas fa-ellipsis-h"></i></button>
                     <div class="dropdown-menu-specialty">
+                        <button class="dropdown-item-specialty btn-toggle-specialty" data-id="${specialty.id}" data-active="${(!specialty.active).toString()}">
+                            <i class="fas ${toggleIcon}"></i> <span>${toggleLabel}</span>
+                        </button>
                         <button class="dropdown-item-specialty btn-edit-specialty" data-id="${specialty.id}">
                             <i class="fas fa-edit"></i> <span>Chỉnh sửa</span>
                         </button>
@@ -188,6 +202,13 @@ function wireListActions() {
         const dropdownButton = e.target.closest(".btn-more-specialty");
         if (dropdownButton) {
             toggleSpecialtyDropdown(dropdownButton);
+            return;
+        }
+        const toggleButton = e.target.closest(".btn-toggle-specialty");
+        if (toggleButton) {
+            const specialtyId = toggleButton.getAttribute("data-id");
+            const active = toggleButton.getAttribute("data-active") === "true";
+            toggleSpecialtyStatus(specialtyId, active);
             return;
         }
         const deleteButton = e.target.closest(".btn-delete-specialty");
@@ -248,6 +269,41 @@ function confirmDeleteSpecialty(specialtyId) {
     });
 }
 
+async function toggleSpecialtyStatus(specialtyId, active) {
+    if (!specialtyId) {
+        return;
+    }
+
+    const actionLabel = active ? "mở khóa" : "khóa";
+    const confirm = await Swal.fire({
+        title: `${active ? "Mở khóa" : "Khóa"} chuyên khoa?`,
+        text: `Bạn có chắc muốn ${actionLabel} chuyên khoa này?`,
+        icon: "question",
+        showCancelButton: true,
+        confirmButtonText: "Tiếp tục",
+        cancelButtonText: "Hủy"
+    });
+
+    if (!confirm.isConfirmed) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/Specialty/${specialtyId}/status`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ active })
+        });
+        if (!response.ok) {
+            throw new Error("Không thể cập nhật trạng thái chuyên khoa.");
+        }
+        showSuccess(active ? "Chuyên khoa đã được mở khóa." : "Chuyên khoa đã được khóa.");
+        await loadSpecialties();
+    } catch (error) {
+        showError(error.message);
+    }
+}
+
 async function openEditSpecialtyModal(specialtyId) {
     // ... (Giữ nguyên) ...
     if (!specialtyId) {
@@ -274,6 +330,9 @@ async function openEditSpecialtyModal(specialtyId) {
         }
         if (specialtySlugInput) {
             specialtySlugInput.value = specialty.slug ?? "";
+        }
+        if (specialtyPriceInput) {
+            specialtyPriceInput.value = specialty.price ?? 0;
         }
         setColorValue(specialty.color || DEFAULT_SPECIALTY_COLOR);
         setEditorContent(specialty.description || "");
@@ -444,6 +503,7 @@ function wireSaveSpecialty() {
                 description: description || null,
                 imageUrl: imageUrl, // Gửi link ảnh (mới hoặc cũ)
                 color: normalizeColor(specialtyColorInput?.value) || DEFAULT_SPECIALTY_COLOR,
+                price: parsePriceInput(specialtyPriceInput?.value),
                 doctorIds: selectedDoctorIds
             };
 
@@ -493,6 +553,9 @@ function resetForm() {
     updateUploadPreview(null);
     if (specialtyInput) {
         specialtyInput.value = "";
+    }
+    if (specialtyPriceInput) {
+        specialtyPriceInput.value = "";
     }
     if (addSpecialtyModalTitle) {
         addSpecialtyModalTitle.textContent = defaultSpecialtyModalTitle;
@@ -621,4 +684,23 @@ function truncateText(text, maxLength) {
         return "";
     }
     return text.length > maxLength ? `${text.substring(0, maxLength)}…` : text;
+}
+
+function formatCurrency(value) {
+    const numeric = Number(value ?? 0);
+    if (!Number.isFinite(numeric)) {
+        return currencyFormatter.format(0);
+    }
+    return currencyFormatter.format(numeric);
+}
+
+function parsePriceInput(value) {
+    if (value === undefined || value === null) {
+        return 0;
+    }
+    const normalized = Number(String(value).replace(/[^0-9.,-]/g, "").replace(",", "."));
+    if (!Number.isFinite(normalized) || normalized < 0) {
+        return 0;
+    }
+    return Math.round(normalized);
 }

@@ -1,6 +1,6 @@
 using System;
 
-namespace BookingCareManagement.Web.Features.Calendar;
+namespace BookingCareManagement.Application.Features.Calendar;
 
 public sealed class CalendarEventDto
 {

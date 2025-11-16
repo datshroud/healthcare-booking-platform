@@ -15,7 +15,7 @@ public interface IDoctorRepository
     Task<Doctor?> GetByIdWithTrackingAsync(Guid id, CancellationToken cancellationToken = default);
     Task<List<Doctor>> GetByIdsWithTrackingAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default);
 
-    void RemoveWorkingHours(IEnumerable<DoctorWorkingHour> workingHours);
+    Task RemoveWorkingHoursAsync(Guid doctorId, CancellationToken cancellationToken = default);
     void AddWorkingHours(IEnumerable<DoctorWorkingHour> workingHours);
     void AddDayOff(DoctorDayOff dayOff);
     void RemoveDayOff(DoctorDayOff dayOff);

@@ -22,6 +22,7 @@ public static class SpecialtyMappingExtensions
             Description = specialty.Description,
             ImageUrl = specialty.ImageUrl,
             Color = specialty.Color,
+            Price = specialty.Price,
             Doctors = specialty.Doctors.Select(ToDoctorDto).ToList()
         };
     }

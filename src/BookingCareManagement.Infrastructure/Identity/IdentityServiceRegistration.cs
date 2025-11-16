@@ -131,6 +131,7 @@ namespace BookingCareManagement.Infrastructure.Identity
             services.AddScoped<GetSpecialtyByIdQueryHandler>();
             services.AddScoped<CreateSpecialtyCommandHandler>();
             services.AddScoped<UpdateSpecialtyCommandHandler>();
+            services.AddScoped<UpdateSpecialtyStatusCommandHandler>();
             services.AddScoped<DeleteSpecialtyCommandHandler>();
 
             // Appointment handlers

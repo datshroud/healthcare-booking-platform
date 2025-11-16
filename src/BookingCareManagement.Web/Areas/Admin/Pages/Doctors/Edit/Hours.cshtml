@@ -132,6 +132,14 @@
 
         <!-- Cột phải -->
         <div class="col-9 ps-4">
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>@Model.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
             @if (!string.IsNullOrEmpty(Model.StatusMessage))
             {
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
