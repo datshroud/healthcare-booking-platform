@@ -291,5 +291,8 @@
 
 
         #endregion
+
+        private CircularPictureBox circularPictureBox1;
+        private RoundedButton roundedButton1;
     }
 }
