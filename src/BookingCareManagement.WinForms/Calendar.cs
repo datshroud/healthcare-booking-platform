@@ -36,7 +36,7 @@ namespace BookingCareManagement.WinForms
             this.Size = new Size(1600, 900);
             this.BackColor = Color.FromArgb(243, 244, 246);
             this.StartPosition = FormStartPosition.CenterScreen;
-            
+
 
             // Panel tiêu đề
             headerPanel = new Panel
@@ -112,7 +112,11 @@ namespace BookingCareManagement.WinForms
                 Cursor = Cursors.Hand
             };
             newAppointmentBtn.FlatAppearance.BorderSize = 0;
-            newAppointmentBtn.Click += (s, e) => MessageBox.Show("Thêm lịch hẹn mới", "Thông báo");
+            newAppointmentBtn.Click += (s, e) =>
+            {
+                AppointmentDialog dialog = new AppointmentDialog();
+                dialog.ShowDialog();   // mở form Add Appointment dạng popup (modal)
+            };
 
             // Căn chỉnh khi resize
             this.Resize += (s, e) =>
@@ -434,20 +438,6 @@ namespace BookingCareManagement.WinForms
             {
                 Panel dayCell = CreateDayCell(dayCounter, false, currentCol, currentRow, cellWidth, cellHeight);
 
-                // Thêm lịch mẫu
-                //if (dayCounter == 3)
-                //{
-                //    AddAppointment(dayCell, "", Color.FromArgb(254, 243, 199));
-                //}
-                //else if (dayCounter == 4)
-                //{
-                //    AddAppointment(dayCell, "", Color.FromArgb(220, 252, 231));
-                //}
-                //else if (dayCounter == 5)
-                //{
-                //    AddAppointment(dayCell, "", Color.FromArgb(219, 234, 254));
-                //}
-
                 calendarPanel.Controls.Add(dayCell);
 
                 dayCounter++;
@@ -703,6 +693,343 @@ namespace BookingCareManagement.WinForms
                 this.ForeColor,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter
             );
+        }
+    }
+    public partial class AppointmentDialog : Form
+    {
+
+        private ComboBox serviceComboBox;       // ComboBox chọn dịch vụ
+        private ComboBox employeeComboBox;      // ComboBox chọn nhân viên
+        private DateTimePicker datePicker;      // DatePicker chọn ngày
+        private ComboBox timeComboBox;          // ComboBox chọn giờ
+        private TextBox customerTextBox;        // TextBox nhập tên khách hàng
+        private CheckBox notificationCheckBox;  // Checkbox gửi thông báo
+        private Button cancelBtn;               // Nút hủy
+        private Button saveBtn;                 // Nút lưu
+
+        // Constructor
+        public AppointmentDialog()
+        {
+            InitializeComponent1();
+        }
+
+        // Khởi tạo các component của form
+        private void InitializeComponent1()
+        {
+            // Thiết lập thuộc tính form
+            this.Text = "Add Appointment";
+            this.Size = new Size(600, 520);
+            this.BackColor = Color.White;
+            this.StartPosition = FormStartPosition.CenterParent;
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+
+            // Tiêu đề header
+            Label headerLabel = new Label
+            {
+                Text = "Add appointment",
+                Location = new Point(30, 20),
+                Size = new Size(500, 30),
+                Font = new Font("Segoe UI", 16, FontStyle.Bold),
+                ForeColor = Color.FromArgb(17, 24, 39)
+            };
+
+            // Nút đóng (X)
+            Button closeBtn = new Button
+            {
+                Text = "✕",
+                Location = new Point(540, 20),
+                Size = new Size(30, 30),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(107, 114, 128),
+                Font = new Font("Segoe UI", 14),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            closeBtn.FlatAppearance.BorderSize = 0;
+            closeBtn.Click += (s, e) => this.Close();
+
+            // Label "Services"
+            Label serviceLabel = new Label
+            {
+                Text = "Services",
+                Location = new Point(30, 70),
+                Size = new Size(100, 20),
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                ForeColor = Color.FromArgb(17, 24, 39)
+            };
+
+            // ComboBox chọn dịch vụ
+            serviceComboBox = new ComboBox
+            {
+                Location = new Point(30, 95),
+                Size = new Size(520, 35),
+                Font = new Font("Segoe UI", 10),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                FlatStyle = FlatStyle.Flat
+            };
+            serviceComboBox.Items.AddRange(new string[] { "General Checkup", "Dental Care", "Cardiology", "Pediatrics" });
+            serviceComboBox.Text = "Select service";
+
+            // Label "Employees"
+            Label employeeLabel = new Label
+            {
+                Text = "Employees",
+                Location = new Point(30, 140),
+                Size = new Size(100, 20),
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                ForeColor = Color.FromArgb(17, 24, 39)
+            };
+
+            // ComboBox chọn nhân viên
+            employeeComboBox = new ComboBox
+            {
+                Location = new Point(30, 165),
+                Size = new Size(520, 35),
+                Font = new Font("Segoe UI", 10),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                FlatStyle = FlatStyle.Flat
+            };
+            employeeComboBox.Items.AddRange(new string[] { "Dr. John Smith", "Dr. Sarah Johnson", "Dr. Michael Brown" });
+            employeeComboBox.Text = "Select employee";
+
+            // Label "Date"
+            Label dateLabel = new Label
+            {
+                Text = "Date",
+                Location = new Point(30, 210),
+                Size = new Size(100, 20),
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                ForeColor = Color.FromArgb(17, 24, 39)
+            };
+
+            // DatePicker chọn ngày
+            datePicker = new DateTimePicker
+            {
+                Location = new Point(30, 235),
+                Size = new Size(250, 35),
+                Font = new Font("Segoe UI", 10),
+                Format = DateTimePickerFormat.Short
+            };
+
+            // Label "Time"
+            Label timeLabel = new Label
+            {
+                Text = "Time",
+                Location = new Point(300, 210),
+                Size = new Size(100, 20),
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                ForeColor = Color.FromArgb(17, 24, 39)
+            };
+
+            // ComboBox chọn giờ
+            timeComboBox = new ComboBox
+            {
+                Location = new Point(300, 235),
+                Size = new Size(250, 35),
+                Font = new Font("Segoe UI", 10),
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                FlatStyle = FlatStyle.Flat
+            };
+            // Thêm các khung giờ từ 8:00 đến 17:30
+            for (int hour = 8; hour <= 17; hour++)
+            {
+                timeComboBox.Items.Add($"{hour:D2}:00");
+                timeComboBox.Items.Add($"{hour:D2}:30");
+            }
+            timeComboBox.Text = "Select time";
+
+            // Label "Customers"
+            Label customerLabel = new Label
+            {
+                Text = "Customers",
+                Location = new Point(30, 280),
+                Size = new Size(400, 20),
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                ForeColor = Color.FromArgb(17, 24, 39)
+            };
+
+            // Link thêm khách hàng mới
+            LinkLabel newCustomerLink = new LinkLabel
+            {
+                Text = "+ New Customer",
+                Location = new Point(400, 280),
+                Size = new Size(100, 20),
+                Font = new Font("Segoe UI", 9),
+                LinkColor = Color.FromArgb(37, 99, 235),
+                ActiveLinkColor = Color.FromArgb(37, 99, 235),
+                VisitedLinkColor = Color.FromArgb(37, 99, 235)
+            };
+            newCustomerLink.Click += (s, e) => MessageBox.Show("Open New Customer dialog", "Info");
+
+            // Panel chứa TextBox nhập tên khách hàng (có icon)
+            Panel customerPanel = new Panel
+            {
+                Location = new Point(30, 305),
+                Size = new Size(520, 35),
+                BorderStyle = BorderStyle.FixedSingle,
+                BackColor = Color.White
+            };
+
+            // Icon người dùng
+            Label customerIcon = new Label
+            {
+                Text = "👥",
+                Location = new Point(5, 5),
+                Size = new Size(25, 25),
+                Font = new Font("Segoe UI", 12),
+                TextAlign = ContentAlignment.MiddleCenter
+            };
+
+            // TextBox nhập tên khách hàng
+            customerTextBox = new TextBox
+            {
+                Location = new Point(35, 5),
+                Size = new Size(475, 25),
+                Font = new Font("Segoe UI", 10),
+                BorderStyle = BorderStyle.None,
+                Text = "Start typing a customer name"
+            };
+            customerTextBox.ForeColor = Color.Gray;
+            // Xử lý sự kiện khi focus vào TextBox
+            customerTextBox.Enter += (s, e) =>
+            {
+                if (customerTextBox.Text == "Start typing a customer name")
+                {
+                    customerTextBox.Text = "";
+                    customerTextBox.ForeColor = Color.Black;
+                }
+            };
+            // Xử lý sự kiện khi focus ra khỏi TextBox
+            customerTextBox.Leave += (s, e) =>
+            {
+                if (string.IsNullOrWhiteSpace(customerTextBox.Text))
+                {
+                    customerTextBox.Text = "Start typing a customer name";
+                    customerTextBox.ForeColor = Color.Gray;
+                }
+            };
+
+            customerPanel.Controls.Add(customerIcon);
+            customerPanel.Controls.Add(customerTextBox);
+
+            // Checkbox gửi thông báo cho khách hàng
+            notificationCheckBox = new CheckBox
+            {
+                Text = "Send notification to customer",
+                Location = new Point(30, 355),
+                Size = new Size(250, 25),
+                Font = new Font("Segoe UI", 10),
+                Checked = true
+            };
+
+            // Link "More Options" - Tùy chọn thêm
+            LinkLabel moreOptionsLink = new LinkLabel
+            {
+                Text = "More Options",
+                Location = new Point(80, 395),
+                Size = new Size(100, 20),
+                Font = new Font("Segoe UI", 10),
+                LinkColor = Color.FromArgb(37, 99, 235),
+                ActiveLinkColor = Color.FromArgb(37, 99, 235),
+                VisitedLinkColor = Color.FromArgb(37, 99, 235)
+            };
+            moreOptionsLink.Click += (s, e) => MessageBox.Show("Open More Options", "Info");
+
+            // Nút Cancel (Hủy)
+            cancelBtn = new RoundedButton1
+            {
+                Text = "Cancel",
+                Location = new Point(360, 430),
+                Size = new Size(90, 40),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(55, 65, 81),
+                Font = new Font("Segoe UI", 10),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            cancelBtn.FlatAppearance.BorderSize = 1;
+            cancelBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            cancelBtn.Click += (s, e) => this.Close();
+
+            // Nút Save (Lưu)
+            saveBtn = new RoundedButton1
+            {
+                Text = "Save",
+                Location = new Point(460, 430),
+                Size = new Size(90, 40),
+                BackColor = Color.FromArgb(37, 99, 235),
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            saveBtn.FlatAppearance.BorderSize = 0;
+            saveBtn.Click += SaveBtn_Click;
+
+            // Thêm tất cả controls vào form
+            this.Controls.Add(headerLabel);
+            this.Controls.Add(closeBtn);
+            this.Controls.Add(serviceLabel);
+            this.Controls.Add(serviceComboBox);
+            this.Controls.Add(employeeLabel);
+            this.Controls.Add(employeeComboBox);
+            this.Controls.Add(dateLabel);
+            this.Controls.Add(datePicker);
+            this.Controls.Add(timeLabel);
+            this.Controls.Add(timeComboBox);
+            this.Controls.Add(customerLabel);
+            this.Controls.Add(newCustomerLink);
+            this.Controls.Add(customerPanel);
+            this.Controls.Add(notificationCheckBox);
+            this.Controls.Add(moreOptionsLink);
+            this.Controls.Add(cancelBtn);
+            this.Controls.Add(saveBtn);
+        }
+
+        // Xử lý sự kiện khi nhấn nút Save
+        private void SaveBtn_Click(object sender, EventArgs e)
+        {
+            // Kiểm tra validation (xác thực dữ liệu nhập)
+
+            // Kiểm tra đã chọn dịch vụ chưa
+            if (serviceComboBox.SelectedIndex == -1)
+            {
+                MessageBox.Show("Please select a service", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (employeeComboBox.SelectedIndex == -1)
+            {
+                MessageBox.Show("Please select an employee", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (timeComboBox.SelectedIndex == -1)
+            {
+                MessageBox.Show("Please select a time", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(customerTextBox.Text) || customerTextBox.Text == "Start typing a customer name")
+            {
+                MessageBox.Show("Please enter a customer name", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Save appointment logic here
+            string message = $"Appointment created successfully!\n\n" +
+                           $"Service: {serviceComboBox.SelectedItem}\n" +
+                           $"Employee: {employeeComboBox.SelectedItem}\n" +
+                           $"Date: {datePicker.Value.ToShortDateString()}\n" +
+                           $"Time: {timeComboBox.SelectedItem}\n" +
+                           $"Customer: {customerTextBox.Text}\n" +
+                           $"Notification: {(notificationCheckBox.Checked ? "Yes" : "No")}";
+
+            MessageBox.Show(message, "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            this.DialogResult = DialogResult.OK;
+            this.Close();
         }
     }
 }
