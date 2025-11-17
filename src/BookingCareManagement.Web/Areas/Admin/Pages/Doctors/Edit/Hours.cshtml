@@ -1,0 +1,600 @@
+@page "/doctors/{doctorId}/hours"
+@model BookingCareManagement.Web.Areas.Admin.Pages.Doctors.Edit.HoursModel
+@{
+    ViewData["Title"] = "Giờ làm việc";
+}
+
+@section Styles {
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/account.css" asp-append-version="true" />
+    <style>
+        .doctor-edit-container {
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .left-menu a {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .left-menu a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        .left-menu a.active-tab {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .day-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        .day-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+        }
+        .day-toggle {
+            width: 3em;
+            height: 1.5em;
+            cursor: pointer;
+        }
+        .day-toggle:checked {
+            background-color: #667eea;
+            border-color: #667eea;
+        }
+        .time-slot {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 16px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .form-control, .form-select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border-radius: 8px;
+        }
+        .form-control:focus, .form-select:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #667eea;
+            color: #fff;
+        }
+        .btn-save {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 32px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn-save:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+        }
+
+        #addSlotModal .form-select,
+        #addSlotModal .form-select:focus {
+            background-color: #fff;
+            color: #000;
+        }
+
+        #addSlotModal .form-select option:disabled {
+            color: #9ca3af;
+        }
+    </style>
+}
+
+<div class="container-fluid mt-5 p-4 mb-5 doctor-edit-container text-light">
+    <!-- Header -->
+    <div class="row align-items-center justify-content-between mx-0 mb-4">
+        <div class="col-auto">
+            <h2 class="mb-0 fw-bold">
+                <i class="fa-solid fa-user-doctor me-3" style="color: #667eea;"></i>@Model.DoctorName
+            </h2>
+        </div>
+        <div class="col-auto">
+            <a href="/doctors" class="btn btn-outline-light btn-sm px-4 rounded-pill">
+                <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
+            </a>
+        </div>
+    </div>
+
+    <!-- Nội dung chính -->
+    <div class="row border-top border-secondary pt-4 g-0">
+        <!-- Cột trái -->
+        <div class="col-3 left-menu pe-3">
+            <a href="/doctors/@Model.DoctorId/info" class="btn mb-2 fw-semibold text-decoration-none">
+                <i class="fa-solid fa-user me-2"></i> Thông tin bác sĩ
+            </a>
+            <a href="/doctors/@Model.DoctorId/specialties" class="btn mb-2 fw-semibold text-decoration-none">
+                <i class="fa-solid fa-briefcase-medical me-2"></i> Chuyên khoa
+            </a>
+            <a href="/doctors/@Model.DoctorId/hours" class="btn active-tab fw-semibold text-decoration-none">
+                <i class="fa-solid fa-clock me-2"></i> Giờ làm việc
+            </a>
+            <a href="/doctors/@Model.DoctorId/days-off" class="btn fw-semibold text-decoration-none">
+                <i class="fa-solid fa-calendar-xmark me-2"></i> Ngày nghỉ
+            </a>
+            <a href="/doctors/@Model.DoctorId/special-days" class="btn fw-semibold text-decoration-none">
+                <i class="fa-solid fa-star me-2"></i> Ngày đặc biệt
+            </a>
+        </div>
+
+        <!-- Cột phải -->
+        <div class="col-9 ps-4">
+            @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+            {
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fa-solid fa-triangle-exclamation me-2"></i>@Model.ErrorMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(Model.StatusMessage))
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fa-solid fa-circle-check me-2"></i>@Model.StatusMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <form method="post" id="workingHoursForm">
+                <input type="hidden" asp-for="DoctorId" />
+
+                <div class="mb-4">
+                    <div class="form-check mb-3">
+                        <input asp-for="Form.LimitAppointments" class="form-check-input" />
+                        <label class="form-check-label text-light" asp-for="Form.LimitAppointments">
+                            Giới hạn lịch hẹn cho bác sĩ này
+                        </label>
+                        <p class="text-muted small mb-0 ms-4">Đặt tùy chọn này nếu bạn muốn giới hạn số lượng lịch hẹn mà bác sĩ có thể có bất kể có bao nhiêu lịch hẹn 'phù hợp' bên trong giờ làm việc.</p>
+                    </div>
+                </div>
+
+                <div class="row g-3 align-items-end mb-4">
+                    <div class="col-md-6">
+                        <label for="dayFilterSelect" class="form-label text-light small text-uppercase">Lọc theo thứ</label>
+                        <select id="dayFilterSelect" class="form-select form-select-sm bg-dark text-light border-secondary">
+                            <option value="all">Tất cả các ngày</option>
+                            @foreach (var day in Model.Form.Days)
+                            {
+                                <option value="@day.DayOfWeek">@Model.GetDayDisplayName(day.DayOfWeek)</option>
+                            }
+                        </select>
+                        <small class="text-muted">Chỉ hiển thị những ngày phù hợp để tiện chỉnh sửa.</small>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-outline-light btn-sm w-100" id="resetDayFilterButton">
+                            <i class="fa-solid fa-rotate-left me-1"></i>Hiện tất cả
+                        </button>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning py-2 px-3 d-none" id="dayFilterEmptyState">
+                    <i class="fa-solid fa-info-circle me-2"></i>Không có ngày nào khớp với bộ lọc đang chọn.
+                </div>
+
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                @for (var dayIndex = 0; dayIndex < Model.Form.Days.Count; dayIndex++)
+                {
+                    var day = Model.Form.Days[dayIndex];
+                    <div class="day-card" data-day-card data-day-index="@dayIndex" data-day-value="@day.DayOfWeek" data-day-name="@Model.GetDayDisplayName(day.DayOfWeek)">
+                        <input type="hidden" asp-for="Form.Days[dayIndex].DayOfWeek" />
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="fa-solid fa-calendar-day me-2 text-primary"></i>
+                                <h6 class="mb-0">@Model.GetDayDisplayName(day.DayOfWeek)</h6>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input asp-for="Form.Days[dayIndex].IsEnabled" class="form-check-input day-toggle" />
+                            </div>
+                        </div>
+
+                        @if (day.Slots.Count == 0)
+                        {
+                            <div class="text-muted small fst-italic">Chưa có khung giờ nào. Nhấn "Thêm thời gian" để bắt đầu.</div>
+                        }
+
+                        @for (var slotIndex = 0; slotIndex < day.Slots.Count; slotIndex++)
+                        {
+                            <div class="time-slot" data-slot-container data-slot-index="@slotIndex">
+                                <div class="row align-items-start g-3">
+                                    <div class="col-lg-5">
+                                        <label class="form-label small mb-1" asp-for="Form.Days[dayIndex].Slots[slotIndex].StartTime">Thời gian</label>
+                                        <div class="d-flex align-items-center">
+                                            <input asp-for="Form.Days[dayIndex].Slots[slotIndex].StartTime" type="time" class="form-control form-control-sm bg-dark text-light border-secondary" step="1800" data-role="slot-start" data-day-index="@dayIndex" readonly />
+                                            <span class="mx-2">-</span>
+                                            <input asp-for="Form.Days[dayIndex].Slots[slotIndex].EndTime" type="time" class="form-control form-control-sm bg-dark text-light border-secondary" step="1800" data-role="slot-end" data-day-index="@dayIndex" readonly />
+                                        </div>
+                                        <span class="text-danger small" asp-validation-for="Form.Days[dayIndex].Slots[slotIndex].StartTime"></span>
+                                        <span class="text-danger small" asp-validation-for="Form.Days[dayIndex].Slots[slotIndex].EndTime"></span>
+                                    </div>
+                                    <div class="col-lg-5">
+                                        <label class="form-label small mb-1" asp-for="Form.Days[dayIndex].Slots[slotIndex].Location">Địa điểm</label>
+                                        <input asp-for="Form.Days[dayIndex].Slots[slotIndex].Location" class="form-control form-control-sm bg-dark text-light border-secondary" placeholder="Địa điểm mặc định" readonly data-role="slot-location" />
+                                        <span class="text-danger small" asp-validation-for="Form.Days[dayIndex].Slots[slotIndex].Location"></span>
+                                    </div>
+                                    <div class="col-lg-2 text-end">
+                                        <label class="form-label small mb-1 invisible">Action</label>
+                                        <div>
+                                            <input type="hidden" asp-for="Form.Days[dayIndex].Slots[slotIndex].Id" />
+                                            <button type="button" class="btn btn-sm btn-link text-primary p-0 me-2" data-action="open-edit-slot" data-day-index="@dayIndex" data-slot-index="@slotIndex" data-day-name="@Model.GetDayDisplayName(day.DayOfWeek)">
+                                                <i class="fa-solid fa-pen"></i>
+                                            </button>
+                                            <button type="submit" name="command" value="delete-slot:@dayIndex:@slotIndex" class="btn btn-sm btn-link text-danger p-0">
+                                                <i class="fa-solid fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-link text-primary p-0" data-action="open-add-slot" data-day-index="@dayIndex" data-day-name="@Model.GetDayDisplayName(day.DayOfWeek)">
+                                <i class="fa-solid fa-plus me-1"></i>Thêm thời gian
+                            </button>
+                            <button type="submit" name="command" value="copy-day:@dayIndex" class="btn btn-sm btn-link text-primary p-0 ms-3">
+                                <i class="fa-solid fa-copy me-1"></i>Áp dụng cho các ngày khác
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                <div class="text-end border-top pt-4 mt-4" style="border-color: rgba(255,255,255,0.1) !important;">
+                    <button type="submit" name="command" value="save" class="btn btn-save text-white">
+                        <i class="fa-solid fa-save me-2"></i>Lưu thay đổi
+                    </button>
+                </div>
+                <input type="hidden" asp-for="ModalInput.DayIndex" id="ModalInput_DayIndex" />
+                <input type="hidden" asp-for="ModalInput.StartTime" id="ModalInput_StartTime" />
+                <input type="hidden" asp-for="ModalInput.EndTime" id="ModalInput_EndTime" />
+                <input type="hidden" asp-for="ModalInput.Location" id="ModalInput_Location" />
+                <input type="hidden" asp-for="ModalInput.SlotIndex" id="ModalInput_SlotIndex" />
+                <input type="hidden" id="modalCommandInput" />
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="~/Areas/Shared/Pages/Shared/_ValidationScriptsPartial.cshtml" />
+    <script>
+        (() => {
+            const form = document.getElementById('workingHoursForm');
+            const modalElement = document.getElementById('addSlotModal');
+            if (!modalElement || typeof bootstrap === 'undefined' || !form) {
+                return;
+            }
+
+            const modal = new bootstrap.Modal(modalElement);
+            const modalTitle = modalElement.querySelector('[data-modal-title]');
+            const startSelect = modalElement.querySelector('[data-modal-start]');
+            const endSelect = modalElement.querySelector('[data-modal-end]');
+            const locationInput = modalElement.querySelector('[data-modal-location]');
+            const errorBox = modalElement.querySelector('[data-modal-error]');
+            const dayFilterSelect = document.getElementById('dayFilterSelect');
+            const resetDayFilterButton = document.getElementById('resetDayFilterButton');
+            const dayFilterEmptyState = document.getElementById('dayFilterEmptyState');
+
+            const dayIndexInput = document.getElementById('ModalInput_DayIndex');
+            const startInputHidden = document.getElementById('ModalInput_StartTime');
+            const endInputHidden = document.getElementById('ModalInput_EndTime');
+            const locationHidden = document.getElementById('ModalInput_Location');
+            const modalCommandInput = document.getElementById('modalCommandInput');
+            const slotIndexHidden = document.getElementById('ModalInput_SlotIndex');
+
+            const addButtons = document.querySelectorAll('[data-action="open-add-slot"]');
+            const editButtons = document.querySelectorAll('[data-action="open-edit-slot"]');
+
+            let isEditMode = false;
+            let activeDayIndex = null;
+            let activeSlotIndex = null;
+
+            const timeOptions = [];
+            for (let hour = 0; hour < 24; hour++) {
+                for (let minute of [0, 30]) {
+                    const formattedHour = hour.toString().padStart(2, '0');
+                    const formattedMinute = minute.toString().padStart(2, '0');
+                    timeOptions.push({
+                        label: `${formattedHour}:${formattedMinute}`,
+                        minutes: hour * 60 + minute
+                    });
+                }
+            }
+
+            const toMinutes = (time) => {
+                if (!time) {
+                    return null;
+                }
+
+                const [hours, minutes] = time.split(':').map(Number);
+                if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+                    return null;
+                }
+
+                return hours * 60 + minutes;
+            };
+
+            const collectExistingRanges = (dayIndex, ignoreSlotIndex = null) => {
+                const ranges = [];
+                const dayCard = document.querySelector(`[data-day-card][data-day-index="${dayIndex}"]`);
+                if (!dayCard) {
+                    return ranges;
+                }
+
+                const slotContainers = dayCard.querySelectorAll('[data-slot-container]');
+                slotContainers.forEach(slot => {
+                    const slotIndexAttr = slot.getAttribute('data-slot-index');
+                    if (ignoreSlotIndex !== null && slotIndexAttr !== null && Number(slotIndexAttr) === ignoreSlotIndex) {
+                        return;
+                    }
+
+                    const startInput = slot.querySelector('[data-role="slot-start"]');
+                    const endInput = slot.querySelector('[data-role="slot-end"]');
+                    const startMinutes = toMinutes(startInput?.value);
+                    const endMinutes = toMinutes(endInput?.value);
+
+                    if (startMinutes !== null && endMinutes !== null && endMinutes > startMinutes) {
+                        ranges.push({ start: startMinutes, end: endMinutes });
+                    }
+                });
+
+                return ranges;
+            };
+
+            const populateStartSelect = (ranges, currentStartMinutes = null) => {
+                startSelect.innerHTML = '<option value="">Chọn giờ</option>';
+                timeOptions.forEach(optionInfo => {
+                    const option = document.createElement('option');
+                    option.value = optionInfo.label;
+                    option.textContent = optionInfo.label;
+                    let blocked = ranges.some(range => optionInfo.minutes >= range.start && optionInfo.minutes < range.end);
+                    if (blocked && currentStartMinutes !== null && optionInfo.minutes === currentStartMinutes) {
+                        blocked = false;
+                    }
+                    option.disabled = blocked;
+                    startSelect.appendChild(option);
+                });
+            };
+
+            const populateEndSelect = (ranges, startMinutes, currentEndMinutes = null) => {
+                endSelect.innerHTML = '<option value="">Chọn giờ</option>';
+                timeOptions.forEach(optionInfo => {
+                    const option = document.createElement('option');
+                    option.value = optionInfo.label;
+                    option.textContent = optionInfo.label;
+
+                    let blocked = false;
+                    if (startMinutes === null) {
+                        blocked = true;
+                    }
+                    else if (optionInfo.minutes <= startMinutes) {
+                        blocked = true;
+                    }
+                    else if (ranges.some(range => startMinutes < range.end && optionInfo.minutes > range.start)) {
+                        blocked = true;
+                    }
+
+                    if (blocked && currentEndMinutes !== null && optionInfo.minutes === currentEndMinutes) {
+                        blocked = false;
+                    }
+
+                    option.disabled = blocked;
+                    endSelect.appendChild(option);
+                });
+            };
+
+            const applyDayFilter = (value) => {
+                const normalized = value === null || value === undefined ? 'all' : String(value);
+                const cards = document.querySelectorAll('[data-day-card]');
+                let visibleCount = 0;
+                cards.forEach(card => {
+                    const cardValue = card.getAttribute('data-day-value');
+                    const shouldShow = normalized === 'all' || cardValue === normalized;
+                    card.classList.toggle('d-none', !shouldShow);
+                    if (shouldShow) {
+                        visibleCount++;
+                    }
+                });
+
+                if (dayFilterEmptyState) {
+                    dayFilterEmptyState.classList.toggle('d-none', visibleCount > 0);
+                }
+            };
+
+            dayFilterSelect?.addEventListener('change', (event) => {
+                applyDayFilter(event.target.value);
+            });
+
+            resetDayFilterButton?.addEventListener('click', () => {
+                if (dayFilterSelect) {
+                    dayFilterSelect.value = 'all';
+                }
+                applyDayFilter('all');
+            });
+
+            applyDayFilter(dayFilterSelect?.value || 'all');
+
+            addButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const dayIndex = button.dataset.dayIndex;
+                    const dayName = button.dataset.dayName || '';
+
+                    isEditMode = false;
+                    activeDayIndex = Number(dayIndex);
+                    activeSlotIndex = null;
+                    dayIndexInput.value = dayIndex;
+                    startInputHidden.value = '';
+                    endInputHidden.value = '';
+                    locationHidden.value = '';
+                    locationInput.value = '';
+                    errorBox.textContent = '';
+                    startSelect.value = '';
+                    endSelect.value = '';
+                    if (slotIndexHidden) {
+                        slotIndexHidden.value = '';
+                    }
+
+                    if (modalTitle) {
+                        modalTitle.textContent = `Thêm khung giờ cho ${dayName}`;
+                    }
+
+                    const ranges = collectExistingRanges(dayIndex);
+                    populateStartSelect(ranges);
+                    populateEndSelect(ranges, null);
+
+                    startSelect.onchange = () => {
+                        const selectedStartMinutes = toMinutes(startSelect.value);
+                        endSelect.value = '';
+                        populateEndSelect(ranges, selectedStartMinutes);
+                    };
+
+                    endSelect.onchange = () => {
+                        errorBox.textContent = '';
+                    };
+
+                    modal.show();
+                });
+            });
+
+            editButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const dayIndex = Number(button.dataset.dayIndex);
+                    const slotIndex = Number(button.dataset.slotIndex);
+
+                    isEditMode = true;
+                    activeDayIndex = dayIndex;
+                    activeSlotIndex = slotIndex;
+
+                    dayIndexInput.value = String(dayIndex);
+                    if (slotIndexHidden) {
+                        slotIndexHidden.value = String(slotIndex);
+                    }
+
+                    const dayCard = document.querySelector(`[data-day-card][data-day-index="${dayIndex}"]`);
+                    const slotContainer = dayCard?.querySelector(`[data-slot-container][data-slot-index="${slotIndex}"]`);
+                    const startInput = slotContainer?.querySelector('[data-role="slot-start"]');
+                    const endInput = slotContainer?.querySelector('[data-role="slot-end"]');
+                    const locationField = slotContainer?.querySelector('[data-role="slot-location"]');
+
+                    const currentStart = startInput?.value ?? '';
+                    const currentEnd = endInput?.value ?? '';
+                    const currentLocation = locationField?.value ?? '';
+
+                    startInputHidden.value = currentStart;
+                    endInputHidden.value = currentEnd;
+                    locationHidden.value = currentLocation;
+                    locationInput.value = currentLocation;
+                    errorBox.textContent = '';
+
+                    const currentStartMinutes = toMinutes(currentStart);
+                    const currentEndMinutes = toMinutes(currentEnd);
+
+                    const ranges = collectExistingRanges(dayIndex, slotIndex);
+                    populateStartSelect(ranges, currentStartMinutes);
+                    populateEndSelect(ranges, currentStartMinutes, currentEndMinutes);
+
+                    startSelect.value = currentStart;
+                    endSelect.value = currentEnd;
+
+                    startSelect.onchange = () => {
+                        const selectedStartMinutes = toMinutes(startSelect.value);
+                        endSelect.value = '';
+                        populateEndSelect(ranges, selectedStartMinutes);
+                    };
+
+                    endSelect.onchange = () => {
+                        errorBox.textContent = '';
+                    };
+
+                    if (modalTitle) {
+                        modalTitle.textContent = `Chỉnh sửa khung giờ cho ${button.dataset.dayName ?? ''}`;
+                    }
+
+                    modal.show();
+                });
+            });
+
+            modalElement.querySelector('[data-modal-save]').addEventListener('click', () => {
+                const startValue = startSelect.value;
+                const endValue = endSelect.value;
+                const locationValue = locationInput.value.trim();
+
+                if (!startValue || !endValue) {
+                    errorBox.textContent = 'Vui lòng chọn đầy đủ thời gian bắt đầu và kết thúc.';
+                    return;
+                }
+
+                if (startValue >= endValue) {
+                    errorBox.textContent = 'Thời gian bắt đầu phải sớm hơn thời gian kết thúc.';
+                    return;
+                }
+
+                errorBox.textContent = '';
+
+                startInputHidden.value = startValue;
+                endInputHidden.value = endValue;
+                locationHidden.value = locationValue;
+
+                modal.hide();
+
+                modalCommandInput.name = 'command';
+                modalCommandInput.value = isEditMode ? 'edit-slot' : 'add-slot';
+                form.requestSubmit();
+            });
+
+            modalElement.addEventListener('hidden.bs.modal', () => {
+                modalCommandInput.removeAttribute('name');
+                modalCommandInput.value = '';
+                if (slotIndexHidden) {
+                    slotIndexHidden.value = '';
+                }
+                isEditMode = false;
+                activeDayIndex = null;
+                activeSlotIndex = null;
+            });
+        })();
+    </script>
+}
+
+<div class="modal fade" id="addSlotModal" tabindex="-1" aria-labelledby="addSlotModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-light">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title" id="addSlotModalLabel" data-modal-title>Thêm khung giờ</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Giờ bắt đầu<span class="text-danger">*</span></label>
+                    <select class="form-select" data-modal-start></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Giờ kết thúc<span class="text-danger">*</span></label>
+                    <select class="form-select" data-modal-end></select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Địa điểm</label>
+                    <input type="text" class="form-control" data-modal-location placeholder="Địa điểm mặc định" />
+                </div>
+                <div class="text-danger small" data-modal-error></div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" data-modal-save>Thêm khung giờ</button>
+            </div>
+        </div>
+    </div>
+</div>

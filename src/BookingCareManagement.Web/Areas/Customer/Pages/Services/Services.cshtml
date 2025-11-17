@@ -5,8 +5,7 @@
 }
 
 @section Styles {
-
-    <link rel="stylesheet" href="~/css/Services.css" />
+    <link rel="stylesheet" href="~/css/Services.css" asp-append-version="true" />
 }
 
     <!-- Main Content -->
@@ -18,31 +17,32 @@
             <div class="header-controls">
                 <!-- Employee Filter -->
                 <div class="dropdown-wrapper">
-                    <button class="filter-button" id="employeeFilter">
+                    <button class="filter-button" id="employeeFilter" type="button">
                         <i class="fas fa-user"></i>
                         <span>Bác sĩ...</span>
                         <i class="fas fa-chevron-down"></i>
                     </button>
                     <div class="dropdown-menu-custom" id="employeeMenu">
-                        <div class="dropdown-item-custom">Tất cả bác sĩ</div>
-                        <div class="dropdown-item-custom">Jane Doe</div>
-                        <div class="dropdown-item-custom">John Smith</div>
+                        <button type="button" class="dropdown-item-custom" data-doctor-id="">
+                            Tất cả bác sĩ
+                        </button>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-placeholder" data-role="doctor-placeholder">Đang tải danh sách...</div>
                     </div>
                 </div>
 
                 <!-- Sort Dropdown -->
                 <div class="dropdown-wrapper">
-                    <button class="filter-button" id="sortFilter">
+                    <button class="filter-button" id="sortFilter" type="button">
                         <i class="fas fa-sort"></i>
-                        <span>Sort ...</span>
+                        <span>Sắp xếp...</span>
                         <i class="fas fa-chevron-down"></i>
                     </button>
                     <div class="dropdown-menu-custom" id="sortMenu">
-                        <div class="dropdown-item-custom">Giá (thấp nhất)</div>
-                        <div class="dropdown-item-custom">Giá (cao nhất)</div>
-                        <div class="dropdown-item-custom">Độ phổ biến</div>
-                        <div class="dropdown-item-custom">Tên (tăng dần)</div>
-                        <div class="dropdown-item-custom">Tên (giảm dần)</div>
+                        <button type="button" class="dropdown-item-custom" data-sort="price-asc">Giá (thấp nhất)</button>
+                        <button type="button" class="dropdown-item-custom" data-sort="price-desc">Giá (cao nhất)</button>
+                        <button type="button" class="dropdown-item-custom" data-sort="name-asc">Tên (A - Z)</button>
+                        <button type="button" class="dropdown-item-custom" data-sort="name-desc">Tên (Z - A)</button>
                     </div>
                 </div>
 
@@ -54,112 +54,66 @@
             </div>
         </div>
 
-        <!-- Services Grid -->
-        <div class="services-grid">
-            <!-- Service Card 1 -->
-            <div class="service-card">
-                <div class="service-image">
-                    <img src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?w=800&h=600&fit=crop" alt="Therapeutic Exercise">
-                    <span class="service-price">$30.00</span>
-                </div>
-                <div class="service-content">
-                    <h3 class="service-name">Bài tập trị liệu</h3>
-                    <div class="service-meta">
-                        <span class="meta-item">
-                            <span class="meta-label">Thời gian</span>
-                            <span class="meta-value">1h</span>
-                        </span>
-                        <span class="meta-item">
-                            <span class="meta-label">Sức chứa</span>
-                            <span class="meta-value">1</span>
-                        </span>
-                    </div>
-                    <div class="service-actions">
-                        <button class="btn-outline">Tìm hiểu thêm</button>
-                        <button class="btn-primary">Đặt lịch ngay</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Service Card 2 -->
-            <div class="service-card">
-                <div class="service-image">
-                    <img src="https://images.unsplash.com/photo-1506126613408-eca07ce68773?w=800&h=600&fit=crop" alt="Therapeutic Stretching">
-                    <span class="service-price">$30.00</span>
-                </div>
-                <div class="service-content">
-                    <h3 class="service-name">Kéo giãn trị liệu</h3>
-                    <div class="service-meta">
-                        <span class="meta-item">
-                            <span class="meta-label">Thời gian</span>
-                            <span class="meta-value">1h</span>
-                        </span>
-                        <span class="meta-item">
-                            <span class="meta-label">Sức chứa</span>
-                            <span class="meta-value">1</span>
-                        </span>
-                    </div>
-                    <div class="service-actions">
-                        <button class="btn-outline">Tìm hiểu thêm</button>
-                        <button class="btn-primary">Đặt lịch ngay</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Service Card 3 -->
-            <div class="service-card">
-                <div class="service-image">
-                    <img src="https://images.unsplash.com/photo-1519823551278-64ac92734fb1?w=800&h=600&fit=crop" alt="Heat and Ice Therapy">
-                    <span class="service-price">$50.00</span>
-                </div>
-                <div class="service-content">
-                    <h3 class="service-name">Liệu pháp nhiệt và lạnh</h3>
-                    <div class="service-meta">
-                        <span class="meta-item">
-                            <span class="meta-label">Thời gian</span>
-                            <span class="meta-value">1h 30ph</span>
-                        </span>
-                        <span class="meta-item">
-                            <span class="meta-label">Sức chứa</span>
-                            <span class="meta-value">1</span>
-                        </span>
-                    </div>
-                    <div class="service-actions">
-                        <button class="btn-outline">Tìm hiểu thêm</button>
-                        <button class="btn-primary">Đặt lịch ngay</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Service Card 4 -->
-            <div class="service-card">
-                <div class="service-image">
-                    <img src="https://images.unsplash.com/photo-1518241353330-0f7941c2d9b5?w=800&h=600&fit=crop" alt="e la khong the">
-                    <span class="service-price">$36.00</span>
-                </div>
-                <div class="service-content">
-                    <h3 class="service-name">e la khong the</h3>
-                    <div class="service-meta">
-                        <span class="meta-item">
-                            <span class="meta-label">Thời gian</span>
-                            <span class="meta-value">2h</span>
-                        </span>
-                        <span class="meta-item">
-                            <span class="meta-label">Sức chứa</span>
-                            <span class="meta-value">1</span>
-                        </span>
-                    </div>
-                    <div class="service-actions">
-                        <button class="btn-outline">Tìm hiểu thêm</button>
-                        <button class="btn-primary">Đặt lịch ngay</button>
-                    </div>
-                </div>
-            </div>
-
-            
+        <div id="servicesLoading" class="services-loading">
+            <div class="spinner-border text-success" role="status"></div>
+            <p class="mt-3 text-secondary">Đang tải chuyên khoa...</p>
         </div>
+
+        <div id="servicesEmpty" class="services-empty d-none">
+            <i class="bi bi-clipboard2-pulse text-secondary"></i>
+            <p class="text-secondary mb-0">Hiện chưa có chuyên khoa nào khả dụng.</p>
+        </div>
+
+        <!-- Services Grid -->
+        <div id="servicesGrid" class="services-grid"></div>
     </div>
 
+<div class="modal fade" id="serviceDetailModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content service-detail-modal">
+            <div class="modal-body p-0">
+                <div class="service-modal-header d-flex justify-content-between align-items-start p-4">
+                    <div>
+                        <h2 class="service-modal-title" id="serviceModalTitle"></h2>
+                        <p class="text-secondary" id="serviceModalSubtitle">&nbsp;</p>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="service-modal-body p-4">
+                    <div class="row g-4">
+                        <div class="col-lg-5">
+                            <div class="service-modal-card">
+                                <div class="service-duration mb-3">
+                                    <i class="bi bi-clock me-2"></i>
+                                    <span id="serviceModalDuration"></span>
+                                </div>
+                                <div class="service-price-display mb-4" id="serviceModalPrice">&nbsp;</div>
+                                <button type="button" class="btn btn-primary w-100 mb-2" id="serviceModalBookBtn">
+                                    Đặt lịch ngay
+                                </button>
+                                <small class="text-muted d-block mb-3">Thanh toán trực tiếp tại cơ sở</small>
+                                <p class="service-description" id="serviceModalDescription"></p>
+                            </div>
+                        </div>
+                        <div class="col-lg-7">
+                            <div class="service-modal-image" id="serviceModalImageWrapper">
+                                <img src="" alt="" id="serviceModalImage" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="service-providers mt-5">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Đội ngũ thực hiện</h5>
+                            <span class="text-secondary" id="serviceModalDoctorCount"></span>
+                        </div>
+                        <div id="serviceModalDoctors" class="provider-grid"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
-    <script src="~/js/Services.js"></script>
+    <script src="~/js/Services.js" asp-append-version="true"></script>
 }

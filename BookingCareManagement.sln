@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookingCareManagement.Domai
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookingCareManagement.Infrastructure", "src\BookingCareManagement.Infrastructure\BookingCareManagement.Infrastructure.csproj", "{9482690C-F37A-4A30-8FFD-0B02C1CA855C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BookingCareManagement.WinForms", "src\BookingCareManagement.WinForms\BookingCareManagement.WinForms.csproj", "{E4A6C8AB-FB31-48BE-A3F5-3B362CD98464}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +73,18 @@ Global
 		{9482690C-F37A-4A30-8FFD-0B02C1CA855C}.Release|x64.Build.0 = Release|Any CPU
 		{9482690C-F37A-4A30-8FFD-0B02C1CA855C}.Release|x86.ActiveCfg = Release|Any CPU
 		{9482690C-F37A-4A30-8FFD-0B02C1CA855C}.Release|x86.Build.0 = Release|Any CPU
+		{E4A6C8AB-FB31-48BE-A3F5-3B362CD98464}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E4A6C8AB-FB31-48BE-A3F5-3B362CD98464}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E4A6C8AB-FB31-48BE-A3F5-3B362CD98464}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{E4A6C8AB-FB31-48BE-A3F5-3B362CD98464}.Debug|x64.Build.0 = Debug|Any CPU
+		{E4A6C8AB-FB31-48BE-A3F5-3B362CD98464}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{E4A6C8AB-FB31-48BE-A3F5-3B362CD98464}.Debug|x86.Build.0 = Debug|Any CPU
+		{E4A6C8AB-FB31-48BE-A3F5-3B362CD98464}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E4A6C8AB-FB31-48BE-A3F5-3B362CD98464}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E4A6C8AB-FB31-48BE-A3F5-3B362CD98464}.Release|x64.ActiveCfg = Release|Any CPU
+		{E4A6C8AB-FB31-48BE-A3F5-3B362CD98464}.Release|x64.Build.0 = Release|Any CPU
+		{E4A6C8AB-FB31-48BE-A3F5-3B362CD98464}.Release|x86.ActiveCfg = Release|Any CPU
+		{E4A6C8AB-FB31-48BE-A3F5-3B362CD98464}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -79,6 +93,7 @@ Global
 		{46B9B5E3-CE87-44C7-8D55-C32C48162A75} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{9862A99C-ED80-41DF-A7DE-F477C0D49DEB} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{9482690C-F37A-4A30-8FFD-0B02C1CA855C} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
+		{E4A6C8AB-FB31-48BE-A3F5-3B362CD98464} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A0126093-2A19-4145-B9B5-535BCFE2DB8B}

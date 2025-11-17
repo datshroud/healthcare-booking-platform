@@ -1,0 +1,107 @@
+﻿/* CSS cho trang Invoices */
+
+.search-toolbar {
+    border-bottom: 1px solid #dee2e6;
+}
+
+.table {
+    margin-bottom: 0; /* Xóa margin-bottom mặc định của table */
+}
+
+    .table thead th {
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: #6c757d;
+        border-bottom-width: 1px;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        /* FIX: Thêm padding ngang */
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+        /* Căn chỉnh padding cho ô đầu tiên và cuối cùng */
+        .table thead th:first-child {
+            padding-left: 1.5rem;
+        }
+
+        .table thead th:last-child {
+            padding-right: 1.5rem;
+        }
+
+
+    .table tbody tr:first-child td {
+        border-top: none; /* Xóa viền trên của hàng đầu tiên */
+    }
+
+    .table td {
+        padding-top: 1.25rem;
+        padding-bottom: 1.25rem;
+        vertical-align: middle;
+        /* FIX: Thêm padding ngang */
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    /* Căn chỉnh padding cho ô đầu tiên và cuối cùng */
+    .table tbody td:first-child {
+        padding-left: 1.5rem;
+    }
+
+    .table tbody td:last-child {
+        padding-right: 1.5rem;
+    }
+
+
+/* Trạng thái (giống trang Invoices) */
+.status-badge {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    font-size: .75rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 50rem; /* pill */
+}
+
+    .status-badge.status-pending {
+        color: #664d03;
+        background-color: #fff3cd;
+    }
+
+/* --- CSS CHO DROPDOWN BỘ LỌC --- */
+.filter-dropdown-menu {
+    min-width: 250px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.filter-options-list {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 0;
+}
+
+    .filter-options-list li {
+        padding: 4px 0;
+    }
+
+    .filter-options-list .form-check {
+        padding-top: 2px;
+        padding-bottom: 2px;
+    }
+
+    .filter-options-list .form-check-label {
+        cursor: pointer;
+    }
+.content-card {
+    min-height: 700px;
+}
+
+.status-badge.status-paid {
+    color: #0f5132;
+    background-color: #d1e7dd;
+}

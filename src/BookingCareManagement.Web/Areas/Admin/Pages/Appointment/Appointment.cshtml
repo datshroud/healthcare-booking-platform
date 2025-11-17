@@ -1,0 +1,227 @@
+﻿@page "/appointments"
+@model BookingCareManagement.Web.Areas.Admin.Pages.Appointment.AppointmentModel
+@{
+    ViewData["Title"] = "Cuộc hẹn";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.bootstrap5.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/appointment.css" />
+}
+
+<div style="margin-top: 50px; padding: 2rem;">
+
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0">Cuộc hẹn (<span id="totalAppointmentsCount">0</span>)</h2>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary">
+                <i class="fa-solid fa-upload me-1"></i> Xuất dữ liệu
+            </button>
+
+            <button class="btn btn-primary"
+                    id="newAppointmentButton"
+                    data-bs-toggle="modal"
+                    data-bs-target="#newAppointmentModal">
+                <i class="fa-solid fa-plus me-1"></i> Thêm cuộc hẹn
+            </button>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm p-4 p-lg-5 d-flex flex-column" style="border-radius: 12px; min-height: 706px;">
+
+        <div class="row g-3 align-items-center mb-4">
+            <div class="col-md">
+                <div class="input-group">
+                    <span class="input-group-text bg-light border-0" id="basic-addon1">
+                        <i class="fa-solid fa-search"></i>
+                    </span>
+                          <input type="text" class="form-control bg-light border-0" id="mainSearchInput"
+                              placeholder="Tìm kiếm cuộc hẹn (Chuyên khoa, bệnh nhân, nhân viên...)" aria-label="Search">
+                </div>
+            </div>
+            <div class="col-md-auto">
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-2 text-nowrap">
+                        <i class="fa-solid fa-calendar-days text-muted"></i>
+                        <input type="text" class="form-control" id="startDate" placeholder="Từ ngày" style="width: 120px;">
+                        <span>-</span>
+                        <input type="text" class="form-control" id="endDate" placeholder="Đến ngày" style="width: 120px;">
+                    </div>
+                    <button class="btn btn-outline-secondary" id="toggleFiltersButton">
+                        <i class="fa-solid fa-filter me-1"></i> Bộ lọc
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="filtersContainer" style="display: none;">
+            <div class="d-flex flex-wrap gap-2">
+
+                <div class="dropdown" id="filterService">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                        <i class="fa-solid fa-calendar-check me-1"></i> Chuyên khoa
+                    </button>
+                    <div class="dropdown-menu filter-dropdown-menu p-3">
+                        <input type="text" class="form-control form-control-sm mb-2" placeholder="Tìm kiếm...">
+                        <ul class="filter-options-list">
+                            <li class="text-muted small px-1" data-empty-state>Chưa có dữ liệu</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="filterCustomer">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                        <i class="fa-solid fa-user me-1"></i> Khách hàng
+                    </button>
+                    <div class="dropdown-menu filter-dropdown-menu p-3">
+                        <input type="text" class="form-control form-control-sm mb-2" placeholder="Tìm kiếm...">
+                        <ul class="filter-options-list">
+                            <li class="text-muted small px-1" data-empty-state>Chưa có dữ liệu</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="filterEmployee">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                        <i class="fa-solid fa-user-tie me-1"></i> Nhân viên
+                    </button>
+                    <div class="dropdown-menu filter-dropdown-menu p-3">
+                        <input type="text" class="form-control form-control-sm mb-2" placeholder="Tìm kiếm...">
+                        <ul class="filter-options-list">
+                            <li class="text-muted small px-1" data-empty-state>Chưa có dữ liệu</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="dropdown" id="filterStatus">
+                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                        <i class="fa-solid fa-circle-dot me-1"></i> Trạng thái
+                    </button>
+                    <div class="dropdown-menu filter-dropdown-menu p-3">
+                        <ul class="filter-options-list">
+                            <li class="text-muted small px-1" data-empty-state>Chưa có dữ liệu</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div id="appointmentsError" class="alert alert-danger d-none" role="alert"></div>
+
+        <div class="tab-content flex-grow-1" id="myTabContent">
+            <div class="tab-pane fade show active d-flex flex-column h-100" id="appointments-pane">
+
+                <div class="table-responsive flex-grow-1 d-none" id="appointmentsTableContainer" style="min-height: 500px;">
+                    <table class="table align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 5%;"><input class="form-check-input" type="checkbox" id="checkAllRows"></th>
+                                <th>Thời gian</th>
+                                <th>Chuyên khoa</th>
+                                <th>Bệnh nhân</th>
+                                <th>Thời lượng</th>
+                                <th>Trạng thái</th>
+                                <th>Bác sĩ</th>
+                                <th>Ghi chú</th>
+                                <th style="width: 5%;"></th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="appointmentsTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div id="appointmentsLoadingState" class="text-center flex-grow-1 d-flex flex-column justify-content-center align-items-center" style="min-height: 300px;">
+                    <div class="spinner-border text-primary mb-3" role="status">
+                        <span class="visually-hidden">Đang tải...</span>
+                    </div>
+                    <p class="text-muted mb-0">Đang tải dữ liệu cuộc hẹn...</p>
+                </div>
+
+                <div id="noAppointmentsBlock" class="text-center flex-grow-1 d-flex flex-column justify-content-center align-items-center" style="display: none; min-height: 400px;">
+                    <img src="https://healthcaress.admin.trafft.com/api/v1/settings/dashboard/image/illustrations/empty-appointments.svg" style="height:160px; width:160px" />
+                    <h5 class="fw-bold">Không có cuộc hẹn nào.</h5>
+                    <p class="text-muted">Vui lòng điều chỉnh bộ lọc hoặc phạm vi ngày để tìm kiếm cuộc hẹn phù hợp.</p>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="newAppointmentModal" tabindex="-1" aria-labelledby="newAppointmentModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h5 class="modal-title" id="newAppointmentModalLabel">Thêm cuộc hẹn</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            <div class="modal-body">
+                <div id="newAppointmentAlert" class="alert alert-warning d-none" role="alert"></div>
+                <form id="newAppointmentForm">
+                    <div class="mb-3">
+                        <label for="modalServiceSelect" class="form-label">Chuyên khoa</label>
+                        <select id="modalServiceSelect" placeholder="Chọn chuyên khoa..." autocomplete="off">
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="modalEmployeeSelect" class="form-label">Bác sĩ phụ trách</label>
+                        <select id="modalEmployeeSelect" placeholder="Chọn bác sĩ..." autocomplete="off">
+                        </select>
+                    </div>
+
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label for="modalDateSelect" class="form-label">Ngày khám</label>
+                            <input type="text" class="form-control" id="modalDateSelect" placeholder="Chọn ngày khám">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="modalTimeSelect" class="form-label">Khung giờ</label>
+                            <select id="modalTimeSelect" placeholder="Chọn khung giờ..." autocomplete="off">
+                                <option value="">Chọn khung giờ...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="modalCustomerSelect" class="form-label">Bệnh nhân</label>
+                        <select id="modalCustomerSelect" placeholder="Chọn bệnh nhân..." autocomplete="off">
+                        </select>
+                    </div>
+
+                    <div class="mb-3 d-none" id="modalStatusField">
+                        <label for="modalStatusSelect" class="form-label">Trạng thái</label>
+                        <select id="modalStatusSelect" class="form-select">
+                            <option value="pending">Đang tải...</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3 d-none" id="manualPhoneWrapper">
+                        <label for="manualPhoneInput" class="form-label">Số điện thoại bệnh nhân</label>
+                        <input type="tel" class="form-control" id="manualPhoneInput" placeholder="Nhập số điện thoại bệnh nhân">
+                        <div class="form-text text-warning">Bệnh nhân chưa có số điện thoại, vui lòng nhập để tiếp tục.</div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                <button type="button" class="btn btn-primary" id="saveAppointmentButton">Lưu</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <script>
+        document.body.dataset.appointmentMode = 'admin';
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/js/tom-select.complete.min.js"></script>
+
+    <script src="~/js/appointment.js"></script>
+}

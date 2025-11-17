@@ -1,0 +1,362 @@
+@page "/doctors/{doctorId}/days-off"
+@model BookingCareManagement.Web.Areas.Admin.Pages.Doctors.Edit.DaysOffModel
+@{
+    ViewData["Title"] = "Ngày nghỉ";
+    var openAddModal = (ViewData["OpenAddModal"] as bool?) == true;
+    var openEditModal = (ViewData["OpenEditModal"] as bool?) == true;
+}
+
+@section Styles {
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/account.css" asp-append-version="true" />
+    <style>
+        .doctor-edit-container {
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .left-menu a {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .left-menu a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        .left-menu a.active-tab {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn-add {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 24px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .dayoff-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+        .dayoff-card:hover {
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+        }
+        .dayoff-card h5 {
+            margin-bottom: 6px;
+        }
+        .badge-repeat {
+            background: rgba(102, 126, 234, 0.15);
+            color: #a5b4fc;
+            border: 1px solid rgba(102, 126, 234, 0.4);
+        }
+        .year-grid .btn {
+            border-radius: 12px;
+            padding: 12px 0;
+            font-weight: 600;
+        }
+        .year-grid .btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: transparent;
+            color: #fff;
+        }
+        .modal-header {
+            border-bottom: none;
+        }
+        .modal-footer {
+            border-top: none;
+        }
+        .modal-content {
+            border-radius: 18px;
+        }
+    </style>
+}
+
+<div class="container-fluid mt-5 p-4 mb-5 doctor-edit-container text-light">
+    <div class="row align-items-center justify-content-between mx-0 mb-4">
+        <div class="col-auto">
+            <h2 class="mb-0 fw-bold">
+                <i class="fa-solid fa-user-doctor me-3" style="color: #667eea;"></i>@Model.DoctorName
+            </h2>
+        </div>
+        <div class="col-auto">
+            <a href="/doctors" class="btn btn-outline-light btn-sm px-4 rounded-pill">
+                <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
+            </a>
+        </div>
+    </div>
+
+    <div class="row border-top border-secondary pt-4 g-0">
+        <div class="col-3 left-menu pe-3">
+            <a href="/doctors/@Model.DoctorId/info" class="btn mb-2 fw-semibold text-decoration-none">
+                <i class="fa-solid fa-user me-2"></i> Thông tin bác sĩ
+            </a>
+            <a href="/doctors/@Model.DoctorId/specialties" class="btn mb-2 fw-semibold text-decoration-none">
+                <i class="fa-solid fa-briefcase-medical me-2"></i> Chuyên khoa
+            </a>
+            <a href="/doctors/@Model.DoctorId/hours" class="btn fw-semibold text-decoration-none">
+                <i class="fa-solid fa-clock me-2"></i> Giờ làm việc
+            </a>
+            <a href="/doctors/@Model.DoctorId/days-off" class="btn active-tab fw-semibold text-decoration-none">
+                <i class="fa-solid fa-calendar-xmark me-2"></i> Ngày nghỉ
+            </a>
+            <a href="/doctors/@Model.DoctorId/special-days" class="btn fw-semibold text-decoration-none">
+                <i class="fa-solid fa-star me-2"></i> Ngày đặc biệt
+            </a>
+        </div>
+
+        <div class="col-9 ps-4">
+            @if (!string.IsNullOrEmpty(Model.StatusMessage))
+            {
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fa-solid fa-circle-check me-2"></i>@Model.StatusMessage
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            }
+
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h4 class="mb-0 fw-bold">
+                        <i class="fa-solid fa-calendar-xmark me-2" style="color: #667eea;"></i>Ngày nghỉ - @Model.SelectedYear
+                    </h4>
+                    <p class="text-muted small mb-0">Quản lý các khoảng thời gian bác sĩ nghỉ phép hoặc không nhận lịch.</p>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-outline-light btn-sm me-2 rounded-pill" data-bs-toggle="modal" data-bs-target="#yearPickerModal">
+                        <i class="fa-solid fa-calendar me-2"></i>@Model.SelectedYear
+                    </button>
+                    <button type="button" class="btn btn-add text-white" data-bs-toggle="modal" data-bs-target="#addDayOffModal">
+                        <i class="fa-solid fa-plus me-2"></i>Thêm ngày nghỉ
+                    </button>
+                </div>
+            </div>
+
+            @if (Model.DayOffs.Count == 0)
+            {
+                <div class="text-center py-5" style="background: rgba(255, 255, 255, 0.03); border-radius: 16px; border: 1px dashed rgba(255, 255, 255, 0.1);">
+                    <i class="fa-solid fa-calendar-xmark fa-4x mb-3" style="opacity: 0.25;"></i>
+                    <h5 class="text-light">Chưa có ngày nghỉ nào</h5>
+                    <p class="text-muted">@Model.DoctorName hiện chưa có ngày nghỉ trong năm @Model.SelectedYear.</p>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex flex-column gap-3">
+                    @foreach (var dayOff in Model.DayOffs)
+                    {
+                        <div class="dayoff-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h5 class="fw-semibold text-white">@dayOff.Name</h5>
+                                    <div class="text-light mb-2">
+                                        <i class="fa-regular fa-calendar-days me-2 text-primary"></i>@dayOff.DisplayRange
+                                    </div>
+                                    @if (dayOff.RepeatYearly)
+                                    {
+                                        <span class="badge badge-repeat">Lặp lại hàng năm</span>
+                                    }
+                                </div>
+                                <div class="text-end">
+                                    <button type="button" class="btn btn-sm btn-link text-primary p-0 me-3" data-action="open-edit-dayoff" data-id="@dayOff.Id" data-name="@dayOff.Name" data-start="@dayOff.StartForEdit" data-end="@dayOff.EndForEdit" data-repeat="@dayOff.RepeatYearly.ToString().ToLowerInvariant()">
+                                        <i class="fa-solid fa-pen"></i>
+                                    </button>
+                                    <form method="post" asp-page-handler="Delete" asp-route-dayOffId="@dayOff.Id" class="d-inline">
+                                        <input type="hidden" asp-for="DoctorId" />
+                                        <input type="hidden" name="Year" value="@Model.SelectedYear" />
+                                        <button type="submit" class="btn btn-sm btn-link text-danger p-0" onclick="return confirm('Bạn có chắc muốn xóa ngày nghỉ này?');">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Add Day Off Modal -->
+<div class="modal fade" id="addDayOffModal" tabindex="-1" aria-labelledby="addDayOffLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Add">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="addDayOffLabel">Add Day Off</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" asp-for="AddInput.Name">Day off name<span class="text-danger">*</span></label>
+                        <input asp-for="AddInput.Name" class="form-control" placeholder="Enter day off name" />
+                        <span class="text-danger small" asp-validation-for="AddInput.Name"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Date<span class="text-danger">*</span></label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input asp-for="AddInput.StartDate" type="date" class="form-control" />
+                            <span class="text-muted">-</span>
+                            <input asp-for="AddInput.EndDate" type="date" class="form-control" />
+                        </div>
+                        <span class="text-danger small d-block" asp-validation-for="AddInput.StartDate"></span>
+                        <span class="text-danger small d-block" asp-validation-for="AddInput.EndDate"></span>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input asp-for="AddInput.RepeatYearly" class="form-check-input" />
+                        <label class="form-check-label" asp-for="AddInput.RepeatYearly">Repeat this day off yearly</label>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <div>
+                        <input type="hidden" asp-for="DoctorId" />
+                        <input type="hidden" name="Year" value="@Model.SelectedYear" />
+                        <button type="submit" class="btn btn-primary">Add Day Off</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Day Off Modal -->
+<div class="modal fade" id="editDayOffModal" tabindex="-1" aria-labelledby="editDayOffLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" asp-page-handler="Edit">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold" id="editDayOffLabel">Edit Day Off</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" asp-for="EditingId" />
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold" asp-for="EditInput.Name">Day off name<span class="text-danger">*</span></label>
+                        <input asp-for="EditInput.Name" class="form-control" placeholder="Enter day off name" />
+                        <span class="text-danger small" asp-validation-for="EditInput.Name"></span>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Date<span class="text-danger">*</span></label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input asp-for="EditInput.StartDate" type="date" class="form-control" />
+                            <span class="text-muted">-</span>
+                            <input asp-for="EditInput.EndDate" type="date" class="form-control" />
+                        </div>
+                        <span class="text-danger small d-block" asp-validation-for="EditInput.StartDate"></span>
+                        <span class="text-danger small d-block" asp-validation-for="EditInput.EndDate"></span>
+                    </div>
+                    <div class="form-check form-switch">
+                        <input asp-for="EditInput.RepeatYearly" class="form-check-input" />
+                        <label class="form-check-label" asp-for="EditInput.RepeatYearly">Repeat this day off yearly</label>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <div>
+                        <input type="hidden" asp-for="DoctorId" />
+                        <input type="hidden" name="Year" value="@Model.SelectedYear" />
+                        <button type="submit" class="btn btn-primary">Update Day Off</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Year Picker Modal -->
+<div class="modal fade" id="yearPickerModal" tabindex="-1" aria-labelledby="yearPickerLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="yearPickerLabel">Chọn năm</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-2 year-grid">
+                    @foreach (var year in Model.YearOptions)
+                    {
+                        <div class="col-4">
+                            <a class="btn btn-outline-primary w-100 @(year == Model.SelectedYear ? "active" : string.Empty)" href="/doctors/@Model.DoctorId/days-off?year=@year">@year</a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="~/Areas/Shared/Pages/Shared/_ValidationScriptsPartial.cshtml" />
+    <script>
+        (() => {
+            const addModalElement = document.getElementById('addDayOffModal');
+            const editModalElement = document.getElementById('editDayOffModal');
+            const openEditButtons = document.querySelectorAll('[data-action="open-edit-dayoff"]');
+
+            if (addModalElement) {
+                addModalElement.addEventListener('show.bs.modal', () => {
+                    const nameInput = addModalElement.querySelector('#AddInput_Name');
+                    if (nameInput) {
+                        setTimeout(() => nameInput.focus(), 150);
+                    }
+                });
+            }
+
+            let editModalInstance = null;
+            if (editModalElement && typeof bootstrap !== 'undefined') {
+                editModalInstance = bootstrap.Modal.getOrCreateInstance(editModalElement);
+            }
+
+            openEditButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    if (!editModalElement || !editModalInstance) {
+                        return;
+                    }
+
+                    const id = button.getAttribute('data-id') || '';
+                    const name = button.getAttribute('data-name') || '';
+                    const start = button.getAttribute('data-start') || '';
+                    const end = button.getAttribute('data-end') || '';
+                    const repeat = button.getAttribute('data-repeat') === 'true';
+
+                    const idInput = editModalElement.querySelector('#EditingId');
+                    const nameInput = editModalElement.querySelector('#EditInput_Name');
+                    const startInput = editModalElement.querySelector('#EditInput_StartDate');
+                    const endInput = editModalElement.querySelector('#EditInput_EndDate');
+                    const repeatInput = editModalElement.querySelector('#EditInput_RepeatYearly');
+
+                    if (idInput) idInput.value = id;
+                    if (nameInput) nameInput.value = name;
+                    if (startInput) startInput.value = start;
+                    if (endInput) endInput.value = end;
+                    if (repeatInput) repeatInput.checked = repeat;
+
+                    editModalInstance.show();
+                });
+            });
+
+            const shouldOpenAdd = '@(openAddModal ? "true" : "false")' === 'true';
+            if (shouldOpenAdd && addModalElement && typeof bootstrap !== 'undefined') {
+                bootstrap.Modal.getOrCreateInstance(addModalElement).show();
+            }
+
+            const shouldOpenEdit = '@(openEditModal ? "true" : "false")' === 'true';
+            if (shouldOpenEdit && editModalElement && typeof bootstrap !== 'undefined') {
+                bootstrap.Modal.getOrCreateInstance(editModalElement).show();
+            }
+        })();
+    </script>
+}

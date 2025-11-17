@@ -13,13 +13,15 @@
     width: 100%;
 }
 
-.service-item:hover {
+.service-item:hover,
+.specialty-item:hover {
     background-color: #444b52 !important;
     cursor: pointer;
     transform: scale(1.01);
     transition: all 0.15s ease-in-out;
 }
-.service-item {
+.service-item,
+.specialty-item {
     background-color: #444b52 !important ;
 }
 .btn-success {
@@ -39,12 +41,14 @@
     color: white;
 }
 
-.service-item {
+.service-item,
+.specialty-item {
     background-color: #343A40; 
     border: 1px solid #868E96; 
     transition: all 0.2s ease-in-out;
 }
-.service-item img{
+.service-item img,
+.specialty-item img{
     height:84px;
     width:84px;
 }
@@ -60,14 +64,14 @@
     outline: none;
 }
 /* Highlight dịch vụ đã chọn */
-#selected-service div {
+#selected-specialty div {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
 
 /* Màu tiền */
-#selected-service div .price {
+#selected-specialty div .price {
     color: #6aff7b;
     font-weight: bold;
 }

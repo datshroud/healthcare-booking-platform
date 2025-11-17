@@ -1,0 +1,224 @@
+﻿@page "/Invoices"
+@model BookingCareManagement.Areas.Doctor.Pages.Invoices.InvoicesModel
+@{
+    ViewData["Title"] = "Hóa đơn";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/invoices.css" />
+}
+
+<div class="page-wrapper" style="margin-top: 50px; padding: 2rem;">
+
+    <div class="page-header d-flex flex-wrap justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0 fw-bold">Hóa đơn</h2>
+    </div>
+
+    <div class="card content-card border-0 shadow-sm" style="border-radius: 12px;">
+        <div class="card-body p-0">
+
+            <div class="search-toolbar d-flex flex-wrap justify-content-between align-items-center gap-3 p-4">
+                <div class="input-group" style="max-width: 400px;">
+                    <span class="input-group-text bg-light border-0">
+                        <i class="fa-solid fa-search"></i>
+                    </span>
+                    <input type="text" id="mainSearchInput" class="form-control bg-light border-0" placeholder="Tìm kiếm hóa đơn...">
+                </div>
+                <button class="btn btn-outline-secondary" id="toggleFiltersButton">
+                    <i class="fa-solid fa-filter me-1"></i> Bộ lọc
+                </button>
+            </div>
+
+            <div id="filtersContainer" class="p-4 pt-0" style="display: none;">
+                <div class="d-flex flex-wrap gap-2">
+                    <div class="dropdown" id="filterCustomer">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            <i class="fa-solid fa-user me-1"></i> Khách hàng
+                        </button>
+                        <div class="dropdown-menu filter-dropdown-menu p-3">
+                            <input type="text" class="form-control form-control-sm mb-2" placeholder="Tìm kiếm...">
+                            <ul class="filter-options-list">
+                                <li>
+                                    <div class="form-check">
+                                        <input class="form-check-input filter-checkbox" type="checkbox" value=". Le Ngoc Bao Chan" id="cust1">
+                                        <label class="form-check-label" for="cust1">. Le Ngoc Bao Chan</label>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="form-check">
+                                        <input class="form-check-input filter-checkbox" type="checkbox" value="Jone Doe" id="cust2">
+                                        <label class="form-check-label" for="cust2">Jone Doe</label>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="dropdown" id="filterEmployee">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            <i class="fa-solid fa-user-tie me-1"></i> Nhân viên
+                        </button>
+                        <div class="dropdown-menu filter-dropdown-menu p-3">
+                            <input type="text" class="form-control form-control-sm mb-2" placeholder="Tìm kiếm...">
+                            <ul class="filter-options-list">
+                                <li>
+                                    <div class="form-check">
+                                        <input class="form-check-input filter-checkbox" type="checkbox" value="02-11A7 Chấn" id="emp1">
+                                        <label class="form-check-label" for="emp1">02-11A7 Chấn</label>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="form-check">
+                                        <input class="form-check-input filter-checkbox" type="checkbox" value="Jane Doe" id="emp2">
+                                        <label class="form-check-label" for="emp2">Jane Doe</label>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="dropdown" id="filterService">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            <i class="fa-solid fa-server me-1"></i> Dịch vụ
+                        </button>
+                        <div class="dropdown-menu filter-dropdown-menu p-3">
+                            <input type="text" class="form-control form-control-sm mb-2" placeholder="Tìm kiếm...">
+                            <ul class="filter-options-list">
+                                <li>
+                                    <div class="form-check">
+                                        <input class="form-check-input filter-checkbox" type="checkbox" value="Check Up" id="svc1">
+                                        <label class="form-check-label" for="svc1">Check Up</label>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="form-check">
+                                        <input class="form-check-input filter-checkbox" type="checkbox" value="Dental Surgery" id="svc2">
+                                        <label class="form-check-label" for="svc2">Dental Surgery</label>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="form-check">
+                                        <input class="form-check-input filter-checkbox" type="checkbox" value="Tooth Extraction" id="svc3">
+                                        <label class="form-check-label" for="svc3">Tooth Extraction</label>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="dropdown" id="filterStatus">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+                            <i class="fa-solid fa-circle-dot me-1"></i> Trạng thái
+                        </button>
+                        <div class="dropdown-menu filter-dropdown-menu p-3">
+                            <ul class="filter-options-list">
+                                <li>
+                                    <div class="form-check">
+                                        <input class="form-check-input filter-checkbox" type="checkbox" value="Paid" id="stat1">
+                                        <label class="form-check-label" for="stat1">Đã thanh toán</label>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="form-check">
+                                        <input class="form-check-input filter-checkbox" type="checkbox" value="Pending" id="stat2">
+                                        <label class="form-check-label" for="stat2">Đang chờ</label>
+                                    </div>
+                                </li>
+                                <li>
+                                    <div class="form-check">
+                                        <input class="form-check-input filter-checkbox" type="checkbox" value="Archived" id="stat3">
+                                        <label class="form-check-label" for="stat3">Đã lưu trữ</label>
+                                    </div>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th scope="col">Hóa đơn #</th>
+                            <th scope="col">Khách hàng</th>
+                            <th scope="col">Ngày hóa đơn</th>
+                            <th scope="col">Dịch vụ</th>
+                            <th scope="col">Trạng thái</th>
+                            <th scope="col">Tổng cộng</th>
+                            <th scope="col" class="text-end"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="invoicesTableBody">
+
+                        @foreach (var inv in Model.Invoices)
+                        {
+                            var statusClass = inv.Status?.Equals("Paid", System.StringComparison.OrdinalIgnoreCase) == true ? "status-paid" : "status-pending";
+                            var statusText = inv.Status?.Equals("Paid", System.StringComparison.OrdinalIgnoreCase) == true ? "Đã thanh toán" : "Đang chờ";
+
+                            <tr class="invoice-row"
+                                data-invoice-id="@inv.Id"
+                                data-customer-name="@inv.CustomerName"
+                                data-customer-email="@inv.CustomerEmail"
+                                data-invoice-date="@inv.InvoiceDate.ToString("MMMM d, yyyy")"
+                                data-service-name="@inv.ServiceName"
+                                data-service-qty="@inv.ServiceQty"
+                                data-service-price="@inv.ServicePriceDisplay"
+                                data-total="@inv.Total.ToString("C", new System.Globalization.CultureInfo("vi-VN"))">
+                                <td class="fw-bold">@inv.InvoiceNumber</td>
+                                <td>@inv.CustomerName</td>
+                                <td>@inv.InvoiceDate.ToString("MMMM d, yyyy")</td>
+                                <td>@inv.ServiceName</td>
+                                <td>
+                                    <span class="status-badge @statusClass invoice-status-badge">
+                                        @statusText
+                                    </span>
+                                </td>
+                                <td>@inv.Total.ToString("C", new System.Globalization.CultureInfo("vi-VN"))</td>
+                                <td class="text-end">
+                                    <div class="dropdown" style="position: static;">
+                                        <button class="btn btn-link text-muted p-0" type="button"
+                                                data-bs-toggle="dropdown"
+                                                aria-expanded="false">
+                                            <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 10px;">
+                                            @* Only show "Mark as paid" if invoice is not already Paid *@
+                                            @if (!string.Equals(inv.Status, "Paid", System.StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <li class="action-set-as-paid">
+                                                    <a class="dropdown-item" href="#">
+                                                        <i class="fa-solid fa-circle-check fa-fw me-2 text-success"></i> Đánh dấu đã thanh toán
+                                                    </a>
+                                                </li>
+
+                                                <li class="action-divider"><hr class="dropdown-divider"></li>
+                                            }
+
+                                            <li>
+                                                <a class="dropdown-item action-download-pdf" href="#">
+                                                    <i class="fa-solid fa-download fa-fw me-2 text-muted"></i> Tải xuống
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fa-solid fa-paper-plane fa-fw me-2 text-muted"></i> Gửi hóa đơn
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+    <script src="~/js/invoices.js" asp-append-version="true"></script>
+}

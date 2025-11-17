@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using BookingCareManagement.Application.Features.Auth.Commands;
@@ -64,13 +65,14 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
                 var resp = await handler.Handle(req);
                 CookieHelper.SetAuthCookies(Response, resp.AccessToken, resp.ExpiresAt.ToUniversalTime(),
                     resp.RefreshToken, DateTime.UtcNow.AddDays(7));
-                // Return JSON redirect so fetch-based clients can handle navigation
-                // nếu đăng nhập thành công với admin và doctor thì chuyển sang /dashboard, ngược lại chuyển về /
-                var userRoles = await _userManager.GetRolesAsync(await _userManager.FindByEmailAsync(req.Email));
-                if (userRoles.Contains("Admin") || userRoles.Contains("Doctor"))
-                    return Ok(new { redirect = "/dashboard" });
-                else
-                    return Ok(new { redirect = "/" });
+
+                var user = await _userManager.FindByEmailAsync(req.Email);
+                var userRoles = user is not null
+                    ? await _userManager.GetRolesAsync(user)
+                    : Array.Empty<string>();
+
+                var redirect = ResolveDashboardRedirect(userRoles);
+                return Ok(new { redirect });
             } catch (AuthException ex) {
                 Console.WriteLine($"Login failed for {req?.Email}: {ex.Message}");
                 return Unauthorized(new ProblemDetails {
@@ -123,11 +125,32 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
 
         }
 
+        private static string ResolveDashboardRedirect(IList<string> roles)
+        {
+            if (roles is null || roles.Count == 0)
+            {
+                return "/";
+            }
+
+            if (roles.Contains("Admin"))
+            {
+                return "/dashboard";
+            }
+
+            if (roles.Contains("Doctor"))
+            {
+                return "/doctor/dashboard";
+            }
+
+            return "/";
+        }
+
         [HttpGet("google/start")]
+        [HttpGet("~/api/auth/google/start")]
         public IActionResult GoogleStart([FromQuery] string? returnUrl = "/")
         {
             // Use configured RedirectUri so it exactly matches the URI registered in Google Console
-            var callback = _google.RedirectUri?.TrimEnd('/') ?? $"{Request.Scheme}://{Request.Host}/api/account/auth/google/callback";
+            var callback = _google.RedirectUri?.TrimEnd('/') ?? $"{Request.Scheme}://{Request.Host}/api/auth/google/callback";
 
             // tao state + PKCE
             var state = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
@@ -160,7 +183,8 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
             return Redirect(authUrl);
         }
 
-        [HttpGet("google/callback")]
+    [HttpGet("google/callback")]
+    [HttpGet("~/api/auth/google/callback")]
         public async Task<IActionResult> GoogleCallback([FromQuery] string code, [FromQuery] string state)
         {
             var savedState = Request.Cookies["g_state"];
@@ -217,12 +241,14 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
             var isNew = false;
             if (user == null)
             {
+                var (firstName, lastName) = SplitName(name);
                 user = new AppUser
                 {
                     UserName = email,
                     Email = email,
                     EmailConfirmed = true,
-                    FullName = name
+                    FirstName = firstName,
+                    LastName = lastName
                 };
 
                 var created = await _userManager.CreateAsync(user);
@@ -252,6 +278,29 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
                 await _userManager.UpdateAsync(user);
             }
 
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                var (firstName, lastName) = SplitName(name);
+                var shouldUpdateName = false;
+
+                if (!string.IsNullOrWhiteSpace(firstName) && string.IsNullOrWhiteSpace(user.FirstName))
+                {
+                    user.FirstName = firstName;
+                    shouldUpdateName = true;
+                }
+
+                if (!string.IsNullOrWhiteSpace(lastName) && string.IsNullOrWhiteSpace(user.LastName))
+                {
+                    user.LastName = lastName;
+                    shouldUpdateName = true;
+                }
+
+                if (shouldUpdateName)
+                {
+                    await _userManager.UpdateAsync(user);
+                }
+            }
+
             if (isNew)
             {
                 var roleStoreOk = await _userManager.IsInRoleAsync(user, "Customer");
@@ -265,13 +314,6 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
             }
 
             var roles = await _userManager.GetRolesAsync(user);
-
-            // Ensure FullName is present as a claim so it's available in generated tokens and HttpContext.User
-            // var existingClaims = await _userManager.GetClaimsAsync(user);
-            // if (!existingClaims.Any(c => c.Type == "FullName") && !string.IsNullOrWhiteSpace(user.FullName))
-            // {
-            //     await _userManager.AddClaimAsync(user, new Claim("FullName", user.FullName));
-            // }
 
             var (token, exp) = _jwt.GenerateToken(user, roles);
 
@@ -293,5 +335,26 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
 
         private static string Base64UrlEncoder(byte[] input)
             => WebEncoders.Base64UrlEncode(input).Replace("=", string.Empty);
+
+        private static (string FirstName, string LastName) SplitName(string? displayName)
+        {
+            if (string.IsNullOrWhiteSpace(displayName))
+            {
+                return (string.Empty, string.Empty);
+            }
+
+            var parts = displayName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (parts.Length == 0)
+            {
+                return (displayName.Trim(), string.Empty);
+            }
+
+            if (parts.Length == 1)
+            {
+                return (parts[0].Trim(), string.Empty);
+            }
+
+            return (parts[0].Trim(), parts[^1].Trim());
+        }
     }
 }

@@ -1,0 +1,261 @@
+﻿#calendar {
+    min-height: 800px;
+}
+
+:root {
+    --calendar-slot-height: 36px;
+    --fc-slot-min-height: var(--calendar-slot-height);
+}
+
+.fc .fc-timegrid-slot {
+    min-height: var(--calendar-slot-height);
+    height: var(--calendar-slot-height);
+}
+
+.fc .fc-timegrid-slot-label-frame {
+    min-height: var(--calendar-slot-height);
+    height: var(--calendar-slot-height);
+    line-height: var(--calendar-slot-height);
+}
+
+/* --- XỬ LÝ TRÀN VIỀN --- */
+.fc {
+    border-top: none;
+    border-left: none;
+    border-right: none;
+}
+
+.fc-dayGridMonth-view #calendar,
+.fc-dayGridMonth-view .fc-view-harness {
+    padding-left: 1rem;
+    padding-right: 1rem;
+}
+
+.fc-timeGridWeek-view .fc-view-harness,
+.fc-timeGridDay-view .fc-view-harness {
+    padding: 0;
+}
+
+/* --- XỬ LÝ VIỀN TRONG (WEEK/DAY) --- */
+.fc-col-header,
+.fc-timegrid-body,
+.fc-timegrid-slots table {
+    border-left: none;
+    border-right: none;
+}
+
+.fc-timeGridWeek-view .fc-col-header-cell {
+    border-right: 1px solid var(--fc-border-color, #dee2e6);
+}
+
+    .fc-timeGridWeek-view .fc-col-header-cell:last-child {
+        border-right: 0;
+    }
+
+.fc-timeGridWeek-view .fc-timegrid-col {
+    border-right: 1px solid var(--fc-border-color, #dee2e6);
+}
+
+    .fc-timeGridWeek-view .fc-timegrid-col:last-child {
+        border-right: 0;
+    }
+
+.fc .fc-timegrid-axis-frame {
+    border-right: 1px solid var(--fc-border-color, #dee2e6);
+}
+
+/* --- DẤU CHẤM "TODAY" --- */
+.fc-day-today {
+    background-color: transparent !important;
+}
+
+    .fc-day-today .fc-daygrid-day-number {
+        position: relative;
+        padding-left: 12px;
+    }
+
+        .fc-day-today .fc-daygrid-day-number::before {
+            content: '•';
+            color: #0d6efd;
+            font-size: 24px;
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-55%);
+            line-height: 1;
+        }
+
+/* --- THANH CHỈ GIỜ HIỆN TẠI --- */
+.fc-timegrid-now-indicator-line {
+    border-color: #0d6efd !important;
+    border-width: 2px !important;
+}
+
+.fc-timegrid-now-indicator-arrow {
+    width: 0;
+    height: 0;
+    background-color: transparent;
+    border-radius: 0;
+    border-width: 5px 0 5px 7px;
+    border-style: solid;
+    border-color: transparent transparent transparent #0d6efd;
+    margin-top: -5px;
+}
+
+
+/* --- NÚT "+" KHI HOVER (MONTH VIEW) --- */
+.fc-daygrid-day:hover {
+    background-color: #f0f6ff;
+}
+
+.day-add-icon {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 18px;
+    height: 18px;
+    background-color: #0d6efd;
+    color: white;
+    border-radius: 50%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    cursor: pointer;
+    z-index: 4;
+}
+
+.fc-daygrid-day:hover .day-add-icon {
+    display: flex;
+}
+
+.fc-daygrid-day-frame {
+    position: relative;
+}
+
+/* --- STYLES CHUNG --- */
+.fc .fc-button {
+    text-transform: capitalize;
+}
+
+.fc-event {
+    border: 1px solid rgba(0,0,0,0.1) !important;
+    padding: 2px 5px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+    .fc-event .fc-event-time {
+        font-weight: 700;
+    }
+
+.fc-timegrid-event {
+    overflow: hidden;
+    border-radius: 6px !important;
+}
+
+.fc-timegrid-event .fc-event-main-frame {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    padding: 4px 6px;
+}
+
+.fc-timegrid-event .fc-event-main-text,
+.fc-timegrid-event .fc-event-time-text,
+.fc-timegrid-event .fc-event-time {
+    display: block;
+    width: 100%;
+    white-space: normal;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.fc-timegrid-event .fc-event-time-text {
+    font-size: 0.8rem;
+    opacity: 0.85;
+}
+
+.fc-popover {
+    border-radius: 10px !important;
+    border: 0 !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+.fc-popover-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    font-weight: 600;
+}
+
+/* --- BỘ LỌC NHÂN VIÊN --- */
+.employee-filter-bar {
+    overflow-x: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+    .employee-filter-bar::-webkit-scrollbar {
+        display: none;
+    }
+
+.employee-filter-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 90px;
+    height: 70px;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    padding: 0.5rem 0.25rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #555;
+    background-color: #f8f9fa;
+    transition: all 0.2s ease;
+}
+
+    .employee-filter-btn .avatar-img {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        margin-bottom: 5px;
+    }
+
+    .employee-filter-btn .avatar-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        margin-bottom: 5px;
+        background-color: #e9ecef;
+        color: #495057;
+        font-size: 1rem;
+    }
+
+    .employee-filter-btn .employee-name {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        width: 100%;
+    }
+
+    .employee-filter-btn:hover {
+        background-color: #e9ecef;
+    }
+
+    .employee-filter-btn.active {
+        border-color: #0d6efd;
+        background-color: #fff;
+        color: #0d6efd;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+        .employee-filter-btn.active .avatar-icon {
+            background-color: #0d6efd;
+            color: #fff;
+        }

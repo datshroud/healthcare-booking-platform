@@ -1,51 +1,96 @@
 ﻿@page "/my-bookings"
 @model BookingCareManagement.Areas.Customer.Pages.MyBookings.MyBookingsModel
 @{
-    ViewData["Title"] = "My Bookings";
+    ViewData["Title"] = "Lịch hẹn của tôi";
 }
 
-
 @section Styles {
-
-    <link rel="stylesheet" href="~/css/MyBookings.css" />
+    <link rel="stylesheet" href="~/css/MyBookings.css" asp-append-version="true" />
 }
 
 <div class="bookings-header">
-    <h1 class="bookings-title">Bookings</h1>
-    <button class="btn-book-now">Book Now</button>
+    <div>
+        <p class="bookings-eyebrow">Khách hàng</p>
+        <h1 class="bookings-title">Lịch hẹn của tôi</h1>
+        <p class="bookings-subtitle">Theo dõi tình trạng đặt lịch và cập nhật mới nhất từ phòng khám.</p>
+    </div>
+    <a class="btn-book-now" href="/booking">
+        <i class="fa fa-calendar-plus me-2"></i>
+        Đặt lịch mới
+    </a>
 </div>
-<!-- Main Content -->
+
 <div class="container">
     <div class="bookings-wrapper">
-
-
-        <!-- Filter Dropdown -->
         <div class="filter-section">
             <div class="dropdown-wrapper">
                 <button class="filter-dropdown" id="filterDropdown">
                     <i class="fas fa-bars"></i>
-                    <span>Tất cả lịch đặt</span>
+                    <span data-current-filter-label>Toàn bộ lịch hẹn</span>
                     <i class="fas fa-chevron-down"></i>
                 </button>
                 <div class="dropdown-menu-custom" id="dropdownMenu">
-                    <div class="dropdown-item-custom active">Tất cả các lịch đặt</div>
-                    <div class="dropdown-item-custom">Lịch đặt đã qua</div>
-                    <div class="dropdown-item-custom">Lịch đặt sắp tới</div>
+                    <button class="dropdown-item-custom active" data-filter="all">Tất cả lịch hẹn</button>
+                    <button class="dropdown-item-custom" data-filter="upcoming">Lịch sắp tới</button>
+                    <button class="dropdown-item-custom" data-filter="past">Lịch đã qua</button>
                 </div>
             </div>
         </div>
 
-        <!-- Empty State -->
-        <div class="empty-state">
+        <div id="bookingsError" class="alert alert-danger d-none" role="alert"></div>
+
+        <div id="bookingsLoading" class="loading-state">
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            <span>Đang tải dữ liệu...</span>
+        </div>
+
+        <div id="bookingsList" class="booking-cards d-none"></div>
+
+        <div class="empty-state d-none" id="emptyState">
             <div class="empty-state-icon">
-                <i class="fa fa-search"></i>
+                <i class="fa fa-calendar-days"></i>
             </div>
-            <p class="empty-state-text">Không có lịch đặt cho khoảng thời gian đã chọn</p>
-            <button class="btn-book-now-secondary">Đặt ngay</button>
+            <p class="empty-state-text">Không có lịch hẹn trong mục này</p>
+            <a class="btn-book-now-secondary" href="/booking">Đặt lịch ngay</a>
         </div>
     </div>
 </div>
 
+<div class="reschedule-modal d-none" id="rescheduleModal" aria-hidden="true">
+    <div class="reschedule-modal__backdrop" data-reschedule-dismiss></div>
+    <div class="reschedule-modal__dialog" role="dialog" aria-modal="true">
+        <div class="reschedule-modal__header">
+            <div>
+                <p class="reschedule-modal__eyebrow">Đổi lịch khám</p>
+                <h3 class="reschedule-modal__title">Chọn thời gian mới</h3>
+            </div>
+            <button type="button" class="reschedule-modal__close" data-reschedule-dismiss>
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <form id="rescheduleForm">
+            <div class="reschedule-modal__body">
+                <div class="mb-3">
+                    <label for="rescheduleDate" class="form-label">Ngày khám mới</label>
+                    <input type="date" id="rescheduleDate" name="date" class="form-control" required />
+                    <small class="form-text text-muted">Yêu cầu đặt trước tối thiểu 2 ngày, giống quy trình đặt lịch mới.</small>
+                </div>
+                <div>
+                    <label for="rescheduleSlot" class="form-label">Khung giờ khả dụng</label>
+                    <select id="rescheduleSlot" name="slot" class="form-select" required>
+                        <option value="">Vui lòng chọn ngày trước</option>
+                    </select>
+                    <small id="rescheduleSlotHint" class="reschedule-slot-hint text-muted">Chọn ngày để xem các khung giờ trống của bác sĩ.</small>
+                </div>
+            </div>
+            <div class="reschedule-modal__actions">
+                <button type="button" class="btn btn-outline-light" data-reschedule-dismiss>Đóng</button>
+                <button type="submit" class="btn btn-success">Xác nhận</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @section Scripts {
-    <script src="~/js/MyBookings.js"></script>
+    <script src="~/js/MyBookings.js" asp-append-version="true"></script>
 }

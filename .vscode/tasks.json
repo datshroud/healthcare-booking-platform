@@ -4,6 +4,10 @@
 		{
 			"label": "Ensure Docker & Migrate",
 			"type": "shell",
+			"dependsOrder": "sequence",
+			"dependsOn": [
+				"build"
+			],
 			"windows": {
 				"command": "cmd.exe",
 				"args": ["/c", "scripts\\ensure-docker.cmd"]

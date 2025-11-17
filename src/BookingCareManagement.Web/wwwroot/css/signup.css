@@ -14,20 +14,29 @@ main.auth-page {
     position: relative;
     z-index: 0;
 }
+.auth-wrapper {
+    width: min(420px, 100%);
+    margin: 0 auto;
+    padding: 0 1rem;
+}
 .SignUp-container {
     background-color: #212529;
-    padding: 40px;
-    width: 350px;
+    padding: 40px 32px;
+    width: 100%;
+    border-radius: 20px;
     box-shadow: 0 0 15px rgba(0, 0, 0, 0.4);
 }
 .signup-content input{
-    width: 93%;;
+    width: 100%;
 }
 .required {
     color: #ff5e5e; 
 }
-h2 {
+.SignUp-container h2 {
     margin-bottom: 25px;
+    color: #f8f9fa;
+    font-weight: 700;
+    text-align: center;
 }
 
 label {
@@ -35,6 +44,7 @@ label {
     margin-top: 15px;
     margin-bottom: 5px;
     font-weight: 600;
+    color: #f8f9fa;
 }
 
 input {
@@ -137,7 +147,19 @@ input:focus {
 }
 
 .footer-links {
-    font-size: 13p
+    font-size: 0.95rem;
+    text-align: center;
+    color: #f8f9fa;
+    margin-top: 15px;
+}
+
+.footer-links a {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+.footer-links a:hover {
+    color: #d4f4ff;
 }
 
 .input-invalid {

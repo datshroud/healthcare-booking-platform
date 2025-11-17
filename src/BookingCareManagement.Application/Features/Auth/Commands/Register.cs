@@ -32,7 +32,6 @@ namespace BookingCareManagement.Application.Features.Auth.Commands
                 Email = req.Email,
                 FirstName = req.FirstName,
                 LastName = req.LastName,
-                FullName = string.Join(' ', new[] { req.FirstName, req.LastName }.Where(s => !string.IsNullOrWhiteSpace(s))).Trim(),
                 PhoneNumber = req.PhoneNumber,
                 DateOfBirth = req.DateOfBirth,
                 EmailConfirmed = true

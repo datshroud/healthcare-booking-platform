@@ -1,0 +1,178 @@
+﻿@page "/customers"
+@model BookingCareManagement.Web.Areas.Doctor.Pages.Customers.customersModel
+@{
+    ViewData["Title"] = "Người bệnh";
+}
+
+@section Styles {
+
+  
+    <link rel="stylesheet" href="~/css/customer.css" />
+}
+
+<div class="customer-page container-fluid">
+    <div class="header-custom">
+        <h1>Người bệnh (<span id="customerCount">0</span>)</h1>
+        <div class="header-buttons">
+            <button id="exportBtn" class="btn btn-custom">
+                <i class="fas fa-download"></i> Xuất dữ liệu
+            </button>
+            <button id="importBtn" class="btn btn-custom">
+                <i class="fas fa-upload"></i> Nhập dữ liệu
+            </button>
+            <button id="openAddBtn" class="btn btn-custom btn-primary-custom">
+                <i class="fas fa-plus"></i> Thêm người bệnh
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="search-box">
+            <div class="search-wrapper">
+                <i class="fas fa-search search-icon"></i>
+                <input type="text" class="search-input" id="searchInput" placeholder="Search">
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">
+                            <input type="checkbox" id="selectAll">
+                        </th>
+                        <th>Người bệnh</th>
+                        <th>Số lần khám</th>
+                        <th>Lần khám gần nhất</th>
+                        <th>Ngày tạo</th>
+                        <th style="width: 50px;"></th>
+                    </tr>
+                </thead>
+                <tbody id="customerTableBody">
+                    <tr>
+                        <td colspan="6" class="text-center">Đang tải dữ liệu...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer-custom">
+            Page <span id="currentPage">1</span> of <span id="totalPages">1</span>
+        </div>
+    </div>
+</div>
+
+<div id="editModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-custom">
+        <div class="modal-header-custom">
+            <h3 id="modalTitle">Chỉnh sửa người bệnh</h3>
+            <div class="modal-actions-right">
+                <button id="modalDeleteBtn" class="btn btn-danger btn-sm">Xóa người bệnh</button>
+                <button id="modalCloseBtn" class="btn btn-light btn-sm">Đóng</button>
+            </div>
+        </div>
+
+        <div class="modal-body-custom">
+            <form id="editCustomerForm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Tên*</label>
+                        <input id="firstNameInput" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Họ*</label>
+                        <input id="lastNameInput" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Email*</label>
+                        <input id="emailInput" class="form-control" type="email" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Số điện thoại</label>
+                        <input id="phoneInput" class="form-control" type="tel">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Giới tính</label>
+                        <select id="genderSelect" class="form-control">
+                            <option value="">Chọn giới tính</option>
+                            <option>Nam</option>
+                            <option>Nữ</option>
+                            <option>Khác</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Ngày sinh</label>
+                        <input id="dobInput" class="form-control" type="date">
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Ghi chú nội bộ</label>
+                        <textarea id="noteTextarea" class="form-control" rows="4" placeholder="Ghi chú này sẽ không hiển thị với khách hàng"></textarea>
+                    </div>
+
+                    <div class="col-12">
+                        <a href="#" class="btn btn-outline-secondary btn-sm">Thông tin khách hàng (Trường tùy chỉnh)</a>
+                    </div>
+
+                    <div class="col-12 text-end">
+                        <button id="saveCustomerBtn" type="submit" class="btn btn-primary">Lưu</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div id="addModal" class="modal-overlay" aria-hidden="true">
+    <div class="modal-custom modal-small">
+        <div class="modal-header-custom">
+            <h3>Thêm khách hàng</h3>
+            <button id="addModalCloseX" class="btn btn-light btn-sm">×</button>
+        </div>
+        <div class="modal-body-custom">
+            <form id="addCustomerForm">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Tên*</label>
+                        <input id="addFirstName" class="form-control" placeholder="Nhập tên" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Họ*</label>
+                        <input id="addLastName" class="form-control" placeholder="Nhập họ" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Email*</label>
+                        <input id="addEmail" class="form-control" type="email" placeholder="example@yourcompany.com" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">Số điện thoại</label>
+                        <input id="addPhone" class="form-control" type="tel" placeholder="Số điện thoại">
+                    </div>
+
+                    <div class="col-12">
+                        <div class="form-check">
+                            <input id="sendLoginCheck" class="form-check-input" type="checkbox">
+                            <label class="form-check-label" for="sendLoginCheck">Gửi email với thông tin đăng nhập của khách hàng</label>
+                        </div>
+                        <small class="text-muted">Tùy chọn yêu cầu địa chỉ email.</small>
+                    </div>
+
+                    <div class="col-12 text-end">
+                        <button id="addCancelBtn" type="button" class="btn btn-outline-secondary">Hủy</button>
+                        <button type="submit" class="btn btn-primary">Thêm khách hàng</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- hidden file input for import -->
+<input id="importFile" type="file" accept="text/csv,.csv" style="display:none">
+
+@section Scripts {
+    <!-- Page-specific scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="~/js/customer.js" asp-append-version="true"></script>
+}

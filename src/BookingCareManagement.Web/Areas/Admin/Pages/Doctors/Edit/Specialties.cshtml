@@ -1,0 +1,236 @@
+@page "/doctors/{doctorId}/specialties"
+@model BookingCareManagement.Web.Areas.Admin.Pages.Doctors.Edit.SpecialtiesModel
+@{
+    ViewData["Title"] = "Chuyên khoa";
+}
+
+@section Styles {
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/account.css" asp-append-version="true" />
+    <style>
+        .doctor-edit-container {
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+
+        .left-menu a {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+            .left-menu a:hover {
+                background: rgba(255, 255, 255, 0.1);
+                transform: translateX(5px);
+            }
+
+            .left-menu a.active-tab {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+            }
+
+        .specialty-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+            .specialty-card:hover {
+                background: rgba(255, 255, 255, 0.08);
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+            }
+
+        .specialty-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .form-check-input {
+            width: 3em;
+            height: 1.5em;
+            cursor: pointer;
+        }
+
+            .form-check-input:checked {
+                background-color: #667eea;
+                border-color: #667eea;
+            }
+
+        .btn-save {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 32px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+            .btn-save:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(102, 126, 234, 0.6);
+            }
+
+        .specialty-selected {
+            background: rgba(102, 126, 234, 0.15) !important;
+            border-color: rgba(102, 126, 234, 0.4) !important;
+        }
+
+        .specialty-list-header {
+            font-size: 0.875rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* SỬA LẠI CSS CHO RADIO (thay vì checkbox) */
+        .form-check-input[type="radio"] {
+            width: 3em;
+            height: 1.5em;
+            border-radius: 2em;
+            cursor: pointer;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+        }
+
+            .form-check-input[type="radio"]:checked {
+                background-color: #667eea;
+                border-color: #667eea;
+            }
+
+            .form-check-input[type="radio"]::before {
+                content: '';
+                position: absolute;
+                width: 1.2em;
+                height: 1.2em;
+                background: white;
+                border-radius: 50%;
+                top: 50%;
+                left: 0.15em;
+                transform: translateY(-50%);
+                transition: left 0.2s ease;
+            }
+
+            .form-check-input[type="radio"]:checked::before {
+                left: calc(100% - 1.35em);
+            }
+    </style>
+}
+
+<div class="container-fluid mt-5 p-4 mb-5 doctor-edit-container text-light">
+    <div class="row align-items-center justify-content-between mx-0 mb-4">
+        <div class="col-auto">
+            <h2 class="mb-0 fw-bold">
+                <i class="fa-solid fa-user-doctor me-3" style="color: #667eea;"></i>@Model.DoctorName
+            </h2>
+        </div>
+        <div class="col-auto">
+            <a href="/doctors" class="btn btn-outline-light btn-sm px-4 rounded-pill">
+                <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
+            </a>
+        </div>
+    </div>
+
+    <div class="row border-top border-secondary pt-4 g-0">
+        <div class="col-3 left-menu pe-3">
+            <a href="/doctors/@Model.DoctorId/info" class="btn mb-2 fw-semibold text-decoration-none">
+                <i class="fa-solid fa-user me-2"></i> Thông tin bác sĩ
+            </a>
+            <a href="/doctors/@Model.DoctorId/specialties" class="btn active-tab mb-2 fw-semibold text-decoration-none">
+                <i class="fa-solid fa-briefcase-medical me-2"></i> Chuyên khoa
+            </a>
+            <a href="/doctors/@Model.DoctorId/hours" class="btn fw-semibold text-decoration-none">
+                <i class="fa-solid fa-clock me-2"></i> Giờ làm việc
+            </a>
+            <a href="/doctors/@Model.DoctorId/days-off" class="btn fw-semibold text-decoration-none">
+                <i class="fa-solid fa-calendar-xmark me-2"></i> Ngày nghỉ
+            </a>
+            <a href="/doctors/@Model.DoctorId/special-days" class="btn fw-semibold text-decoration-none">
+                <i class="fa-solid fa-star me-2"></i> Ngày đặc biệt
+            </a>
+        </div>
+
+        <div class="col-9 ps-4">
+            <div class="mb-4">
+                <h4 class="mb-2 fw-bold">
+                    <i class="fa-solid fa-briefcase-medical me-2" style="color: #667eea;"></i>Chuyên khoa được chỉ định
+                </h4>
+                <p class="text-muted small">Chọn 1 chuyên khoa trong @Model.AllSpecialties.Count mục</p>
+            </div>
+
+            <form method="post">
+                <input type="hidden" asp-for="DoctorId" />
+                <div asp-validation-summary="ModelOnly" class="text-warning mb-3"></div>
+
+                @if (!string.IsNullOrEmpty(Model.StatusMessage))
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <i class="fa-solid fa-circle-check me-2"></i>@Model.StatusMessage
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
+
+                <div class="specialty-list-header d-flex align-items-center mb-3 px-3 text-muted">
+                    <div style="flex: 1;">Chuyên khoa</div>
+                    <div style="width: 120px; text-align: center;">Trạng thái</div>
+                    <div style="width: 100px; text-align: center;">Chọn</div>
+                </div>
+
+                @foreach (var specialty in Model.AllSpecialties)
+                {
+                    var isSelected = Model.AssignedSpecialtyId == specialty.Id;
+                    <div class="specialty-card @(isSelected ? "specialty-selected" : "")">
+                        <div class="d-flex align-items-center">
+                            <div class="d-flex align-items-center" style="flex: 1;">
+                                <div class="specialty-avatar me-3">
+                                    <i class="fa-solid fa-stethoscope text-white"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">@specialty.Name</h6>
+                                    <small class="text-muted">@specialty.Slug</small>
+                                </div>
+                            </div>
+                            <div style="width: 120px; text-align: center;">
+                                @if (specialty.Active)
+                                {
+                                    <span class="badge bg-success">Hoạt động</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Ngưng</span>
+                                }
+                            </div>
+                            <div style="width: 100px; text-align: center;">
+                                <div class="form-check form-switch d-inline-block">
+                                    <input class="form-check-input" type="radio" name="selectedSpecialtyId" value="@specialty.Id"
+                                           id="specialty_@specialty.Id" checked="@isSelected">
+                                    <label class="form-check-label" for="specialty_@specialty.Id"></label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="text-end border-top pt-4 mt-4" style="border-color: rgba(255,255,255,0.1) !important;">
+                    <button type="submit" class="btn btn-save text-white">
+                        <i class="fa-solid fa-save me-2"></i>Lưu thay đổi
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

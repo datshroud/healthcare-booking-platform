@@ -1,0 +1,118 @@
+@page "/doctors/{doctorId}/special-days"
+@model BookingCareManagement.Web.Areas.Admin.Pages.Doctors.Edit.SpecialDaysModel
+@{
+    ViewData["Title"] = "Ngày đặc biệt";
+}
+
+@section Styles {
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="~/css/account.css" asp-append-version="true" />
+    <style>
+        .doctor-edit-container {
+            background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .left-menu a {
+            transition: all 0.3s ease;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        .left-menu a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+        .left-menu a.active-tab {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .empty-state {
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 16px;
+            padding: 60px 40px;
+            text-align: center;
+        }
+        .empty-state i {
+            opacity: 0.3;
+            color: #ffd700;
+        }
+        .btn-add {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 10px 24px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+    </style>
+}
+
+<div class="container-fluid mt-5 p-4 mb-5 doctor-edit-container text-light">
+    <!-- Header -->
+    <div class="row align-items-center justify-content-between mx-0 mb-4">
+        <div class="col-auto">
+            <h2 class="mb-0 fw-bold">
+                <i class="fa-solid fa-user-doctor me-3" style="color: #667eea;"></i>@Model.DoctorName
+            </h2>
+        </div>
+        <div class="col-auto">
+            <a href="/doctors" class="btn btn-outline-light btn-sm px-4 rounded-pill">
+                <i class="fa-solid fa-arrow-left me-2"></i>Quay lại
+            </a>
+        </div>
+    </div>
+
+    <!-- Nội dung chính -->
+    <div class="row border-top border-secondary pt-4 g-0">
+        <!-- Cột trái -->
+        <div class="col-3 left-menu pe-3">
+            <a href="/doctors/@Model.DoctorId/info" class="btn mb-2 fw-semibold text-decoration-none">
+                <i class="fa-solid fa-user me-2"></i> Thông tin bác sĩ
+            </a>
+            <a href="/doctors/@Model.DoctorId/specialties" class="btn mb-2 fw-semibold text-decoration-none">
+                <i class="fa-solid fa-briefcase-medical me-2"></i> Chuyên khoa
+            </a>
+            <a href="/doctors/@Model.DoctorId/hours" class="btn fw-semibold text-decoration-none">
+                <i class="fa-solid fa-clock me-2"></i> Giờ làm việc
+            </a>
+            <a href="/doctors/@Model.DoctorId/days-off" class="btn fw-semibold text-decoration-none">
+                <i class="fa-solid fa-calendar-xmark me-2"></i> Ngày nghỉ
+            </a>
+            <a href="/doctors/@Model.DoctorId/special-days" class="btn active-tab fw-semibold text-decoration-none">
+                <i class="fa-solid fa-star me-2"></i> Ngày đặc biệt
+            </a>
+        </div>
+
+        <!-- Cột phải -->
+        <div class="col-9 ps-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0 fw-bold">
+                    <i class="fa-solid fa-star me-2" style="color: #ffd700;"></i>Ngày đặc biệt
+                </h4>
+                <div>
+                    <button class="btn btn-outline-light btn-sm me-2 rounded-pill">
+                        <i class="fa-solid fa-calendar me-2"></i>2025
+                    </button>
+                    <button class="btn btn-add text-white">
+                        <i class="fa-solid fa-plus me-2"></i>Thêm ngày đặc biệt
+                    </button>
+                </div>
+            </div>
+
+            <div class="empty-state">
+                <div class="mb-4">
+                    <i class="fa-solid fa-star fa-5x"></i>
+                </div>
+                <h5 class="text-light mb-3">Chưa có ngày đặc biệt nào</h5>
+                <p class="text-muted">@Model.DoctorName không có ngày đặc biệt sắp tới cho năm đã chọn</p>
+            </div>
+        </div>
+    </div>
+</div>

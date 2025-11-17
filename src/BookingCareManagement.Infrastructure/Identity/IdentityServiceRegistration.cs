@@ -4,10 +4,22 @@ using System.Linq;
 using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
+using BookingCareManagement.Application.Features.Appointments.Commands;
+using BookingCareManagement.Application.Features.Appointments.Queries;
 using BookingCareManagement.Application.Features.Auth.Commands;
+using BookingCareManagement.Application.Features.Doctors.Commands;
+using BookingCareManagement.Application.Features.Doctors.Queries;
+using BookingCareManagement.Application.Features.Notifications.Commands;
+using BookingCareManagement.Application.Features.Notifications.Queries;
+using BookingCareManagement.Application.Features.Specialties.Commands;
+using BookingCareManagement.Application.Features.Specialties.Queries;
+using BookingCareManagement.Application.Features.SupportChat.Commands;
+using BookingCareManagement.Application.Features.SupportChat.Queries;
 using BookingCareManagement.Domain.Aggregates.User;
+using BookingCareManagement.Domain.Abstractions;
 using BookingCareManagement.Infrastructure.Identity.Jwt;
 using BookingCareManagement.Infrastructure.Persistence;
+using BookingCareManagement.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -22,7 +34,21 @@ namespace BookingCareManagement.Infrastructure.Identity
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
         {
             services.AddDbContext<ApplicationDBContext>(otp =>
-                otp.UseSqlServer(config.GetConnectionString("DefaultConnection")));
+            {
+                var connectionString = config.GetConnectionString("DefaultConnection");
+                if (string.IsNullOrWhiteSpace(connectionString))
+                {
+                    throw new InvalidOperationException("Database connection string 'DefaultConnection' is missing or empty.");
+                }
+
+                otp.UseSqlServer(connectionString, sql =>
+                {
+                    sql.EnableRetryOnFailure(
+                        maxRetryCount: 5,
+                        maxRetryDelay: TimeSpan.FromSeconds(10),
+                        errorNumbersToAdd: null);
+                });
+            });
 
             services.AddIdentity<AppUser, AppRole>(o =>
             {
@@ -32,7 +58,13 @@ namespace BookingCareManagement.Infrastructure.Identity
             .AddDefaultTokenProviders();
 
             services.Configure<JwtSettings>(config.GetSection("Jwt"));
-            var jwt = config.GetSection("Jwt").Get<JwtSettings>();
+            var jwtSection = config.GetSection("Jwt");
+            var jwt = jwtSection.Get<JwtSettings>() ?? throw new InvalidOperationException("Jwt configuration is missing.");
+            if (string.IsNullOrWhiteSpace(jwt.Key))
+            {
+                throw new InvalidOperationException("Jwt key is not configured.");
+            }
+
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwt.Key));
 
             services.AddAuthentication(opt =>
@@ -73,8 +105,59 @@ namespace BookingCareManagement.Infrastructure.Identity
                 };
             });
 
-
             services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
+
+            services.AddScoped<RegisterHandler>();
+            services.AddScoped<LoginHandler>();
+            services.AddScoped<RefreshTokenHandler>();
+
+            services.AddScoped<IDoctorRepository, DoctorRepository>();
+            services.AddScoped<ISpecialtyRepository, SpecialtyRepository>();
+            services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+            services.AddScoped<IAdminNotificationRepository, AdminNotificationRepository>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<ISupportConversationRepository, SupportConversationRepository>();
+
+            services.AddScoped<GetAllDoctorsQueryHandler>();
+            services.AddScoped<GetDoctorByIdQueryHandler>();
+            services.AddScoped<GetDoctorProfileQueryHandler>();
+            services.AddScoped<GetDoctorWorkingHoursQueryHandler>();
+            services.AddScoped<GetDoctorDayOffsQueryHandler>();
+            services.AddScoped<CreateDoctorCommandHandler>();
+            services.AddScoped<UpdateDoctorCommandHandler>();
+            services.AddScoped<UpdateDoctorProfileCommandHandler>();
+            services.AddScoped<UpdateDoctorHoursCommandHandler>();
+            services.AddScoped<CreateDoctorDayOffCommandHandler>();
+            services.AddScoped<UpdateDoctorDayOffCommandHandler>();
+            services.AddScoped<DeleteDoctorDayOffCommandHandler>();
+            services.AddScoped<DeleteDoctorCommandHandler>();
+
+            // Specialty handlers
+            services.AddScoped<GetAllSpecialtiesQueryHandler>();
+            services.AddScoped<GetSpecialtyByIdQueryHandler>();
+            services.AddScoped<CreateSpecialtyCommandHandler>();
+            services.AddScoped<UpdateSpecialtyCommandHandler>();
+            services.AddScoped<UpdateSpecialtyStatusCommandHandler>();
+            services.AddScoped<DeleteSpecialtyCommandHandler>();
+
+            // Appointment handlers
+            services.AddScoped<GetAllAppointmentsQueryHandler>();
+            services.AddScoped<GetAppointmentByIdQueryHandler>();
+            services.AddScoped<CreateAppointmentCommandHandler>();
+            services.AddScoped<CancelAppointmentCommandHandler>();
+            services.AddScoped<DeleteAppointmentCommandHandler>();
+
+            // Admin notification handlers
+            services.AddScoped<CreateAdminNotificationCommandHandler>();
+            services.AddScoped<MarkAdminNotificationReadCommandHandler>();
+            services.AddScoped<MarkAllAdminNotificationsReadCommandHandler>();
+            services.AddScoped<GetRecentAdminNotificationsQueryHandler>();
+            services.AddScoped<GetUnreadAdminNotificationsCountQueryHandler>();
+
+            services.AddScoped<EnsureSupportConversationCommandHandler>();
+            services.AddScoped<GetSupportMessagesQueryHandler>();
+            services.AddScoped<SendSupportMessageCommandHandler>();
+
             return services;
         }
     }
