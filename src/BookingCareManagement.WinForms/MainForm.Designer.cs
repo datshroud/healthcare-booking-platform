@@ -216,9 +216,10 @@
             btnTaiChinh.Padding = new Padding(15, 0, 0, 0);
             btnTaiChinh.Size = new Size(230, 56);
             btnTaiChinh.TabIndex = 10;
-            btnTaiChinh.Text = "💰  Tài chính";
+            btnTaiChinh.Text = "💰  Hóa đơn";
             btnTaiChinh.TextAlign = ContentAlignment.MiddleLeft;
             btnTaiChinh.UseVisualStyleBackColor = false;
+            btnTaiChinh.Click += btnTaiChinh_Click;
             // 
             // btnCaiDat
             // 
