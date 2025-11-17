@@ -89,6 +89,10 @@ public class CustomerController : ControllerBase
         {
             return NotFound(new ProblemDetails { Title = "Not Found", Detail = ex.Message });
         }
+        catch (ValidationException ex)
+        {
+            return Conflict(new ProblemDetails { Title = "Delete Blocked", Detail = ex.Message });
+        }
         catch (Exception ex)
         {
             return BadRequest(new ProblemDetails { Title = "Delete Failed", Detail = ex.Message });

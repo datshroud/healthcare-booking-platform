@@ -13,4 +13,6 @@ public interface IAppointmentRepository
 	Task<Appointment?> GetByIdWithTrackingAsync(Guid id, CancellationToken cancellationToken = default);
 	void Add(Appointment appointment);
 	void Remove(Appointment appointment);
+	Task<bool> HasAppointmentsForPatientAsync(string patientId, CancellationToken cancellationToken = default);
+	Task<bool> CustomerHasAppointmentWithDoctorAsync(string patientId, Guid doctorId, CancellationToken cancellationToken = default);
 }

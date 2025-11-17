@@ -52,6 +52,29 @@ public class DoctorAppointmentsController : ControllerBase
             return Forbid();
         }
 
+        var customerRoleId = await _dbContext.Roles
+            .AsNoTracking()
+            .Where(r => r.NormalizedName == "CUSTOMER")
+            .Select(r => r.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        IQueryable<AppUser> patientQuery = _dbContext.Users.AsNoTracking();
+        if (!string.IsNullOrWhiteSpace(customerRoleId))
+        {
+            patientQuery = patientQuery.Where(u => _dbContext.UserRoles.Any(ur => ur.UserId == u.Id && ur.RoleId == customerRoleId));
+        }
+
+        var patientOptions = await patientQuery
+            .OrderBy(u => u.FirstName)
+            .ThenBy(u => u.LastName)
+            .Select(u => new DoctorAppointmentPatientOptionDto
+            {
+                Id = u.Id,
+                Name = BuildDisplayName(u.FirstName, u.LastName, u.Email, u.UserName),
+                PhoneNumber = u.PhoneNumber ?? string.Empty
+            })
+            .ToArrayAsync(cancellationToken);
+
         var dto = new DoctorAppointmentMetadataDto
         {
             DoctorId = doctor.Id,
@@ -75,7 +98,8 @@ public class DoctorAppointmentsController : ControllerBase
                     Tone = x.Tone,
                     Icon = x.Icon
                 })
-                .ToArray()
+                .ToArray(),
+            Patients = patientOptions
         };
 
         return Ok(dto);
@@ -189,6 +213,7 @@ public class DoctorAppointmentsController : ControllerBase
         }
 
         var clinicRoomId = request.ClinicRoomId ?? await EnsureClinicRoomAsync(cancellationToken);
+        var specialtyPrice = doctor.Specialties.First(s => s.Id == request.SpecialtyId).Price;
         var appointment = new Appointment(
             doctor.Id,
             request.SpecialtyId,
@@ -197,7 +222,8 @@ public class DoctorAppointmentsController : ControllerBase
             TimeSpan.FromMinutes(validation.DurationMinutes),
             request.PatientName.Trim(),
             request.CustomerPhone.Trim(),
-            patientId: null);
+            patientId: null,
+            price: specialtyPrice);
 
         var statusCode = string.IsNullOrWhiteSpace(request.Status)
             ? AppointmentStatus.Pending
@@ -240,6 +266,8 @@ public class DoctorAppointmentsController : ControllerBase
         appointment.AssignClinicRoom(request.ClinicRoomId ?? appointment.ClinicRoomId);
         appointment.UpdatePatientProfile(request.PatientName, request.CustomerPhone);
         appointment.Reschedule(validation!.StartUtc, TimeSpan.FromMinutes(validation.DurationMinutes));
+        var specialtyPrice = doctor.Specialties.First(s => s.Id == request.SpecialtyId).Price;
+        appointment.SetPrice(specialtyPrice);
         if (!string.IsNullOrWhiteSpace(request.Status))
         {
             appointment.SetStatus(request.Status);
@@ -455,11 +483,13 @@ public class DoctorAppointmentsController : ControllerBase
         return new DoctorAppointmentListItemDto
         {
             Id = appointment.Id,
+            DoctorId = appointment.DoctorId,
             SpecialtyId = appointment.SpecialtyId,
             SpecialtyName = specialty.Name,
             SpecialtyColor = string.IsNullOrWhiteSpace(specialty.Color) ? "#0ea5e9" : specialty.Color,
             PatientName = appointment.PatientName,
             CustomerPhone = appointment.CustomerPhone,
+            PatientId = appointment.PatientId,
             Status = presentation.Code,
             StatusLabel = presentation.Label,
             StatusTone = presentation.Tone,
@@ -473,7 +503,9 @@ public class DoctorAppointmentsController : ControllerBase
             DateKey = startLocal.ToString("yyyy-MM-dd"),
             TimeLabel = timeLabel,
             DurationMinutes = (int)Math.Round((endUtc - startUtc).TotalMinutes),
-            ClinicRoom = BuildClinicRoomLabel(room)
+            ClinicRoomId = appointment.ClinicRoomId,
+            ClinicRoom = BuildClinicRoomLabel(room),
+            Price = appointment.Price
         };
     }
 
@@ -507,7 +539,8 @@ public class DoctorAppointmentsController : ControllerBase
             StatusIcon = presentation.Icon,
             ClinicRoom = BuildClinicRoomLabel(room),
             StartUtc = DateTime.SpecifyKind(appointment.StartUtc, DateTimeKind.Utc),
-            EndUtc = DateTime.SpecifyKind(appointment.EndUtc, DateTimeKind.Utc)
+            EndUtc = DateTime.SpecifyKind(appointment.EndUtc, DateTimeKind.Utc),
+            Price = appointment.Price
         };
     }
 
@@ -550,6 +583,27 @@ public class DoctorAppointmentsController : ControllerBase
         var fallback = string.IsNullOrWhiteSpace(fullName) ? "Bac Si" : fullName;
         var encoded = Uri.EscapeDataString(fallback);
         return $"https://ui-avatars.com/api/?name={encoded}&background=0ea5e9&color=fff&size=96";
+    }
+
+    private static string BuildDisplayName(string? firstName, string? lastName, string? email, string? userName)
+    {
+        var fullName = $"{firstName} {lastName}".Trim();
+        if (!string.IsNullOrWhiteSpace(fullName))
+        {
+            return fullName;
+        }
+
+        if (!string.IsNullOrWhiteSpace(email))
+        {
+            return email!;
+        }
+
+        if (!string.IsNullOrWhiteSpace(userName))
+        {
+            return userName!;
+        }
+
+        return "Khách hàng";
     }
 
     private static string CapitalizeFirst(string value)

@@ -10,10 +10,11 @@ public class Appointment
     public Guid ClinicRoomId { get; private set; }
     public DateTime StartUtc { get; private set; }
     public DateTime EndUtc { get; private set; }
-    public string PatientName { get; private set; }
+    public string PatientName { get; private set; } = string.Empty;
     public string CustomerPhone { get; private set; } = string.Empty;
     public string Status { get; private set; } = AppointmentStatus.Pending;
     public string? PatientId { get; private set; } // Khóa ngoại trỏ đến AppUser.Id
+    public decimal Price { get; private set; }
     private Appointment() { }
     public Appointment(
         Guid doctorId,
@@ -23,7 +24,8 @@ public class Appointment
         TimeSpan duration,
         string patientName,
         string customerPhone,
-        string? patientId = null)
+        string? patientId = null,
+        decimal price = 0)
     {
         DoctorId = doctorId;
         SpecialtyId = specialtyId;
@@ -34,6 +36,7 @@ public class Appointment
         CustomerPhone = customerPhone;
         PatientId = string.IsNullOrWhiteSpace(patientId) ? null : patientId.Trim();
         Status = AppointmentStatus.Pending;
+        SetPrice(price);
     }
 
     public void Approve() => Status = AppointmentStatus.Approved;
@@ -86,6 +89,31 @@ public class Appointment
         }
 
         ClinicRoomId = clinicRoomId;
+    }
+
+    public void AssignDoctor(Guid doctorId)
+    {
+        if (doctorId == Guid.Empty)
+        {
+            throw new ArgumentException("DoctorId is required.", nameof(doctorId));
+        }
+
+        DoctorId = doctorId;
+    }
+
+    public void AssignPatient(string? patientId)
+    {
+        PatientId = string.IsNullOrWhiteSpace(patientId) ? null : patientId.Trim();
+    }
+
+    public void SetPrice(decimal price)
+    {
+        if (price < 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(price), "Price cannot be negative.");
+        }
+
+        Price = decimal.Round(price, 0, MidpointRounding.AwayFromZero);
     }
 
     public void SetStatus(string status)

@@ -3,7 +3,13 @@
 @{
     ViewData["Title"] = "Dashboard";
     var viVNCulture = new System.Globalization.CultureInfo("vi-VN");
-    var currentFilter = Model.Request.Query["filter"].FirstOrDefault() ?? "week";
+    var customerFilter = Model.CustomerFilter;
+    var revenueFilter = Model.RevenueFilter;
+    var pendingFilter = Model.PendingFilter;
+    var chartFilter = Model.ChartFilter;
+    var heatmapFilter = Model.HeatmapFilter;
+    var appointmentFilter = Model.AppointmentListFilter;
+    var performanceFilter = Model.PerformanceFilter;
 }
 
 @section Styles {
@@ -59,16 +65,16 @@
                         <span class="card-title-text">Khách hàng mới</span>
                         <div class="dropdown" style="width: 150px;">
                             <button class="btn btn-filter dropdown-toggle" type="button" id="filterCustomer" data-bs-toggle="dropdown" aria-expanded="false">
-                                @Model.FilterPeriodLabel
+                                @Model.CustomerFilterLabel
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="filterCustomer">
-                                <li><a class="dropdown-item @(currentFilter == "week" ? "active" : "")" href="?filter=week">Tuần này</a></li>
-                                <li><a class="dropdown-item @(currentFilter == "lastweek" ? "active" : "")" href="?filter=lastweek">Tuần trước</a></li>
-                                <li><a class="dropdown-item @(currentFilter == "nextweek" ? "active" : "")" href="?filter=nextweek">Tuần sau</a></li>
+                                <li><a class="dropdown-item @(customerFilter == "week" ? "active" : "")" href="@Model.BuildFilterUrl("customerFilter", "week")">Tuần này</a></li>
+                                <li><a class="dropdown-item @(customerFilter == "lastweek" ? "active" : "")" href="@Model.BuildFilterUrl("customerFilter", "lastweek")">Tuần trước</a></li>
+                                <li><a class="dropdown-item @(customerFilter == "nextweek" ? "active" : "")" href="@Model.BuildFilterUrl("customerFilter", "nextweek")">Tuần sau</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item @(currentFilter == "month" ? "active" : "")" href="?filter=month">Tháng này</a></li>
-                                <li><a class="dropdown-item @(currentFilter == "lastmonth" ? "active" : "")" href="?filter=lastmonth">Tháng trước</a></li>
-                                <li><a class="dropdown-item @(currentFilter == "nextmonth" ? "active" : "")" href="?filter=nextmonth">Tháng sau</a></li>
+                                <li><a class="dropdown-item @(customerFilter == "month" ? "active" : "")" href="@Model.BuildFilterUrl("customerFilter", "month")">Tháng này</a></li>
+                                <li><a class="dropdown-item @(customerFilter == "lastmonth" ? "active" : "")" href="@Model.BuildFilterUrl("customerFilter", "lastmonth")">Tháng trước</a></li>
+                                <li><a class="dropdown-item @(customerFilter == "nextmonth" ? "active" : "")" href="@Model.BuildFilterUrl("customerFilter", "nextmonth")">Tháng sau</a></li>
                             </ul>
                         </div>
                     </div>
@@ -85,16 +91,16 @@
                         <span class="card-title-text">Doanh thu</span>
                         <div class="dropdown" style="width: 150px;">
                             <button class="btn btn-filter dropdown-toggle" type="button" id="filterRevenue" data-bs-toggle="dropdown" aria-expanded="false">
-                                @Model.FilterPeriodLabel
+                                @Model.RevenueFilterLabel
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="filterRevenue">
-                                <li><a class="dropdown-item @(currentFilter == "week" ? "active" : "")" href="?filter=week">Tuần này</a></li>
-                                <li><a class="dropdown-item @(currentFilter == "lastweek" ? "active" : "")" href="?filter=lastweek">Tuần trước</a></li>
-                                <li><a class="dropdown-item @(currentFilter == "nextweek" ? "active" : "")" href="?filter=nextweek">Tuần sau</a></li>
+                                <li><a class="dropdown-item @(revenueFilter == "week" ? "active" : "")" href="@Model.BuildFilterUrl("revenueFilter", "week")">Tuần này</a></li>
+                                <li><a class="dropdown-item @(revenueFilter == "lastweek" ? "active" : "")" href="@Model.BuildFilterUrl("revenueFilter", "lastweek")">Tuần trước</a></li>
+                                <li><a class="dropdown-item @(revenueFilter == "nextweek" ? "active" : "")" href="@Model.BuildFilterUrl("revenueFilter", "nextweek")">Tuần sau</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item @(currentFilter == "month" ? "active" : "")" href="?filter=month">Tháng này</a></li>
-                                <li><a class="dropdown-item @(currentFilter == "lastmonth" ? "active" : "")" href="?filter=lastmonth">Tháng trước</a></li>
-                                <li><a class="dropdown-item @(currentFilter == "nextmonth" ? "active" : "")" href="?filter=nextmonth">Tháng sau</a></li>
+                                <li><a class="dropdown-item @(revenueFilter == "month" ? "active" : "")" href="@Model.BuildFilterUrl("revenueFilter", "month")">Tháng này</a></li>
+                                <li><a class="dropdown-item @(revenueFilter == "lastmonth" ? "active" : "")" href="@Model.BuildFilterUrl("revenueFilter", "lastmonth")">Tháng trước</a></li>
+                                <li><a class="dropdown-item @(revenueFilter == "nextmonth" ? "active" : "")" href="@Model.BuildFilterUrl("revenueFilter", "nextmonth")">Tháng sau</a></li>
                             </ul>
                         </div>
                     </div>
@@ -111,16 +117,16 @@
                         <span class="card-title-text">Lịch hẹn đang chờ</span>
                         <div class="dropdown" style="width: 150px;">
                             <button class="btn btn-filter dropdown-toggle" type="button" id="filterOccupancy" data-bs-toggle="dropdown" aria-expanded="false">
-                                @Model.FilterPeriodLabel
+                                @Model.PendingFilterLabel
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="filterOccupancy">
-                                <li><a class="dropdown-item @(currentFilter == "week" ? "active" : "")" href="?filter=week">Tuần này</a></li>
-                                <li><a class="dropdown-item @(currentFilter == "lastweek" ? "active" : "")" href="?filter=lastweek">Tuần trước</a></li>
-                                <li><a class="dropdown-item @(currentFilter == "nextweek" ? "active" : "")" href="?filter=nextweek">Tuần sau</a></li>
+                                <li><a class="dropdown-item @(pendingFilter == "week" ? "active" : "")" href="@Model.BuildFilterUrl("pendingFilter", "week")">Tuần này</a></li>
+                                <li><a class="dropdown-item @(pendingFilter == "lastweek" ? "active" : "")" href="@Model.BuildFilterUrl("pendingFilter", "lastweek")">Tuần trước</a></li>
+                                <li><a class="dropdown-item @(pendingFilter == "nextweek" ? "active" : "")" href="@Model.BuildFilterUrl("pendingFilter", "nextweek")">Tuần sau</a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item @(currentFilter == "month" ? "active" : "")" href="?filter=month">Tháng này</a></li>
-                                <li><a class="dropdown-item @(currentFilter == "lastmonth" ? "active" : "")" href="?filter=lastmonth">Tháng trước</a></li>
-                                <li><a class="dropdown-item @(currentFilter == "nextmonth" ? "active" : "")" href="?filter=nextmonth">Tháng sau</a></li>
+                                <li><a class="dropdown-item @(pendingFilter == "month" ? "active" : "")" href="@Model.BuildFilterUrl("pendingFilter", "month")">Tháng này</a></li>
+                                <li><a class="dropdown-item @(pendingFilter == "lastmonth" ? "active" : "")" href="@Model.BuildFilterUrl("pendingFilter", "lastmonth")">Tháng trước</a></li>
+                                <li><a class="dropdown-item @(pendingFilter == "nextmonth" ? "active" : "")" href="@Model.BuildFilterUrl("pendingFilter", "nextmonth")">Tháng sau</a></li>
                             </ul>
                         </div>
                     </div>
@@ -135,6 +141,23 @@
         <div class="col-xl-8">
             <div class="card main-chart-card">
                 <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="card-title-text fw-bold">Xu hướng lịch hẹn</span>
+                        <div class="dropdown" style="width: 150px;">
+                            <button class="btn btn-filter dropdown-toggle" type="button" id="filterChart" data-bs-toggle="dropdown" aria-expanded="false">
+                                @Model.ChartFilterLabel
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="filterChart">
+                                <li><a class="dropdown-item @(chartFilter == "week" ? "active" : "")" href="@Model.BuildFilterUrl("chartFilter", "week")">Tuần này</a></li>
+                                <li><a class="dropdown-item @(chartFilter == "lastweek" ? "active" : "")" href="@Model.BuildFilterUrl("chartFilter", "lastweek")">Tuần trước</a></li>
+                                <li><a class="dropdown-item @(chartFilter == "nextweek" ? "active" : "")" href="@Model.BuildFilterUrl("chartFilter", "nextweek")">Tuần sau</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item @(chartFilter == "month" ? "active" : "")" href="@Model.BuildFilterUrl("chartFilter", "month")">Tháng này</a></li>
+                                <li><a class="dropdown-item @(chartFilter == "lastmonth" ? "active" : "")" href="@Model.BuildFilterUrl("chartFilter", "lastmonth")">Tháng trước</a></li>
+                                <li><a class="dropdown-item @(chartFilter == "nextmonth" ? "active" : "")" href="@Model.BuildFilterUrl("chartFilter", "nextmonth")">Tháng sau</a></li>
+                            </ul>
+                        </div>
+                    </div>
                     <div class="row mb-3">
                         <div class="col-6">
                             <span class="card-title-text d-block">Đã đặt lịch hẹn</span>
@@ -196,9 +219,9 @@
                                 @Model.HeatmapMonthLabel
                             </button>
                             <ul class="dropdown-menu" aria-labelledby="filterHeatmap">
-                                <li><a class="dropdown-item @(currentFilter == "month" ? "active" : "")" href="?filter=month">Tháng này</a></li>
-                                <li><a class="dropdown-item @(currentFilter == "lastmonth" ? "active" : "")" href="?filter=lastmonth">Tháng trước</a></li>
-                                <li><a class="dropdown-item @(currentFilter == "nextmonth" ? "active" : "")" href="?filter=nextmonth">Tháng sau</a></li>
+                                <li><a class="dropdown-item @(heatmapFilter == "month" ? "active" : "")" href="@Model.BuildFilterUrl("heatmapFilter", "month")">Tháng này</a></li>
+                                <li><a class="dropdown-item @(heatmapFilter == "lastmonth" ? "active" : "")" href="@Model.BuildFilterUrl("heatmapFilter", "lastmonth")">Tháng trước</a></li>
+                                <li><a class="dropdown-item @(heatmapFilter == "nextmonth" ? "active" : "")" href="@Model.BuildFilterUrl("heatmapFilter", "nextmonth")">Tháng sau</a></li>
                             </ul>
                         </div>
                     </div>
@@ -244,8 +267,23 @@
         <div class="col-xl-8">
             <div class="card appointment-card">
                 <div class="card-header custom-header">
-                    <span class="card-title-text">Các cuộc hẹn (@Model.FilterPeriodLabel)</span>
-                    <div style="width: 200px;">
+                    <span class="card-title-text">Các cuộc hẹn</span>
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <div class="dropdown" style="width: 150px;">
+                            <button class="btn btn-filter dropdown-toggle" type="button" id="filterAppointments" data-bs-toggle="dropdown" aria-expanded="false">
+                                @Model.AppointmentListFilterLabel
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="filterAppointments">
+                                <li><a class="dropdown-item @(appointmentFilter == "week" ? "active" : "")" href="@Model.BuildFilterUrl("listFilter", "week")">Tuần này</a></li>
+                                <li><a class="dropdown-item @(appointmentFilter == "lastweek" ? "active" : "")" href="@Model.BuildFilterUrl("listFilter", "lastweek")">Tuần trước</a></li>
+                                <li><a class="dropdown-item @(appointmentFilter == "nextweek" ? "active" : "")" href="@Model.BuildFilterUrl("listFilter", "nextweek")">Tuần sau</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item @(appointmentFilter == "month" ? "active" : "")" href="@Model.BuildFilterUrl("listFilter", "month")">Tháng này</a></li>
+                                <li><a class="dropdown-item @(appointmentFilter == "lastmonth" ? "active" : "")" href="@Model.BuildFilterUrl("listFilter", "lastmonth")">Tháng trước</a></li>
+                                <li><a class="dropdown-item @(appointmentFilter == "nextmonth" ? "active" : "")" href="@Model.BuildFilterUrl("listFilter", "nextmonth")">Tháng sau</a></li>
+                            </ul>
+                        </div>
+                        <div style="width: 200px;">
                         <select class="form-select form-select-sm" id="appointmentStatusFilter">
                             <option value="all">Tất cả các trạng thái</option>
                             <option value="Approved">Đã xác nhận</option>
@@ -254,6 +292,7 @@
                             <option value="Rejected">Đã từ chối</option>
                             <option value="NoShow">Vắng mặt</option>
                         </select>
+                    </div>
                     </div>
                 </div>
 
@@ -291,10 +330,19 @@
             <div class="card performance-card">
                 <div class="card-header custom-header">
                     <span class="card-title-text">Hiệu suất</span>
-                    <div style="width: 150px;">
-                        <button class="btn btn-filter dropdown-toggle" type="button" disabled>
-                            @Model.FilterPeriodLabel
+                    <div class="dropdown" style="width: 150px;">
+                        <button class="btn btn-filter dropdown-toggle" type="button" id="filterPerformance" data-bs-toggle="dropdown" aria-expanded="false">
+                            @Model.PerformanceFilterLabel
                         </button>
+                        <ul class="dropdown-menu" aria-labelledby="filterPerformance">
+                            <li><a class="dropdown-item @(performanceFilter == "week" ? "active" : "")" href="@Model.BuildFilterUrl("performanceFilter", "week")">Tuần này</a></li>
+                            <li><a class="dropdown-item @(performanceFilter == "lastweek" ? "active" : "")" href="@Model.BuildFilterUrl("performanceFilter", "lastweek")">Tuần trước</a></li>
+                            <li><a class="dropdown-item @(performanceFilter == "nextweek" ? "active" : "")" href="@Model.BuildFilterUrl("performanceFilter", "nextweek")">Tuần sau</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item @(performanceFilter == "month" ? "active" : "")" href="@Model.BuildFilterUrl("performanceFilter", "month")">Tháng này</a></li>
+                            <li><a class="dropdown-item @(performanceFilter == "lastmonth" ? "active" : "")" href="@Model.BuildFilterUrl("performanceFilter", "lastmonth")">Tháng trước</a></li>
+                            <li><a class="dropdown-item @(performanceFilter == "nextmonth" ? "active" : "")" href="@Model.BuildFilterUrl("performanceFilter", "nextmonth")">Tháng sau</a></li>
+                        </ul>
                     </div>
                 </div>
                 <div class="card-body">

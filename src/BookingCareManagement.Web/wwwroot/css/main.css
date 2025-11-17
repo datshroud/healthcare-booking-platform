@@ -100,7 +100,6 @@
     background-position: top center; /* nằm ở trên, canh giữa ngang */
     background-size: auto; /* giữ tỉ lệ/góc gốc */
 }
-
 /* USER AVATAR */
 .user-avatar {
     width: 38px;
@@ -173,4 +172,59 @@
     top: 100% !important; /* nằm ngay dưới nút */
     left: 0 !important;
     margin-top: 5px !important;
+}
+
+/* NOTIFICATION DROPDOWN */
+#notifDropdown .badge {
+    font-size: 0.65rem;
+    padding: 0.15rem 0.35rem;
+}
+
+.notif-list {
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+.notif-entry {
+    border-radius: 10px;
+    padding: 0.75rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    border: 1px solid transparent;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
+    font-size: 0.9rem;
+}
+
+.notif-entry + .notif-entry {
+    margin-top: 0.5rem;
+}
+
+.notif-entry--unread {
+    background-color: #f2f6ff;
+    border-color: #cdddfd;
+}
+
+.notif-entry__title {
+    font-weight: 600;
+    color: #0b1e39;
+}
+
+.notif-entry__message {
+    color: #4a5674;
+    font-size: 0.85rem;
+}
+
+.notif-entry__meta {
+    font-size: 0.75rem;
+    color: #7c859c;
+}
+
+.notif-entry__mark {
+    font-size: 0.75rem;
+    color: #2563eb;
+}
+
+.notif-entry__mark:disabled {
+    color: #9ca3af;
 }

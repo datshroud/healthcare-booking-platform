@@ -9,8 +9,12 @@ using BookingCareManagement.Application.Features.Appointments.Queries;
 using BookingCareManagement.Application.Features.Auth.Commands;
 using BookingCareManagement.Application.Features.Doctors.Commands;
 using BookingCareManagement.Application.Features.Doctors.Queries;
+using BookingCareManagement.Application.Features.Notifications.Commands;
+using BookingCareManagement.Application.Features.Notifications.Queries;
 using BookingCareManagement.Application.Features.Specialties.Commands;
 using BookingCareManagement.Application.Features.Specialties.Queries;
+using BookingCareManagement.Application.Features.SupportChat.Commands;
+using BookingCareManagement.Application.Features.SupportChat.Queries;
 using BookingCareManagement.Domain.Aggregates.User;
 using BookingCareManagement.Domain.Abstractions;
 using BookingCareManagement.Infrastructure.Identity.Jwt;
@@ -110,7 +114,9 @@ namespace BookingCareManagement.Infrastructure.Identity
             services.AddScoped<IDoctorRepository, DoctorRepository>();
             services.AddScoped<ISpecialtyRepository, SpecialtyRepository>();
             services.AddScoped<IAppointmentRepository, AppointmentRepository>();
+            services.AddScoped<IAdminNotificationRepository, AdminNotificationRepository>();
             services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddScoped<ISupportConversationRepository, SupportConversationRepository>();
 
             services.AddScoped<GetAllDoctorsQueryHandler>();
             services.AddScoped<GetDoctorByIdQueryHandler>();
@@ -140,6 +146,17 @@ namespace BookingCareManagement.Infrastructure.Identity
             services.AddScoped<CreateAppointmentCommandHandler>();
             services.AddScoped<CancelAppointmentCommandHandler>();
             services.AddScoped<DeleteAppointmentCommandHandler>();
+
+            // Admin notification handlers
+            services.AddScoped<CreateAdminNotificationCommandHandler>();
+            services.AddScoped<MarkAdminNotificationReadCommandHandler>();
+            services.AddScoped<MarkAllAdminNotificationsReadCommandHandler>();
+            services.AddScoped<GetRecentAdminNotificationsQueryHandler>();
+            services.AddScoped<GetUnreadAdminNotificationsCountQueryHandler>();
+
+            services.AddScoped<EnsureSupportConversationCommandHandler>();
+            services.AddScoped<GetSupportMessagesQueryHandler>();
+            services.AddScoped<SendSupportMessageCommandHandler>();
 
             return services;
         }

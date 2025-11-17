@@ -17,9 +17,17 @@ public class IndexModel : PageModel
         // If the user is already authenticated and is an admin, redirect them to the admin dashboard.
         // This preserves the last-signed-in admin cookie so restarting the app will land the admin
         // on /dashboard instead of the public root.
-        if (User?.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Doctor")))
+        if (User?.Identity?.IsAuthenticated == true)
         {
-            return Redirect("/dashboard");
+            if (User.IsInRole("Admin"))
+            {
+                return Redirect("/dashboard");
+            }
+
+            if (User.IsInRole("Doctor"))
+            {
+                return Redirect("/doctor/dashboard");
+            }
         }
 
         return Page();

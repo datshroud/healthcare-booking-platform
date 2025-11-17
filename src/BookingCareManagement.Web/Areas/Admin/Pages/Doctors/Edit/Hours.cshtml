@@ -161,12 +161,35 @@
                     </div>
                 </div>
 
+                <div class="row g-3 align-items-end mb-4">
+                    <div class="col-md-6">
+                        <label for="dayFilterSelect" class="form-label text-light small text-uppercase">Lọc theo thứ</label>
+                        <select id="dayFilterSelect" class="form-select form-select-sm bg-dark text-light border-secondary">
+                            <option value="all">Tất cả các ngày</option>
+                            @foreach (var day in Model.Form.Days)
+                            {
+                                <option value="@day.DayOfWeek">@Model.GetDayDisplayName(day.DayOfWeek)</option>
+                            }
+                        </select>
+                        <small class="text-muted">Chỉ hiển thị những ngày phù hợp để tiện chỉnh sửa.</small>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="button" class="btn btn-outline-light btn-sm w-100" id="resetDayFilterButton">
+                            <i class="fa-solid fa-rotate-left me-1"></i>Hiện tất cả
+                        </button>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning py-2 px-3 d-none" id="dayFilterEmptyState">
+                    <i class="fa-solid fa-info-circle me-2"></i>Không có ngày nào khớp với bộ lọc đang chọn.
+                </div>
+
                 <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
                 @for (var dayIndex = 0; dayIndex < Model.Form.Days.Count; dayIndex++)
                 {
                     var day = Model.Form.Days[dayIndex];
-                    <div class="day-card" data-day-card data-day-index="@dayIndex">
+                    <div class="day-card" data-day-card data-day-index="@dayIndex" data-day-value="@day.DayOfWeek" data-day-name="@Model.GetDayDisplayName(day.DayOfWeek)">
                         <input type="hidden" asp-for="Form.Days[dayIndex].DayOfWeek" />
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div class="d-flex align-items-center">
@@ -261,6 +284,9 @@
             const endSelect = modalElement.querySelector('[data-modal-end]');
             const locationInput = modalElement.querySelector('[data-modal-location]');
             const errorBox = modalElement.querySelector('[data-modal-error]');
+            const dayFilterSelect = document.getElementById('dayFilterSelect');
+            const resetDayFilterButton = document.getElementById('resetDayFilterButton');
+            const dayFilterEmptyState = document.getElementById('dayFilterEmptyState');
 
             const dayIndexInput = document.getElementById('ModalInput_DayIndex');
             const startInputHidden = document.getElementById('ModalInput_StartTime');
@@ -369,6 +395,37 @@
                     endSelect.appendChild(option);
                 });
             };
+
+            const applyDayFilter = (value) => {
+                const normalized = value === null || value === undefined ? 'all' : String(value);
+                const cards = document.querySelectorAll('[data-day-card]');
+                let visibleCount = 0;
+                cards.forEach(card => {
+                    const cardValue = card.getAttribute('data-day-value');
+                    const shouldShow = normalized === 'all' || cardValue === normalized;
+                    card.classList.toggle('d-none', !shouldShow);
+                    if (shouldShow) {
+                        visibleCount++;
+                    }
+                });
+
+                if (dayFilterEmptyState) {
+                    dayFilterEmptyState.classList.toggle('d-none', visibleCount > 0);
+                }
+            };
+
+            dayFilterSelect?.addEventListener('change', (event) => {
+                applyDayFilter(event.target.value);
+            });
+
+            resetDayFilterButton?.addEventListener('click', () => {
+                if (dayFilterSelect) {
+                    dayFilterSelect.value = 'all';
+                }
+                applyDayFilter('all');
+            });
+
+            applyDayFilter(dayFilterSelect?.value || 'all');
 
             addButtons.forEach(button => {
                 button.addEventListener('click', () => {

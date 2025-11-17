@@ -100,6 +100,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/chat-widget.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/BookingCareManagement.styles.css" asp-append-version="true" />
     
     @RenderSection("Head", required: false)
@@ -160,9 +161,70 @@
         </p>
     </footer>
 
+    <div class="chat-widget" data-chat-widget>
+        <button type="button" class="chat-widget__toggle" data-chat-toggle aria-label="Mở hộp thoại hỗ trợ">
+            <i class="fa-solid fa-comments"></i>
+            <span class="chat-widget__badge d-none" data-chat-badge>0</span>
+        </button>
+        <div class="chat-widget__panel" data-chat-panel aria-hidden="true" aria-label="Hỗ trợ trực tuyến">
+            <div class="chat-widget__header">
+                <div>
+                    <p class="chat-widget__title mb-0">Trợ lý BookingCare</p>
+                    <small class="text-muted">Thường phản hồi trong vài phút</small>
+                </div>
+                <button type="button" class="btn btn-link text-light p-0 chat-widget__close" data-chat-close aria-label="Đóng cửa sổ chat">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="chat-widget__body">
+                <div class="chat-widget__recipient-picker" data-chat-recipient-container>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <p class="chat-widget__recipient-label mb-0">Trao đổi với</p>
+                            <small class="text-muted">Chọn bác sĩ đã đặt lịch hoặc đội ngũ hỗ trợ</small>
+                        </div>
+                        <select class="form-select form-select-sm chat-widget__recipient-select" data-chat-recipient aria-label="Chọn người nhận"></select>
+                    </div>
+                    <div class="chat-widget__recipient-meta" data-chat-recipient-meta>
+                        <div class="chat-widget__recipient-avatar" data-chat-recipient-avatar>
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <div>
+                            <p class="chat-widget__recipient-name mb-0" data-chat-recipient-name>Đang tải...</p>
+                            <small class="chat-widget__recipient-role" data-chat-recipient-role>--</small>
+                        </div>
+                    </div>
+                    <div class="chat-widget__recipient-empty d-none" data-chat-recipient-empty>
+                        <i class="fa-regular fa-circle-question me-2"></i>
+                        <span>Chưa có người nhận khả dụng.</span>
+                    </div>
+                </div>
+                <div class="chat-widget__loading" data-chat-loading>
+                    <div class="spinner-border spinner-border-sm text-light" role="status" aria-hidden="true"></div>
+                    <span>Đang kết nối...</span>
+                </div>
+                <div class="chat-widget__empty d-none" data-chat-empty>
+                    <i class="fa-regular fa-comments mb-2"></i>
+                    <p class="mb-0">Hãy cho chúng tôi biết bạn cần gì.</p>
+                </div>
+                <div class="chat-widget__messages" data-chat-messages aria-live="polite"></div>
+            </div>
+            <form class="chat-widget__composer" data-chat-form novalidate>
+                <div class="chat-widget__error d-none" data-chat-error></div>
+                <div class="chat-widget__composer-row">
+                    <input type="text" class="form-control form-control-sm chat-widget__input" placeholder="Nhập tin nhắn..." data-chat-input autocomplete="off" />
+                    <button type="submit" class="btn btn-primary btn-sm chat-widget__send" data-chat-send>
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>  
+    <script src="~/js/main.js" asp-append-version="true"></script>
 
     @RenderSection("Scripts", required: false)
 </body>

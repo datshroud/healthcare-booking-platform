@@ -2,6 +2,8 @@ using System;
 using BookingCareManagement.Domain.Aggregates.Appointment;
 using BookingCareManagement.Domain.Aggregates.ClinicRoom;
 using BookingCareManagement.Domain.Aggregates.Doctor;
+using BookingCareManagement.Domain.Aggregates.Notification;
+using BookingCareManagement.Domain.Aggregates.SupportChat;
 using BookingCareManagement.Domain.Aggregates.User;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +20,9 @@ public class ApplicationDBContext : IdentityDbContext<AppUser, AppRole, string>
     public DbSet<Appointment> Appointments => Set<Appointment>();
     public DbSet<DoctorWorkingHour> DoctorWorkingHours => Set<DoctorWorkingHour>();
     public DbSet<DoctorDayOff> DoctorDayOffs => Set<DoctorDayOff>();
+    public DbSet<AdminNotification> AdminNotifications => Set<AdminNotification>();
+    public DbSet<SupportConversation> SupportConversations => Set<SupportConversation>();
+    public DbSet<SupportMessage> SupportMessages => Set<SupportMessage>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {

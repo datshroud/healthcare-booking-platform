@@ -44,7 +44,30 @@ namespace BookingCareManagement.Web.Areas.Admin.Pages.Dashboard
 
         // --- Thuộc tính (Properties) cho Giao diện ---
         public string AdminName { get; set; } = "Admin";
-        public string FilterPeriodLabel { get; set; } = "Tuần này";
+        // Filter selections (independent per widget)
+        private Dictionary<string, string> _filterSelections = new(StringComparer.OrdinalIgnoreCase);
+        public IReadOnlyDictionary<string, string> FilterSelections => _filterSelections;
+
+        public string CustomerFilter { get; private set; } = "week";
+        public string CustomerFilterLabel { get; private set; } = "Tuần này";
+
+        public string RevenueFilter { get; private set; } = "week";
+        public string RevenueFilterLabel { get; private set; } = "Tuần này";
+
+        public string PendingFilter { get; private set; } = "week";
+        public string PendingFilterLabel { get; private set; } = "Tuần này";
+
+        public string ChartFilter { get; private set; } = "week";
+        public string ChartFilterLabel { get; private set; } = "Tuần này";
+
+        public string AppointmentListFilter { get; private set; } = "week";
+        public string AppointmentListFilterLabel { get; private set; } = "Tuần này";
+
+        public string HeatmapFilter { get; private set; } = "month";
+        public string HeatmapFilterLabel { get; private set; } = "Tháng này";
+
+        public string PerformanceFilter { get; private set; } = "week";
+        public string PerformanceFilterLabel { get; private set; } = "Tuần này";
 
         // Thẻ thống kê
         public int NewCustomerCount { get; set; }
@@ -76,15 +99,59 @@ namespace BookingCareManagement.Web.Areas.Admin.Pages.Dashboard
         public string HeatmapMonthLabel { get; set; } = string.Empty;
 
 
-        public async Task OnGetAsync([FromQuery] string filter = "week", CancellationToken cancellationToken = default)
+        public async Task OnGetAsync(
+            [FromQuery] string customerFilter = "week",
+            [FromQuery] string revenueFilter = "week",
+            [FromQuery] string pendingFilter = "week",
+            [FromQuery] string chartFilter = "week",
+            [FromQuery] string heatmapFilter = "month",
+            [FromQuery] string listFilter = "week",
+            [FromQuery] string performanceFilter = "week",
+            CancellationToken cancellationToken = default)
         {
             var user = await _userManager.GetUserAsync(User);
             AdminName = user?.GetFullName() ?? user?.Email ?? "Admin";
 
-            // 1. Lấy khoảng thời gian dựa trên filter
-            var (currentStart, currentEnd, previousStart, previousEnd, periodLabel, chartLabelFormat) = GetDateRangeFromFilter(filter);
-            FilterPeriodLabel = periodLabel; // Gán nhãn cho dropdown (ví dụ: "Tuần này")
-            HeatmapMonthLabel = currentStart.ToString("MMMM 'năm' yyyy", viVNCulture);
+            CustomerFilter = NormalizeFilterKey(customerFilter);
+            RevenueFilter = NormalizeFilterKey(revenueFilter);
+            PendingFilter = NormalizeFilterKey(pendingFilter);
+            ChartFilter = NormalizeFilterKey(chartFilter);
+            HeatmapFilter = NormalizeFilterKey(heatmapFilter, "month");
+            AppointmentListFilter = NormalizeFilterKey(listFilter);
+            PerformanceFilter = NormalizeFilterKey(performanceFilter);
+
+            _filterSelections = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+            {
+                ["customerFilter"] = CustomerFilter,
+                ["revenueFilter"] = RevenueFilter,
+                ["pendingFilter"] = PendingFilter,
+                ["chartFilter"] = ChartFilter,
+                ["heatmapFilter"] = HeatmapFilter,
+                ["listFilter"] = AppointmentListFilter,
+                ["performanceFilter"] = PerformanceFilter
+            };
+
+            var customerRange = GetDateRangeFromFilter(CustomerFilter);
+            CustomerFilterLabel = customerRange.Label;
+
+            var revenueRange = GetDateRangeFromFilter(RevenueFilter);
+            RevenueFilterLabel = revenueRange.Label;
+
+            var pendingRange = GetDateRangeFromFilter(PendingFilter);
+            PendingFilterLabel = pendingRange.Label;
+
+            var chartRange = GetDateRangeFromFilter(ChartFilter);
+            ChartFilterLabel = chartRange.Label;
+
+            var heatmapRange = GetDateRangeFromFilter(HeatmapFilter);
+            HeatmapFilterLabel = heatmapRange.Label;
+            HeatmapMonthLabel = heatmapRange.Start.ToString("MMMM 'năm' yyyy", viVNCulture);
+
+            var listRange = GetDateRangeFromFilter(AppointmentListFilter);
+            AppointmentListFilterLabel = listRange.Label;
+
+            var performanceRange = GetDateRangeFromFilter(PerformanceFilter);
+            PerformanceFilterLabel = performanceRange.Label;
 
             // 2. Tải TẤT CẢ dữ liệu liên quan MỘT LẦN
             var allCustomers = await _customerRepository.GetAllCustomersAsync(cancellationToken);
@@ -94,96 +161,126 @@ namespace BookingCareManagement.Web.Areas.Admin.Pages.Dashboard
 
 
             // --- 3. TÍNH TOÁN KHÁCH HÀNG ---
-            // Lọc khách hàng trong khoảng thời gian hiện tại
-            var customersInPeriod = allCustomers
-                .Where(c => c.CreatedAt >= currentStart && c.CreatedAt < currentEnd)
+            var customersInSelectedRange = allCustomers
+                .Where(c => c.CreatedAt >= customerRange.Start && c.CreatedAt < customerRange.End)
                 .ToList();
-            NewCustomerCount = customersInPeriod.Count;
+            NewCustomerCount = customersInSelectedRange.Count;
 
-            // Nhóm khách hàng mới theo ngày để vẽ biểu đồ sparkline
-            var newCustomersByDay = customersInPeriod
+            var newCustomersByDay = customersInSelectedRange
                 .GroupBy(c => c.CreatedAt.Date)
                 .ToDictionary(g => g.Key, g => g.Count());
 
-            int sparklineDays = (filter == "week" || filter == "lastweek" || filter == "nextweek") ? 7 : (currentEnd - currentStart).Days;
-            if (sparklineDays <= 0) sparklineDays = 7;
-
-            var sparklineCustomerData = new List<int>();
-            for (int i = 0; i < sparklineDays; i++)
+            int customerSparklineDays = ResolveSparklineLength(CustomerFilter, customerRange.Start, customerRange.End);
+            var sparklineCustomerData = new List<int>(customerSparklineDays);
+            for (int i = 0; i < customerSparklineDays; i++)
             {
-                var day = currentStart.AddDays(i).Date;
+                var day = customerRange.Start.AddDays(i).Date;
                 newCustomersByDay.TryGetValue(day, out int count);
                 sparklineCustomerData.Add(count);
             }
             NewCustomerSparkline = sparklineCustomerData;
 
-            // Donut Khách hàng
-            int totalCustomerCount = allCustomers.Count();
-            if (totalCustomerCount > 0)
-            {
-                var returningCustomerIds = allAppointments
-                    .Where(a => !string.IsNullOrEmpty(a.PatientId) && a.Status == AppointmentStatus.Approved)
-                    .Select(a => a.PatientId)
-                    .Distinct()
-                    .ToHashSet();
+            // Donut Khách hàng (dựa trên khoảng thời gian của biểu đồ chính)
+            var approvedAppointments = allAppointments
+                .Where(a => a.Status == AppointmentStatus.Approved && !string.IsNullOrWhiteSpace(a.PatientId))
+                .ToList();
 
-                int returningCount = allCustomers.Count(c => returningCustomerIds.Contains(c.Id));
-                DonutReturningCustomerPercent = (int)Math.Round((double)returningCount / totalCustomerCount * 100);
-                DonutNewCustomerPercent = 100 - DonutReturningCustomerPercent;
+            var firstAppointmentByPatient = approvedAppointments
+                .GroupBy(a => a.PatientId!)
+                .ToDictionary(g => g.Key, g => g.Min(a => a.StartUtc));
+
+            var approvedInChartRange = approvedAppointments
+                .Where(a => a.StartUtc >= chartRange.Start && a.StartUtc < chartRange.End)
+                .ToList();
+
+            var patientIdsInChartRange = approvedInChartRange
+                .Select(a => a.PatientId!)
+                .Distinct()
+                .ToList();
+
+            if (patientIdsInChartRange.Count > 0)
+            {
+                int newPatientCount = patientIdsInChartRange.Count(id =>
+                    firstAppointmentByPatient.TryGetValue(id, out var firstSeen)
+                        && firstSeen >= chartRange.Start && firstSeen < chartRange.End);
+
+                newPatientCount = Math.Clamp(newPatientCount, 0, patientIdsInChartRange.Count);
+                int returningPatientCount = Math.Max(patientIdsInChartRange.Count - newPatientCount, 0);
+                int totalPatients = Math.Max(newPatientCount + returningPatientCount, 1);
+
+                DonutNewCustomerPercent = (int)Math.Round((double)newPatientCount / totalPatients * 100);
+                DonutReturningCustomerPercent = 100 - DonutNewCustomerPercent;
+            }
+            else
+            {
+                DonutNewCustomerPercent = 100;
+                DonutReturningCustomerPercent = 0;
             }
 
             // --- 4. TÍNH TOÁN LỊCH HẸN & DOANH THU ---
-            var apptsInPeriod = allAppointments
-                .Where(a => a.StartUtc >= currentStart && a.StartUtc < currentEnd)
-                .ToList();
-            var apptsInPreviousPeriod = allAppointments
-                .Where(a => a.StartUtc >= previousStart && a.StartUtc < previousEnd)
+            var chartAppointments = allAppointments
+                .Where(a => a.StartUtc >= chartRange.Start && a.StartUtc < chartRange.End)
                 .ToList();
 
-            // Thẻ thống kê
-            BookedAppointmentCount = apptsInPeriod.Count(a => a.Status == AppointmentStatus.Approved);
-            CancelledAppointmentCount = apptsInPeriod.Count(a => a.Status == AppointmentStatus.Canceled);
-            PendingAppointmentCount = apptsInPeriod.Count(a => a.Status == AppointmentStatus.Pending); // ⭐️ THAY THẾ
-            TotalRevenue = 0; // Tạm thời là 0
+            var chartAppointmentsPrevious = allAppointments
+                .Where(a => a.StartUtc >= chartRange.PrevStart && a.StartUtc < chartRange.PrevEnd)
+                .ToList();
+
+            BookedAppointmentCount = chartAppointments.Count(a => a.Status == AppointmentStatus.Approved);
+            CancelledAppointmentCount = chartAppointments.Count(a => a.Status == AppointmentStatus.Canceled);
+
+            var revenueAppointments = allAppointments
+                .Where(a => a.StartUtc >= revenueRange.Start && a.StartUtc < revenueRange.End)
+                .ToList();
+            TotalRevenue = revenueAppointments
+                .Where(a => a.Status == AppointmentStatus.Approved)
+                .Sum(a => a.Price);
+
+            var pendingAppointments = allAppointments
+                .Where(a => a.StartUtc >= pendingRange.Start && a.StartUtc < pendingRange.End)
+                .ToList();
+            PendingAppointmentCount = pendingAppointments.Count(a => a.Status == AppointmentStatus.Pending);
 
             // Sparkline Doanh thu
-            var revenueByDay = apptsInPeriod
+            var revenueByDay = revenueAppointments
                 .Where(a => a.Status == AppointmentStatus.Approved)
                 .GroupBy(a => a.StartUtc.Date)
-                .ToDictionary(g => g.Key, g => g.Sum(a => 0m)); // TODO: Thay 0m bằng a.Price
+                .ToDictionary(g => g.Key, g => g.Sum(a => a.Price));
 
-            var revenueSparklineData = new List<decimal>();
-            for (int i = 0; i < sparklineDays; i++)
+            int revenueSparklineDays = ResolveSparklineLength(RevenueFilter, revenueRange.Start, revenueRange.End);
+            var revenueSparklineData = new List<decimal>(revenueSparklineDays);
+            for (int i = 0; i < revenueSparklineDays; i++)
             {
-                var day = currentStart.AddDays(i).Date;
-                revenueByDay.TryGetValue(day, out decimal sum);
+                var day = revenueRange.Start.AddDays(i).Date;
+                revenueByDay.TryGetValue(day, out var sum);
                 revenueSparklineData.Add(sum);
             }
             RevenueSparkline = revenueSparklineData;
 
-            // ⭐️ Sparkline Lịch hẹn đang chờ (THAY THẾ)
-            var pendingByDay = apptsInPeriod
+            // Sparkline lịch hẹn đang chờ
+            var pendingByDay = pendingAppointments
                 .Where(a => a.Status == AppointmentStatus.Pending)
                 .GroupBy(a => a.StartUtc.Date)
                 .ToDictionary(g => g.Key, g => g.Count());
 
-            var pendingSparklineData = new List<int>();
-            for (int i = 0; i < sparklineDays; i++)
+            int pendingSparklineDays = ResolveSparklineLength(PendingFilter, pendingRange.Start, pendingRange.End);
+            var pendingSparklineData = new List<int>(pendingSparklineDays);
+            for (int i = 0; i < pendingSparklineDays; i++)
             {
-                var day = currentStart.AddDays(i).Date;
-                pendingByDay.TryGetValue(day, out int count);
+                var day = pendingRange.Start.AddDays(i).Date;
+                pendingByDay.TryGetValue(day, out var count);
                 pendingSparklineData.Add(count);
             }
             PendingSparkline = pendingSparklineData;
 
-            // Tính % tăng/giảm so với kỳ trước
-            int prevBookedCount = apptsInPreviousPeriod.Count(a => a.Status == AppointmentStatus.Approved);
-            int prevCancelledCount = apptsInPreviousPeriod.Count(a => a.Status == AppointmentStatus.Canceled);
+            // % thay đổi so với kỳ trước
+            int prevBookedCount = chartAppointmentsPrevious.Count(a => a.Status == AppointmentStatus.Approved);
+            int prevCancelledCount = chartAppointmentsPrevious.Count(a => a.Status == AppointmentStatus.Canceled);
             BookedApptChangePercent = CalculatePercentageChange(BookedAppointmentCount, prevBookedCount);
             CancelledApptChangePercent = CalculatePercentageChange(CancelledAppointmentCount, prevCancelledCount);
 
-            // Biểu đồ đường chính (Main Chart)
-            var appointmentsByDay = apptsInPeriod
+            // Biểu đồ đường chính
+            var appointmentsByDay = chartAppointments
                 .Where(a => a.Status == AppointmentStatus.Approved)
                 .GroupBy(a => a.StartUtc.Date)
                 .ToDictionary(g => g.Key, g => g.Count());
@@ -191,21 +288,23 @@ namespace BookingCareManagement.Web.Areas.Admin.Pages.Dashboard
             MainAppointmentChart.Clear();
             MainAppointmentLabels.Clear();
 
-            int chartDays = (currentEnd - currentStart).Days;
-            if (chartDays <= 0 || chartDays > 31) chartDays = (filter == "week" || filter == "lastweek" || filter == "nextweek") ? 7 : 30;
-
-            for (var i = 0; i < chartDays; i++)
+            int chartDays = ResolveChartDayCount(ChartFilter, chartRange.Start, chartRange.End);
+            for (int i = 0; i < chartDays; i++)
             {
-                var day = currentStart.Date.AddDays(i);
-                appointmentsByDay.TryGetValue(day, out int count);
+                var day = chartRange.Start.Date.AddDays(i);
+                appointmentsByDay.TryGetValue(day, out var count);
                 MainAppointmentChart.Add(count);
-                MainAppointmentLabels.Add(day.ToString(chartLabelFormat, viVNCulture));
+                MainAppointmentLabels.Add(day.ToString(chartRange.ChartLabel, viVNCulture));
             }
 
-            // Bảng "Cuộc hẹn gần đây" (Lấy 10 lịch hẹn, bất kể trạng thái)
-            RecentAppointments = apptsInPeriod
+            // Bảng "Cuộc hẹn gần đây"
+            var appointmentsForList = allAppointments
+                .Where(a => a.StartUtc >= listRange.Start && a.StartUtc < listRange.End)
                 .OrderBy(a => a.StartUtc)
                 .Take(10)
+                .ToList();
+
+            RecentAppointments = appointmentsForList
                 .Join(allSpecialties,
                       app => app.SpecialtyId,
                       spec => spec.Id,
@@ -226,20 +325,22 @@ namespace BookingCareManagement.Web.Areas.Admin.Pages.Dashboard
                 .ToList();
 
             // --- 5. TÍNH TOÁN HIỆU SUẤT ---
-            var approvedApptsInPeriod = apptsInPeriod
-                .Where(a => a.Status == AppointmentStatus.Approved)
+            var approvedApptsInPerformanceRange = allAppointments
+                .Where(a => a.StartUtc >= performanceRange.Start && a.StartUtc < performanceRange.End && a.Status == AppointmentStatus.Approved)
                 .ToList();
 
             EmployeePerformance = allDoctors
                 .Select(doctor =>
                 {
-                    var appts = approvedApptsInPeriod.Where(a => a.DoctorId == doctor.Id).ToList();
+                    var doctorUser = doctor.AppUser;
+                    var doctorName = doctorUser?.GetFullName() ?? doctorUser?.Email ?? "Bác sĩ";
+                    var appts = approvedApptsInPerformanceRange.Where(a => a.DoctorId == doctor.Id).ToList();
                     return new PerformanceDto
                     {
-                        Name = doctor.AppUser.GetFullName() ?? doctor.AppUser.Email,
-                        AvatarUrl = GetAvatarUrl(doctor.AppUser),
+                        Name = doctorName,
+                        AvatarUrl = doctorUser is null ? GetAvatarUrl((string?)null, doctorName) : GetAvatarUrl(doctorUser),
                         Appointments = appts.Count,
-                        Revenue = appts.Sum(a => 0m) // TODO: Thay 0m bằng a.Price
+                        Revenue = appts.Sum(a => a.Price)
                     };
                 })
                 .ToList();
@@ -247,25 +348,28 @@ namespace BookingCareManagement.Web.Areas.Admin.Pages.Dashboard
             ServicePerformance = allSpecialties
                 .Select(spec =>
                 {
-                    var appts = approvedApptsInPeriod.Where(a => a.SpecialtyId == spec.Id).ToList();
+                    var serviceName = string.IsNullOrWhiteSpace(spec.Name) ? "Chuyên khoa" : spec.Name;
+                    var appts = approvedApptsInPerformanceRange.Where(a => a.SpecialtyId == spec.Id).ToList();
                     return new PerformanceDto
                     {
-                        Name = spec.Name,
-                        AvatarUrl = GetAvatarUrl(spec.ImageUrl, spec.Name),
+                        Name = serviceName,
+                        AvatarUrl = GetAvatarUrl(spec.ImageUrl, serviceName),
                         Appointments = appts.Count,
-                        Revenue = appts.Sum(a => 0m) // TODO: Thay 0m bằng spec.Price
+                        Revenue = appts.Sum(a => a.Price)
                     };
                 })
                 .ToList();
 
             // --- 6. TÍNH TOÁN HEATMAP ---
-            // (Dùng apptsInPeriod để tính cho tháng hiện tại của filter)
-            var appointmentsByDayInMonth = apptsInPeriod
-                .Where(a => a.Status == AppointmentStatus.Approved)
+            var heatmapAppointments = allAppointments
+                .Where(a => a.StartUtc >= heatmapRange.Start && a.StartUtc < heatmapRange.End && a.Status == AppointmentStatus.Approved)
+                .ToList();
+
+            var appointmentsByDayInMonth = heatmapAppointments
                 .GroupBy(a => TimeZoneInfo.ConvertTimeFromUtc(a.StartUtc, AppointmentStatusDisplay.DisplayTimeZone).Date)
                 .ToDictionary(g => g.Key, g => g.Count());
 
-            HeatmapData = GenerateHeatmapData(currentStart, currentEnd, appointmentsByDayInMonth);
+            HeatmapData = GenerateHeatmapData(heatmapRange.Start, heatmapRange.End, appointmentsByDayInMonth);
         }
 
         #region Helper DTOs and Methods
@@ -275,21 +379,21 @@ namespace BookingCareManagement.Web.Areas.Admin.Pages.Dashboard
         {
             public Guid Id { get; set; }
             public DateTime Date { get; set; }
-            public string SpecialtyName { get; set; }
-            public string SpecialtyColor { get; set; }
-            public string CustomerName { get; set; }
-            public string Status { get; set; } // Tên mã (ví dụ: "Pending")
-            public string AvatarUrl { get; set; }
-            public string StatusLabel { get; set; } // Tên hiển thị (ví dụ: "Chờ xác nhận")
-            public string StatusCssClass { get; set; } // CSS cho nút
-            public string StatusIcon { get; set; } // Icon cho nút
+            public string SpecialtyName { get; set; } = string.Empty;
+            public string SpecialtyColor { get; set; } = "#6c757d";
+            public string CustomerName { get; set; } = string.Empty;
+            public string Status { get; set; } = string.Empty; // Tên mã (ví dụ: "Pending")
+            public string AvatarUrl { get; set; } = string.Empty;
+            public string StatusLabel { get; set; } = string.Empty; // Tên hiển thị (ví dụ: "Chờ xác nhận")
+            public string StatusCssClass { get; set; } = string.Empty; // CSS cho nút
+            public string StatusIcon { get; set; } = string.Empty; // Icon cho nút
         }
 
         // DTO cho bảng "Hiệu suất"
         public class PerformanceDto
         {
-            public string Name { get; set; }
-            public string AvatarUrl { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public string AvatarUrl { get; set; } = string.Empty;
             public int Appointments { get; set; } // Tổng số lịch hẹn
             public decimal Revenue { get; set; } // Tổng doanh thu
             public double Occupancy { get; set; } // Tỷ lệ chiếm dụng (tạm thời = 0)
@@ -334,9 +438,51 @@ namespace BookingCareManagement.Web.Areas.Admin.Pages.Dashboard
             }
         }
 
-        // Hàm helper lấy Avatar
-        private string GetAvatarUrl(AppUser user)
+        public string BuildFilterUrl(string targetKey, string targetValue)
         {
+            if (string.IsNullOrWhiteSpace(targetKey))
+            {
+                return Request.Path;
+            }
+
+            var normalizedTarget = targetKey.Trim();
+            var normalizedValue = string.IsNullOrWhiteSpace(targetValue)
+                ? (normalizedTarget.Equals("heatmapFilter", StringComparison.OrdinalIgnoreCase) ? "month" : "week")
+                : targetValue.Trim();
+
+            var builder = new List<string>();
+            if (_filterSelections == null || _filterSelections.Count == 0)
+            {
+                builder.Add($"{Uri.EscapeDataString(normalizedTarget)}={Uri.EscapeDataString(normalizedValue)}");
+            }
+            else
+            {
+                foreach (var kvp in _filterSelections)
+                {
+                    var value = kvp.Key.Equals(normalizedTarget, StringComparison.OrdinalIgnoreCase)
+                        ? normalizedValue
+                        : kvp.Value;
+                    builder.Add($"{Uri.EscapeDataString(kvp.Key)}={Uri.EscapeDataString(value)}");
+                }
+
+                if (!_filterSelections.ContainsKey(normalizedTarget))
+                {
+                    builder.Add($"{Uri.EscapeDataString(normalizedTarget)}={Uri.EscapeDataString(normalizedValue)}");
+                }
+            }
+
+            var query = builder.Count > 0 ? "?" + string.Join("&", builder) : string.Empty;
+            return $"{Request.Path}{query}";
+        }
+
+        // Hàm helper lấy Avatar
+        private string GetAvatarUrl(AppUser? user)
+        {
+            if (user is null)
+            {
+                return GetAvatarUrl((string?)null, "User");
+            }
+
             if (!string.IsNullOrWhiteSpace(user.AvatarUrl))
             {
                 return user.AvatarUrl;
@@ -345,7 +491,7 @@ namespace BookingCareManagement.Web.Areas.Admin.Pages.Dashboard
             return $"https://ui-avatars.com/api/?name={Uri.EscapeDataString(name)}&background=0D6EFD&color=fff";
         }
 
-        private string GetAvatarUrl(string imageUrl, string fallbackName)
+        private string GetAvatarUrl(string? imageUrl, string fallbackName)
         {
             if (!string.IsNullOrWhiteSpace(imageUrl))
             {
@@ -363,6 +509,53 @@ namespace BookingCareManagement.Web.Areas.Admin.Pages.Dashboard
                 return current > 0 ? 100.0 : 0.0;
             }
             return Math.Round(((double)(current - previous) / previous) * 100.0);
+        }
+
+        private static int ResolveSparklineLength(string filterKey, DateTime start, DateTime end)
+        {
+            if (IsWeekFilter(filterKey))
+            {
+                return 7;
+            }
+
+            var span = (int)(end - start).TotalDays;
+            return span <= 0 ? 7 : span;
+        }
+
+        private static int ResolveChartDayCount(string filterKey, DateTime start, DateTime end)
+        {
+            if (IsWeekFilter(filterKey))
+            {
+                return 7;
+            }
+
+            var span = (int)(end - start).TotalDays;
+            if (span <= 0)
+            {
+                return 30;
+            }
+
+            return Math.Min(span, 31);
+        }
+
+        private static bool IsWeekFilter(string filterKey)
+        {
+            return filterKey is "week" or "lastweek" or "nextweek";
+        }
+
+        private static string NormalizeFilterKey(string? filter, string defaultValue = "week")
+        {
+            if (string.IsNullOrWhiteSpace(filter))
+            {
+                return defaultValue;
+            }
+
+            var normalized = filter.Trim().ToLowerInvariant();
+            return normalized switch
+            {
+                "week" or "lastweek" or "nextweek" or "month" or "lastmonth" or "nextmonth" => normalized,
+                _ => defaultValue
+            };
         }
 
         // Hàm helper xử lý filter thời gian

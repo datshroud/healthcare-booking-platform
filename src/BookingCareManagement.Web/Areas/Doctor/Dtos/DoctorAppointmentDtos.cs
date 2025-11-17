@@ -6,11 +6,13 @@ namespace BookingCareManagement.Web.Areas.Doctor.Dtos;
 public class DoctorAppointmentListItemDto
 {
     public Guid Id { get; set; }
+    public Guid DoctorId { get; set; }
     public Guid SpecialtyId { get; set; }
     public string SpecialtyName { get; set; } = string.Empty;
     public string SpecialtyColor { get; set; } = string.Empty;
     public string PatientName { get; set; } = string.Empty;
     public string CustomerPhone { get; set; } = string.Empty;
+    public string? PatientId { get; set; }
     public string Status { get; set; } = string.Empty;
     public string StatusLabel { get; set; } = string.Empty;
     public string StatusTone { get; set; } = string.Empty;
@@ -24,7 +26,9 @@ public class DoctorAppointmentListItemDto
     public string DateKey { get; set; } = string.Empty;
     public string TimeLabel { get; set; } = string.Empty;
     public int DurationMinutes { get; set; }
+    public Guid ClinicRoomId { get; set; }
     public string ClinicRoom { get; set; } = string.Empty;
+    public decimal Price { get; set; }
 }
 
 public class DoctorAppointmentMetadataDto
@@ -36,6 +40,8 @@ public class DoctorAppointmentMetadataDto
         = Array.Empty<DoctorAppointmentSpecialtyOptionDto>();
     public IReadOnlyCollection<DoctorAppointmentStatusOptionDto> Statuses { get; set; }
         = Array.Empty<DoctorAppointmentStatusOptionDto>();
+    public IReadOnlyCollection<DoctorAppointmentPatientOptionDto> Patients { get; set; }
+        = Array.Empty<DoctorAppointmentPatientOptionDto>();
 }
 
 public class DoctorAppointmentSpecialtyOptionDto
@@ -51,6 +57,13 @@ public class DoctorAppointmentStatusOptionDto
     public string Label { get; set; } = string.Empty;
     public string Tone { get; set; } = string.Empty;
     public string Icon { get; set; } = string.Empty;
+}
+
+public class DoctorAppointmentPatientOptionDto
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
 }
 
 public class DoctorAppointmentUpsertRequest

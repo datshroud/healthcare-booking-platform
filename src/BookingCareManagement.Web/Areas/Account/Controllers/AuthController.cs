@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using BookingCareManagement.Application.Features.Auth.Commands;
@@ -64,13 +65,14 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
                 var resp = await handler.Handle(req);
                 CookieHelper.SetAuthCookies(Response, resp.AccessToken, resp.ExpiresAt.ToUniversalTime(),
                     resp.RefreshToken, DateTime.UtcNow.AddDays(7));
-                // Return JSON redirect so fetch-based clients can handle navigation
-                // nếu đăng nhập thành công với admin và doctor thì chuyển sang /dashboard, ngược lại chuyển về /
-                var userRoles = await _userManager.GetRolesAsync(await _userManager.FindByEmailAsync(req.Email));
-                if (userRoles.Contains("Admin") || userRoles.Contains("Doctor"))
-                    return Ok(new { redirect = "/dashboard" });
-                else
-                    return Ok(new { redirect = "/" });
+
+                var user = await _userManager.FindByEmailAsync(req.Email);
+                var userRoles = user is not null
+                    ? await _userManager.GetRolesAsync(user)
+                    : Array.Empty<string>();
+
+                var redirect = ResolveDashboardRedirect(userRoles);
+                return Ok(new { redirect });
             } catch (AuthException ex) {
                 Console.WriteLine($"Login failed for {req?.Email}: {ex.Message}");
                 return Unauthorized(new ProblemDetails {
@@ -121,6 +123,26 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
             _jwt = jwt;
             _google = googleOptions.Value;
 
+        }
+
+        private static string ResolveDashboardRedirect(IList<string> roles)
+        {
+            if (roles is null || roles.Count == 0)
+            {
+                return "/";
+            }
+
+            if (roles.Contains("Admin"))
+            {
+                return "/dashboard";
+            }
+
+            if (roles.Contains("Doctor"))
+            {
+                return "/doctor/dashboard";
+            }
+
+            return "/";
         }
 
         [HttpGet("google/start")]

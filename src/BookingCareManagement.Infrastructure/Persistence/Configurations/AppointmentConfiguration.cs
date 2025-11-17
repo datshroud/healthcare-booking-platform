@@ -17,6 +17,9 @@ public class AppointmentConfiguration : IEntityTypeConfiguration<Appointment>
         e.Property(x => x.CustomerPhone).IsRequired().HasMaxLength(30);
         e.Property(x => x.Status).HasMaxLength(30).HasDefaultValue(AppointmentStatus.Pending);
         e.Property(x => x.PatientId).HasMaxLength(450);
+        e.Property(x => x.Price)
+            .HasColumnType("decimal(18,2)")
+            .HasDefaultValue(0m);
         e.HasOne<AppUser>()
             .WithMany()
             .HasForeignKey(x => x.PatientId)

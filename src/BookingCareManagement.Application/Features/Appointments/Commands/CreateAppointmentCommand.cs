@@ -16,6 +16,7 @@ public class CreateAppointmentCommand
     public string PatientName { get; set; } = string.Empty;
     public string CustomerPhone { get; set; } = string.Empty;
     public string? PatientId { get; set; }
+    public decimal? Price { get; set; }
 }
 
 public class CreateAppointmentCommandHandler
@@ -56,11 +57,27 @@ public class CreateAppointmentCommandHandler
             TimeSpan.FromMinutes(command.DurationMinutes),
             command.PatientName.Trim(),
             command.CustomerPhone.Trim(),
-            command.PatientId);
+            command.PatientId,
+            NormalizePrice(command.Price));
 
         _appointmentRepository.Add(appointment);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return appointment.ToDto();
+    }
+
+    private static decimal NormalizePrice(decimal? price)
+    {
+        if (!price.HasValue)
+        {
+            return 0m;
+        }
+
+        if (price.Value < 0)
+        {
+            throw new ValidationException("Giá khám không được âm.");
+        }
+
+        return decimal.Round(price.Value, 0, MidpointRounding.AwayFromZero);
     }
 }

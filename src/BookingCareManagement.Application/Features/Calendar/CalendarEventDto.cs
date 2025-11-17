@@ -20,4 +20,5 @@ public sealed class CalendarEventDto
     public string ClinicRoom { get; set; } = string.Empty;
     public DateTime StartUtc { get; set; }
     public DateTime EndUtc { get; set; }
+    public decimal Price { get; set; }
 }

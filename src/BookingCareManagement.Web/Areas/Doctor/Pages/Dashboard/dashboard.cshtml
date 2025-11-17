@@ -1,0 +1,217 @@
+﻿@page "/doctor/dashboard"
+@model BookingCareManagement.Web.Areas.Doctor.Pages.Dashboard.dashboardModel
+@{
+    ViewData["Title"] = "Bảng điều khiển bác sĩ";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" asp-append-version="true" />
+}
+@* data-doctor-dashboard la cai gi ?=> *@
+<div class="main-container" data-doctor-dashboard>
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Xin chào, @Model.DoctorName</h3>
+            <p class="text-muted mb-0">Kiểm tra nhanh hiệu suất và công suất phòng khám của bạn.</p>
+        </div>
+        <div class="text-end small text-muted">
+            <div>Giờ máy chủ: <span data-dashboard-clock>@DateTime.Now.ToString("dd/MM/yyyy HH:mm")</span></div>
+            <div>Nhật ký cập nhật theo thời gian thực</div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-2">
+        <div class="col-xl-4 col-md-6">
+            <div class="card stat-card" data-stat-card="new-customers">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+                        <div>
+                            <span class="card-title-text d-block">Bệnh nhân mới</span>
+                            <small class="text-muted" data-stat-label>Đang tải...</small>
+                        </div>
+                        <select class="form-select form-select-sm w-auto" data-range-select>
+                            <option value="this-week" selected>Tuần này</option>
+                            <option value="last-week">Tuần trước</option>
+                            <option value="this-month">Tháng này</option>
+                            <option value="last-month">Tháng trước</option>
+                        </select>
+                    </div>
+                    <div class="card-value" data-stat-value>--</div>
+                    <div class="small text-muted mb-2">Tổng số bệnh nhân lần đầu trong giai đoạn.</div>
+                    <div class="stat-sparkline" data-stat-chart></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-6">
+            <div class="card stat-card" data-stat-card="revenue">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+                        <div>
+                            <span class="card-title-text d-block">Doanh thu dự kiến</span>
+                            <small class="text-muted" data-stat-label>Đang tải...</small>
+                        </div>
+                        <select class="form-select form-select-sm w-auto" data-range-select>
+                            <option value="this-week" selected>Tuần này</option>
+                            <option value="this-month">Tháng này</option>
+                            <option value="three-months">3 tháng</option>
+                            <option value="six-months">6 tháng</option>
+                        </select>
+                    </div>
+                    <div class="card-value" data-stat-value>--</div>
+                    <div class="small text-muted mb-2">Dựa trên giá dịch vụ của bạn.</div>
+                    <div class="stat-sparkline" data-stat-chart></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4 col-md-12">
+            <div class="card stat-card" data-stat-card="occupancy">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
+                        <div>
+                            <span class="card-title-text d-block">Công suất trung bình</span>
+                            <small class="text-muted" data-stat-label>Đang tải...</small>
+                        </div>
+                        <select class="form-select form-select-sm w-auto" data-range-select>
+                            <option value="this-week" selected>Tuần này</option>
+                            <option value="this-month">Tháng này</option>
+                            <option value="three-months">3 tháng</option>
+                        </select>
+                    </div>
+                    <div class="card-value" data-stat-value>--</div>
+                    <div class="small text-muted mb-2">Tỷ lệ bận rộn theo khung giờ làm việc.</div>
+                    <div class="stat-sparkline" data-stat-chart></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-xl-8">
+            <div class="card doctor-trend-card">
+                <div class="card-body">
+                    <div class="doctor-trend-header">
+                        <div class="doctor-trend-stat">
+                            <p class="label">Appointments booked</p>
+                            <div class="value" data-trend-confirmed>--</div>
+                            <small class="trend-note text-success">
+                                <i class="fa-solid fa-arrow-trend-up me-1"></i>
+                                <span data-trend-label>Đang tải...</span>
+                            </small>
+                        </div>
+                        <div class="doctor-trend-stat">
+                            <p class="label">Canceled appointments</p>
+                            <div class="value" data-trend-canceled>--</div>
+                            <small class="trend-note text-muted">Stable</small>
+                        </div>
+                        <div class="doctor-trend-filter">
+                            <label class="text-muted small mb-1">Phạm vi</label>
+                            <select class="form-select form-select-sm" data-trend-range>
+                                <option value="this-week" selected>Tuần này</option>
+                                <option value="last-week">Tuần trước</option>
+                                <option value="this-month">Tháng này</option>
+                                <option value="three-months">3 tháng</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="doctorAppointmentsTrend" class="doctor-trend-chart"></div>
+
+                    <div class="doctor-customer-mix">
+                        <div class="doctor-mix-chart" id="doctorCustomerMix"></div>
+                        <div class="doctor-mix-meta">
+                            <p class="label">Customer mix</p>
+                            <div class="mix-row">
+                                <span class="dot dot-new"></span>
+                                <div>
+                                    <p class="mix-title mb-0">New Customers</p>
+                                    <small class="text-muted" data-mix-label>Đang tải...</small>
+                                </div>
+                                <strong data-mix-new>--</strong>
+                            </div>
+                            <div class="mix-row">
+                                <span class="dot dot-return"></span>
+                                <div>
+                                    <p class="mix-title mb-0">Returning Customers</p>
+                                    <small class="text-muted">Theo cùng giai đoạn</small>
+                                </div>
+                                <strong data-mix-return>--</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="card doctor-heatmap-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-4">
+                        <div>
+                            <p class="doctor-heatmap-title mb-1">Daily occupancy</p>
+                            <small class="text-muted">Tối ưu lịch của bạn theo ngày</small>
+                        </div>
+                        <input type="month" class="form-control form-control-sm" data-heatmap-month />
+                    </div>
+                    <div class="doctor-heatmap-grid" data-heatmap-grid>
+                        <p class="text-muted small">Đang tải...</p>
+                    </div>
+                    <div class="doctor-heatmap-legend">
+                        <div><span class="legend-dot level-4"></span>81% and higher</div>
+                        <div><span class="legend-dot level-3"></span>Between 41% and 80%</div>
+                        <div><span class="legend-dot level-2"></span>Between 21% and 40%</div>
+                        <div><span class="legend-dot level-1"></span>20% and lower</div>
+                        <div><span class="legend-dot level-0"></span>0%</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mt-1">
+        <div class="col-xl-7">
+            <div class="card appointment-card" data-upcoming-card>
+                <div class="card-header custom-header">
+                    <span class="card-title-text">Cuộc hẹn sắp diễn ra</span>
+                    <div class="text-muted small" data-upcoming-label>Đang tải...</div>
+                </div>
+                <div class="appointment-list-body scrollable-list" data-upcoming-list>
+                    <p class="text-muted">Đang tải dữ liệu...</p>
+                </div>
+                <div class="card-footer custom-footer">
+                    <a class="text-decoration-none" href="/doctor/appointment" target="_self">Quản lý tất cả lịch khám →</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-5">
+            <div class="card performance-card" data-performance-card>
+                <div class="card-header custom-header">
+                    <span class="card-title-text">Hiệu suất</span>
+                    <select class="form-select form-select-sm w-auto" data-performance-range>
+                        <option value="this-week" selected>Tuần này</option>
+                        <option value="this-month">Tháng này</option>
+                        <option value="three-months">3 tháng</option>
+                    </select>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <h6 class="fw-semibold">Dịch vụ nổi bật</h6>
+                            <div class="scrollable-list" data-performance-services>
+                                <p class="text-muted">Đang tải...</p>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <h6 class="fw-semibold">Bệnh nhân thân thiết</h6>
+                            <div class="scrollable-list" data-performance-patients>
+                                <p class="text-muted">Đang tải...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/doctor-dashboard.js" asp-append-version="true"></script>
+}

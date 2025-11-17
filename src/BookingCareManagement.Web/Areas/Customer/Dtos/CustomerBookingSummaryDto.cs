@@ -22,4 +22,5 @@ public class CustomerBookingSummaryDto
     public int DurationMinutes { get; set; }
     public DateTime StartUtc { get; set; }
     public DateTime EndUtc { get; set; }
+    public decimal Price { get; set; }
 }

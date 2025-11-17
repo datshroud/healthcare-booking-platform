@@ -44,4 +44,28 @@ public class AppointmentRepository : IAppointmentRepository
     {
         _context.Appointments.Remove(appointment);
     }
+
+    public async Task<bool> HasAppointmentsForPatientAsync(string patientId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(patientId))
+        {
+            return false;
+        }
+
+        return await _context.Appointments
+            .AsNoTracking()
+            .AnyAsync(a => a.PatientId == patientId, cancellationToken);
+    }
+
+    public async Task<bool> CustomerHasAppointmentWithDoctorAsync(string patientId, Guid doctorId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(patientId) || doctorId == Guid.Empty)
+        {
+            return false;
+        }
+
+        return await _context.Appointments
+            .AsNoTracking()
+            .AnyAsync(a => a.PatientId == patientId && a.DoctorId == doctorId, cancellationToken);
+    }
 }

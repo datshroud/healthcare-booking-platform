@@ -396,6 +396,174 @@
     border-bottom: 1px solid #f0f0f0;
 }
 
+/* === Doctor dashboard specific refinements === */
+[data-doctor-dashboard] .card {
+    border-radius: 18px;
+    border: none;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+
+[data-doctor-dashboard] .doctor-trend-card .card-body {
+    padding: 2rem;
+}
+
+[data-doctor-dashboard] .doctor-trend-header {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+[data-doctor-dashboard] .doctor-trend-stat .label {
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    color: #64748b;
+    margin-bottom: 0.25rem;
+}
+
+[data-doctor-dashboard] .doctor-trend-stat .value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1.1;
+}
+
+[data-doctor-dashboard] .doctor-trend-stat .trend-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.85rem;
+}
+
+[data-doctor-dashboard] .doctor-trend-filter select {
+    min-width: 160px;
+}
+
+[data-doctor-dashboard] .doctor-trend-chart {
+    min-height: 320px;
+    width: 100%;
+}
+
+[data-doctor-dashboard] .doctor-customer-mix {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    align-items: center;
+    margin-top: 2rem;
+}
+
+[data-doctor-dashboard] .doctor-mix-chart {
+    flex: 1 1 220px;
+    min-height: 220px;
+}
+
+[data-doctor-dashboard] .doctor-mix-meta {
+    flex: 1 1 220px;
+    background-color: #f8fafc;
+    border-radius: 16px;
+    padding: 1.25rem;
+}
+
+[data-doctor-dashboard] .doctor-mix-meta strong {
+    font-size: 1.1rem;
+    color: #0f172a;
+}
+
+[data-doctor-dashboard] .doctor-mix-meta .label {
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    color: #94a3b8;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.75rem;
+}
+
+[data-doctor-dashboard] .doctor-mix-meta .mix-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.65rem 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.3);
+}
+
+[data-doctor-dashboard] .doctor-mix-meta .mix-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+[data-doctor-dashboard] .doctor-mix-meta .dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 999px;
+    display: inline-flex;
+}
+
+[data-doctor-dashboard] .doctor-mix-meta .dot-new {
+    background-color: #22c55e;
+}
+
+[data-doctor-dashboard] .doctor-mix-meta .dot-return {
+    background-color: #2563eb;
+}
+
+[data-doctor-dashboard] .doctor-heatmap-card .card-body {
+    padding: 2rem 1.75rem;
+}
+
+[data-doctor-dashboard] .doctor-heatmap-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #0f172a;
+}
+
+[data-doctor-dashboard] .doctor-heatmap-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+    margin-bottom: 1.75rem;
+}
+
+[data-doctor-dashboard] .doctor-heatmap-legend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    color: #64748b;
+    font-size: 0.85rem;
+}
+
+[data-doctor-dashboard] .doctor-heatmap-legend .legend-dot {
+    width: 18px;
+    height: 18px;
+    border-radius: 6px;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+[data-doctor-dashboard] .row.g-3 > [class*="col-"] {
+    display: flex;
+}
+
+[data-doctor-dashboard] .row.g-3 > [class*="col-"] > .card,
+[data-doctor-dashboard] .row.g-3 > [class*="col-"] > .stat-card {
+    width: 100%;
+    height: 100%;
+}
+
+[data-doctor-dashboard] .appointment-card,
+[data-doctor-dashboard] .performance-card,
+[data-doctor-dashboard] .doctor-trend-card,
+[data-doctor-dashboard] .doctor-heatmap-card {
+    display: flex;
+    flex-direction: column;
+}
+
+[data-doctor-dashboard] .appointment-card .appointment-list-body,
+[data-doctor-dashboard] .performance-card .card-body {
+    flex-grow: 1;
+    min-height: 0;
+}
+
     .employee-item:last-child {
         border-bottom: none;
         padding-bottom: 0;
