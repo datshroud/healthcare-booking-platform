@@ -1,10 +1,777 @@
-@page "/"
+﻿@page "/"
 @model IndexModel
 @{
     ViewData["Title"] = "Home page";
+    ViewData["IsFullWidth"] = true;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+@section Styles {
+    <link rel="stylesheet" href="~/css/index.css" />
+}
+
+<!-- Hero Section -->
+<section class="hero-section" id="home">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 hero-content">
+                <h1 class="hero-title">Chăm sóc sức khỏe của bạn, mọi lúc mọi nơi</h1>
+                <p class="hero-subtitle">Kết nối nhanh chóng với hơn 150+ bác sĩ chuyên môn cao. Đặt lịch khám online dễ dàng, tiện lợi chỉ trong 30 giây.</p>
+                <div class="hero-buttons">
+                    <button class="btn btn-hero btn-hero-primary">
+                        <i class="fas fa-calendar-check me-2"></i>Đặt lịch ngay
+                    </button>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="hero-image-wrapper">
+                    <div class="hero-image">
+                        <div class="hero-main-image">
+                            <!-- Slide 1 - Bác sĩ -->
+                            <div class="image-slide active">
+                                <i class="fas fa-user-md"></i>
+                            </div>
+                            <!-- Slide 2 - Tim mạch -->
+                            <div class="image-slide">
+                                <i class="fas fa-heartbeat"></i>
+                            </div>
+                            <!-- Slide 3 - Lịch khám -->
+                            <div class="image-slide">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <!-- Slide 4 - Bệnh viện -->
+                            <div class="image-slide">
+                                <i class="fas fa-hospital"></i>
+                            </div>
+                            <!-- Slide 5 - Stethoscope -->
+                            <div class="image-slide">
+                                <i class="fas fa-stethoscope"></i>
+                            </div>
+                            <!-- Slide 6 - Thuốc -->
+                            <div class="image-slide">
+                                <i class="fas fa-pills"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-section reveal">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Tại sao chọn MediCare?</h2>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h4>Đặt lịch 24/7</h4>
+                    <p>Đặt lịch khám bất cứ lúc nào, bất cứ nơi đâu với hệ thống trực tuyến của chúng tôi</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                    <h4>Bác sĩ chuyên môn</h4>
+                    <p>Đội ngũ bác sĩ giàu kinh nghiệm, tận tâm với bệnh nhân</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h4>Nhắc lịch tự động</h4>
+                    <p>Hệ thống nhắc lịch qua SMS và email trước giờ khám</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h4>Bảo mật thông tin</h4>
+                    <p>Thông tin cá nhân và y tế được bảo mật tuyệt đối</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <h4>Thanh toán linh hoạt</h4>
+                    <p>Nhiều hình thức thanh toán: tiền mặt, chuyển khoản, ví điện tử</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <h4>Hỗ trợ 24/7</h4>
+                    <p>Đội ngũ chăm sóc khách hàng luôn sẵn sàng hỗ trợ bạn</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Specialties Section -->
+<section class="specialties-section reveal" id="specialties">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Chuyên khoa nổi bật</h2>
+            <p class="text-muted">Các chuyên khoa với đội ngũ bác sĩ giàu kinh nghiệm</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-3 col-sm-6">
+                <div class="specialty-card" data-bs-toggle="modal" data-bs-target="#specialtyModal"
+                     onclick="showSpecialtyInfo('Tim mạch', '15 bác sĩ', 'Chuyên khoa Tim mạch chuyên điều trị các bệnh lý về tim, mạch máu, huyết áp...')">
+                    <div class="specialty-icon"><i class="fas fa-heartbeat"></i></div>
+                    <h5>Tim mạch</h5>
+                    <p class="text-muted mb-0">15 bác sĩ</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="specialty-card" data-bs-toggle="modal" data-bs-target="#specialtyModal"
+                     onclick="showSpecialtyInfo('Thần kinh', '12 bác sĩ', 'Chuyên khoa Thần kinh điều trị các bệnh lý về não, thần kinh trung ương và ngoại biên...')">
+                    <div class="specialty-icon"><i class="fas fa-brain"></i></div>
+                    <h5>Thần kinh</h5>
+                    <p class="text-muted mb-0">12 bác sĩ</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="specialty-card" data-bs-toggle="modal" data-bs-target="#specialtyModal"
+                     onclick="showSpecialtyInfo('Chấn thương', '10 bác sĩ', 'Chuyên khoa Chấn thương chỉnh hình điều trị các chấn thương, gãy xương, chấn động...')">
+                    <div class="specialty-icon"><i class="fas fa-bone"></i></div>
+                    <h5>Chấn thương</h5>
+                    <p class="text-muted mb-0">10 bác sĩ</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="specialty-card" data-bs-toggle="modal" data-bs-target="#specialtyModal"
+                     onclick="showSpecialtyInfo('Mắt', '8 bác sĩ', 'Chuyên khoa Mắt điều trị các bệnh lý về mắt, cận thị, viễn thị, đục thủy tinh thể...')">
+                    <div class="specialty-icon"><i class="fas fa-eye"></i></div>
+                    <h5>Mắt</h5>
+                    <p class="text-muted mb-0">8 bác sĩ</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="specialty-card" data-bs-toggle="modal" data-bs-target="#specialtyModal"
+                     onclick="showSpecialtyInfo('Răng hàm mặt', '20 bác sĩ', 'Chuyên khoa Răng hàm mặt chăm sóc và điều trị các bệnh lý về răng miệng, nướu...')">
+                    <div class="specialty-icon"><i class="fas fa-tooth"></i></div>
+                    <h5>Răng hàm mặt</h5>
+                    <p class="text-muted mb-0">20 bác sĩ</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="specialty-card" data-bs-toggle="modal" data-bs-target="#specialtyModal"
+                     onclick="showSpecialtyInfo('Nhi khoa', '18 bác sĩ', 'Chuyên khoa Nhi chuyên điều trị và chăm sóc sức khỏe cho trẻ em từ sơ sinh đến 16 tuổi...')">
+                    <div class="specialty-icon"><i class="fas fa-baby"></i></div>
+                    <h5>Nhi khoa</h5>
+                    <p class="text-muted mb-0">18 bác sĩ</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="specialty-card" data-bs-toggle="modal" data-bs-target="#specialtyModal"
+                     onclick="showSpecialtyInfo('Sản phụ khoa', '14 bác sĩ', 'Chuyên khoa Sản phụ khoa chăm sóc sức khỏe phụ nữ, thai sản, sinh đẻ...')">
+                    <div class="specialty-icon"><i class="fas fa-venus"></i></div>
+                    <h5>Sản phụ khoa</h5>
+                    <p class="text-muted mb-0">14 bác sĩ</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="specialty-card" data-bs-toggle="modal" data-bs-target="#specialtyModal"
+                     onclick="showSpecialtyInfo('Hô hấp', '11 bác sĩ', 'Chuyên khoa Hô hấp điều trị các bệnh lý về phổi, khí quản, hen suyễn...')">
+                    <div class="specialty-icon"><i class="fas fa-lungs"></i></div>
+                    <h5>Hô hấp</h5>
+                    <p class="text-muted mb-0">11 bác sĩ</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Specialty Modal -->
+<div class="modal fade" id="specialtyModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="specialtyTitle">Chuyên khoa</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p id="specialtyDoctors" class="text-muted mb-3"></p>
+                <p id="specialtyDescription"></p>
+                <ul class="list-unstyled mt-3">
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Đội ngũ bác sĩ giàu kinh nghiệm</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Trang thiết bị hiện đại</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Quy trình khám chuyên nghiệp</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Tư vấn tận tình</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" style="background: var(--primary-color); border: none;">Đặt lịch ngay</button>
+            </div>
+        </div>
+    </div>
 </div>
+
+<!-- Doctors Section -->
+<section class="doctors-section reveal" id="doctors">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Đội ngũ bác sĩ</h2>
+            <p class="text-muted">Các bác sĩ uy tín, chuyên môn cao</p>
+        </div>
+        <div id="doctorsCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="doctor-card" data-bs-toggle="modal" data-bs-target="#doctorModal"
+                                 onclick="showDoctorInfo('BS. Nguyễn Văn A', 'Tim mạch', '15 năm', '127', 'Bác sĩ Nguyễn Văn A có 15 năm kinh nghiệm trong lĩnh vực tim mạch...')">
+                                <div class="doctor-img">
+                                    <i class="fas fa-user-md"></i>
+                                </div>
+                                <div class="doctor-info">
+                                    <h5>BS. Nguyễn Văn A</h5>
+                                    <p class="text-muted mb-2">Chuyên khoa Tim mạch</p>
+                                    <div class="doctor-rating mb-2">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <span class="text-muted">(127 đánh giá)</span>
+                                    </div>
+                                    <p class="small mb-3">15 năm kinh nghiệm</p>
+                                    <button class="btn btn-primary w-100">Xem chi tiết</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="doctor-card" data-bs-toggle="modal" data-bs-target="#doctorModal"
+                                 onclick="showDoctorInfo('BS. Trần Thị B', 'Nhi khoa', '12 năm', '98', 'Bác sĩ Trần Thị B chuyên khám và điều trị các bệnh lý ở trẻ em...')">
+                                <div class="doctor-img">
+                                    <i class="fas fa-user-md"></i>
+                                </div>
+                                <div class="doctor-info">
+                                    <h5>BS. Trần Thị B</h5>
+                                    <p class="text-muted mb-2">Chuyên khoa Nhi</p>
+                                    <div class="doctor-rating mb-2">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star-half-alt"></i>
+                                        <span class="text-muted">(98 đánh giá)</span>
+                                    </div>
+                                    <p class="small mb-3">12 năm kinh nghiệm</p>
+                                    <button class="btn btn-primary w-100">Xem chi tiết</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="doctor-card" data-bs-toggle="modal" data-bs-target="#doctorModal"
+                                 onclick="showDoctorInfo('BS. Lê Văn C', 'Thần kinh', '20 năm', '156', 'Bác sĩ Lê Văn C là chuyên gia hàng đầu về thần kinh học...')">
+                                <div class="doctor-img">
+                                    <i class="fas fa-user-md"></i>
+                                </div>
+                                <div class="doctor-info">
+                                    <h5>BS. Lê Văn C</h5>
+                                    <p class="text-muted mb-2">Chuyên khoa Thần kinh</p>
+                                    <div class="doctor-rating mb-2">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <span class="text-muted">(156 đánh giá)</span>
+                                    </div>
+                                    <p class="small mb-3">20 năm kinh nghiệm</p>
+                                    <button class="btn btn-primary w-100">Xem chi tiết</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="doctor-card" data-bs-toggle="modal" data-bs-target="#doctorModal"
+                                 onclick="showDoctorInfo('BS. Phạm Thị D', 'Sản phụ khoa', '18 năm', '142', 'Bác sĩ Phạm Thị D chuyên về sản khoa và chăm sóc sức khỏe phụ nữ...')">
+                                <div class="doctor-img">
+                                    <i class="fas fa-user-md"></i>
+                                </div>
+                                <div class="doctor-info">
+                                    <h5>BS. Phạm Thị D</h5>
+                                    <p class="text-muted mb-2">Chuyên khoa Sản phụ khoa</p>
+                                    <div class="doctor-rating mb-2">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <span class="text-muted">(142 đánh giá)</span>
+                                    </div>
+                                    <p class="small mb-3">18 năm kinh nghiệm</p>
+                                    <button class="btn btn-primary w-100">Xem chi tiết</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="doctor-card" data-bs-toggle="modal" data-bs-target="#doctorModal"
+                                 onclick="showDoctorInfo('BS. Hoàng Văn E', 'Mắt', '10 năm', '89', 'Bác sĩ Hoàng Văn E chuyên điều trị các bệnh lý về mắt...')">
+                                <div class="doctor-img">
+                                    <i class="fas fa-user-md"></i>
+                                </div>
+                                <div class="doctor-info">
+                                    <h5>BS. Hoàng Văn E</h5>
+                                    <p class="text-muted mb-2">Chuyên khoa Mắt</p>
+                                    <div class="doctor-rating mb-2">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <span class="text-muted">(89 đánh giá)</span>
+                                    </div>
+                                    <p class="small mb-3">10 năm kinh nghiệm</p>
+                                    <button class="btn btn-primary w-100">Xem chi tiết</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="doctor-card" data-bs-toggle="modal" data-bs-target="#doctorModal"
+                                 onclick="showDoctorInfo('BS. Võ Thị F', 'Răng hàm mặt', '14 năm', '201', 'Bác sĩ Võ Thị F là chuyên gia hàng đầu về nha khoa thẩm mỹ...')">
+                                <div class="doctor-img">
+                                    <i class="fas fa-user-md"></i>
+                                </div>
+                                <div class="doctor-info">
+                                    <h5>BS. Võ Thị F</h5>
+                                    <p class="text-muted mb-2">Chuyên khoa Răng hàm mặt</p>
+                                    <div class="doctor-rating mb-2">
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <i class="fas fa-star"></i>
+                                        <span class="text-muted">(201 đánh giá)</span>
+                                    </div>
+                                    <p class="small mb-3">14 năm kinh nghiệm</p>
+                                    <button class="btn btn-primary w-100">Xem chi tiết</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#doctorsCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#doctorsCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- Doctor Modal -->
+<div class="modal fade" id="doctorModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="doctorName">Thông tin bác sĩ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-3">
+                    <div style="width: 120px; height: 120px; background: var(--primary-color); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 60px; color: white; margin: 0 auto;">
+                        <i class="fas fa-user-md"></i>
+                    </div>
+                </div>
+                <h6 class="text-center mb-1" id="doctorSpecialty"></h6>
+                <p class="text-center text-muted mb-3" id="doctorExperience"></p>
+                <div class="text-center mb-3">
+                    <span class="text-warning">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </span>
+                    <span class="text-muted ms-2" id="doctorReviews"></span>
+                </div>
+                <p id="doctorDescription"></p>
+                <h6 class="mt-4 mb-3">Chuyên môn:</h6>
+                <ul class="list-unstyled">
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Khám và tư vấn chuyên sâu</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Điều trị bệnh lý phức tạp</li>
+                    <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Theo dõi và chăm sóc sau điều trị</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" style="background: var(--primary-color); border: none;">Đặt lịch khám</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Process Section -->
+<section class="process-section reveal">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Quy trình đặt lịch</h2>
+            <p class="text-muted">Chỉ với 4 bước đơn giản</p>
+        </div>
+        <div class="row">
+            <div class="col-md-3">
+                <div class="process-step">
+                    <div class="process-number">1</div>
+                    <h5>Chọn chuyên khoa</h5>
+                    <p class="text-muted">Lựa chọn chuyên khoa phù hợp với tình trạng sức khỏe</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="process-step">
+                    <div class="process-number">2</div>
+                    <h5>Chọn bác sĩ</h5>
+                    <p class="text-muted">Chọn bác sĩ dựa trên kinh nghiệm và đánh giá</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="process-step">
+                    <div class="process-number">3</div>
+                    <h5>Đặt lịch hẹn</h5>
+                    <p class="text-muted">Chọn ngày giờ khám phù hợp với lịch trình</p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="process-step">
+                    <div class="process-number">4</div>
+                    <h5>Xác nhận & khám</h5>
+                    <p class="text-muted">Nhận xác nhận và đến khám theo lịch hẹn</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section reveal">
+    <div class="container">
+        <div class="row text-center">
+            <div class="col-md-3 col-6 mb-4">
+                <div class="stat-item">
+                    <div class="stat-number"><span class="counter" data-target="50000">0</span>+</div>
+                    <div>Bệnh nhân đã khám</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div class="stat-item">
+                    <div class="stat-number"><span class="counter" data-target="150">0</span>+</div>
+                    <div>Bác sĩ chuyên môn</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div class="stat-item">
+                    <div class="stat-number"><span class="counter" data-target="25">0</span>+</div>
+                    <div>Năm kinh nghiệm</div>
+                </div>
+            </div>
+            <div class="col-md-3 col-6 mb-4">
+                <div class="stat-item">
+                    <div class="stat-number"><span class="counter" data-target="98">0</span>%</div>
+                    <div>Hài lòng</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Testimonials Section -->
+<section class="testimonials-section reveal">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Đánh giá từ bệnh nhân</h2>
+            <p class="text-muted">Những phản hồi tích cực từ bệnh nhân</p>
+        </div>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="testimonial-card">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="testimonial-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Nguyễn Thị D</h6>
+                            <div class="text-warning">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-muted">Dịch vụ rất tốt, đặt lịch nhanh chóng. Bác sĩ tận tâm và chuyên môn cao. Tôi rất hài lòng với trải nghiệm tại đây.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="testimonial-card">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="testimonial-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Trần Văn E</h6>
+                            <div class="text-warning">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-muted">Hệ thống đặt lịch online rất tiện lợi. Không phải chờ đợi lâu. Bác sĩ khám kỹ lưỡng và tư vấn nhiệt tình.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="testimonial-card">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="testimonial-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <h6 class="mb-0">Phạm Thị F</h6>
+                            <div class="text-warning">
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                                <i class="fas fa-star"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-muted">Cơ sở vật chất hiện đại, nhân viên thân thiện. Tôi sẽ giới thiệu cho bạn bè và người thân sử dụng dịch vụ này.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Blog Section -->
+<section class="blog-section reveal" id="blog">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Tin tức & Bài viết</h2>
+            <p class="text-muted">Cập nhật kiến thức sức khỏe hữu ích</p>
+        </div>
+        <div id="blogCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="blog-card">
+                                <div class="blog-img">
+                                    <i class="fas fa-newspaper"></i>
+                                </div>
+                                <div class="blog-content">
+                                    <span class="badge mb-2">Sức khỏe</span>
+                                    <h5>10 thói quen tốt cho tim mạch</h5>
+                                    <p class="text-muted small mb-3"><i class="far fa-calendar me-2"></i>15/10/2024</p>
+                                    <p class="text-muted">Tìm hiểu những thói quen hàng ngày giúp bảo vệ sức khỏe tim mạch của bạn...</p>
+                                    <a href="#" class="text-decoration-none" style="color: var(--primary-color);">Đọc thêm <i class="fas fa-arrow-right ms-1"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="blog-card">
+                                <div class="blog-img">
+                                    <i class="fas fa-newspaper"></i>
+                                </div>
+                                <div class="blog-content">
+                                    <span class="badge mb-2">Dinh dưỡng</span>
+                                    <h5>Chế độ ăn uống lành mạnh</h5>
+                                    <p class="text-muted small mb-3"><i class="far fa-calendar me-2"></i>12/10/2024</p>
+                                    <p class="text-muted">Hướng dẫn xây dựng chế độ ăn uống khoa học để có sức khỏe tốt...</p>
+                                    <a href="#" class="text-decoration-none" style="color: var(--primary-color);">Đọc thêm <i class="fas fa-arrow-right ms-1"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="blog-card">
+                                <div class="blog-img">
+                                    <i class="fas fa-newspaper"></i>
+                                </div>
+                                <div class="blog-content">
+                                    <span class="badge mb-2">Phòng bệnh</span>
+                                    <h5>Cách phòng ngừa cảm cúm mùa</h5>
+                                    <p class="text-muted small mb-3"><i class="far fa-calendar me-2"></i>08/10/2024</p>
+                                    <p class="text-muted">Những biện pháp hiệu quả để phòng tránh cảm cúm trong mùa lạnh...</p>
+                                    <a href="#" class="text-decoration-none" style="color: var(--primary-color);">Đọc thêm <i class="fas fa-arrow-right ms-1"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="row g-4">
+                        <div class="col-md-4">
+                            <div class="blog-card">
+                                <div class="blog-img">
+                                    <i class="fas fa-newspaper"></i>
+                                </div>
+                                <div class="blog-content">
+                                    <span class="badge mb-2">Nhi khoa</span>
+                                    <h5>Chăm sóc trẻ em mùa dịch</h5>
+                                    <p class="text-muted small mb-3"><i class="far fa-calendar me-2"></i>05/10/2024</p>
+                                    <p class="text-muted">Hướng dẫn bố mẹ cách bảo vệ con yêu khỏi các bệnh truyền nhiễm...</p>
+                                    <a href="#" class="text-decoration-none" style="color: var(--primary-color);">Đọc thêm <i class="fas fa-arrow-right ms-1"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="blog-card">
+                                <div class="blog-img">
+                                    <i class="fas fa-newspaper"></i>
+                                </div>
+                                <div class="blog-content">
+                                    <span class="badge mb-2">Thể dục</span>
+                                    <h5>Tập thể dục đúng cách</h5>
+                                    <p class="text-muted small mb-3"><i class="far fa-calendar me-2"></i>02/10/2024</p>
+                                    <p class="text-muted">Những lưu ý khi tập luyện để đạt hiệu quả cao nhất...</p>
+                                    <a href="#" class="text-decoration-none" style="color: var(--primary-color);">Đọc thêm <i class="fas fa-arrow-right ms-1"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="blog-card">
+                                <div class="blog-img">
+                                    <i class="fas fa-newspaper"></i>
+                                </div>
+                                <div class="blog-content">
+                                    <span class="badge mb-2">Sức khỏe tinh thần</span>
+                                    <h5>Giảm stress hiệu quả</h5>
+                                    <p class="text-muted small mb-3"><i class="far fa-calendar me-2"></i>28/09/2024</p>
+                                    <p class="text-muted">Các phương pháp giúp bạn kiểm soát stress trong cuộc sống...</p>
+                                    <a href="#" class="text-decoration-none" style="color: var(--primary-color);">Đọc thêm <i class="fas fa-arrow-right ms-1"></i></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#blogCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon"></span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#blogCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon"></span>
+            </button>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ Section -->
+<section class="faq-section reveal">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="section-title">Câu hỏi thường gặp</h2>
+            <p class="text-muted">Giải đáp các thắc mắc phổ biến</p>
+        </div>
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="accordion" id="faqAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                                Làm thế nào để đặt lịch khám bệnh?
+                            </button>
+                        </h2>
+                        <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Bạn có thể đặt lịch khám bệnh trực tuyến qua website hoặc app của chúng tôi. Chỉ cần chọn chuyên khoa, bác sĩ, thời gian phù hợp và điền thông tin cá nhân. Hệ thống sẽ gửi xác nhận qua email và SMS.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                                Tôi có thể hủy hoặc thay đổi lịch hẹn không?
+                            </button>
+                        </h2>
+                        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Có, bạn có thể hủy hoặc thay đổi lịch hẹn trước 24 giờ. Vui lòng liên hệ hotline 1900-xxxx hoặc truy cập tài khoản của bạn để thực hiện thay đổi.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                                Chi phí khám bệnh như thế nào?
+                            </button>
+                        </h2>
+                        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Chi phí khám tùy thuộc vào chuyên khoa và bác sĩ. Bạn có thể xem chi tiết giá khám khi đặt lịch. Chúng tôi chấp nhận thanh toán bằng tiền mặt, thẻ, chuyển khoản và bảo hiểm y tế.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                                Tôi cần chuẩn bị gì khi đến khám?
+                            </button>
+                        </h2>
+                        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Vui lòng mang theo CMND/CCCD, thẻ bảo hiểm y tế (nếu có), và các kết quả xét nghiệm/khám trước đây liên quan. Đến trước giờ hẹn 15 phút để làm thủ tục.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                                Có dịch vụ khám tại nhà không?
+                            </button>
+                        </h2>
+                        <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Có, chúng tôi cung cấp dịch vụ khám bệnh tại nhà cho một số chuyên khoa. Vui lòng liên hệ hotline để được tư vấn chi tiết về dịch vụ và chi phí.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq6">
+                                Làm sao để xem kết quả khám bệnh online?
+                            </button>
+                        </h2>
+                        <div id="faq6" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Sau khi khám xong, bác sĩ sẽ cập nhật kết quả lên hệ thống. Bạn có thể đăng nhập vào tài khoản để xem kết quả khám và đơn thuốc. Chúng tôi cũng gửi kết quả qua email.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <!-- Page-specific scripts -->
+    <script src="~/js/index.js" asp-append-version="true"></script>
+}
