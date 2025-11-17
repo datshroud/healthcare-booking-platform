@@ -30,6 +30,18 @@
 
     displayName = displayName.Trim().Length == 0 ? "User" : displayName.Trim();
     var fallbackInitial = displayName[0].ToString().ToUpperInvariant();
+    var isAdmin = User?.IsInRole("Admin") ?? false;
+    var isDoctor = User?.IsInRole("Doctor") ?? false;
+    string? managementPortalHref = null;
+
+    if (isAdmin)
+    {
+        managementPortalHref = Url.Content("~/dashboard");
+    }
+    else if (isDoctor)
+    {
+        managementPortalHref = Url.Content("~/doctor/dashboard");
+    }
 
     string BuildProtectedLink(string virtualPath)
     {
@@ -153,6 +165,16 @@
                             <i class="bi bi-caret-down-fill ms-2"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
+                            @if (!string.IsNullOrEmpty(managementPortalHref))
+                            {
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center" href="@managementPortalHref">
+                                        <i class="fa-solid fa-gauge-high me-2 text-success"></i>
+                                        Qua trang quản lí
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider my-1" /></li>
+                            }
                             <li><a class="dropdown-item" href="/customer/account-settings/personal-info">Cài đặt tài khoản</a></li>
                             <li><button id="logout-btn" class="dropdown-item text-danger" type="button">Đăng xuất</button></li>
                         </ul>

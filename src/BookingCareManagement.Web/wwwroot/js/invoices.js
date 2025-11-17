@@ -1,4 +1,4 @@
-﻿document.addEventListener('DOMContentLoaded', (event) => {
+﻿document.addEventListener('DOMContentLoaded', async (event) => {
 
     // --- 1. NÚT TOGGLE BỘ LỌC CHÍNH ---
     const toggleBtn = document.getElementById("toggleFiltersButton");
@@ -37,29 +37,64 @@
     // --- 4. GẮN SỰ KIỆN CLICK  ---
     document.getElementById('invoicesTableBody')?.addEventListener('click', async function (e) {
 
-        // Xử lý nút "Set as Paid"
+        // Xử lý nút "Set as Paid" -> now calls backend API
         const setAsPaidButton = e.target.closest('.action-set-as-paid a');
         if (setAsPaidButton) {
             e.preventDefault();
             const row = setAsPaidButton.closest('tr.invoice-row');
             if (!row) return;
 
-            const statusBadge = row.querySelector('.invoice-status-badge');
-            if (statusBadge) {
-                statusBadge.classList.remove('status-pending');
-                statusBadge.classList.add('status-paid');
-                statusBadge.textContent = 'Đã thanh toán'; // Đã dịch
+            const invoiceId = row.dataset.invoiceId;
+            if (!invoiceId) {
+                alert('Invoice id not found');
+                return;
             }
 
-            const paidLi = setAsPaidButton.closest('li.action-set-as-paid');
-            if (paidLi) {
-                paidLi.style.display = 'none';
-                const divider = paidLi.nextElementSibling;
-                if (divider && divider.classList.contains('action-divider')) {
-                    divider.style.display = 'none';
+            const originalHtml = setAsPaidButton.innerHTML;
+            setAsPaidButton.innerHTML = '<i class="fa-solid fa-spinner fa-spin fa-fw me-2"></i> Đang xử lý...';
+            setAsPaidButton.classList.add('disabled');
+
+            try {
+                const resp = await fetch(`/api/invoice/${invoiceId}/mark-as-paid`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!resp.ok) {
+                    let errText = 'Không thể cập nhật hóa đơn.';
+                    try {
+                        const j = await resp.json();
+                        errText = j?.detail || j?.title || errText;
+                    } catch { }
+                    throw new Error(errText);
                 }
+
+                // update UI after success
+                const statusBadge = row.querySelector('.invoice-status-badge');
+                if (statusBadge) {
+                    statusBadge.classList.remove('status-pending');
+                    statusBadge.classList.add('status-paid');
+                    statusBadge.textContent = 'Đã thanh toán';
+                }
+
+                const paidLi = setAsPaidButton.closest('li.action-set-as-paid');
+                if (paidLi) {
+                    paidLi.style.display = 'none';
+                    const divider = paidLi.nextElementSibling;
+                    if (divider && divider.classList.contains('action-divider')) {
+                        divider.style.display = 'none';
+                    }
+                }
+
+            } catch (err) {
+                console.error(err);
+                alert(err.message || 'Lỗi khi cập nhật hóa đơn.');
+            } finally {
+                setAsPaidButton.innerHTML = originalHtml;
+                setAsPaidButton.classList.remove('disabled');
             }
-            return; 
+
+            return;
         }
 
         // Xử lý nút "Download"
@@ -97,6 +132,9 @@
             }
         }
     });
+
+    // --- FETCH & RENDER FILTER OPTIONS ---
+    await loadInvoiceFilters();
 
 }); 
 
@@ -271,7 +309,7 @@ async function generateInvoicePDF(data) {
         }
     });
 
-    // --- 4. Tổng cộng (Total) ---
+    // --- 4. Tổng cùng (Total) ---
     const finalY = doc.lastAutoTable.finalY + 10;
 
     doc.setFillColor(lightBlueBg[0], lightBlueBg[1], lightBlueBg[2]);
@@ -280,9 +318,63 @@ async function generateInvoicePDF(data) {
     doc.setFont('Roboto', 'bold');
     doc.setFontSize(12);
     doc.setTextColor(textColor);
-    doc.text("Tổng cộng", 150, finalY, { align: "right" });
+    doc.text("Tổng cùng", 150, finalY, { align: "right" });
     doc.text(data.total, 210 - margin, finalY, { align: "right" });
 
     // --- 5. Lưu file ---
     doc.save(`HoaDon-${data.invoiceId}.pdf`);
+}
+
+/**
+ * FETCH AND RENDER FILTER OPTIONS
+ */
+async function loadInvoiceFilters() {
+    await Promise.all([
+        fetchAndRenderFilter('services', '#filterService'),
+        fetchAndRenderFilter('employees', '#filterEmployee'),
+        fetchAndRenderFilter('customers', '#filterCustomer'),
+        fetchAndRenderFilter('statuses', '#filterStatus')
+    ]);
+}
+
+async function fetchAndRenderFilter(type, containerSelector) {
+    let url = `/api/invoice/filters/${type}`;
+    try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('Lỗi tải dữ liệu bộ lọc');
+        const data = await resp.json();
+        renderFilterOptions(type, data, containerSelector);
+    } catch (err) {
+        console.error(`Lỗi tải bộ lọc ${type}:`, err);
+    }
+}
+
+function renderFilterOptions(type, items, containerSelector) {
+    const container = document.querySelector(containerSelector);
+    if (!container) return;
+    const list = container.querySelector('.filter-options-list');
+    if (!list) return;
+    list.innerHTML = '';
+    items.forEach((item, idx) => {
+        const id = `${type}_${idx}`;
+        let label = item;
+        if (type === 'statuses') {
+            // Map status to Vietnamese if needed
+            if (item.toLowerCase() === 'paid') label = 'Đã thanh toán';
+            else if (item.toLowerCase() === 'pending') label = 'Đang chờ';
+            else if (item.toLowerCase() === 'archived') label = 'Đã lưu trữ';
+        }
+        const li = document.createElement('li');
+        li.innerHTML = `
+            <div class="form-check">
+                <input class="form-check-input filter-checkbox" type="checkbox" value="${item}" id="${id}">
+                <label class="form-check-label" for="${id}">${label}</label>
+            </div>
+        `;
+        list.appendChild(li);
+    });
+    // Gắn lại sự kiện cho checkbox mới
+    list.querySelectorAll('.filter-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', applyInvoiceFilters);
+    });
 }

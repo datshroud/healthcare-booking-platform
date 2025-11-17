@@ -1,4 +1,5 @@
 ﻿@page "/Invoices"
+@model BookingCareManagement.Areas.Doctor.Pages.Invoices.InvoicesModel
 @{
     ViewData["Title"] = "Hóa đơn";
 }
@@ -147,101 +148,65 @@
                     </thead>
                     <tbody id="invoicesTableBody">
 
-                        <tr class="invoice-row"
-                            data-invoice-id="2"
-                            data-customer-name=". Le Ngoc Bao Chan"
-                            data-customer-email="6451071006@st.utc2.edu.vn"
-                            data-invoice-date="November 13, 2025"
-                            data-service-name="Check Up"
-                            data-service-qty="1"
-                            data-service-price="200.000đ"
-                            data-total="200.000đ">
-                            <td class="fw-bold">2</td>
-                            <td>. Le Ngoc Bao Chan</td>
-                            <td>November 13, 2025</td>
-                            <td>Check Up</td>
-                            <td>
-                                <span class="status-badge status-pending invoice-status-badge">
-                                    Đang chờ
-                                </span>
-                            </td>
-                            <td>200.000đ</td>
-                            <td class="text-end">
-                                <div class="dropdown" style="position: static;">
-                                    <button class="btn btn-link text-muted p-0" type="button"
-                                            data-bs-toggle="dropdown"
-                                            aria-expanded="false">
-                                        <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 10px;">
-                                        <li class="action-set-as-paid">
-                                            <a class="dropdown-item" href="#">
-                                                <i class="fa-solid fa-circle-check fa-fw me-2 text-success"></i> Đánh dấu đã thanh toán
-                                            </a>
-                                        </li>
-                                        <li class="action-divider"><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <a class="dropdown-item action-download-pdf" href="#">
-                                                <i class="fa-solid fa-download fa-fw me-2 text-muted"></i> Tải xuống
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item" href="#">
-                                                <i class="fa-solid fa-paper-plane fa-fw me-2 text-muted"></i> Gửi hóa đơn
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </td>
-                        </tr>
+                        @foreach (var inv in Model.Invoices)
+                        {
+                            var statusClass = inv.Status?.Equals("Paid", System.StringComparison.OrdinalIgnoreCase) == true ? "status-paid" : "status-pending";
+                            var statusText = inv.Status?.Equals("Paid", System.StringComparison.OrdinalIgnoreCase) == true ? "Đã thanh toán" : "Đang chờ";
 
-                        <tr class="invoice-row"
-                            data-invoice-id="1"
-                            data-customer-name="Jone Doe"
-                            data-customer-email="customer@trafft.com"
-                            data-invoice-date="November 11, 2025"
-                            data-service-name="Check Up"
-                            data-service-qty="1"
-                            data-service-price="200.000đ"
-                            data-total="200.000đ">
-                            <td class="fw-bold">1</td>
-                            <td>Jone Doe</td>
-                            <td>November 11, 2025</td>
-                            <td>Check Up</td>
-                            <td>
-                                <span class="status-badge status-pending invoice-status-badge">
-                                    Đang chờ
-                                </span>
-                            </td>
-                            <td>200.000đ</td>
-                            <td class="text-end">
-                                <div class="dropdown" style="position: static;">
-                                    <button class="btn btn-link text-muted p-0" type="button"
-                                            data-bs-toggle="dropdown"
-                                            aria-expanded="false">
-                                        <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
-                                    </button>
-                                    <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 10px;">
-                                        <li class="action-set-as-paid">
-                                            <a class="dropdown-item" href="#">
-                                                <i class="fa-solid fa-circle-check fa-fw me-2 text-success"></i> Đánh dấu đã thanh toán
-                                            </a>
-                                        </li>
-                                        <li class="action-divider"><hr class="dropdown-divider"></li>
-                                        <li>
-                                            <a class="dropdown-item action-download-pdf" href="#">
-                                                <i class="fa-solid fa-download fa-fw me-2 text-muted"></i> Tải xuống
-                                            </a>
-                                        </li>
-                                        <li>
-                                            <a class="dropdown-item" href="#">
-                                                <i class="fa-solid fa-paper-plane fa-fw me-2 text-muted"></i> Gửi hóa đơn
-                                            </a>
-                                        </li>
-                                    </ul>
-                                </div>
-                            </td>
-                        </tr>
+                            <tr class="invoice-row"
+                                data-invoice-id="@inv.Id"
+                                data-customer-name="@inv.CustomerName"
+                                data-customer-email="@inv.CustomerEmail"
+                                data-invoice-date="@inv.InvoiceDate.ToString("MMMM d, yyyy")"
+                                data-service-name="@inv.ServiceName"
+                                data-service-qty="@inv.ServiceQty"
+                                data-service-price="@inv.ServicePriceDisplay"
+                                data-total="@inv.Total.ToString("C", new System.Globalization.CultureInfo("vi-VN"))">
+                                <td class="fw-bold">@inv.InvoiceNumber</td>
+                                <td>@inv.CustomerName</td>
+                                <td>@inv.InvoiceDate.ToString("MMMM d, yyyy")</td>
+                                <td>@inv.ServiceName</td>
+                                <td>
+                                    <span class="status-badge @statusClass invoice-status-badge">
+                                        @statusText
+                                    </span>
+                                </td>
+                                <td>@inv.Total.ToString("C", new System.Globalization.CultureInfo("vi-VN"))</td>
+                                <td class="text-end">
+                                    <div class="dropdown" style="position: static;">
+                                        <button class="btn btn-link text-muted p-0" type="button"
+                                                data-bs-toggle="dropdown"
+                                                aria-expanded="false">
+                                            <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 10px;">
+                                            @* Only show "Mark as paid" if invoice is not already Paid *@
+                                            @if (!string.Equals(inv.Status, "Paid", System.StringComparison.OrdinalIgnoreCase))
+                                            {
+                                                <li class="action-set-as-paid">
+                                                    <a class="dropdown-item" href="#">
+                                                        <i class="fa-solid fa-circle-check fa-fw me-2 text-success"></i> Đánh dấu đã thanh toán
+                                                    </a>
+                                                </li>
+
+                                                <li class="action-divider"><hr class="dropdown-divider"></li>
+                                            }
+
+                                            <li>
+                                                <a class="dropdown-item action-download-pdf" href="#">
+                                                    <i class="fa-solid fa-download fa-fw me-2 text-muted"></i> Tải xuống
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="#">
+                                                    <i class="fa-solid fa-paper-plane fa-fw me-2 text-muted"></i> Gửi hóa đơn
+                                                </a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
 
                     </tbody>
                 </table>

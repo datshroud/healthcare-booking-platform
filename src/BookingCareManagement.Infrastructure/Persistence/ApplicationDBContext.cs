@@ -5,6 +5,7 @@ using BookingCareManagement.Domain.Aggregates.Doctor;
 using BookingCareManagement.Domain.Aggregates.Notification;
 using BookingCareManagement.Domain.Aggregates.SupportChat;
 using BookingCareManagement.Domain.Aggregates.User;
+using BookingCareManagement.Domain.Aggregates.Invoice;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -23,6 +24,7 @@ public class ApplicationDBContext : IdentityDbContext<AppUser, AppRole, string>
     public DbSet<AdminNotification> AdminNotifications => Set<AdminNotification>();
     public DbSet<SupportConversation> SupportConversations => Set<SupportConversation>();
     public DbSet<SupportMessage> SupportMessages => Set<SupportMessage>();
+    public DbSet<Invoice> Invoices => Set<Invoice>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
