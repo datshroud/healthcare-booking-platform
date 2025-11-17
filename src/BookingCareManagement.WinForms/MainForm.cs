@@ -1,4 +1,5 @@
-﻿    using System;
+﻿using BookingCareManagement.WinForms.Areas.Admin.Forms;
+using System;
     using System.Collections.Generic;
     using System.ComponentModel;
     using System.Data;
@@ -617,7 +618,10 @@
 
             private void btnBangDieuKhien_Click(object sender, EventArgs e)
             {
-
+                 if (this.Visible)
+                {
+                    OpenChildForm(new Dashboard());
+                }
             }
 
             private void btnKhachHang_Click(object sender, EventArgs e)
