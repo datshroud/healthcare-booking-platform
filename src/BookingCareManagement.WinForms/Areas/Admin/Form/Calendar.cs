@@ -24,10 +24,15 @@ namespace BookingCareManagement.WinForms
         private RoundedButton1 weekBtn;
         private RoundedButton1 dayBtn;
 
+        // Biến cho drag & drop
+        private Label draggedAppointment = null;
+        private Point dragStartPoint;
+        private Panel sourcePanel = null;
         public Calendar()
         {
             currentDate = new DateTime(2025, 11, 1);
             InitializeComponents();
+
         }
 
         private void InitializeComponents()
@@ -80,7 +85,11 @@ namespace BookingCareManagement.WinForms
             // contentPanel dùng chung cho Week/Day
             contentPanel = calendarPanel;
 
+            currentDate = DateTime.Now;
             CreateCalendar();
+            CreateWeekView();
+            CreateDayView();
+            RefreshCalendar();
 
             this.Controls.Add(calendarPanel);
             this.Controls.Add(navigationPanel);
@@ -98,7 +107,31 @@ namespace BookingCareManagement.WinForms
                 Font = new Font("Segoe UI", 24, FontStyle.Bold),
                 ForeColor = Color.FromArgb(17, 24, 39)
             };
+            // Thêm khả năng kéo thả cho title
+            Point titleDragStart = Point.Empty;
+            title.MouseDown += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    titleDragStart = e.Location;
+                }
+            };
 
+            title.MouseMove += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left && titleDragStart != Point.Empty)
+                {
+                    title.Location = new Point(
+                        title.Location.X + e.X - titleDragStart.X,
+                        title.Location.Y + e.Y - titleDragStart.Y
+                    );
+                }
+            };
+
+            title.MouseUp += (s, e) =>
+            {
+                titleDragStart = Point.Empty;
+            };
             // Nút tạo lịch hẹn mới
             RoundedButton1 newAppointmentBtn = new RoundedButton1
             {
@@ -112,10 +145,44 @@ namespace BookingCareManagement.WinForms
                 Cursor = Cursors.Hand
             };
             newAppointmentBtn.FlatAppearance.BorderSize = 0;
+            // Biến lưu vị trí bắt đầu kéo
+            Point btnDragStart = Point.Empty;
+
+            newAppointmentBtn.MouseDown += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    btnDragStart = e.Location;
+                }
+            };
+
+            newAppointmentBtn.MouseMove += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left && btnDragStart != Point.Empty)
+                {
+                    newAppointmentBtn.Location = new Point(
+                        newAppointmentBtn.Location.X + e.X - btnDragStart.X,
+                        newAppointmentBtn.Location.Y + e.Y - btnDragStart.Y
+                    );
+                }
+            };
+
+            newAppointmentBtn.MouseUp += (s, e) =>
+            {
+                btnDragStart = Point.Empty;
+            };
+
             newAppointmentBtn.Click += (s, e) =>
             {
-                AppointmentDialog dialog = new AppointmentDialog();
-                dialog.ShowDialog();   // mở form Add Appointment dạng popup (modal)
+                // Chỉ mở dialog nếu không đang kéo
+                if (btnDragStart == Point.Empty)
+                {
+                    AppointmentDialog dialog = new AppointmentDialog();
+                    if (dialog.ShowDialog() == DialogResult.OK)
+                    {
+                        RefreshCalendar();
+                    }
+                }
             };
 
             // Căn chỉnh khi resize
@@ -133,10 +200,18 @@ namespace BookingCareManagement.WinForms
 
         private void CreateUserPanel()
         {
-            // Avatar tròn
-            CircularPictureBox avatar = new CircularPictureBox
+            // Tạo container panel cho user info để có thể kéo thả
+            Panel userContainer = new Panel
             {
                 Location = new Point(30, 10),
+                Size = new Size(100, 100),
+                BackColor = Color.Transparent,
+                Cursor = Cursors.SizeAll
+            };
+
+            CircularPictureBox avatar = new CircularPictureBox
+            {
+                Location = new Point(0, 0),
                 Size = new Size(60, 60),
                 BackColor = Color.FromArgb(219, 234, 254),
                 SizeMode = PictureBoxSizeMode.Zoom
@@ -145,7 +220,7 @@ namespace BookingCareManagement.WinForms
             Label avatarInitial = new Label
             {
                 Text = "👤",
-                Location = new Point(30, 10),
+                Location = new Point(0, 0),
                 Size = new Size(60, 60),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Font = new Font("Segoe UI", 24),
@@ -155,21 +230,77 @@ namespace BookingCareManagement.WinForms
             Label userName = new Label
             {
                 Text = "Jane\nDoe",
-                Location = new Point(40, 75),
+                Location = new Point(10, 65),
                 Size = new Size(40, 35),
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
                 ForeColor = Color.FromArgb(17, 24, 39),
                 TextAlign = ContentAlignment.TopCenter
             };
 
-            userPanel.Controls.Add(avatar);
-            userPanel.Controls.Add(avatarInitial);
-            userPanel.Controls.Add(userName);
+            userContainer.Controls.Add(avatar);
+            userContainer.Controls.Add(avatarInitial);
+            userContainer.Controls.Add(userName);
             avatarInitial.BringToFront();
+
+            // Thêm khả năng kéo thả cho user container
+            Point dragStart = Point.Empty;
+            userContainer.MouseDown += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left)
+                {
+                    dragStart = e.Location;
+                    userContainer.BringToFront();
+                }
+            };
+
+            userContainer.MouseMove += (s, e) =>
+            {
+                if (e.Button == MouseButtons.Left && dragStart != Point.Empty)
+                {
+                    userContainer.Location = new Point(
+                        userContainer.Location.X + e.X - dragStart.X,
+                        userContainer.Location.Y + e.Y - dragStart.Y
+                    );
+                }
+            };
+
+            userContainer.MouseUp += (s, e) =>
+            {
+                dragStart = Point.Empty;
+            };
+
+            userPanel.Controls.Add(userContainer);
         }
 
         private void CreateNavigationPanel()
         {
+            // Tạo helper method để thêm drag functionality
+            Action<Control> MakeButtonDraggable = (control) =>
+            {
+                Point dragStart = Point.Empty;
+
+                control.MouseDown += (s, e) =>
+                {
+                    if (e.Button == MouseButtons.Left)
+                        dragStart = e.Location;
+                };
+
+                control.MouseMove += (s, e) =>
+                {
+                    if (e.Button == MouseButtons.Left && dragStart != Point.Empty)
+                    {
+                        control.Location = new Point(
+                            control.Location.X + e.X - dragStart.X,
+                            control.Location.Y + e.Y - dragStart.Y
+                        );
+                    }
+                };
+
+                control.MouseUp += (s, e) =>
+                {
+                    dragStart = Point.Empty;
+                };
+            };
             // Nút Today
             RoundedButton1 todayBtn = new RoundedButton1
             {
@@ -205,7 +336,12 @@ namespace BookingCareManagement.WinForms
             prevBtn.FlatAppearance.BorderSize = 0;
             prevBtn.Click += (s, e) =>
             {
-                currentDate = currentDate.AddMonths(-1);
+                if (currentView == "Month")
+                    currentDate = currentDate.AddMonths(-1);
+                else if (currentView == "Week")
+                    currentDate = currentDate.AddDays(-7);
+                else if (currentView == "Day")
+                    currentDate = currentDate.AddDays(-1);
                 RefreshCalendar();
             };
 
@@ -213,9 +349,8 @@ namespace BookingCareManagement.WinForms
             Label monthLabel = new Label
             {
                 Name = "monthLabel",
-                Text = currentDate.ToString("MMMM yyyy"),
+                Text = currentDate.ToString("dddd MMMM yyyy"),
                 Location = new Point(170, 15),
-                Size = new Size(200, 40),
                 Font = new Font("Segoe UI", 14, FontStyle.Bold),
                 ForeColor = Color.FromArgb(17, 24, 39),
                 TextAlign = ContentAlignment.MiddleLeft
@@ -225,7 +360,7 @@ namespace BookingCareManagement.WinForms
             Button nextBtn = new Button
             {
                 Text = "▶",
-                Location = new Point(300, 15),
+                Location = new Point(800, 15),
                 Size = new Size(40, 40),
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(55, 65, 81),
@@ -236,7 +371,12 @@ namespace BookingCareManagement.WinForms
             nextBtn.FlatAppearance.BorderSize = 0;
             nextBtn.Click += (s, e) =>
             {
-                currentDate = currentDate.AddMonths(1);
+                if(currentView == "Month")
+                    currentDate = currentDate.AddMonths(1);
+                else if(currentView == "Week")
+                    currentDate = currentDate.AddDays(7);
+                else if(currentView == "Day")
+                    currentDate = currentDate.AddDays(1);
                 RefreshCalendar();
             };
 
@@ -277,6 +417,7 @@ namespace BookingCareManagement.WinForms
                 HighlightViewButtons(monthBtn, weekBtn, dayBtn);
                 RefreshCalendar();
             };
+           
 
             weekBtn = new RoundedButton1
             {
@@ -297,6 +438,7 @@ namespace BookingCareManagement.WinForms
                 HighlightViewButtons(monthBtn, weekBtn, dayBtn);
                 RefreshCalendar();
             };
+            
 
             dayBtn = new RoundedButton1
             {
@@ -317,6 +459,7 @@ namespace BookingCareManagement.WinForms
                 HighlightViewButtons(monthBtn, weekBtn, dayBtn);
                 RefreshCalendar();
             };
+           
 
             // Nút Filters
             RoundedButton1 filtersBtn = new RoundedButton1
@@ -332,6 +475,7 @@ namespace BookingCareManagement.WinForms
             };
             filtersBtn.FlatAppearance.BorderSize = 1;
             filtersBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            
 
             // Update vị trí khi form thay đổi kích thước
             this.Resize += (s, e) =>
@@ -468,11 +612,11 @@ namespace BookingCareManagement.WinForms
             DateTime startOfWeek = currentDate.AddDays(-(int)currentDate.DayOfWeek + 1);
             if (startOfWeek > currentDate) startOfWeek = startOfWeek.AddDays(-7);
 
-            Panel main = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
-            contentPanel.Controls.Add(main);
+            //Panel main = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
+            //contentPanel.Controls.Add(main);
 
-            Panel header = new Panel { Height = 60, Dock = DockStyle.Top, BackColor = Color.White };
-            main.Controls.Add(header);
+            //Panel header = new Panel { Height = 60, Dock = DockStyle.Top, BackColor = Color.White };
+            //main.Controls.Add(header);
 
             string[] days = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
 
@@ -483,24 +627,24 @@ namespace BookingCareManagement.WinForms
                 Label lbl = new Label
                 {
                     Text = $"{days[i]}\n{day:dd}",
-                    Width = (main.Width - 60) / 7,
+                    Width = (contentPanel.Width - 60) / 7,
                     Height = 60,
-                    Location = new Point(60 + i * ((main.Width - 60) / 7), 0),
+                    Location = new Point(60 + i * ((contentPanel.Width - 60) / 7), 0),
                     TextAlign = ContentAlignment.MiddleCenter,
                     Font = new Font("Segoe UI", 10),
                     ForeColor = (day.Date == DateTime.Today ? Color.FromArgb(37, 99, 235) : Color.Black)
                 };
-                header.Controls.Add(lbl);
+                contentPanel.Controls.Add(lbl);
             }
 
             // GRID
-            Panel grid = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
-            main.Controls.Add(grid);
+            Panel grid = new Panel { Dock = DockStyle.Fill, BackColor = Color.White};
+            contentPanel.Controls.Add(grid);
 
-            int hours = 12;
-            int startHour = 8;
+            int hours = 13;
+            int startHour = 7;
 
-            for (int h = 0; h < hours; h++)
+            for (int h = 1; h < hours; h++)
             {
                 Label time = new Label
                 {
@@ -536,23 +680,7 @@ namespace BookingCareManagement.WinForms
         {
             contentPanel.Controls.Clear();
 
-            Panel main = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
-            contentPanel.Controls.Add(main);
-
-            Label header = new Label
-            {
-                Text = $"{currentDate:dddd, dd MMMM yyyy}",
-                Dock = DockStyle.Top,
-                Height = 60,
-                TextAlign = ContentAlignment.MiddleLeft,
-                Font = new Font("Segoe UI", 14, FontStyle.Bold),
-                Padding = new Padding(20, 0, 0, 0)
-            };
-            main.Controls.Add(header);
-
-            Panel body = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
-            main.Controls.Add(body);
-
+            
             int hours = 12;
             int startHour = 8;
 
@@ -566,18 +694,18 @@ namespace BookingCareManagement.WinForms
                     Location = new Point(0, h * 60),
                     Font = new Font("Segoe UI", 9),
                     ForeColor = Color.Gray,
-                    TextAlign = ContentAlignment.MiddleRight
+                    TextAlign = ContentAlignment.MiddleRight,
                 };
-                body.Controls.Add(time);
+                contentPanel.Controls.Add(time);
 
                 Panel cell = new Panel
                 {
-                    Width = body.Width - 70,
+                    Width = contentPanel.Width - 70,
                     Height = 60,
                     Location = new Point(70, h * 60),
                     BorderStyle = BorderStyle.FixedSingle
                 };
-                body.Controls.Add(cell);
+                contentPanel.Controls.Add(cell);
             }
         }
 
@@ -625,15 +753,30 @@ namespace BookingCareManagement.WinForms
         private void RefreshCalendar()
         {
             Label monthLabel = navigationPanel.Controls["monthLabel"] as Label;
+            Button NextBtn = navigationPanel.Controls["nextBtn"] as Button;
             if (monthLabel != null)
-                monthLabel.Text = currentDate.ToString("MMMM yyyy");
-
-            if (currentView == "Month")
-                CreateCalendar();
-            else if (currentView == "Week")
-                CreateWeekView();
-            else if (currentView == "Day")
-                CreateDayView();
+            {
+                if (currentView == "Month")
+                {
+                    monthLabel.Text = currentDate.ToString(" MMMM, yyyy");
+                    monthLabel.Size = new Size(300, 40);
+                    if (NextBtn != null)
+                        NextBtn.Location = new Point(500, 15);
+                    CreateCalendar();
+                }
+                if (currentView == "Week")
+                {
+                    monthLabel.Text = currentDate.ToString(" MMMM, yyyy");
+                    monthLabel.Size = new Size(350, 40);
+                    CreateWeekView();
+                }
+                if (currentView == "Day")
+                {
+                    monthLabel.Text = currentDate.ToString("dddd, dd, MMMM, yyyy");
+                    monthLabel.Size = new Size(400, 40);
+                    CreateDayView();
+                }
+            }
         }
     }
 
@@ -698,14 +841,14 @@ namespace BookingCareManagement.WinForms
     public partial class AppointmentDialog : Form
     {
 
-        private ComboBox serviceComboBox;       // ComboBox chọn dịch vụ
-        private ComboBox employeeComboBox;      // ComboBox chọn nhân viên
-        private DateTimePicker datePicker;      // DatePicker chọn ngày
-        private ComboBox timeComboBox;          // ComboBox chọn giờ
-        private TextBox customerTextBox;        // TextBox nhập tên khách hàng
-        private CheckBox notificationCheckBox;  // Checkbox gửi thông báo
-        private Button cancelBtn;               // Nút hủy
-        private Button saveBtn;                 // Nút lưu
+        private ComboBox serviceComboBox;       
+        private ComboBox employeeComboBox;    
+        private DateTimePicker datePicker;      
+        private ComboBox timeComboBox;        
+        private TextBox customerTextBox;     
+        private CheckBox notificationCheckBox;  
+        private Button cancelBtn;               
+        private Button saveBtn;                 
 
         // Constructor
         public AppointmentDialog()

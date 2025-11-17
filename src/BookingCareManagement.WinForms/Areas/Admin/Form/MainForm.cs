@@ -29,6 +29,7 @@
             {
                 InitializeComponent();
                 InitializeCustomComponents();
+                CreateSidebar();    
                 this.Load += (s, e) =>
                 {
                     OpenChildForm(new Calendar());
@@ -284,19 +285,7 @@
 
             private void CreateNavbar()
             {
-                RoundedButton bookingBtn = new RoundedButton
-                {
-                    Name = "bookingBtn",
-                    Text = "🌐 Booking Website ▼",
-                    Location = new Point(100, 12),
-                    Size = new Size(190, 36),
-                    BackColor = Color.FromArgb(37, 99, 235),
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                    FlatStyle = FlatStyle.Flat,
-                    Cursor = Cursors.Hand
-                };
-                bookingBtn.FlatAppearance.BorderSize = 0;
+               
 
                 CircularPictureBox avatar = new CircularPictureBox
                 {
@@ -325,7 +314,7 @@
                 avatar.Click += (s, e) => ToggleAccountMenu();
                 avatarText.Click += (s, e) => ToggleAccountMenu();
 
-                navbarPanel.Controls.Add(bookingBtn);
+             
                 navbarPanel.Controls.Add(avatar);
                 navbarPanel.Controls.Add(avatarText);
 
@@ -347,7 +336,7 @@
                     "👤 Khách hàng",
                     "🎯 Chuyên khoa",
                     "📍 Địa điểm",
-                    "💰 Tài chính",
+                    "💰 Hóa đơn",
                     "⚙️ Cài đặt"
                 };
 
