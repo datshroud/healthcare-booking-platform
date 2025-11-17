@@ -3,6 +3,14 @@
 @{
     ViewData["Title"] = "Home page";
     ViewData["IsFullWidth"] = true;
+    var servicesPath = Url.Content("~/services");
+    var heroBookingHref = User?.Identity?.IsAuthenticated == true
+        ? servicesPath
+        : Url.Page("/Account/Login", values: new { area = "Identity", returnUrl = servicesPath });
+    var myBookingsPath = Url.Content("~/my-bookings");
+    var heroMyBookingsHref = User?.Identity?.IsAuthenticated == true
+        ? myBookingsPath
+        : Url.Page("/Account/Login", values: new { area = "Identity", returnUrl = myBookingsPath });
 }
 
 @section Styles {
@@ -17,9 +25,9 @@
                 <h1 class="hero-title">Chăm sóc sức khỏe của bạn, mọi lúc mọi nơi</h1>
                 <p class="hero-subtitle">Kết nối nhanh chóng với hơn 150+ bác sĩ chuyên môn cao. Đặt lịch khám online dễ dàng, tiện lợi chỉ trong 30 giây.</p>
                 <div class="hero-buttons">
-                    <button class="btn btn-hero btn-hero-primary">
+                    <a class="btn btn-hero btn-hero-primary" href="@heroBookingHref">
                         <i class="fas fa-calendar-check me-2"></i>Đặt lịch ngay
-                    </button>
+                    </a>
                 </div>
             </div>
             <div class="col-lg-6">
@@ -219,7 +227,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-primary" style="background: var(--primary-color); border: none;">Đặt lịch ngay</button>
+                <a class="btn btn-primary" style="background: var(--primary-color); border: none;" href="@heroBookingHref">Đặt lịch ngay</a>
             </div>
         </div>
     </div>

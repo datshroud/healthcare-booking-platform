@@ -30,6 +30,22 @@
 
     displayName = displayName.Trim().Length == 0 ? "User" : displayName.Trim();
     var fallbackInitial = displayName[0].ToString().ToUpperInvariant();
+
+    string BuildProtectedLink(string virtualPath)
+    {
+        var resolvedPath = Url.Content(virtualPath);
+        if (authed || string.IsNullOrWhiteSpace(resolvedPath))
+        {
+            return resolvedPath ?? virtualPath;
+        }
+
+        var loginUrl = Url.Page("/auth/Login", values: new { area = "Identity", returnUrl = resolvedPath });
+        return loginUrl ?? Url.Content("~/auth/login")!;
+    }
+
+    var servicesNavHref = BuildProtectedLink("~/services");
+    var bookingNavHref = BuildProtectedLink("~/booking");
+    var myBookingsNavHref = BuildProtectedLink("~/my-bookings");
 }
 @* <!DOCTYPE html>
 <html lang="en">
@@ -117,9 +133,9 @@
                     <span class="brand-text fw-bold ms-2">Medicare</span>
                 </a>
                 <div class="navbar-nav me-auto">
-                    <a class="nav-link mx-3" href="/services">Chuyên khoa</a>
-                    <a class="nav-link mx-3" href="/booking">Đặt lịch</a>
-                    <a class="nav-link mx-3" href="/my-bookings">Lịch của tôi</a>
+                    <a class="nav-link mx-3" href="@servicesNavHref">Chuyên khoa</a>
+                    <a class="nav-link mx-3" href="@bookingNavHref">Đặt lịch</a>
+                    <a class="nav-link mx-3" href="@myBookingsNavHref">Lịch của tôi</a>
                 </div>
                 @if (authed){
                     <div class="dropdown">
