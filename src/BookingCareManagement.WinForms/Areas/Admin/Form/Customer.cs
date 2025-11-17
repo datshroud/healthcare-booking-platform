@@ -13,255 +13,22 @@ namespace BookingCareManagement.WinForms
 {
     public partial class Customer : Form
     {
-        private Panel headerPanel;
-        private Panel contentPanel;
-        private DataGridView customersDataGridView;
-
         public Customer()
         {
-            InitializeComponents();
+            InitializeComponent();
             LoadSampleData();
-        }
-
-        private void InitializeComponents()
-        {
-            // Cài đặt form
-            this.Text = "Customers";
-            this.Size = new Size(1400, 800);
-            this.BackColor = Color.FromArgb(243, 244, 246);
-            this.StartPosition = FormStartPosition.CenterScreen;
-
-            // Panel Header (phần tiêu đề)
-            headerPanel = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 80,
-                BackColor = Color.FromArgb(243, 244, 246),
-                Padding = new Padding(30, 20, 30, 20)
-            };
-            CreateHeader();
-
-            // Panel Nội dung
-            contentPanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(243, 244, 246),
-                Padding = new Padding(30, 10, 30, 1000)
-            };
-            CreateContent();
-
-            this.Controls.Add(contentPanel);
-            this.Controls.Add(headerPanel);
-        }
-
-        private void CreateHeader()
-        {
-            // Tiêu đề
-            Label title = new Label
-            {
-                Text = "Customers (1)",
-                Location = new Point(30, 20),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 24, FontStyle.Bold),
-                ForeColor = Color.FromArgb(17, 24, 39)
-            };
-
-            // Nút xuất dữ liệu
-            RoundedButton exportBtn = new RoundedButton
-            {
-                Text = "⬇  Export Data",
-                Location = new Point(900, 18),
-                Size = new Size(140, 44),
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(55, 65, 81),
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            exportBtn.FlatAppearance.BorderSize = 1;
-            exportBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
-            exportBtn.Click += (s, e) => MessageBox.Show("Export Data", "Info");
-
-            // Nút nhập dữ liệu
-            RoundedButton importBtn = new RoundedButton
-            {
-                Text = "📄  Import Data",
-                Location = new Point(1050, 18),
-                Size = new Size(140, 44),
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(55, 65, 81),
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            importBtn.FlatAppearance.BorderSize = 1;
-            importBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
-            importBtn.Click += (s, e) => MessageBox.Show("Import Data", "Info");
-
-            // Nút thêm khách hàng
-            RoundedButton addBtn = new RoundedButton
-            {
-                Text = "+  Add Customer",
-                Location = new Point(1200, 18),
-                Size = new Size(160, 44),
-                BackColor = Color.FromArgb(37, 99, 235),
-                ForeColor = Color.White,
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            addBtn.FlatAppearance.BorderSize = 0;
-            addBtn.Click += (s, e) => MessageBox.Show("Add Customer", "Info");
-
-            // Xử lý khi resize form
-            this.Resize += (s, e) =>
-            {
-                int formWidth = this.ClientSize.Width;
-                addBtn.Location = new Point(formWidth - 190, 18);
-                importBtn.Location = new Point(formWidth - 340, 18);
-                exportBtn.Location = new Point(formWidth - 490, 18);
-            };
-
-            headerPanel.Controls.Add(title);
-            headerPanel.Controls.Add(exportBtn);
-            headerPanel.Controls.Add(importBtn);
-            headerPanel.Controls.Add(addBtn);
-        }
-
-        private void CreateContent()
-        {
-            // Panel trắng chính (dock fill để các control con dock đúng)
-            // Có padding hai bên để DataGridView không chiếm 100% chiều rộng
-            Panel whitePanel = new Panel
-            {
-                Dock = DockStyle.Fill,
-                BackColor = Color.FromArgb(243, 244, 246),
-                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom,
-                Padding = new Padding(30, 10, 30, 50)
-            };
-
-            // Panel tìm kiếm (dock top)
-            Panel searchPanel = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 70,
-                BackColor = Color.White
-            };
-
-            // Icon và textbox tìm kiếm
-            Label searchIcon = new Label
-            {
-                Text = "🔍 ",
-                Location = new Point(20, 25),
-                Size = new Size(20, 20),
-                Font = new Font("Segoe UI", 12)
-            };
-
-            TextBox searchBox = new TextBox
-            {
-                Location = new Point(55, 20),
-                Size = new Size(300, 30),
-                Font = new Font("Segoe UI", 11),
-                BorderStyle = BorderStyle.None,
-                Text = "Search"
-            };
-            searchBox.ForeColor = Color.Gray;
-            searchBox.GotFocus += (s, e) =>
-            {
-                // Khi click vào thì xóa placeholder
-                if (searchBox.Text == "Search")
-                {
-                    searchBox.Text = "";
-                    searchBox.ForeColor = Color.Black;
-                }
-            };
-            searchBox.LostFocus += (s, e) =>
-            {
-                // Khi bỏ focus thì trả lại placeholder
-                if (string.IsNullOrWhiteSpace(searchBox.Text))
-                {
-                    searchBox.Text = "Search";
-                    searchBox.ForeColor = Color.Gray;
-                }
-            };
-
-            // Gạch dưới của ô tìm kiếm
-            Panel searchUnderline = new Panel
-            {
-                Location = new Point(50, 55),
-                Size = new Size(340, 1),
-                BackColor = Color.FromArgb(229, 231, 235)
-            };
-
-            searchPanel.Controls.Add(searchBox);
-            searchPanel.Controls.Add(searchUnderline);
-            searchPanel.Controls.Add(searchIcon);
-            searchIcon.BringToFront(); // đảm bảo icon luôn nằm trên cùng
-
-            // DataGridView khách hàng – fill toàn bộ phần còn lại
-            customersDataGridView = new DataGridView
-            {
-                Dock = DockStyle.Fill,
-                BackgroundColor = Color.White,
-                BorderStyle = BorderStyle.None,
-                AllowUserToAddRows = false,
-                AllowUserToDeleteRows = false,
-                AllowUserToResizeRows = false,
-                RowHeadersVisible = false,
-                SelectionMode = DataGridViewSelectionMode.FullRowSelect,
-                MultiSelect = false,
-                AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill,
-                ColumnHeadersHeight = 50,
-                RowTemplate = { Height = 70 },
-                GridColor = Color.FromArgb(243, 244, 246),
-                Font = new Font("Segoe UI", 10)
-            };
-
-            // Style tiêu đề cột
-            customersDataGridView.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
-            {
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(107, 114, 128),
-                Font = new Font("Segoe UI", 10, FontStyle.Bold),
-                Alignment = DataGridViewContentAlignment.MiddleLeft,
-                Padding = new Padding(15, 0, 0, 0)
-            };
-
-            // Style ô dữ liệu
-            customersDataGridView.DefaultCellStyle = new DataGridViewCellStyle
-            {
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(17, 24, 39),
-                SelectionBackColor = Color.FromArgb(243, 244, 246),
-                SelectionForeColor = Color.FromArgb(17, 24, 39),
-                Padding = new Padding(15, 10, 0, 10)
-            };
-
-            // Style hàng xen kẽ
-            customersDataGridView.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
-            {
-                BackColor = Color.FromArgb(249, 250, 251)
-            };
-
-            // Thêm các cột
+            AttachEvents();
             AddCheckBoxColumn();
             AddCustomerColumn();
-            AddTextColumn("# of Appointments", "Appointments");
-            AddTextColumn("Last Appointment", "LastAppointment");
-            AddTextColumn("Created", "Created");
-
-            // Đảm bảo chiều rộng tối thiểu
-            foreach (DataGridViewColumn col in customersDataGridView.Columns)
-            {
-                col.MinimumWidth = 50;
-            }
-
-            // Thêm control vào whitePanel
-            whitePanel.Controls.Add(customersDataGridView);
-            whitePanel.Controls.Add(searchPanel);
-            contentPanel.Controls.Add(whitePanel);
+            AddTextColumn("# Số Cuộc hẹn", "Appointments");
+            AddTextColumn("# Cuộc hẹn cuối cùng", "LastAppointment");
+            AddTextColumn("# Ngày tạo tài khoản", "Created");
         }
 
+        private void LoadSampleData()
+        {
+
+        }
         private void AddCheckBoxColumn()
         {
             DataGridViewCheckBoxColumn checkCol = new DataGridViewCheckBoxColumn
@@ -272,18 +39,16 @@ namespace BookingCareManagement.WinForms
             };
             customersDataGridView.Columns.Add(checkCol);
         }
-
         private void AddCustomerColumn()
         {
             DataGridViewTextBoxColumn customerCol = new DataGridViewTextBoxColumn
             {
                 Name = "Customer",
-                HeaderText = "Customer",
-                FillWeight = 30
+                HeaderText = "Khách hàng",
+                FillWeight = 30,
             };
             customersDataGridView.Columns.Add(customerCol);
         }
-
         private void AddTextColumn(string headerText, string name)
         {
             DataGridViewTextBoxColumn col = new DataGridViewTextBoxColumn
@@ -294,7 +59,6 @@ namespace BookingCareManagement.WinForms
             };
             customersDataGridView.Columns.Add(col);
         }
-
         private void AddActionColumn()
         {
             DataGridViewButtonColumn actionCol = new DataGridViewButtonColumn
@@ -308,9 +72,43 @@ namespace BookingCareManagement.WinForms
             customersDataGridView.Columns.Add(actionCol);
         }
 
-        private void LoadSampleData()
+        private void AttachEvents()
         {
-            // (Hàm này hiện tại bỏ trống)
+            // Sự kiện cho nút
+            exportBtn.Click += (s, e) => MessageBox.Show("Export Data", "Info");
+            importBtn.Click += (s, e) => MessageBox.Show("Import Data", "Info");
+            
+
+            // Sự kiện cho search box
+            searchBox.GotFocus += (s, e) =>
+            {
+                if (searchBox.Text == "Tìm kiếm")
+                {
+                    searchBox.Text = "";
+                    searchBox.ForeColor = Color.Black;
+                }
+            };
+
+            searchBox.LostFocus += (s, e) =>
+            {
+                if (string.IsNullOrWhiteSpace(searchBox.Text))
+                {
+                    searchBox.Text = "Search";
+                    searchBox.ForeColor = Color.Gray;
+                }
+            };
+
+            // Sự kiện resize form
+            this.Resize += (s, e) =>
+            {
+                int formWidth = this.ClientSize.Width;
+                addBtn.Location = new Point(formWidth - 190, 18);
+                importBtn.Location = new Point(formWidth - 340, 18);
+                exportBtn.Location = new Point(formWidth - 490, 18);
+            };
+
+            // Sự kiện vẽ cell
+            customersDataGridView.CellPainting += customersDataGridView_CellPainting;
         }
 
         // Vẽ tùy chỉnh cho cell chứa thông tin customer
@@ -337,7 +135,12 @@ namespace BookingCareManagement.WinForms
                         LineAlignment = StringAlignment.Center
                     };
                     Rectangle avatarRect = new Rectangle(e.CellBounds.X + 15, e.CellBounds.Y + 10, 50, 50);
-                    e.Graphics.DrawString("JD", font, textBrush, avatarRect, sf);
+
+                    // Lấy tên từ dữ liệu để tạo chữ viết tắt
+                    string fullName = e.Value?.ToString().Split('\n')[0] ?? "JD";
+                    string initials = GetInitials(fullName);
+
+                    e.Graphics.DrawString(initials, font, textBrush, avatarRect, sf);
                 }
 
                 // Vẽ tên + email
@@ -355,16 +158,312 @@ namespace BookingCareManagement.WinForms
             }
         }
 
-        public Customer(bool attachEvents) : this()
+        private string GetInitials(string fullName)
         {
-            // Gắn event nếu có yêu cầu
-            if (attachEvents)
+            if (string.IsNullOrWhiteSpace(fullName))
+                return "JD";
+
+            string[] names = fullName.Split(' ');
+            if (names.Length >= 2)
+                return $"{names[0][0]}{names[1][0]}".ToUpper();
+            else if (names.Length == 1 && names[0].Length >= 2)
+                return names[0].Substring(0, 2).ToUpper();
+            else
+                return "JD";
+        }
+
+        private void importBtn_Click(object sender, EventArgs e)
+        {
+
+        }
+
+        private void addBtn_Click(object sender, EventArgs e)
+        {
+            AddCustomerForm addCustomerForm = new AddCustomerForm();
+            addCustomerForm.ShowDialog();
+        }
+    
+        public class AddCustomerForm : Form
+        {
+            private Label lblTitle;
+            private Button btnClose;
+            private Label lblFirstName;
+            private TextBox txtFirstName;
+            private Label lblLastName;
+            private TextBox txtLastName;
+            private Label lblEmail;
+            private TextBox txtEmail;
+            private Label lblPhone;
+            private ComboBox cboCountryCode;
+            private TextBox txtPhone;
+            private CheckBox chkSendEmail;
+            private Label lblEmailOption;
+            private Button btnCancel;
+            private Button btnAddCustomer;
+
+            public AddCustomerForm()
             {
-                customersDataGridView.CellPainting += customersDataGridView_CellPainting;
+                InitializeComponents();
             }
+
+            private void InitializeComponents()
+            {
+                // Form settings
+                this.Text = "Add Customer";
+                this.Size = new Size(560, 580);
+                this.StartPosition = FormStartPosition.CenterScreen;
+                this.FormBorderStyle = FormBorderStyle.FixedDialog;
+                this.MaximizeBox = false;
+                this.MinimizeBox = false;
+                this.BackColor = Color.White;
+
+                // Title Label
+                lblTitle = new Label
+                {
+                    Text = "Thêm khách hàng",
+                    Location = new Point(20, 20),
+                    Size = new Size(250, 30),
+                    Font = new Font("Segoe UI", 14, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(31, 41, 55)
+                };
+                this.Controls.Add(lblTitle);
+
+
+                // First Name
+                lblFirstName = new Label
+                {
+                    Text = "Họ *",
+                    Location = new Point(25, 70),
+                    Size = new Size(100, 20),
+                    Font = new Font("Segoe UI", 9, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(31, 41, 55)
+                };
+                this.Controls.Add(lblFirstName);
+
+                txtFirstName = new TextBox
+                {
+                    Location = new Point(25, 95),
+                    Size = new Size(490, 30),
+                    Font = new Font("Segoe UI", 10),
+                    BorderStyle = BorderStyle.FixedSingle
+                };
+                txtFirstName.Text = "Nhập họ";
+                txtFirstName.ForeColor = Color.LightGray;
+                txtFirstName.Enter += RemovePlaceholder;
+                txtFirstName.Leave += SetPlaceholder;
+                this.Controls.Add(txtFirstName);
+
+                // Last Name
+                lblLastName = new Label
+                {
+                    Text = "Tên *",
+                    Location = new Point(25, 140),
+                    Size = new Size(100, 20),
+                    Font = new Font("Segoe UI", 9, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(31, 41, 55)
+                };
+                this.Controls.Add(lblLastName);
+
+                txtLastName = new TextBox
+                {
+                    Location = new Point(25, 165),
+                    Size = new Size(490, 30),
+                    Font = new Font("Segoe UI", 10),
+                    BorderStyle = BorderStyle.FixedSingle
+                };
+                txtLastName.Text = "Nhập tên";
+                txtLastName.ForeColor = Color.LightGray;
+                txtLastName.Enter += RemovePlaceholder;
+                txtLastName.Leave += SetPlaceholder;
+                this.Controls.Add(txtLastName);
+
+                // Email
+                lblEmail = new Label
+                {
+                    Text = "Email *",
+                    Location = new Point(25, 210),
+                    Size = new Size(100, 20),
+                    Font = new Font("Segoe UI", 9, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(31, 41, 55)
+                };
+                this.Controls.Add(lblEmail);
+
+                txtEmail = new TextBox
+                {
+                    Location = new Point(25, 235),
+                    Size = new Size(490, 30),
+                    Font = new Font("Segoe UI", 10),
+                    BorderStyle = BorderStyle.FixedSingle
+                };
+                txtEmail.Text = "example@yourcompany.com";
+                txtEmail.ForeColor = Color.LightGray;
+                txtEmail.Enter += RemovePlaceholder;
+                txtEmail.Leave += SetPlaceholder;
+                this.Controls.Add(txtEmail);
+
+                // Phone
+                lblPhone = new Label
+                {
+                    Text = "Điện thoại",
+                    Location = new Point(25, 280),
+                    Size = new Size(100, 20),
+                    Font = new Font("Segoe UI", 9, FontStyle.Regular),
+                    ForeColor = Color.FromArgb(31, 41, 55)
+                };
+                this.Controls.Add(lblPhone);
+
+                // Country Code ComboBox
+                cboCountryCode = new ComboBox
+                {
+                    Location = new Point(25, 305),
+                    Size = new Size(100, 30),
+                    Font = new Font("Segoe UI", 10),
+                    DropDownStyle = ComboBoxStyle.DropDownList
+                };
+                cboCountryCode.Items.AddRange(new object[] { "+1 🇺🇸", "+44 🇬🇧", "+84 🇻🇳", "+86 🇨🇳", "+91 🇮🇳" });
+                cboCountryCode.SelectedIndex = 0;
+                this.Controls.Add(cboCountryCode);
+
+                // Phone TextBox
+                txtPhone = new TextBox
+                {
+                    Location = new Point(135, 305),
+                    Size = new Size(380, 30),
+                    Font = new Font("Segoe UI", 10),
+                    BorderStyle = BorderStyle.FixedSingle
+                };
+                txtPhone.Text = "Số điện thoại";
+                txtPhone.ForeColor = Color.LightGray;
+                txtPhone.Enter += RemovePlaceholder;
+                txtPhone.Leave += SetPlaceholder;
+                this.Controls.Add(txtPhone);
+
+                // Checkbox
+                chkSendEmail = new CheckBox
+                {
+                    Location = new Point(25, 355),
+                    Size = new Size(20, 20),
+                    BackColor = Color.White
+                };
+                this.Controls.Add(chkSendEmail);
+
+                lblEmailOption = new Label
+                {
+                    Text = "Gửi email có thông tin đăng nhập của khách hàng\nTùy chọn này yêu cầu địa chỉ email.",
+                    Location = new Point(50, 353),
+                    Size = new Size(450, 40),
+                    Font = new Font("Segoe UI", 9),
+                    ForeColor = Color.FromArgb(75, 85, 99)
+                };
+                this.Controls.Add(lblEmailOption);
+
+                // Cancel Button
+                btnCancel = new Button
+                {
+                    Text = "Hủy",
+                    Location = new Point(310, 480),
+                    Size = new Size(100, 40),
+                    Font = new Font("Segoe UI", 10),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.White,
+                    ForeColor = Color.FromArgb(55, 65, 81),
+                    Cursor = Cursors.Hand
+                };
+                btnCancel.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+                btnCancel.Click += BtnCancel_Click;
+                this.Controls.Add(btnCancel);
+
+                // Add Customer Button
+                btnAddCustomer = new Button
+                {
+                    Text = "Thêm",
+                    Location = new Point(415, 480),
+                    Size = new Size(120, 40),
+                    Font = new Font("Segoe UI", 10),
+                    FlatStyle = FlatStyle.Flat,
+                    BackColor = Color.FromArgb(37, 99, 235),
+                    ForeColor = Color.White,
+                    Cursor = Cursors.Hand
+                };
+                btnAddCustomer.FlatAppearance.BorderSize = 0;
+                btnAddCustomer.Click += BtnAddCustomer_Click;
+                this.Controls.Add(btnAddCustomer);
+            }
+
+            private void RemovePlaceholder(object sender, EventArgs e)
+            {
+                TextBox txt = sender as TextBox;
+                if (txt.ForeColor == Color.LightGray)
+                {
+                    txt.Text = "";
+                    txt.ForeColor = Color.Black;
+                }
+            }
+
+            private void SetPlaceholder(object sender, EventArgs e)
+            {
+                TextBox txt = sender as TextBox;
+                if (string.IsNullOrWhiteSpace(txt.Text))
+                {
+                    txt.ForeColor = Color.LightGray;
+                    if (txt == txtFirstName)
+                        txt.Text = "Nhập họ";
+                    else if (txt == txtLastName)
+                        txt.Text = "Nhập tên";
+                    else if (txt == txtEmail)
+                        txt.Text = "example@yourcompany.com";
+                    else if (txt == txtPhone)
+                        txt.Text = "Số điện thoại";
+                }
+            }
+
+            private void BtnClose_Click(object sender, EventArgs e)
+            {
+                this.Close();
+            }
+
+            private void BtnCancel_Click(object sender, EventArgs e)
+            {
+                this.Close();
+            }
+
+            private void BtnAddCustomer_Click(object sender, EventArgs e)
+            {
+                // Validate inputs
+                if (string.IsNullOrWhiteSpace(txtFirstName.Text) || txtFirstName.ForeColor == Color.LightGray)
+                {
+                    MessageBox.Show("Please enter first name!", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(txtLastName.Text) || txtLastName.ForeColor == Color.LightGray)
+                {
+                    MessageBox.Show("Please enter last name!", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(txtEmail.Text) || txtEmail.ForeColor == Color.LightGray)
+                {
+                    MessageBox.Show("Please enter email!", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                // Save customer data
+                string message = $"Customer Added Successfully!\n\n" +
+                               $"First Name: {txtFirstName.Text}\n" +
+                               $"Last Name: {txtLastName.Text}\n" +
+                               $"Email: {txtEmail.Text}\n" +
+                               $"Phone: {cboCountryCode.Text} {txtPhone.Text}\n" +
+                               $"Send Email: {(chkSendEmail.Checked ? "Yes" : "No")}";
+
+                MessageBox.Show(message, "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                this.Close();
+            }
+
+           
+           
         }
     }
-
     // Nút bo góc
     public class RoundedButton : Button
     {

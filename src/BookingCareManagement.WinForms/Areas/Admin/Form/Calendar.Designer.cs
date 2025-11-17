@@ -70,7 +70,7 @@
             newAppointmentBtn.Name = "newAppointmentBtn";
             newAppointmentBtn.Size = new Size(250, 50);
             newAppointmentBtn.TabIndex = 1;
-            newAppointmentBtn.Text = "+  New Appointment";
+            newAppointmentBtn.Text = "+  Thêm cuôc hẹn";
             newAppointmentBtn.UseVisualStyleBackColor = false;
             newAppointmentBtn.Click += newAppointmentBtn_Click;
             // 
@@ -81,7 +81,7 @@
             headerTitleLabel.ForeColor = Color.FromArgb(17, 24, 39);
             headerTitleLabel.Location = new Point(30, 25);
             headerTitleLabel.Name = "headerTitleLabel";
-            headerTitleLabel.Size = new Size(190, 54);
+            headerTitleLabel.Size = new Size(319, 54);
             headerTitleLabel.TabIndex = 0;
             headerTitleLabel.Text = "Lịch khám bệnh";
             // 
@@ -122,9 +122,9 @@
             btnToday.ForeColor = Color.Black;
             btnToday.Location = new Point(12, 26);
             btnToday.Name = "btnToday";
-            btnToday.Size = new Size(80, 40);
+            btnToday.Size = new Size(100, 40);
             btnToday.TabIndex = 9;
-            btnToday.Text = "Today";
+            btnToday.Text = "Hôm nay";
             btnToday.UseVisualStyleBackColor = true;
             btnToday.Click += btnToday_Click;
             // 
@@ -144,7 +144,7 @@
             filtersBtn.Name = "filtersBtn";
             filtersBtn.Size = new Size(100, 40);
             filtersBtn.TabIndex = 7;
-            filtersBtn.Text = "⚙  Filters";
+            filtersBtn.Text = "⚙ Bộ lọc";
             filtersBtn.UseVisualStyleBackColor = true;
             // 
             // dayBtn
@@ -155,7 +155,7 @@
             dayBtn.Name = "dayBtn";
             dayBtn.Size = new Size(80, 40);
             dayBtn.TabIndex = 6;
-            dayBtn.Text = "Day";
+            dayBtn.Text = "Ngày";
             dayBtn.UseVisualStyleBackColor = true;
             dayBtn.Click += dayBtn_Click;
             // 
@@ -167,7 +167,7 @@
             weekBtn.Name = "weekBtn";
             weekBtn.Size = new Size(80, 40);
             weekBtn.TabIndex = 5;
-            weekBtn.Text = "Week";
+            weekBtn.Text = "Tuần";
             weekBtn.UseVisualStyleBackColor = true;
             weekBtn.Click += weekBtn_Click;
             // 
@@ -179,7 +179,7 @@
             monthBtn.Name = "monthBtn";
             monthBtn.Size = new Size(80, 40);
             monthBtn.TabIndex = 4;
-            monthBtn.Text = "Month";
+            monthBtn.Text = "Tháng";
             monthBtn.UseVisualStyleBackColor = true;
             monthBtn.Click += monthBtn_Click;
             // 

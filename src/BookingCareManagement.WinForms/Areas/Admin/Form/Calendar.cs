@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using static BookingCareManagement.WinForms.Customer;
 
 namespace BookingCareManagement.WinForms
 {
@@ -457,9 +458,10 @@ namespace BookingCareManagement.WinForms
                 );
             }
         }
+        
 
         // Giữ nguyên class AppointmentDialog
-        public partial class AppointmentDialog : Form
+        public class AppointmentDialog : Form
         {
             // ... (giữ nguyên toàn bộ code của AppointmentDialog)
             private ComboBox serviceComboBox;
@@ -490,9 +492,9 @@ namespace BookingCareManagement.WinForms
                 // Tiêu đề header
                 Label headerLabel = new Label
                 {
-                    Text = "Add appointment",
-                    Location = new Point(30, 20),
-                    Size = new Size(500, 30),
+                    Text = "Thêm cuộc hẹn",
+                    Location = new Point(30, 15),
+                    Size = new Size(500, 35),
                     Font = new Font("Segoe UI", 16, FontStyle.Bold),
                     ForeColor = Color.FromArgb(17, 24, 39)
                 };
@@ -500,7 +502,7 @@ namespace BookingCareManagement.WinForms
                 // Label "Services"
                 Label serviceLabel = new Label
                 {
-                    Text = "Services",
+                    Text = "Dịch vụ",
                     Location = new Point(30, 70),
                     Size = new Size(100, 20),
                     Font = new Font("Segoe UI", 10, FontStyle.Bold),
@@ -520,7 +522,7 @@ namespace BookingCareManagement.WinForms
                 // Label "Employees"
                 Label employeeLabel = new Label
                 {
-                    Text = "Employees",
+                    Text = "Bác sĩ",
                     Location = new Point(30, 140),
                     Size = new Size(100, 20),
                     Font = new Font("Segoe UI", 10, FontStyle.Bold),
@@ -540,9 +542,9 @@ namespace BookingCareManagement.WinForms
                 // Label "Date"
                 Label dateLabel = new Label
                 {
-                    Text = "Date",
+                    Text = "Ngày diễn ra",
                     Location = new Point(30, 210),
-                    Size = new Size(100, 20),
+                    Size = new Size(150, 25),
                     Font = new Font("Segoe UI", 10, FontStyle.Bold),
                     ForeColor = Color.FromArgb(17, 24, 39)
                 };
@@ -559,9 +561,9 @@ namespace BookingCareManagement.WinForms
                 // Label "Time"
                 Label timeLabel = new Label
                 {
-                    Text = "Time",
+                    Text = "Thời gian diễn ra",
                     Location = new Point(300, 210),
-                    Size = new Size(100, 20),
+                    Size = new Size(150, 25),
                     Font = new Font("Segoe UI", 10, FontStyle.Bold),
                     ForeColor = Color.FromArgb(17, 24, 39)
                 };
@@ -583,9 +585,9 @@ namespace BookingCareManagement.WinForms
                 // Label "Customers"
                 Label customerLabel = new Label
                 {
-                    Text = "Customers",
+                    Text = "Khách hàng",
                     Location = new Point(30, 280),
-                    Size = new Size(400, 20),
+                    Size = new Size(300, 25),
                     Font = new Font("Segoe UI", 10, FontStyle.Bold),
                     ForeColor = Color.FromArgb(17, 24, 39)
                 };
@@ -593,15 +595,36 @@ namespace BookingCareManagement.WinForms
                 // Link thêm khách hàng mới
                 LinkLabel newCustomerLink = new LinkLabel
                 {
-                    Text = "+ New Customer",
-                    Location = new Point(440, 280),
-                    Size = new Size(120, 20),
+                    Text = "+ Khách hàng mới",
+                    Location = new Point(400, 280),
+                    Size = new Size(250, 20),
                     Font = new Font("Segoe UI", 9),
                     LinkColor = Color.FromArgb(37, 99, 235),
                     ActiveLinkColor = Color.FromArgb(37, 99, 235),
                     VisitedLinkColor = Color.FromArgb(37, 99, 235)
                 };
-                newCustomerLink.Click += (s, e) => MessageBox.Show("Open New Customer dialog", "Info");
+                newCustomerLink.Click += (s, e) =>
+                {
+                    // Sử dụng dialog Add Customer
+                    AddCustomerForm addCustomerForm = new AddCustomerForm();
+
+                    // Có thể truyền dữ liệu nếu cần
+                    // addCustomerForm.SomeProperty = someValue;
+
+                    DialogResult result = addCustomerForm.ShowDialog();
+
+                    // Xử lý kết quả sau khi dialog đóng
+                    if (result == DialogResult.OK)
+                    {
+                        // Lấy dữ liệu từ form nếu cần
+                        MessageBox.Show("Khách hàng đã được thêm thành công!", "Thông báo",
+                                      MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                        // Refresh dữ liệu hoặc thực hiện hành động khác
+                        RefreshCustomerList();
+                    }
+
+                };
 
                 // Panel chứa TextBox nhập tên khách hàng (có icon)
                 Panel customerPanel = new Panel
@@ -655,9 +678,9 @@ namespace BookingCareManagement.WinForms
                 // Checkbox gửi thông báo cho khách hàng
                 notificationCheckBox = new CheckBox
                 {
-                    Text = "Send notification to customer",
+                    Text = "Gửi thông báo tới khách hàng",
                     Location = new Point(30, 355),
-                    Size = new Size(300, 25),
+                    Size = new Size(300, 30),
                     Font = new Font("Segoe UI", 10),
                     Checked = true
                 };
@@ -665,7 +688,7 @@ namespace BookingCareManagement.WinForms
                 // Nút Cancel (Hủy)
                 cancelBtn = new RoundedButton1
                 {
-                    Text = "Cancel",
+                    Text = "Hủy",
                     Location = new Point(360, 400),
                     Size = new Size(90, 40),
                     BackColor = Color.White,
@@ -681,7 +704,7 @@ namespace BookingCareManagement.WinForms
                 // Nút Save (Lưu)
                 saveBtn = new RoundedButton1
                 {
-                    Text = "Save",
+                    Text = "Lưu",
                     Location = new Point(460, 400),
                     Size = new Size(90, 40),
                     BackColor = Color.FromArgb(37, 99, 235),
@@ -709,6 +732,10 @@ namespace BookingCareManagement.WinForms
                 this.Controls.Add(notificationCheckBox);
                 this.Controls.Add(cancelBtn);
                 this.Controls.Add(saveBtn);
+            }
+            private void RefreshCustomerList()
+            {
+                // Code để refresh danh sách khách hàng
             }
 
             private void SaveBtn_Click(object sender, EventArgs e)
