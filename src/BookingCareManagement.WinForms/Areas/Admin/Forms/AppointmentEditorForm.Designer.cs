@@ -35,6 +35,12 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             this.contentPanel = new System.Windows.Forms.Panel();
             this.whitePanel = new System.Windows.Forms.Panel();
             this.appointmentGrid = new System.Windows.Forms.DataGridView();
+            this.filterContainerPanel = new System.Windows.Forms.Panel();
+            this.filterPanel = new System.Windows.Forms.Panel();
+            this.btnStatusFilter = new System.Windows.Forms.Button();
+            this.btnEmployeeFilter = new System.Windows.Forms.Button();
+            this.btnCustomerFilter = new System.Windows.Forms.Button();
+            this.btnServiceFilter = new System.Windows.Forms.Button();
             this.searchPanel = new System.Windows.Forms.Panel();
             this.btnFilter = new System.Windows.Forms.Button();
             this.dtTo = new System.Windows.Forms.DateTimePicker();
@@ -44,6 +50,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             this.contentPanel.SuspendLayout();
             this.whitePanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.appointmentGrid)).BeginInit();
+            this.filterContainerPanel.SuspendLayout();
+            this.filterPanel.SuspendLayout();
             this.searchPanel.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -72,7 +80,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             this.btnNew.Name = "btnNew";
             this.btnNew.Size = new System.Drawing.Size(160, 44);
             this.btnNew.TabIndex = 2;
-            this.btnNew.Text = "+  New Appointment";
+            this.btnNew.Text = "+  T?o L?ch H?n";
             this.btnNew.UseVisualStyleBackColor = false;
             // 
             // btnExport
@@ -88,7 +96,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             this.btnExport.Name = "btnExport";
             this.btnExport.Size = new System.Drawing.Size(140, 44);
             this.btnExport.TabIndex = 1;
-            this.btnExport.Text = "?  Export Data";
+            this.btnExport.Text = "?  Xu?t D? Li?u";
             this.btnExport.UseVisualStyleBackColor = false;
             // 
             // lblTitle
@@ -98,9 +106,9 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             this.lblTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(17)))), ((int)(((byte)(24)))), ((int)(((byte)(39)))));
             this.lblTitle.Location = new System.Drawing.Point(30, 20);
             this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(280, 45);
+            this.lblTitle.Size = new System.Drawing.Size(221, 45);
             this.lblTitle.TabIndex = 0;
-            this.lblTitle.Text = "Appointments (2)";
+            this.lblTitle.Text = "L?ch H?n (2)";
             // 
             // contentPanel
             // 
@@ -120,6 +128,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             | System.Windows.Forms.AnchorStyles.Right)));
             this.whitePanel.BackColor = System.Drawing.Color.White;
             this.whitePanel.Controls.Add(this.appointmentGrid);
+            this.whitePanel.Controls.Add(this.filterContainerPanel);
             this.whitePanel.Controls.Add(this.searchPanel);
             this.whitePanel.Location = new System.Drawing.Point(30, 10);
             this.whitePanel.Name = "whitePanel";
@@ -138,15 +147,102 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             this.appointmentGrid.ColumnHeadersHeight = 50;
             this.appointmentGrid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.appointmentGrid.GridColor = System.Drawing.Color.FromArgb(((int)(((byte)(243)))), ((int)(((byte)(244)))), ((int)(((byte)(246)))));
-            this.appointmentGrid.Location = new System.Drawing.Point(30, 80);
+            this.appointmentGrid.Location = new System.Drawing.Point(30, 150);
             this.appointmentGrid.MultiSelect = false;
             this.appointmentGrid.Name = "appointmentGrid";
             this.appointmentGrid.ReadOnly = true;
             this.appointmentGrid.RowHeadersVisible = false;
             this.appointmentGrid.RowTemplate.Height = 60;
             this.appointmentGrid.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.appointmentGrid.Size = new System.Drawing.Size(1280, 570);
+            this.appointmentGrid.Size = new System.Drawing.Size(1280, 500);
             this.appointmentGrid.TabIndex = 1;
+            // 
+            // filterContainerPanel
+            // 
+            this.filterContainerPanel.BackColor = System.Drawing.Color.White;
+            this.filterContainerPanel.Controls.Add(this.filterPanel);
+            this.filterContainerPanel.Dock = System.Windows.Forms.DockStyle.Top;
+            this.filterContainerPanel.Location = new System.Drawing.Point(30, 80);
+            this.filterContainerPanel.Name = "filterContainerPanel";
+            this.filterContainerPanel.Size = new System.Drawing.Size(1280, 70);
+            this.filterContainerPanel.TabIndex = 2;
+            this.filterContainerPanel.Visible = false;
+            // 
+            // filterPanel
+            // 
+            this.filterPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(249)))), ((int)(((byte)(250)))), ((int)(((byte)(251)))));
+
+            this.filterPanel.Controls.Add(this.btnStatusFilter);
+            this.filterPanel.Controls.Add(this.btnEmployeeFilter);
+            this.filterPanel.Controls.Add(this.btnCustomerFilter);
+            this.filterPanel.Controls.Add(this.btnServiceFilter);
+            this.filterPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.filterPanel.Location = new System.Drawing.Point(0, 0);
+            this.filterPanel.Name = "filterPanel";
+            this.filterPanel.Padding = new System.Windows.Forms.Padding(10);
+            this.filterPanel.Size = new System.Drawing.Size(1280, 70);
+            this.filterPanel.TabIndex = 0;
+            // 
+            // btnStatusFilter
+            // 
+            this.btnStatusFilter.BackColor = System.Drawing.Color.White;
+            this.btnStatusFilter.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(209)))), ((int)(((byte)(213)))), ((int)(((byte)(219)))));
+            this.btnStatusFilter.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnStatusFilter.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.btnStatusFilter.Location = new System.Drawing.Point(520, 15);
+            this.btnStatusFilter.Name = "btnStatusFilter";
+            this.btnStatusFilter.Padding = new System.Windows.Forms.Padding(10, 0, 5, 0);
+            this.btnStatusFilter.Size = new System.Drawing.Size(150, 40);
+            this.btnStatusFilter.TabIndex = 3;
+            this.btnStatusFilter.Text = "?  Tr?ng Thái";
+            this.btnStatusFilter.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnStatusFilter.UseVisualStyleBackColor = false;
+            // 
+            // btnEmployeeFilter
+            // 
+            this.btnEmployeeFilter.BackColor = System.Drawing.Color.White;
+            this.btnEmployeeFilter.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(209)))), ((int)(((byte)(213)))), ((int)(((byte)(219)))));
+            this.btnEmployeeFilter.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnEmployeeFilter.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.btnEmployeeFilter.Location = new System.Drawing.Point(350, 15);
+            this.btnEmployeeFilter.Name = "btnEmployeeFilter";
+            this.btnEmployeeFilter.Padding = new System.Windows.Forms.Padding(10, 0, 5, 0);
+            this.btnEmployeeFilter.Size = new System.Drawing.Size(150, 40);
+            this.btnEmployeeFilter.TabIndex = 2;
+            this.btnEmployeeFilter.Text = "??  Nhân Viên";
+            this.btnEmployeeFilter.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnEmployeeFilter.UseVisualStyleBackColor = false;
+            // 
+            // btnCustomerFilter
+            // 
+            this.btnCustomerFilter.BackColor = System.Drawing.Color.White;
+            this.btnCustomerFilter.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(209)))), ((int)(((byte)(213)))), ((int)(((byte)(219)))));
+            this.btnCustomerFilter.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnCustomerFilter.Font = new System.Drawing.Font("Segoe UI", 10F);
+            this.btnCustomerFilter.Location = new System.Drawing.Point(180, 15);
+            this.btnCustomerFilter.Name = "btnCustomerFilter";
+            this.btnCustomerFilter.Padding = new System.Windows.Forms.Padding(10, 0, 5, 0);
+            this.btnCustomerFilter.Size = new System.Drawing.Size(150, 40);
+            this.btnCustomerFilter.TabIndex = 1;
+            this.btnCustomerFilter.Text = "??  Khách Hàng";
+            this.btnCustomerFilter.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnCustomerFilter.UseVisualStyleBackColor = false;
+            // 
+            // btnServiceFilter
+            // 
+            this.btnServiceFilter.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(219)))), ((int)(((byte)(234)))), ((int)(((byte)(254)))));
+            this.btnServiceFilter.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(59)))), ((int)(((byte)(130)))), ((int)(((byte)(246)))));
+            this.btnServiceFilter.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnServiceFilter.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
+            this.btnServiceFilter.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(99)))), ((int)(((byte)(235)))));
+            this.btnServiceFilter.Location = new System.Drawing.Point(10, 15);
+            this.btnServiceFilter.Name = "btnServiceFilter";
+            this.btnServiceFilter.Padding = new System.Windows.Forms.Padding(10, 0, 5, 0);
+            this.btnServiceFilter.Size = new System.Drawing.Size(150, 40);
+            this.btnServiceFilter.TabIndex = 0;
+            this.btnServiceFilter.Text = "??  D?ch V?";
+            this.btnServiceFilter.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
+            this.btnServiceFilter.UseVisualStyleBackColor = false;
             // 
             // searchPanel
             // 
@@ -169,8 +265,9 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             this.btnFilter.Name = "btnFilter";
             this.btnFilter.Size = new System.Drawing.Size(80, 30);
             this.btnFilter.TabIndex = 3;
-            this.btnFilter.Text = "Filters";
+            this.btnFilter.Text = "L?c";
             this.btnFilter.UseVisualStyleBackColor = false;
+            this.btnFilter.Click += new System.EventHandler(this.btnFilter_Click);
             // 
             // dtTo
             // 
@@ -194,7 +291,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             this.txtSearch.Font = new System.Drawing.Font("Segoe UI", 11F);
             this.txtSearch.Location = new System.Drawing.Point(20, 20);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.PlaceholderText = "Search";
+            this.txtSearch.PlaceholderText = "Tìm ki?m";
             this.txtSearch.Size = new System.Drawing.Size(250, 27);
             this.txtSearch.TabIndex = 0;
             // 
@@ -208,12 +305,14 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             this.Controls.Add(this.headerPanel);
             this.Name = "AppointmentEditorForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Appointments";
+            this.Text = "L?ch H?n";
             this.headerPanel.ResumeLayout(false);
             this.headerPanel.PerformLayout();
             this.contentPanel.ResumeLayout(false);
             this.whitePanel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.appointmentGrid)).EndInit();
+            this.filterContainerPanel.ResumeLayout(false);
+            this.filterPanel.ResumeLayout(false);
             this.searchPanel.ResumeLayout(false);
             this.searchPanel.PerformLayout();
             this.ResumeLayout(false);
@@ -233,5 +332,11 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private System.Windows.Forms.DateTimePicker dtTo;
         private System.Windows.Forms.Button btnFilter;
         private System.Windows.Forms.DataGridView appointmentGrid;
+        private System.Windows.Forms.Panel filterContainerPanel;
+        private System.Windows.Forms.Panel filterPanel;
+        private System.Windows.Forms.Button btnServiceFilter;
+        private System.Windows.Forms.Button btnCustomerFilter;
+        private System.Windows.Forms.Button btnEmployeeFilter;
+        private System.Windows.Forms.Button btnStatusFilter;
     }
 }
