@@ -51,12 +51,16 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
         private void ApplyGridStyling()
         {
+            // Sử dụng font hỗ trợ tiếng Việt tốt hơn
+            var vietnameseFont = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
+            var vietnameseFontBold = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point);
+
             // Column header style
             appointmentGrid.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
             {
                 BackColor = Color.White,
                 ForeColor = Color.FromArgb(107, 114, 128),
-                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                Font = vietnameseFontBold,
                 Alignment = DataGridViewContentAlignment.MiddleLeft,
                 Padding = new Padding(15, 0, 0, 0)
             };
@@ -69,13 +73,14 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 SelectionBackColor = Color.FromArgb(243, 244, 246),
                 SelectionForeColor = Color.FromArgb(17, 24, 39),
                 Padding = new Padding(15, 10, 0, 10),
-                Font = new Font("Segoe UI", 10F)
+                Font = vietnameseFont
             };
 
             // Alternating row style
             appointmentGrid.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
             {
-                BackColor = Color.FromArgb(249, 250, 251)
+                BackColor = Color.FromArgb(249, 250, 251),
+                Font = vietnameseFont
             };
         }
 
@@ -102,60 +107,109 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             });
             _filterDropdowns.Add(employeeDropdown);
 
-            // Tạo dropdown cho Status
+            // Tạo dropdown cho Status - 5 trạng thái
             var statusDropdown = CreateFilterDropdown(btnStatusFilter, new[]
             {
-                "Approved", "Pending", "Canceled", "No Show"
+                "Approved", "Pending", "Canceled", "Rejected", "No Show"
             });
             _filterDropdowns.Add(statusDropdown);
+
+            // Reset tất cả buttons về màu trắng ban đầu
+            ResetFilterButtonStyle(btnServiceFilter);
+            ResetFilterButtonStyle(btnCustomerFilter);
+            ResetFilterButtonStyle(btnEmployeeFilter);
+            ResetFilterButtonStyle(btnStatusFilter);
+        }
+
+        private void ResetFilterButtonStyle(Button button)
+        {
+            button.BackColor = Color.White;
+            button.ForeColor = Color.Black;
+            button.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
         }
 
         private CheckedListBox CreateFilterDropdown(Button parentButton, string[] items)
         {
-            var dropdown = new CheckedListBox
+            // Sử dụng Panel làm container cho dropdown để tránh bị che
+            var dropdownPanel = new Panel
             {
                 Visible = false,
-                CheckOnClick = true,
                 BorderStyle = BorderStyle.FixedSingle,
                 BackColor = Color.White,
-                Font = new Font("Segoe UI", 10F),
-                Height = Math.Min(items.Length * 25 + 30, 200),
-                Width = parentButton.Width + 100
+                AutoSize = false,
+                Width = parentButton.Width + 100,
+                Height = Math.Min(items.Length * 25 + 50, 220),
+                Padding = new Padding(5)
             };
 
-            // Thêm TextBox tìm kiếm vào đầu
+            // TextBox tìm kiếm
             var searchBox = new TextBox
             {
                 PlaceholderText = "Tìm kiếm...",
                 BorderStyle = BorderStyle.FixedSingle,
-                Font = new Font("Segoe UI", 9F),
-                Width = dropdown.Width - 10,
-                Location = new Point(5, 5)
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point),
+                Dock = DockStyle.Top,
+                Height = 25
+            };
+
+            // CheckedListBox với font hỗ trợ tiếng Việt
+            var dropdown = new CheckedListBox
+            {
+                CheckOnClick = true,
+                BorderStyle = BorderStyle.None,
+                BackColor = Color.White,
+                Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point),
+                Dock = DockStyle.Fill,
+                IntegralHeight = false
             };
 
             // Thêm items
             dropdown.Items.AddRange(items);
 
-            // Đặt vị trí dropdown dưới button
+            // Thêm controls vào panel
+            dropdownPanel.Controls.Add(dropdown);
+            dropdownPanel.Controls.Add(searchBox);
+
+            // Xử lý tìm kiếm
+            searchBox.TextChanged += (s, e) =>
+            {
+                var searchText = searchBox.Text.ToLower();
+                dropdown.Items.Clear();
+                
+                var filteredItems = items.Where(item => 
+                    item.ToLower().Contains(searchText)).ToArray();
+                
+                if (filteredItems.Length > 0)
+                {
+                    dropdown.Items.AddRange(filteredItems);
+                }
+            };
+
+            // Đặt vị trí dropdown - QUAN TRỌNG: Thêm vào Form thay vì filterPanel
             parentButton.Click += (s, e) =>
             {
                 // Ẩn tất cả dropdown khác
                 foreach (var otherDropdown in _filterDropdowns)
                 {
                     if (otherDropdown != dropdown)
-                        otherDropdown.Visible = false;
+                    {
+                        otherDropdown.Parent?.Hide();
+                    }
                 }
 
-                dropdown.Visible = !dropdown.Visible;
-                if (dropdown.Visible)
+                dropdownPanel.Visible = !dropdownPanel.Visible;
+                
+                if (dropdownPanel.Visible)
                 {
-                    var btnLocation = parentButton.PointToScreen(Point.Empty);
-                    var formLocation = filterPanel.PointToScreen(Point.Empty);
-                    dropdown.Location = new Point(
-                        btnLocation.X - formLocation.X,
-                        btnLocation.Y - formLocation.Y + parentButton.Height + 5
+                    // Tính toán vị trí tuyệt đối trên form
+                    var btnLocationInForm = this.PointToClient(parentButton.PointToScreen(Point.Empty));
+                    
+                    dropdownPanel.Location = new Point(
+                        btnLocationInForm.X,
+                        btnLocationInForm.Y + parentButton.Height + 5
                     );
-                    dropdown.BringToFront();
+                    
+                    dropdownPanel.BringToFront();
                 }
             };
 
@@ -166,33 +220,44 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 this.BeginInvoke((MethodInvoker)delegate
                 {
                     var checkedCount = dropdown.CheckedItems.Count;
+                    var baseText = GetBaseButtonText(parentButton.Text);
+                    
                     if (checkedCount > 0)
                     {
-                        parentButton.Text = $"    {parentButton.Text.Trim().Split('(')[0].Trim()} ({checkedCount})";
+                        parentButton.Text = $"{baseText} ({checkedCount})";
                         parentButton.BackColor = Color.FromArgb(219, 234, 254);
                         parentButton.ForeColor = Color.FromArgb(37, 99, 235);
                         parentButton.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
                     }
                     else
                     {
-                        parentButton.Text = $"    {parentButton.Text.Trim().Split('(')[0].Trim()}";
-                        parentButton.BackColor = Color.White;
-                        parentButton.ForeColor = Color.Black;
-                        parentButton.Font = new Font("Segoe UI", 10F);
+                        parentButton.Text = baseText;
+                        ResetFilterButtonStyle(parentButton);
                     }
                 });
             };
 
-            filterPanel.Controls.Add(dropdown);
+            // Thêm panel vào Form (không phải filterPanel)
+            this.Controls.Add(dropdownPanel);
+            dropdownPanel.BringToFront();
+            
+            _filterDropdowns.Add(dropdown);
             return dropdown;
+        }
+
+        private string GetBaseButtonText(string buttonText)
+        {
+            // Lấy text gốc không có số đếm
+            var parts = buttonText.Split('(');
+            return parts[0].Trim();
         }
 
         private void LoadSampleData()
         {
             // Load demo data giống web
             appointmentGrid.Rows.Clear();
-            appointmentGrid.Rows.Add(false, "4:00 pm", "Check Up", ". Le Ngoc Bao Chan", "1h", "Approved", "C", "", "...");
-            appointmentGrid.Rows.Add(false, "2:00 pm", "Check Up", ". Le Ngoc Bao Chan", "1h", "Approved", "C", "", "...");
+            appointmentGrid.Rows.Add(false, "4:00 pm", "Kiểm tra", ". Le Ngoc Bao Chan", "1h", "Chấp nhận", "C", "", "...");
+            appointmentGrid.Rows.Add(false, "2:00 pm", "Kiểm tra", ". Le Ngoc Bao Chan", "1h", "Chấp nhận", "C", "", "...");
 
             // Update title với số lượng
             lblTitle.Text = $"Lịch Hẹn ({appointmentGrid.Rows.Count})";
@@ -217,7 +282,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 // Ẩn tất cả dropdown khi đóng filter panel
                 foreach (var dropdown in _filterDropdowns)
                 {
-                    dropdown.Visible = false;
+                    dropdown.Parent?.Hide();
                 }
             }
         }
