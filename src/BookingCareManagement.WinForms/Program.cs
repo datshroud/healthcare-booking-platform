@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Windows.Forms;
 using System.Net.Http;
-//using BookingCareManagement.WinForms.Clients;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using BookingCareManagement.WinForms.Startup;
+using BookingCareManagement.WinForms.Shared.State;
+using BookingCareManagement.WinForms.Areas.Account.Forms;
 
 namespace BookingCareManagement.WinForms;
 
@@ -15,45 +17,51 @@ static class Program
     {
         ApplicationConfiguration.Initialize();
 
-        //using var host = CreateHostBuilder().Build();
+        using var host = CreateHostBuilder().Build();
 
-        //// SỬA: Lấy MainForm thay vì Form1
-        //var mainForm = host.Services.GetRequiredService<MainForm>();
+        // Load previous session from storage
+        var services = host.Services;
+        var session = services.GetRequiredService<SessionState>();
+        var storage = services.GetRequiredService<IAuthStorage>();
 
+        // Try to restore persisted tokens
+        var persisted = storage.Load();
+        if (persisted is not null)
+        {
+            session.AccessToken = persisted.AccessToken;
+            session.RefreshToken = persisted.RefreshToken;
+            session.CurrentUserId = persisted.UserId;
+        }
+
+        // If not authenticated, show login form first
+        if (!session.IsAuthenticated)
+        {
+            using var login = services.GetRequiredService<LoginForm>();
+            var result = login.ShowDialog();
+            if (result != DialogResult.OK)
+            {
+                // user cancelled login
+                return;
+            }
+        }
+
+        // Run main shell
         System.Windows.Forms.Application.Run(new MainForm());
     }
 
-    //private static IHostBuilder CreateHostBuilder()
-    //{
-    //    return Host.CreateDefaultBuilder()
-    //        .ConfigureAppConfiguration((context, config) =>
-    //        {
-    //            config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-    //        })
-    //        .ConfigureServices((context, services) =>
-    //        {
-    //            // 1. Đăng ký DoctorApiClient (Typed HTTP Client)
-    //            services.AddHttpClient<DoctorApiClient>((sp, client) =>
-    //            {
-    //                var baseUrl = context.Configuration.GetValue<string>("Api:BaseUrl");
-    //                if (string.IsNullOrWhiteSpace(baseUrl))
-    //                {
-    //                    throw new InvalidOperationException("Api:BaseUrl configuration is required for the WinForms client.");
-    //                }
+    private static IHostBuilder CreateHostBuilder()
+    {
+        return Host.CreateDefaultBuilder()
+            .ConfigureAppConfiguration((context, config) =>
+            {
+                config.AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+            })
+            .ConfigureServices((context, services) =>
+            {
+                services.AddWinFormsInfrastructure(context.Configuration);
 
-    //                client.BaseAddress = new Uri(baseUrl);
-    //            })
-    //            .ConfigurePrimaryHttpMessageHandler(() =>
-    //            {
-    //                return new HttpClientHandler
-    //                {
-    //                    ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-    //                };
-    //            });
-
-    //            // 2. Đăng ký MainForm (Quan trọng!)
-    //            // Phải đăng ký để DI có thể tạo Form và Inject DoctorApiClient
-    //            services.AddTransient<MainForm>();
-    //        });
-    //}
+                // Forms
+                services.AddTransient<LoginForm>();
+            });
+    }
 }

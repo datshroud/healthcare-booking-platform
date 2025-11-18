@@ -15,5 +15,24 @@ services:
     volumes:
       - mssql_data:/var/opt/mssql
 
+  web:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    image: bookingcare:web
+    container_name: bookingcare_web
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__DefaultConnection: Server=bookingcare_mssql;Database=BookingCare;User Id=sa;Password=${SA_PASSWORD};TrustServerCertificate=True;
+      Jwt__Issuer: BookingCareIssuer
+      Jwt__Audience: BookingCareAudience
+      Jwt__Key: SuperSecretJwtKey_ForDemoChangeMe123456789
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mssql
+    restart: unless-stopped
+
 volumes:
   mssql_data:

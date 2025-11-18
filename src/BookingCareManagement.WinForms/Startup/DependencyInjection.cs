@@ -13,6 +13,7 @@ public static class DependencyInjection
     public static IServiceCollection AddWinFormsInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.AddSingleton(SessionState.CreateUnauthenticated());
+        services.AddSingleton<IAuthStorage, FileAuthStorage>();
         services.AddSingleton<DialogService>();
         services.AddTransient<AuthHeaderHandler>();
 

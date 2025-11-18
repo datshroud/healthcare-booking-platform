@@ -18,6 +18,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -26,11 +27,6 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeAreaFolder("Admin", "/", "AdminOnly");
     options.Conventions.AuthorizeAreaFolder("Doctor", "/", "DoctorOrAbove");
     options.Conventions.AuthorizeAreaFolder("Customer", "/", "CustomerOrAbove");
-
-    // options.Conventions.AddAreaPageRoute("Customer", "/Reviews/Reviews", "/reviews");
-
-    // options.Conventions.AllowAnonymousToAreaPage("Customer", "/Reviews/Reviews");
-
 });
 
 builder.Services.AddAuthorization(options =>
@@ -38,10 +34,7 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
     options.AddPolicy("DoctorOrAbove", policy => policy.RequireRole("Admin", "Doctor"));
     options.AddPolicy("CustomerOrAbove", policy => policy.RequireRole("Admin", "Doctor", "Customer"));
-
 });
-
-
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -64,19 +57,14 @@ builder.Services.AddCors(o =>
     )
 );
 
-// ... các services.Add... khác
-builder.Services.AddHttpContextAccessor(); // Cần cho FileStorageService
-//builder.Services.AddScoped<IFileStorageService, FileStorageService>(); // Đăng ký dịch vụ file
+builder.Services.AddHttpContextAccessor();
 
-// Đăng ký Repository
 builder.Services.AddScoped<IDoctorRepository, DoctorRepository>();
-
-// Đăng ký Handler
 builder.Services.AddScoped<GetAllDoctorsQueryHandler>();
 
 builder.Services.AddScoped<ISpecialtyRepository, SpecialtyRepository>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped<CreateDoctorCommandHandler>(); // Đăng ký handler mới
+builder.Services.AddScoped<CreateDoctorCommandHandler>();
 
 builder.Services.AddScoped<GetDoctorByIdQueryHandler>();
 builder.Services.AddScoped<UpdateDoctorCommandHandler>();
@@ -93,44 +81,15 @@ builder.Services.AddScoped<CreateCustomerCommandHandler>();
 builder.Services.AddScoped<UpdateCustomerCommandHandler>();
 builder.Services.AddScoped<DeleteCustomerCommandHandler>();
 
-// Register Invoice repository
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 
 var app = builder.Build();
 
-/* BẠN NÊN XÓA HOẶC COMMENT KHỐI NÀY LẠI
-var rewrites = new RewriteOptions()
-    .AddRedirect("^calendar/?$", "dashboard")
-    .AddRedirect("^appointments/?$", "dashboard")
-    .AddRedirect("^doctors/?$", "dashboard")
-    .AddRedirect("^customers/?$", "dashboard")
-    .AddRedirect("^specialties/?$", "dashboard")
-    .AddRedirect("^finance/?$", "dashboard");
-
-app.UseRewriter(rewrites);
-*/
-
-
-// Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error");
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
-var cs = builder.Configuration.GetConnectionString("DefaultConnection");
-// try
-// {
-//     using var con = new SqlConnection(cs);
-//     await con.OpenAsync();
-//     Console.WriteLine("SQL connected OK");
-// }
-// catch (Exception ex)
-// {
-//     Console.WriteLine("SQL connect failed: " + ex.Message);
-//     throw;
-// }
-
 
 using (var scope = app.Services.CreateScope())
 {
@@ -161,10 +120,7 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapStaticAssets();
-app.MapRazorPages()
-   .WithStaticAssets();
-
+app.MapRazorPages().WithStaticAssets();
 app.MapControllers();
-
 
 app.Run();
