@@ -38,11 +38,13 @@ namespace BookingCareManagement.Application.Tests
             {
                 Name = "Chấn thương",
                 Description = "Kiểm tra cơ xương khớp",
-                Color = "#123456"
+                Color = "#123456",
+                Price = 150000
             };
 
             var created = await createHandler.Handle(createCommand, CancellationToken.None);
             Assert.NotEqual(Guid.Empty, created.Id);
+            Assert.Equal(150000, created.Price);
 
             var updateHandler = new UpdateSpecialtyCommandHandler(_specialtyRepository, _doctorRepository, _unitOfWork);
             var updateCommand = new UpdateSpecialtyCommand
@@ -52,12 +54,14 @@ namespace BookingCareManagement.Application.Tests
                 Slug = "chan-thuong-chinh-hinh",
                 Description = "Điều trị nâng cao",
                 Color = "#654321",
+                Price = 200000,
                 DoctorIds = Array.Empty<Guid>()
             };
 
             var updated = await updateHandler.Handle(updateCommand, CancellationToken.None);
             Assert.Equal("Chấn thương chỉnh hình", updated.Name);
             Assert.Equal("#654321", updated.Color);
+            Assert.Equal(200000, updated.Price);
 
             var deleteHandler = new DeleteSpecialtyCommandHandler(_specialtyRepository, _unitOfWork);
             await deleteHandler.Handle(new DeleteSpecialtyCommand { Id = created.Id }, CancellationToken.None);
@@ -73,7 +77,8 @@ namespace BookingCareManagement.Application.Tests
             var created = await createHandler.Handle(new CreateSpecialtyCommand
             {
                 Name = "Cấp cứu",
-                Description = "24/7"
+                Description = "24/7",
+                Price = 100000
             }, CancellationToken.None);
 
             var updateHandler = new UpdateSpecialtyCommandHandler(_specialtyRepository, _doctorRepository, _unitOfWork);
@@ -85,6 +90,35 @@ namespace BookingCareManagement.Application.Tests
                 Name = "Cấp cứu tổng hợp",
                 DoctorIds = new[] { invalidDoctorId }
             }, CancellationToken.None));
+        }
+
+        [Fact]
+        public async Task UpdateSpecialtyStatus_TogglesActiveFlag()
+        {
+            var createHandler = new CreateSpecialtyCommandHandler(_specialtyRepository, _doctorRepository, _unitOfWork);
+            var created = await createHandler.Handle(new CreateSpecialtyCommand
+            {
+                Name = "Tai mũi họng",
+                Price = 90000
+            }, CancellationToken.None);
+
+            var statusHandler = new UpdateSpecialtyStatusCommandHandler(_specialtyRepository, _unitOfWork);
+
+            var deactivated = await statusHandler.Handle(new UpdateSpecialtyStatusCommand
+            {
+                Id = created.Id,
+                Active = false
+            }, CancellationToken.None);
+
+            Assert.False(deactivated.Active);
+
+            var reactivated = await statusHandler.Handle(new UpdateSpecialtyStatusCommand
+            {
+                Id = created.Id,
+                Active = true
+            }, CancellationToken.None);
+
+            Assert.True(reactivated.Active);
         }
 
         public void Dispose()

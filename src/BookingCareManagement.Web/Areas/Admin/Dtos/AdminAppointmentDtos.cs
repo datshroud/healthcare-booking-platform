@@ -48,7 +48,7 @@ public class AdminAppointmentPatientOptionDto
     public string PhoneNumber { get; set; } = string.Empty;
 }
 
-public class AdminAppointmentCreateRequest
+public class AdminAppointmentUpsertRequest
 {
     public Guid DoctorId { get; set; }
     public Guid SpecialtyId { get; set; }
@@ -59,4 +59,9 @@ public class AdminAppointmentCreateRequest
     public int DurationMinutes { get; set; } = 30;
     public string? Status { get; set; }
     public Guid? ClinicRoomId { get; set; }
+}
+
+public class AdminAppointmentStatusRequest
+{
+    public string Status { get; set; } = string.Empty;
 }

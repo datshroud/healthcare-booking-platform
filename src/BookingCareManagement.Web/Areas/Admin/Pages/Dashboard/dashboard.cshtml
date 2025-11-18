@@ -1,0 +1,449 @@
+﻿@page "/dashboard"
+@model BookingCareManagement.Web.Areas.Admin.Pages.Dashboard.dashboardModel
+@{
+    ViewData["Title"] = "Dashboard";
+    var viVNCulture = new System.Globalization.CultureInfo("vi-VN");
+    var customerFilter = Model.CustomerFilter;
+    var revenueFilter = Model.RevenueFilter;
+    var pendingFilter = Model.PendingFilter;
+    var chartFilter = Model.ChartFilter;
+    var heatmapFilter = Model.HeatmapFilter;
+    var appointmentFilter = Model.AppointmentListFilter;
+    var performanceFilter = Model.PerformanceFilter;
+}
+
+@section Styles {
+    <link rel="stylesheet" href="~/css/dashboard.css" />
+
+    <style>
+        .scrollable-list {
+            max-height: 450px;
+            overflow-y: auto;
+        }
+
+        .card-header.custom-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .dropdown-menu .dropdown-item.active {
+            font-weight: 600;
+            background-color: #f0f0f0;
+        }
+
+        .btn-status-pending {
+            background-color: #fef6e7; border: 1px solid #f0ac41; color: #f0ac41;
+        }
+        .btn-status-approved {
+            background-color: #eaf3e1; border: 1px solid #84b34b; color: #84b34b;
+        }
+        .btn-status-canceled, .btn-status-rejected {
+            background-color: #fdeaea; border: 1px solid #ec5f5f; color: #ec5f5f;
+        }
+        .btn-status-noshow {
+            background-color: #f8f9fa; border: 1px solid #6c757d; color: #6c757d;
+        }
+        .btn-status-secondary {
+            background-color: #f8f9fa; border: 1px solid #6c757d; color: #6c757d;
+        }
+
+    </style>
+}
+
+<div class="main-container">
+    <h3 class="fw-bold">Xin chào, @Model.AdminName</h3>
+    <p class="text-muted mb-4">Chào mừng bạn đến với bảng điều khiển Trafft.</p>
+
+    <div class="row">
+        <div class="col-xl-4 col-md-6">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="card-title-text">Khách hàng mới</span>
+                        <div class="dropdown" style="width: 150px;">
+                            <button class="btn btn-filter dropdown-toggle" type="button" id="filterCustomer" data-bs-toggle="dropdown" aria-expanded="false">
+                                @Model.CustomerFilterLabel
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="filterCustomer">
+                                <li><a class="dropdown-item @(customerFilter == "week" ? "active" : "")" href="@Model.BuildFilterUrl("customerFilter", "week")">Tuần này</a></li>
+                                <li><a class="dropdown-item @(customerFilter == "lastweek" ? "active" : "")" href="@Model.BuildFilterUrl("customerFilter", "lastweek")">Tuần trước</a></li>
+                                <li><a class="dropdown-item @(customerFilter == "nextweek" ? "active" : "")" href="@Model.BuildFilterUrl("customerFilter", "nextweek")">Tuần sau</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item @(customerFilter == "month" ? "active" : "")" href="@Model.BuildFilterUrl("customerFilter", "month")">Tháng này</a></li>
+                                <li><a class="dropdown-item @(customerFilter == "lastmonth" ? "active" : "")" href="@Model.BuildFilterUrl("customerFilter", "lastmonth")">Tháng trước</a></li>
+                                <li><a class="dropdown-item @(customerFilter == "nextmonth" ? "active" : "")" href="@Model.BuildFilterUrl("customerFilter", "nextmonth")">Tháng sau</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-value">@Model.NewCustomerCount</div>
+                    <div id="sparkline-new-customer"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-6">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="card-title-text">Doanh thu</span>
+                        <div class="dropdown" style="width: 150px;">
+                            <button class="btn btn-filter dropdown-toggle" type="button" id="filterRevenue" data-bs-toggle="dropdown" aria-expanded="false">
+                                @Model.RevenueFilterLabel
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="filterRevenue">
+                                <li><a class="dropdown-item @(revenueFilter == "week" ? "active" : "")" href="@Model.BuildFilterUrl("revenueFilter", "week")">Tuần này</a></li>
+                                <li><a class="dropdown-item @(revenueFilter == "lastweek" ? "active" : "")" href="@Model.BuildFilterUrl("revenueFilter", "lastweek")">Tuần trước</a></li>
+                                <li><a class="dropdown-item @(revenueFilter == "nextweek" ? "active" : "")" href="@Model.BuildFilterUrl("revenueFilter", "nextweek")">Tuần sau</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item @(revenueFilter == "month" ? "active" : "")" href="@Model.BuildFilterUrl("revenueFilter", "month")">Tháng này</a></li>
+                                <li><a class="dropdown-item @(revenueFilter == "lastmonth" ? "active" : "")" href="@Model.BuildFilterUrl("revenueFilter", "lastmonth")">Tháng trước</a></li>
+                                <li><a class="dropdown-item @(revenueFilter == "nextmonth" ? "active" : "")" href="@Model.BuildFilterUrl("revenueFilter", "nextmonth")">Tháng sau</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-value">@Model.TotalRevenue.ToString("C0", viVNCulture)</div>
+                    <div id="sparkline-revenue"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4 col-md-12">
+            <div class="card stat-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="card-title-text">Lịch hẹn đang chờ</span>
+                        <div class="dropdown" style="width: 150px;">
+                            <button class="btn btn-filter dropdown-toggle" type="button" id="filterOccupancy" data-bs-toggle="dropdown" aria-expanded="false">
+                                @Model.PendingFilterLabel
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="filterOccupancy">
+                                <li><a class="dropdown-item @(pendingFilter == "week" ? "active" : "")" href="@Model.BuildFilterUrl("pendingFilter", "week")">Tuần này</a></li>
+                                <li><a class="dropdown-item @(pendingFilter == "lastweek" ? "active" : "")" href="@Model.BuildFilterUrl("pendingFilter", "lastweek")">Tuần trước</a></li>
+                                <li><a class="dropdown-item @(pendingFilter == "nextweek" ? "active" : "")" href="@Model.BuildFilterUrl("pendingFilter", "nextweek")">Tuần sau</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item @(pendingFilter == "month" ? "active" : "")" href="@Model.BuildFilterUrl("pendingFilter", "month")">Tháng này</a></li>
+                                <li><a class="dropdown-item @(pendingFilter == "lastmonth" ? "active" : "")" href="@Model.BuildFilterUrl("pendingFilter", "lastmonth")">Tháng trước</a></li>
+                                <li><a class="dropdown-item @(pendingFilter == "nextmonth" ? "active" : "")" href="@Model.BuildFilterUrl("pendingFilter", "nextmonth")">Tháng sau</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="card-value">@Model.PendingAppointmentCount</div>
+                    <div id="sparkline-pending"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-xl-8">
+            <div class="card main-chart-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="card-title-text fw-bold">Xu hướng lịch hẹn</span>
+                        <div class="dropdown" style="width: 150px;">
+                            <button class="btn btn-filter dropdown-toggle" type="button" id="filterChart" data-bs-toggle="dropdown" aria-expanded="false">
+                                @Model.ChartFilterLabel
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="filterChart">
+                                <li><a class="dropdown-item @(chartFilter == "week" ? "active" : "")" href="@Model.BuildFilterUrl("chartFilter", "week")">Tuần này</a></li>
+                                <li><a class="dropdown-item @(chartFilter == "lastweek" ? "active" : "")" href="@Model.BuildFilterUrl("chartFilter", "lastweek")">Tuần trước</a></li>
+                                <li><a class="dropdown-item @(chartFilter == "nextweek" ? "active" : "")" href="@Model.BuildFilterUrl("chartFilter", "nextweek")">Tuần sau</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item @(chartFilter == "month" ? "active" : "")" href="@Model.BuildFilterUrl("chartFilter", "month")">Tháng này</a></li>
+                                <li><a class="dropdown-item @(chartFilter == "lastmonth" ? "active" : "")" href="@Model.BuildFilterUrl("chartFilter", "lastmonth")">Tháng trước</a></li>
+                                <li><a class="dropdown-item @(chartFilter == "nextmonth" ? "active" : "")" href="@Model.BuildFilterUrl("chartFilter", "nextmonth")">Tháng sau</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <span class="card-title-text d-block">Đã đặt lịch hẹn</span>
+                            <span class="card-sub-value">@Model.BookedAppointmentCount</span>
+                            @if (Model.BookedApptChangePercent > 0)
+                            {
+                                <span class="text-increase ms-2">↑ @Model.BookedApptChangePercent.ToString("F0")%</span>
+                            }
+                            else if (Model.BookedApptChangePercent < 0)
+                            {
+                                <span class="text-danger ms-2">↓ @(Model.BookedApptChangePercent * -1)%</span>
+                            }
+                            else
+                            {
+                                <span class="text-stable ms-2">— Ổn định</span>
+                            }
+                        </div>
+                        <div class="col-6">
+                            <span class="card-title-text d-block">Các cuộc hẹn đã hủy</span>
+                            <span class="card-sub-value">@Model.CancelledAppointmentCount</span>
+                            @if (Model.CancelledApptChangePercent > 0)
+                            {
+                                <span class="text-danger ms-2">↑ @Model.CancelledApptChangePercent.ToString("F0")%</span>
+                            }
+                            else if (Model.CancelledApptChangePercent < 0)
+                            {
+                                <span class="text-success ms-2">↓ @(Model.CancelledApptChangePercent * -1)%</span>
+                            }
+                            else
+                            {
+                                <span class="text-stable ms-2">— Ổn định</span>
+                            }
+                        </div>
+                    </div>
+
+                    <div id="main-line-chart"></div>
+
+                    <div class="row mt-4">
+                        <div class="col-6 donut-chart-container">
+                            <div id="donut-new-customer"></div>
+                            <div class="chart-title">Khách hàng mới</div>
+                        </div>
+                        <div class="col-6 donut-chart-container">
+                            <div id="donut-returning-customer"></div>
+                            <div class="chart-title">Khách hàng quay lại</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-4">
+            <div class="card heatmap-card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="card-title-text fw-bold">Công suất sử dụng hàng ngày</span>
+                        <div class="dropdown" style="width: 170px;">
+                            <button class="btn btn-filter dropdown-toggle" type="button" id="filterHeatmap" data-bs-toggle="dropdown" aria-expanded="false">
+                                @Model.HeatmapMonthLabel
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="filterHeatmap">
+                                <li><a class="dropdown-item @(heatmapFilter == "month" ? "active" : "")" href="@Model.BuildFilterUrl("heatmapFilter", "month")">Tháng này</a></li>
+                                <li><a class="dropdown-item @(heatmapFilter == "lastmonth" ? "active" : "")" href="@Model.BuildFilterUrl("heatmapFilter", "lastmonth")">Tháng trước</a></li>
+                                <li><a class="dropdown-item @(heatmapFilter == "nextmonth" ? "active" : "")" href="@Model.BuildFilterUrl("heatmapFilter", "nextmonth")">Tháng sau</a></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-around mb-2 mt-4">
+                        <span class="text-muted small">M</span>
+                        <span class="text-muted small">T</span>
+                        <span class="text-muted small">W</span>
+                        <span class="text-muted small">T</span>
+                        <span class="text-muted small">F</span>
+                        <span class="text-muted small">S</span>
+                        <span class="text-muted small">S</span>
+                    </div>
+
+                    <div class="heatmap-grid">
+                        @foreach (var cell in Model.HeatmapData)
+                        {
+                            if (cell.IsEmpty)
+                            {
+                                <div class="heatmap-cell"></div>
+                            }
+                            else
+                            {
+                                <div class="heatmap-cell @cell.CssLevel" data-date="@cell.DateIso" data-percentage="@cell.PercentageLabel"></div>
+                            }
+                        }
+                    </div>
+
+                    <ul class="heatmap-legend">
+                        <li><span class="legend-color level-4"></span> 81% trở lên</li>
+                        <li><span class="legend-color level-3"></span> Từ 41% đến 80%</li>
+                        <li><span class="legend-color level-2"></span> Từ 21% đến 40%</li>
+                        <li><span class="legend-color level-1"></span> 20% trở xuống</li>
+                        <li><span class="legend-color level-0"></span> 0%</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Danh sách cuộc hẹn -->
+        <div class="col-xl-8">
+            <div class="card appointment-card">
+                <div class="card-header custom-header">
+                    <span class="card-title-text">Các cuộc hẹn</span>
+                    <div class="d-flex gap-2 flex-wrap align-items-center">
+                        <div class="dropdown" style="width: 150px;">
+                            <button class="btn btn-filter dropdown-toggle" type="button" id="filterAppointments" data-bs-toggle="dropdown" aria-expanded="false">
+                                @Model.AppointmentListFilterLabel
+                            </button>
+                            <ul class="dropdown-menu" aria-labelledby="filterAppointments">
+                                <li><a class="dropdown-item @(appointmentFilter == "week" ? "active" : "")" href="@Model.BuildFilterUrl("listFilter", "week")">Tuần này</a></li>
+                                <li><a class="dropdown-item @(appointmentFilter == "lastweek" ? "active" : "")" href="@Model.BuildFilterUrl("listFilter", "lastweek")">Tuần trước</a></li>
+                                <li><a class="dropdown-item @(appointmentFilter == "nextweek" ? "active" : "")" href="@Model.BuildFilterUrl("listFilter", "nextweek")">Tuần sau</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item @(appointmentFilter == "month" ? "active" : "")" href="@Model.BuildFilterUrl("listFilter", "month")">Tháng này</a></li>
+                                <li><a class="dropdown-item @(appointmentFilter == "lastmonth" ? "active" : "")" href="@Model.BuildFilterUrl("listFilter", "lastmonth")">Tháng trước</a></li>
+                                <li><a class="dropdown-item @(appointmentFilter == "nextmonth" ? "active" : "")" href="@Model.BuildFilterUrl("listFilter", "nextmonth")">Tháng sau</a></li>
+                            </ul>
+                        </div>
+                        <div style="width: 200px;">
+                        <select class="form-select form-select-sm" id="appointmentStatusFilter">
+                            <option value="all">Tất cả các trạng thái</option>
+                            <option value="Approved">Đã xác nhận</option>
+                            <option value="Pending">Chờ xác nhận</option>
+                            <option value="Canceled">Đã hủy</option>
+                            <option value="Rejected">Đã từ chối</option>
+                            <option value="NoShow">Vắng mặt</option>
+                        </select>
+                    </div>
+                    </div>
+                </div>
+
+                <div class="appointment-list-body scrollable-list" id="recentAppointmentsList">
+                    @if (Model.RecentAppointments.Any())
+                    {
+                        @foreach (var app in Model.RecentAppointments)
+                        {
+                            <div class="appointment-item" data-status="@app.Status">
+                                <div class="service-color-bar" style="background-color: @app.SpecialtyColor"></div>
+                                <div class="appointment-info">
+                                    <div class="date">@app.Date.ToString("f", viVNCulture)</div>
+                                    <div class="service">@app.SpecialtyName</div>
+                                </div>
+                                <div class="appointment-customer">@app.CustomerName</div>
+                                <div class="dropdown">
+                                    <button class="btn btn-status @app.StatusCssClass" type="button">
+                                        <i class="bi @app.StatusIcon me-1"></i> @app.StatusLabel
+                                    </button>
+                                </div>
+                                <img src="@app.AvatarUrl" alt="Avatar" class="avatar">
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-center text-muted p-3">Không có cuộc hẹn nào trong khoảng thời gian này.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Bảng hiệu suất -->
+        <div class="col-xl-4">
+            <div class="card performance-card">
+                <div class="card-header custom-header">
+                    <span class="card-title-text">Hiệu suất</span>
+                    <div class="dropdown" style="width: 150px;">
+                        <button class="btn btn-filter dropdown-toggle" type="button" id="filterPerformance" data-bs-toggle="dropdown" aria-expanded="false">
+                            @Model.PerformanceFilterLabel
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="filterPerformance">
+                            <li><a class="dropdown-item @(performanceFilter == "week" ? "active" : "")" href="@Model.BuildFilterUrl("performanceFilter", "week")">Tuần này</a></li>
+                            <li><a class="dropdown-item @(performanceFilter == "lastweek" ? "active" : "")" href="@Model.BuildFilterUrl("performanceFilter", "lastweek")">Tuần trước</a></li>
+                            <li><a class="dropdown-item @(performanceFilter == "nextweek" ? "active" : "")" href="@Model.BuildFilterUrl("performanceFilter", "nextweek")">Tuần sau</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item @(performanceFilter == "month" ? "active" : "")" href="@Model.BuildFilterUrl("performanceFilter", "month")">Tháng này</a></li>
+                            <li><a class="dropdown-item @(performanceFilter == "lastmonth" ? "active" : "")" href="@Model.BuildFilterUrl("performanceFilter", "lastmonth")">Tháng trước</a></li>
+                            <li><a class="dropdown-item @(performanceFilter == "nextmonth" ? "active" : "")" href="@Model.BuildFilterUrl("performanceFilter", "nextmonth")">Tháng sau</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <ul class="nav nav-tabs performance-tabs" id="performanceTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="services-tab" data-bs-toggle="tab" data-bs-target="#services-tab-pane" type="button" role="tab" aria-controls="services-tab-pane" aria-selected="true">Chuyên khoa</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="employees-tab" data-bs-toggle="tab" data-bs-target="#employees-tab-pane" type="button" role="tab" aria-controls="employees-tab-pane" aria-selected="false">Bác sĩ</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content scrollable-list" id="performanceTabContent">
+
+                        <!-- Tab Dịch vụ (Specialties) -->
+                        <div class="tab-pane fade show active" id="services-tab-pane" role="tabpanel" aria-labelledby="services-tab" tabindex="0">
+                            <!--
+                                ⭐️⭐️⭐️ SỬA LỖI Ở ĐÂY ⭐️⭐️⭐️
+                                Bỏ điều kiện .Any(s => s.Appointments > 0 ...)
+                            -->
+                            @if (Model.ServicePerformance.Any())
+                            {
+                                @foreach (var srv in Model.ServicePerformance.OrderByDescending(s => s.Revenue).ThenByDescending(s => s.Appointments))
+                                {
+                                    <div class="employee-item">
+                                        <img src="@srv.AvatarUrl" alt="Avatar" class="avatar">
+                                        <div class="employee-info">
+                                            <div class="name">@srv.Name</div>
+                                            <div class="employee-stats">
+                                                <div class="stat-item">
+                                                    <span class="label">Cuộc hẹn</span>
+                                                    <span class="value">@srv.Appointments</span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="label">Doanh thu</span>
+                                                    <span class="value">@srv.Revenue.ToString("C0", viVNCulture)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-center text-muted p-3">Không có dữ liệu dịch vụ.</p>
+                            }
+                        </div>
+
+                        <!-- Tab Người lao động (Doctors) -->
+                        <div class="tab-pane fade" id="employees-tab-pane" role="tabpanel" aria-labelledby="employees-tab" tabindex="0">
+                            <!--
+                                ⭐️⭐️⭐️ SỬA LỖI Ở ĐÂY ⭐️⭐️⭐️
+                                Bỏ điều kiện .Any(e => e.Appointments > 0 ...)
+                            -->
+                            @if (Model.EmployeePerformance.Any())
+                            {
+                                @foreach (var emp in Model.EmployeePerformance.OrderByDescending(e => e.Revenue).ThenByDescending(e => e.Appointments))
+                                {
+                                    <div class="employee-item">
+                                        <img src="@emp.AvatarUrl" alt="Avatar" class="avatar">
+                                        <div class="employee-info">
+                                            <div class="name">@emp.Name</div>
+                                            <div class="employee-stats">
+                                                <div class="stat-item">
+                                                    <span class="label">Cuộc hẹn</span>
+                                                    <span class="value">@emp.Appointments</span>
+                                                </div>
+                                                <div class="stat-item">
+                                                    <span class="label">Doanh thu</span>
+                                                    <span class="value">@emp.Revenue.ToString("C0", viVNCulture)</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                            else
+                            {
+                                <p class="text-center text-muted p-3">Không có dữ liệu hiệu suất.</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Truyền dữ liệu từ C# Model sang JavaScript
+        const dashboardData = {
+            newCustomerSparkline: @Json.Serialize(Model.NewCustomerSparkline),
+            revenueSparkline: @Json.Serialize(Model.RevenueSparkline),
+            pendingSparkline: @Json.Serialize(Model.PendingSparkline),
+            mainLineChart: @Json.Serialize(Model.MainAppointmentChart),
+            mainLineLabels: @Json.Serialize(Model.MainAppointmentLabels),
+            donutNew: @Model.DonutNewCustomerPercent,
+            donutReturning: @Model.DonutReturningCustomerPercent
+        };
+    </script>
+
+    <!-- File JS của bạn (phải nằm SAU khối script ở trên) -->
+    <script src="~/js/dashboard.js"></script>
+}

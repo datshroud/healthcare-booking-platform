@@ -13,4 +13,5 @@ public class AppointmentDto
     public string PatientName { get; set; } = string.Empty;
     public string CustomerPhone { get; set; } = string.Empty;
     public string Status { get; set; } = string.Empty;
+    public decimal Price { get; set; }
 }

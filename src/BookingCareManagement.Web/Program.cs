@@ -1,4 +1,3 @@
-
 using BookingCareManagement.Application.Abstractions;
 using BookingCareManagement.Application.Features.Auth.Commands;
 using BookingCareManagement.Application.Features.Customers.Commands;
@@ -93,6 +92,9 @@ builder.Services.AddScoped<GetAllCustomersQueryHandler>();
 builder.Services.AddScoped<CreateCustomerCommandHandler>();
 builder.Services.AddScoped<UpdateCustomerCommandHandler>();
 builder.Services.AddScoped<DeleteCustomerCommandHandler>();
+
+// Register Invoice repository
+builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
 
 var app = builder.Build();
 

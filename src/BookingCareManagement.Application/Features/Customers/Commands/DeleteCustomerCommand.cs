@@ -1,4 +1,5 @@
 ﻿using BookingCareManagement.Application.Common.Exceptions;
+using BookingCareManagement.Domain.Abstractions;
 using BookingCareManagement.Domain.Aggregates.User;
 using Microsoft.AspNetCore.Identity;
 
@@ -12,10 +13,14 @@ public class DeleteCustomerCommand
 public class DeleteCustomerCommandHandler
 {
     private readonly UserManager<AppUser> _userManager;
+    private readonly IAppointmentRepository _appointmentRepository;
 
-    public DeleteCustomerCommandHandler(UserManager<AppUser> userManager)
+    public DeleteCustomerCommandHandler(
+        UserManager<AppUser> userManager,
+        IAppointmentRepository appointmentRepository)
     {
         _userManager = userManager;
+        _appointmentRepository = appointmentRepository;
     }
 
     public async Task Handle(DeleteCustomerCommand command, CancellationToken cancellationToken)
@@ -26,8 +31,11 @@ public class DeleteCustomerCommandHandler
             throw new NotFoundException($"Customer with ID {command.Id} not found.");
         }
 
-        // TODO: Cần kiểm tra xem khách hàng có lịch hẹn (Appointments) không
-        // Nếu có, không nên xóa vĩnh viễn?
+		var hasAppointments = await _appointmentRepository.HasAppointmentsForPatientAsync(user.Id, cancellationToken);
+		if (hasAppointments)
+		{
+			throw new ValidationException("Không thể xóa khách hàng vì vẫn còn lịch hẹn đã đặt. Hãy hủy hoặc chuyển lịch trước.");
+		}
 
         var result = await _userManager.DeleteAsync(user);
         if (!result.Succeeded)

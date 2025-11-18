@@ -101,4 +101,37 @@ public class SpecialtyController : ControllerBase
             return NotFound(new ProblemDetails { Title = "Not Found", Detail = ex.Message });
         }
     }
+
+    [HttpPatch("{id:guid}/status")]
+    public async Task<ActionResult<SpecialtyDto>> UpdateStatus(
+        [FromServices] UpdateSpecialtyStatusCommandHandler handler,
+        Guid id,
+        [FromBody] UpdateSpecialtyStatusRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new UpdateSpecialtyStatusCommand
+        {
+            Id = id,
+            Active = request.Active
+        };
+
+        try
+        {
+            var dto = await handler.Handle(command, cancellationToken);
+            return Ok(dto);
+        }
+        catch (ValidationException ex)
+        {
+            return BadRequest(new ProblemDetails { Title = "Validation Failed", Detail = ex.Message });
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new ProblemDetails { Title = "Not Found", Detail = ex.Message });
+        }
+    }
+}
+
+public class UpdateSpecialtyStatusRequest
+{
+    public bool Active { get; set; }
 }

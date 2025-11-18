@@ -9,6 +9,14 @@ let fpModalDate = null;
 let manualPhoneWrapper = null;
 let manualPhoneInput = null;
 let adminModalEventsBound = false;
+let appointmentModalMode = 'create';
+let editingAppointmentId = null;
+let editingAppointmentMeta = { durationMinutes: 30, clinicRoomId: null };
+let modalStatusSelect = null;
+let modalStatusFieldEl = null;
+let modalTitleEl = null;
+let newAppointmentModalEl = null;
+let saveAppointmentButtonEl = null;
 
 const MIN_APPOINTMENT_LEAD_DAYS = 2;
 
@@ -347,7 +355,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
         const selectedDate = selectedDates[0];
         const minDate = getMinimumAppointmentDate();
-        if (selectedDate < minDate) {
+        if (appointmentModalMode !== 'edit' && selectedDate < minDate) {
             showNewAppointmentAlert(`Vui lòng chọn ngày khám sau tối thiểu ${MIN_APPOINTMENT_LEAD_DAYS} ngày kể từ hôm nay.`);
             if (fpModalDate) {
                 fpModalDate.clear();
@@ -414,6 +422,35 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const saveApptButton = document.getElementById('saveAppointmentButton');
     manualPhoneWrapper = document.getElementById('manualPhoneWrapper');
     manualPhoneInput = document.getElementById('manualPhoneInput');
+    modalStatusSelect = document.getElementById('modalStatusSelect');
+    const modalStatusField = document.getElementById('modalStatusField');
+    const modalTitle = document.getElementById('newAppointmentModalLabel');
+    const newAppointmentTrigger = document.getElementById('newAppointmentButton');
+
+    newAppointmentModalEl = newApptModalEl;
+    saveAppointmentButtonEl = saveApptButton;
+    modalStatusFieldEl = modalStatusField;
+    modalTitleEl = modalTitle;
+
+    if (newAppointmentTrigger) {
+        newAppointmentTrigger.addEventListener('click', () => {
+            appointmentModalMode = 'create';
+            editingAppointmentId = null;
+            editingAppointmentMeta = { durationMinutes: 30, clinicRoomId: null };
+            if (modalTitleEl) {
+                modalTitleEl.textContent = 'Thêm cuộc hẹn';
+            }
+            if (saveAppointmentButtonEl) {
+                saveAppointmentButtonEl.textContent = 'Lưu';
+            }
+            if (modalStatusFieldEl) {
+                modalStatusFieldEl.classList.add('d-none');
+            }
+            if (modalStatusSelect && appointmentState.metadata?.statuses?.length) {
+                modalStatusSelect.value = appointmentState.metadata.statuses[0].code;
+            }
+        });
+    }
 
     if (newApptModalEl) {
         newApptModalEl.addEventListener('hidden.bs.modal', function () {
@@ -426,6 +463,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
             resetModalTimeSelect(tomTime);
             if (tomCustomer) tomCustomer.clear();
 
+            if (appointmentState.mode === 'doctor') {
+                populateDoctorNewAppointmentOptions(appointmentState.metadata);
+            }
+
             if (fpModalDate) {
                 fpModalDate.clear();
                 fpModalDate.set('minDate', getMinimumAppointmentDate());
@@ -433,22 +474,39 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
             showNewAppointmentAlert(null);
             resetManualPhoneCapture();
+            appointmentModalMode = 'create';
+            editingAppointmentId = null;
+            editingAppointmentMeta = { durationMinutes: 30, clinicRoomId: null };
+            if (modalStatusFieldEl) {
+                modalStatusFieldEl.classList.add('d-none');
+            }
+            if (modalStatusSelect && appointmentState.metadata?.statuses?.length) {
+                modalStatusSelect.value = appointmentState.metadata.statuses[0].code;
+            }
+            if (modalTitleEl) {
+                modalTitleEl.textContent = 'Thêm cuộc hẹn';
+            }
+            if (saveAppointmentButtonEl) {
+                saveAppointmentButtonEl.textContent = 'Lưu';
+            }
         });
 
         newApptModalEl.addEventListener('show.bs.modal', function () {
-            const minDate = getMinimumAppointmentDate();
-            if (fpModalDate) {
-                fpModalDate.set('minDate', minDate);
-                fpModalDate.setDate(minDate, true);
+            if (appointmentModalMode === 'create') {
+                const minDate = getMinimumAppointmentDate();
+                if (fpModalDate) {
+                    fpModalDate.set('minDate', minDate);
+                    fpModalDate.setDate(minDate, true);
+                }
+                resetModalTimeSelect(tomTime);
             }
-            resetModalTimeSelect(tomTime);
             showNewAppointmentAlert(null);
             resetManualPhoneCapture();
+            manualPhoneInput?.classList.remove('is-invalid');
         });
     }
 
     if (saveApptButton) {
-        const originalButtonText = saveApptButton.innerHTML;
         saveApptButton.addEventListener('click', async function () {
             const specialtyId = tomService?.getValue();
             const doctorId = tomEmployee?.getValue();
@@ -456,6 +514,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             const patientId = tomCustomer?.getValue();
             const date = fpModalDate?.selectedDates?.[0];
             const manualPhone = (manualPhoneInput?.value || '').trim();
+            const statusCode = modalStatusSelect?.value;
 
             if (!specialtyId || !doctorId || !patientId) {
                 showNewAppointmentAlert('Vui lòng chọn đầy đủ chuyên khoa, bác sĩ và bệnh nhân.');
@@ -493,32 +552,44 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
             let requestPayload;
             try {
-                requestPayload = buildCreateAppointmentRequest({
+                requestPayload = buildAdminAppointmentRequest({
                     specialtyId,
                     doctorId,
                     patientId,
                     slotStartIso,
-                    manualPhone
+                    manualPhone,
+                    statusCode,
+                    durationMinutes: appointmentModalMode === 'edit'
+                        ? editingAppointmentMeta?.durationMinutes || 30
+                        : 30,
+                    clinicRoomId: appointmentModalMode === 'edit'
+                        ? editingAppointmentMeta?.clinicRoomId || null
+                        : null,
+                    appointmentId: appointmentModalMode === 'edit' ? editingAppointmentId : null
                 });
             } catch (error) {
                 showNewAppointmentAlert(error?.message || 'Không thể chuẩn bị dữ liệu cuộc hẹn.');
                 return;
             }
 
+            const previousButtonText = saveApptButton.innerHTML;
             saveApptButton.disabled = true;
             saveApptButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Đang lưu...';
             showNewAppointmentAlert(null);
 
             try {
-                await submitNewAppointment(requestPayload);
+                await submitAppointmentMutation(requestPayload);
                 const modalInstance = bootstrap.Modal.getInstance(newApptModalEl);
                 modalInstance?.hide();
                 await reloadDoctorAppointments();
             } catch (error) {
-                showNewAppointmentAlert(error?.message || 'Không thể tạo cuộc hẹn mới.', 'danger');
+                const fallbackMessage = appointmentModalMode === 'edit'
+                    ? 'Không thể cập nhật cuộc hẹn.'
+                    : 'Không thể tạo cuộc hẹn mới.';
+                showNewAppointmentAlert(error?.message || fallbackMessage, 'danger');
             } finally {
                 saveApptButton.disabled = false;
-                saveApptButton.innerHTML = originalButtonText;
+                saveApptButton.innerHTML = previousButtonText;
             }
         });
     }
@@ -538,26 +609,73 @@ function bindStatusDropdowns(scope = document) {
     });
 }
 
-function handleStatusOptionClick(event) {
+function bindAppointmentActionMenus(scope = document) {
+    if (appointmentState.mode !== 'admin') {
+        return;
+    }
+
+    scope.querySelectorAll('.edit-appointment-action').forEach(button => {
+        if (button.dataset.actionBound === '1') {
+            return;
+        }
+
+        button.dataset.actionBound = '1';
+        button.addEventListener('click', (event) => {
+            event.preventDefault();
+            const dropdownToggle = button.closest('.dropdown')?.querySelector('.dropdown-toggle');
+            if (dropdownToggle) {
+                const dropdownInstance = bootstrap.Dropdown.getInstance(dropdownToggle);
+                dropdownInstance?.hide();
+            }
+
+            const appointmentId = button.dataset.appointmentId;
+            openEditAppointmentModal(appointmentId);
+        });
+    });
+}
+
+async function handleStatusOptionClick(event) {
     event.preventDefault();
-    const dropdownButton = this.closest('.status-dropdown')?.querySelector('.dropdown-toggle');
+    const optionElement = this;
+    const dropdownButton = optionElement.closest('.status-dropdown')?.querySelector('.dropdown-toggle');
     if (!dropdownButton) {
         return;
     }
 
-    updateStatusButton(dropdownButton, this);
-
     const parentRow = dropdownButton.closest('tr.appointment-row');
-    if (parentRow) {
-        parentRow.dataset.status = this.dataset.value;
+    const appointmentId = parentRow?.dataset.appointmentId;
+    const selectedStatus = optionElement.dataset.value;
+    if (!appointmentId || !selectedStatus) {
+        return;
     }
 
-    const dropdownInstance = bootstrap.Dropdown.getInstance(dropdownButton);
-    if (dropdownInstance) {
-        dropdownInstance.hide();
+    if (dropdownButton.dataset.statusCode === selectedStatus) {
+        const dropdownInstance = bootstrap.Dropdown.getInstance(dropdownButton);
+        dropdownInstance?.hide();
+        return;
     }
 
-    applyFilters();
+    toggleStatusButtonLoading(dropdownButton, true);
+    try {
+        const updated = await submitStatusUpdate(appointmentId, selectedStatus);
+        const normalized = upsertAppointmentState(updated);
+        updateStatusButton(dropdownButton, optionElement);
+        dropdownButton.dataset.statusCode = normalized.status;
+        if (dropdownButton.dataset.originalContent) {
+            dropdownButton.dataset.originalContent = dropdownButton.innerHTML;
+        }
+        if (parentRow) {
+            parentRow.dataset.status = normalized.status;
+        }
+        showAppointmentsError(null);
+        applyFilters();
+    } catch (error) {
+        showAppointmentsError(error?.message || 'Không thể cập nhật trạng thái cuộc hẹn.');
+    } finally {
+        toggleStatusButtonLoading(dropdownButton, false);
+        const dropdownInstance = bootstrap.Dropdown.getInstance(dropdownButton);
+        dropdownInstance?.hide();
+    }
 }
 
 function attachFilterCheckboxHandlers(scope = document) {
@@ -627,7 +745,12 @@ async function initializeDoctorAppointmentScreen() {
         };
         appointmentState.metadata = normalizedMetadata;
         populateStatusFilterOptions(normalizedMetadata.statuses);
-        populateAdminNewAppointmentOptions(normalizedMetadata);
+        populateModalStatusOptions(normalizedMetadata.statuses);
+        if (appointmentState.mode === 'admin') {
+            populateAdminNewAppointmentOptions(normalizedMetadata);
+        } else {
+            populateDoctorNewAppointmentOptions(normalizedMetadata);
+        }
         attachFilterCheckboxHandlers();
         await reloadDoctorAppointments();
     } catch (error) {
@@ -758,6 +881,7 @@ function renderAppointmentsTable() {
 
     tbody.appendChild(fragment);
     bindStatusDropdowns(tbody);
+    bindAppointmentActionMenus(tbody);
     attachFilterCheckboxHandlers(tbody);
     applyFilters();
 }
@@ -796,7 +920,7 @@ function createAppointmentRow(appointment) {
     row.appendChild(createStatusCell(appointment));
     row.appendChild(createDoctorCell(appointment));
     row.appendChild(createNoteCell());
-    row.appendChild(createActionsCell());
+    row.appendChild(createActionsCell(appointment));
 
     return row;
 }
@@ -868,6 +992,7 @@ function createStatusCell(appointment) {
     button.dataset.bsContainer = 'body';
     button.dataset.bsStrategy = 'fixed';
     button.innerHTML = `<i class="fa-solid ${appointment.statusIcon}"></i> ${appointment.statusLabel}`;
+    button.dataset.statusCode = appointment.status;
     dropdown.appendChild(button);
 
     const menu = document.createElement('ul');
@@ -945,18 +1070,46 @@ function createNoteCell() {
     return td;
 }
 
-function createActionsCell() {
+function createActionsCell(appointment) {
     const td = document.createElement('td');
     td.className = 'text-end';
-    td.innerHTML = `
-        <div class="dropdown">
-            <button class="btn btn-link text-muted p-0" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-container="body" data-bs-strategy="fixed">
-                <i class="fa-solid fa-ellipsis-vertical fs-5"></i>
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" style="border-radius: 10px;">
-                <li><span class="dropdown-item text-muted">Tính năng đang phát triển</span></li>
-            </ul>
-        </div>`;
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'dropdown';
+
+    const toggle = document.createElement('button');
+    toggle.className = 'btn btn-link text-muted p-0';
+    toggle.type = 'button';
+    toggle.dataset.bsToggle = 'dropdown';
+    toggle.dataset.bsContainer = 'body';
+    toggle.dataset.bsStrategy = 'fixed';
+    toggle.innerHTML = '<i class="fa-solid fa-ellipsis-vertical fs-5"></i>';
+    dropdown.appendChild(toggle);
+
+    const menu = document.createElement('ul');
+    menu.className = 'dropdown-menu dropdown-menu-end shadow-sm border-0';
+    menu.style.borderRadius = '10px';
+
+    if (appointmentState.mode === 'admin') {
+        const editItem = document.createElement('li');
+        const editButton = document.createElement('button');
+        editButton.type = 'button';
+        editButton.className = 'dropdown-item edit-appointment-action';
+        editButton.dataset.appointmentId = appointment.id;
+        editButton.textContent = 'Chỉnh sửa';
+        editItem.appendChild(editButton);
+        menu.appendChild(editItem);
+    } else {
+        const placeholder = document.createElement('li');
+        const label = document.createElement('span');
+        label.className = 'dropdown-item text-muted';
+        label.textContent = 'Tính năng đang phát triển';
+        placeholder.appendChild(label);
+        menu.appendChild(placeholder);
+    }
+
+    dropdown.appendChild(menu);
+    td.appendChild(dropdown);
     return td;
 }
 
@@ -991,6 +1144,36 @@ function populateFilterOptionsFromAppointments() {
 function populateStatusFilterOptions(statuses) {
     const options = statuses.map(status => ({ value: status.code, label: status.label }));
     populateFilterList('#filterStatus', options, 'status', getSelectedFilterValues('#filterStatus'));
+}
+
+function populateModalStatusOptions(statuses) {
+    if (!modalStatusSelect) {
+        modalStatusSelect = document.getElementById('modalStatusSelect');
+    }
+
+    if (!modalStatusSelect) {
+        return;
+    }
+
+    modalStatusSelect.innerHTML = '';
+
+    if (!Array.isArray(statuses) || !statuses.length) {
+        const option = document.createElement('option');
+        option.value = 'pending';
+        option.textContent = 'Chờ xác nhận';
+        modalStatusSelect.appendChild(option);
+        modalStatusSelect.value = 'pending';
+        return;
+    }
+
+    statuses.forEach(status => {
+        const option = document.createElement('option');
+        option.value = status.code;
+        option.textContent = status.label;
+        modalStatusSelect.appendChild(option);
+    });
+
+    modalStatusSelect.value = statuses[0].code;
 }
 
 function populateFilterList(containerSelector, values, prefix, selectedValues = []) {
@@ -1052,11 +1235,13 @@ function uniqueValues(values) {
 function mapAppointmentDto(source) {
     return {
         id: source.id ?? source.Id,
+        doctorId: source.doctorId ?? source.DoctorId ?? null,
         specialtyId: source.specialtyId ?? source.SpecialtyId,
         specialtyName: source.specialtyName ?? source.SpecialtyName ?? '',
         specialtyColor: source.specialtyColor ?? source.SpecialtyColor ?? '#0ea5e9',
         patientName: source.patientName ?? source.PatientName ?? '',
         customerPhone: source.customerPhone ?? source.CustomerPhone ?? '',
+        patientId: source.patientId ?? source.PatientId ?? null,
         status: source.status ?? source.Status ?? '',
         statusLabel: source.statusLabel ?? source.StatusLabel ?? '',
         statusTone: source.statusTone ?? source.StatusTone ?? 'pending',
@@ -1070,7 +1255,8 @@ function mapAppointmentDto(source) {
         dateKey: source.dateKey ?? source.DateKey ?? '',
         timeLabel: source.timeLabel ?? source.TimeLabel ?? '',
         durationMinutes: source.durationMinutes ?? source.DurationMinutes ?? 0,
-        clinicRoom: source.clinicRoom ?? source.ClinicRoom ?? ''
+        clinicRoom: source.clinicRoom ?? source.ClinicRoom ?? '',
+        clinicRoomId: source.clinicRoomId ?? source.ClinicRoomId ?? null
     };
 }
 
@@ -1135,6 +1321,47 @@ function populateAdminNewAppointmentOptions(metadata) {
     updateAdminDoctorSelect(tomService?.getValue() || '');
     handleAdminPatientSelectionChange(tomCustomer?.getValue() || '');
     bindAdminModalEvents();
+}
+
+function populateDoctorNewAppointmentOptions(metadata) {
+    if (appointmentState.mode !== 'doctor' || !metadata) {
+        return;
+    }
+
+    const specialtyOptions = (metadata.specialties ?? []).map(item => ({
+        value: item.id != null ? String(item.id) : '',
+        text: item.name
+    }));
+
+    if (tomService) {
+        const placeholder = specialtyOptions.length ? 'Chuyên khoa của bạn' : 'Chưa có chuyên khoa khả dụng';
+        refreshTomSelectOptions(tomService, specialtyOptions, placeholder);
+        if (specialtyOptions.length) {
+            tomService.setValue(specialtyOptions[0].value, true);
+        }
+        tomService.disable();
+    }
+
+    if (tomEmployee) {
+        const doctorOption = metadata.doctorId
+            ? [{ value: String(metadata.doctorId), text: metadata.doctorName || 'Bác sĩ của bạn' }]
+            : [];
+        const placeholder = doctorOption.length ? metadata.doctorName || 'Bác sĩ phụ trách' : 'Không tìm thấy bác sĩ';
+        refreshTomSelectOptions(tomEmployee, doctorOption, placeholder);
+        if (doctorOption.length) {
+            tomEmployee.setValue(doctorOption[0].value, true);
+        }
+        tomEmployee.disable();
+    }
+
+    if (tomCustomer) {
+        const patientOptions = (metadata.patients ?? []).map(item => ({
+            value: item.id != null ? String(item.id) : '',
+            text: buildPatientOptionLabel(item)
+        }));
+        const placeholder = patientOptions.length ? 'Chọn bệnh nhân' : 'Chưa có bệnh nhân khả dụng';
+        refreshTomSelectOptions(tomCustomer, patientOptions, placeholder);
+    }
 }
 
 function refreshTomSelectOptions(instance, options, placeholder) {
@@ -1229,7 +1456,17 @@ function parseTimeLabel(label) {
     return { hours, minutes };
 }
 
-function buildCreateAppointmentRequest({ specialtyId, doctorId, patientId, slotStartIso, manualPhone }) {
+function buildAdminAppointmentRequest({
+    specialtyId,
+    doctorId,
+    patientId,
+    slotStartIso,
+    manualPhone,
+    statusCode,
+    durationMinutes = 30,
+    clinicRoomId = null,
+    appointmentId = null
+}) {
     if (!specialtyId) {
         throw new Error('Vui lòng chọn chuyên khoa.');
     }
@@ -1238,8 +1475,10 @@ function buildCreateAppointmentRequest({ specialtyId, doctorId, patientId, slotS
         throw new Error('Vui lòng chọn đầy đủ bác sĩ và bệnh nhân.');
     }
 
-    const durationMinutes = 30;
     const endpoints = resolveAppointmentEndpoints();
+    const normalizedDuration = durationMinutes > 0 ? durationMinutes : 30;
+    const normalizedStatus = statusCode || 'pending';
+    const isEdit = !!appointmentId;
 
     if (appointmentState.mode === 'admin') {
         const patient = findPatientOptionById(patientId);
@@ -1256,7 +1495,8 @@ function buildCreateAppointmentRequest({ specialtyId, doctorId, patientId, slotS
         }
 
         return {
-            endpoint: endpoints.root,
+            endpoint: isEdit ? `${endpoints.root}/${appointmentId}` : endpoints.root,
+            method: isEdit ? 'PUT' : 'POST',
             body: {
                 doctorId,
                 specialtyId,
@@ -1264,7 +1504,9 @@ function buildCreateAppointmentRequest({ specialtyId, doctorId, patientId, slotS
                 patientName: patient.name || '',
                 customerPhone: resolvedPhone,
                 slotStartUtc: slotStartIso,
-                durationMinutes
+                durationMinutes: normalizedDuration,
+                status: normalizedStatus,
+                clinicRoomId
             }
         };
     }
@@ -1275,13 +1517,16 @@ function buildCreateAppointmentRequest({ specialtyId, doctorId, patientId, slotS
     }
 
     return {
-        endpoint: endpoints.root,
+        endpoint: isEdit ? `${endpoints.root}/${appointmentId}` : endpoints.root,
+        method: isEdit ? 'PUT' : 'POST',
         body: {
             specialtyId,
             patientName: patient.name,
             customerPhone: patient.phoneNumber,
             slotStartUtc: slotStartIso,
-            durationMinutes
+            durationMinutes: normalizedDuration,
+            status: normalizedStatus,
+            clinicRoomId
         }
     };
 }
@@ -1294,9 +1539,9 @@ function findPatientOptionById(id) {
     return appointmentState.metadata.patients.find(option => String(option.id ?? option.Id ?? '') === String(id)) || null;
 }
 
-async function submitNewAppointment(payload) {
+async function submitAppointmentMutation(payload) {
     const response = await fetch(payload.endpoint, {
-        method: 'POST',
+        method: payload.method || 'POST',
         headers: {
             'Content-Type': 'application/json'
         },
@@ -1468,4 +1713,200 @@ function hideManualPhoneCapture() {
 
 function resetManualPhoneCapture() {
     hideManualPhoneCapture();
+}
+
+function toggleStatusButtonLoading(button, isLoading) {
+    if (!button) {
+        return;
+    }
+
+    if (isLoading) {
+        if (!button.dataset.originalContent) {
+            button.dataset.originalContent = button.innerHTML;
+        }
+        button.disabled = true;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span>';
+        return;
+    }
+
+    button.disabled = false;
+    if (button.dataset.originalContent) {
+        button.innerHTML = button.dataset.originalContent;
+        delete button.dataset.originalContent;
+    }
+}
+
+async function submitStatusUpdate(appointmentId, statusCode) {
+    const endpoints = resolveAppointmentEndpoints();
+    const response = await fetch(`${endpoints.root}/${appointmentId}/status`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+        body: JSON.stringify({ status: statusCode })
+    });
+
+    if (!response.ok) {
+        throw await buildApiError(response);
+    }
+
+    return await response.json();
+}
+
+function upsertAppointmentState(serverDto) {
+    const normalized = mapAppointmentDto(serverDto);
+    const index = appointmentState.appointments.findIndex(item => item.id === normalized.id);
+    if (index >= 0) {
+        appointmentState.appointments[index] = normalized;
+    } else {
+        appointmentState.appointments.push(normalized);
+    }
+    return normalized;
+}
+
+function ensureTomSelectOption(instance, value, label) {
+    if (!instance || !value) {
+        return;
+    }
+
+    const normalizedValue = String(value);
+    if (!instance.options?.[normalizedValue]) {
+        instance.addOption({ value: normalizedValue, text: label || normalizedValue });
+    }
+}
+
+function ensureTimeOptionExists(optionLabel) {
+    if (!tomTime || !optionLabel) {
+        return;
+    }
+
+    if (!tomTime.options?.[optionLabel]) {
+        tomTime.addOption({ value: optionLabel, text: optionLabel });
+    }
+}
+
+function formatSlotLabelFromUtc(utcValue) {
+    if (!utcValue) {
+        return '';
+    }
+
+    const date = utcValue instanceof Date ? utcValue : new Date(utcValue);
+    if (Number.isNaN(date.valueOf())) {
+        return '';
+    }
+
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const displayHour = ((hours + 11) % 12) + 1;
+    const displayMinutes = String(minutes).padStart(2, '0');
+    return `${displayHour}:${displayMinutes} ${period}`;
+}
+
+function openEditAppointmentModal(appointmentId) {
+    if (appointmentState.mode !== 'admin') {
+        return;
+    }
+
+    if (!appointmentId) {
+        showAppointmentsError('Không xác định được cuộc hẹn cần chỉnh sửa.');
+        return;
+    }
+
+    const appointment = appointmentState.appointments.find(item => String(item.id) === String(appointmentId));
+    if (!appointment) {
+        showAppointmentsError('Không tìm thấy dữ liệu cuộc hẹn.');
+        return;
+    }
+
+    appointmentModalMode = 'edit';
+    editingAppointmentId = appointment.id;
+    editingAppointmentMeta = {
+        durationMinutes: appointment.durationMinutes || 30,
+        clinicRoomId: appointment.clinicRoomId || null
+    };
+
+    showNewAppointmentAlert(null);
+    manualPhoneInput?.classList.remove('is-invalid');
+
+    if (modalTitleEl) {
+        modalTitleEl.textContent = 'Chỉnh sửa cuộc hẹn';
+    }
+    if (saveAppointmentButtonEl) {
+        saveAppointmentButtonEl.textContent = 'Cập nhật';
+    }
+    if (modalStatusFieldEl) {
+        modalStatusFieldEl.classList.remove('d-none');
+    }
+    if (modalStatusSelect) {
+        modalStatusSelect.value = appointment.status || modalStatusSelect.value;
+    }
+
+    if (tomService) {
+        const specialtyValue = appointment.specialtyId ? String(appointment.specialtyId) : '';
+        if (specialtyValue) {
+            ensureTomSelectOption(tomService, specialtyValue, appointment.specialtyName);
+            tomService.setValue(specialtyValue, true);
+            updateAdminDoctorSelect(specialtyValue);
+        } else {
+            tomService.clear(true);
+        }
+    }
+
+    if (tomEmployee) {
+        const doctorValue = appointment.doctorId ? String(appointment.doctorId) : '';
+        if (doctorValue) {
+            ensureTomSelectOption(tomEmployee, doctorValue, appointment.doctorName);
+            tomEmployee.setValue(doctorValue, true);
+        } else {
+            tomEmployee.clear(true);
+        }
+    }
+
+    if (tomCustomer) {
+        const patientValue = appointment.patientId ? String(appointment.patientId) : '';
+        if (patientValue) {
+            ensureTomSelectOption(tomCustomer, patientValue, appointment.patientName);
+            tomCustomer.setValue(patientValue, true);
+        } else {
+            tomCustomer.clear(true);
+        }
+    }
+
+    if (patientRequiresManualPhone(appointment.patientId)) {
+        showManualPhoneCapture();
+        if (manualPhoneInput) {
+            manualPhoneInput.value = appointment.customerPhone || '';
+        }
+    } else {
+        hideManualPhoneCapture();
+        if (manualPhoneInput) {
+            manualPhoneInput.value = '';
+        }
+    }
+
+    if (fpModalDate) {
+        const slotStart = new Date(appointment.startUtc);
+        if (!Number.isNaN(slotStart.valueOf())) {
+            const defaultMin = getMinimumAppointmentDate();
+            const effectiveMin = slotStart < defaultMin ? slotStart : defaultMin;
+            fpModalDate.set('minDate', effectiveMin);
+            fpModalDate.setDate(slotStart, true);
+            handleModalDateSelection([slotStart]);
+            const timeLabel = formatSlotLabelFromUtc(slotStart);
+            if (timeLabel) {
+                ensureTimeOptionExists(timeLabel);
+                tomTime?.setValue(timeLabel, true);
+            } else {
+                tomTime?.clear(true);
+            }
+        }
+    }
+
+    const modalElement = newAppointmentModalEl || document.getElementById('newAppointmentModal');
+    if (modalElement) {
+        const modalInstance = bootstrap.Modal.getOrCreateInstance(modalElement);
+        modalInstance.show();
+    }
 }

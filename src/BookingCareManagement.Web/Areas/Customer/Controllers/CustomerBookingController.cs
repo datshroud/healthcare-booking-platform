@@ -6,6 +6,7 @@ using System.Linq;
 using BookingCareManagement.Application.Common.Exceptions;
 using BookingCareManagement.Application.Features.Appointments.Commands;
 using BookingCareManagement.Application.Features.Appointments.Dtos;
+using BookingCareManagement.Application.Features.Notifications.Commands;
 using BookingCareManagement.Application.Features.Specialties.Dtos;
 using BookingCareManagement.Application.Features.Specialties.Queries;
 using BookingCareManagement.Domain.Abstractions;
@@ -18,6 +19,8 @@ using BookingCareManagement.Web.Areas.Customer.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using DomainDoctor = BookingCareManagement.Domain.Aggregates.Doctor.Doctor;
+using DomainSpecialty = BookingCareManagement.Domain.Aggregates.Doctor.Specialty;
 
 namespace BookingCareManagement.Web.Areas.Customer.Controllers;
 
@@ -95,6 +98,11 @@ public class CustomerBookingController : ControllerBase
         if (doctor is null)
         {
             return NotFound(new ProblemDetails { Title = "Không tìm thấy bác sĩ" });
+        }
+
+        if (IsDoctorOnDayOff(targetDate, doctor.DaysOff))
+        {
+            return Ok(Array.Empty<DoctorTimeSlotDto>());
         }
 
         var windows = doctor.WorkingHours
@@ -189,6 +197,7 @@ public class CustomerBookingController : ControllerBase
         [FromServices] CreateAppointmentCommandHandler handler,
         [FromServices] IDoctorRepository doctorRepository,
         [FromServices] ISpecialtyRepository specialtyRepository,
+        [FromServices] CreateAdminNotificationCommandHandler notificationHandler,
         CancellationToken cancellationToken)
     {
         if (request.SpecialtyId == Guid.Empty)
@@ -247,6 +256,12 @@ public class CustomerBookingController : ControllerBase
             return BadRequest(new ProblemDetails { Title = "Bác sĩ không thuộc chuyên khoa đã chọn" });
         }
 
+        var slotLocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(slotStartUtc, VietnamTimeZone));
+        if (IsDoctorOnDayOff(slotLocalDate, doctor.DaysOff))
+        {
+            return BadRequest(new ProblemDetails { Title = "Bác sĩ nghỉ trong ngày này, vui lòng chọn ngày khác" });
+        }
+
         var clinicRoomId = await _dbContext.ClinicRooms
             .AsNoTracking()
             .Select(r => r.Id)
@@ -282,7 +297,8 @@ public class CustomerBookingController : ControllerBase
             DurationMinutes = durationMinutes,
             PatientName = trimmedName,
             CustomerPhone = trimmedPhone,
-            PatientId = string.IsNullOrWhiteSpace(currentUserId) ? null : currentUserId
+            PatientId = string.IsNullOrWhiteSpace(currentUserId) ? null : currentUserId,
+            Price = specialty.Price
         };
 
         var dto = await handler.Handle(command, cancellationToken);
@@ -315,6 +331,17 @@ public class CustomerBookingController : ControllerBase
             }
         }
 
+        var doctorDisplayName = ResolveDoctorDisplayName(doctor);
+        var specialtyName = ResolveSpecialtyDisplayName(specialty);
+        var startLocal = TimeZoneInfo.ConvertTimeFromUtc(slotStartUtc, VietnamTimeZone);
+
+        await TryCreateAdminNotificationAsync(
+            notificationHandler,
+            "Đặt lịch mới",
+            $"{trimmedName} đã đặt {specialtyName} với {doctorDisplayName} ({startLocal:HH:mm dd/MM}).",
+            dto.Id,
+            cancellationToken);
+
         return Ok(dto);
     }
 
@@ -323,6 +350,7 @@ public class CustomerBookingController : ControllerBase
     public async Task<ActionResult<CustomerBookingSummaryDto>> RescheduleBooking(
         Guid appointmentId,
         [FromBody] RescheduleCustomerBookingRequest request,
+        [FromServices] CreateAdminNotificationCommandHandler notificationHandler,
         CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -361,6 +389,17 @@ public class CustomerBookingController : ControllerBase
             return BadRequest(new ProblemDetails { Title = limitMessage });
         }
 
+        var rescheduleLocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(newStartUtc, VietnamTimeZone));
+        var dayOffs = await _dbContext.DoctorDayOffs
+            .AsNoTracking()
+            .Where(x => x.DoctorId == appointment.DoctorId)
+            .ToListAsync(cancellationToken);
+
+        if (IsDoctorOnDayOff(rescheduleLocalDate, dayOffs))
+        {
+            return BadRequest(new ProblemDetails { Title = "Bác sĩ nghỉ trong ngày này, vui lòng chọn thời gian khác" });
+        }
+
         var slotTaken = await _dbContext.Appointments
             .AsNoTracking()
             .AnyAsync(
@@ -372,10 +411,24 @@ public class CustomerBookingController : ControllerBase
             return Conflict(new ProblemDetails { Title = "Khung giờ này đã được đặt" });
         }
 
+        var oldStartUtc = appointment.StartUtc;
+
         appointment.Reschedule(newStartUtc, TimeSpan.FromMinutes(durationMinutes));
         appointment.ResetToPending();
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var doctorName = await ResolveDoctorDisplayNameAsync(appointment.DoctorId, cancellationToken);
+        var specialtyName = await ResolveSpecialtyDisplayNameAsync(appointment.SpecialtyId, cancellationToken);
+        var oldStartLocal = TimeZoneInfo.ConvertTimeFromUtc(oldStartUtc, VietnamTimeZone);
+        var newStartLocal = TimeZoneInfo.ConvertTimeFromUtc(newStartUtc, VietnamTimeZone);
+
+        await TryCreateAdminNotificationAsync(
+            notificationHandler,
+            "Đổi lịch hẹn",
+            $"{appointment.PatientName} đổi lịch {specialtyName} với {doctorName} từ {oldStartLocal:HH:mm dd/MM} sang {newStartLocal:HH:mm dd/MM}.",
+            appointment.Id,
+            cancellationToken);
 
         var dto = await BuildCustomerBookingSummary(appointment.Id, cancellationToken);
         return dto is null ? NotFound() : Ok(dto);
@@ -385,6 +438,7 @@ public class CustomerBookingController : ControllerBase
     [Authorize]
     public async Task<ActionResult<CustomerBookingSummaryDto>> CancelBooking(
         Guid appointmentId,
+        [FromServices] CreateAdminNotificationCommandHandler notificationHandler,
         CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -414,6 +468,17 @@ public class CustomerBookingController : ControllerBase
 
         appointment.Cancel();
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var cancelDoctorName = await ResolveDoctorDisplayNameAsync(appointment.DoctorId, cancellationToken);
+        var cancelSpecialtyName = await ResolveSpecialtyDisplayNameAsync(appointment.SpecialtyId, cancellationToken);
+        var cancelStartLocal = TimeZoneInfo.ConvertTimeFromUtc(appointment.StartUtc, VietnamTimeZone);
+
+        await TryCreateAdminNotificationAsync(
+            notificationHandler,
+            "Hủy lịch hẹn",
+            $"{appointment.PatientName} đã hủy lịch {cancelSpecialtyName} với {cancelDoctorName} ({cancelStartLocal:HH:mm dd/MM}).",
+            appointment.Id,
+            cancellationToken);
 
         var dto = await BuildCustomerBookingSummary(appointment.Id, cancellationToken);
         return dto is null ? NotFound() : Ok(dto);
@@ -475,6 +540,83 @@ public class CustomerBookingController : ControllerBase
         return ToCustomerBookingSummaryDto(record.Appointment, record.Specialty, record.DoctorUser, record.ClinicRoom);
     }
 
+    private static string ResolveDoctorDisplayName(DomainDoctor doctor)
+    {
+        if (doctor is null)
+        {
+            return "Bác sĩ";
+        }
+
+        var candidate = doctor.AppUser?.GetFullName();
+        if (!string.IsNullOrWhiteSpace(candidate))
+        {
+            return candidate.Trim();
+        }
+
+        return NormalizeLabel(doctor.AppUser?.Email, "Bác sĩ");
+    }
+
+    private async Task<string> ResolveDoctorDisplayNameAsync(Guid doctorId, CancellationToken cancellationToken)
+    {
+        var label = await (
+            from doctor in _dbContext.Doctors.AsNoTracking()
+            where doctor.Id == doctorId
+            join user in _dbContext.Users.AsNoTracking() on doctor.AppUserId equals user.Id
+            select user.FullName ?? user.Email
+        ).FirstOrDefaultAsync(cancellationToken);
+
+        return NormalizeLabel(label, "Bác sĩ");
+    }
+
+    private static string ResolveSpecialtyDisplayName(DomainSpecialty specialty)
+    {
+        return NormalizeLabel(specialty?.Name, "Chuyên khoa");
+    }
+
+    private async Task<string> ResolveSpecialtyDisplayNameAsync(Guid specialtyId, CancellationToken cancellationToken)
+    {
+        var name = await _dbContext.Specialties
+            .AsNoTracking()
+            .Where(s => s.Id == specialtyId)
+            .Select(s => s.Name)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        return NormalizeLabel(name, "Chuyên khoa");
+    }
+
+    private static string NormalizeLabel(string? candidate, string fallback)
+    {
+        return string.IsNullOrWhiteSpace(candidate) ? fallback : candidate.Trim();
+    }
+
+    private static async Task TryCreateAdminNotificationAsync(
+        CreateAdminNotificationCommandHandler notificationHandler,
+        string title,
+        string message,
+        Guid appointmentId,
+        CancellationToken cancellationToken)
+    {
+        if (notificationHandler is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await notificationHandler.Handle(new CreateAdminNotificationCommand
+            {
+                Title = title,
+                Message = message,
+                Category = "booking",
+                AppointmentId = appointmentId
+            }, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Failed to create admin notification: {ex.Message}");
+        }
+    }
+
     private static CustomerBookingSummaryDto ToCustomerBookingSummaryDto(
         Domain.Aggregates.Appointment.Appointment appointment,
         Specialty specialty,
@@ -511,7 +653,8 @@ public class CustomerBookingController : ControllerBase
             PatientName = appointment.PatientName,
             DurationMinutes = (int)Math.Round((appointment.EndUtc - appointment.StartUtc).TotalMinutes),
             StartUtc = startUtc,
-            EndUtc = endUtc
+            EndUtc = endUtc,
+            Price = appointment.Price
         };
     }
 
@@ -589,7 +732,7 @@ public class CustomerBookingController : ControllerBase
             Description = specialty.Description,
             Color = specialty.Color,
             ImageUrl = specialty.ImageUrl,
-            Price = null,
+            Price = specialty.Price,
             DurationMinutes = null,
             Doctors = doctors
         };
@@ -635,6 +778,47 @@ public class CustomerBookingController : ControllerBase
         }
 
         return slots;
+    }
+
+    private static bool IsDoctorOnDayOff(DateOnly targetDate, IEnumerable<DoctorDayOff>? dayOffs)
+    {
+        if (dayOffs is null)
+        {
+            return false;
+        }
+
+        foreach (var dayOff in dayOffs)
+        {
+            if (IsDateWithinDayOff(targetDate, dayOff))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsDateWithinDayOff(DateOnly targetDate, DoctorDayOff dayOff)
+    {
+        if (dayOff.RepeatYearly)
+        {
+            var start = NormalizeRepeatDate(dayOff.StartDate, targetDate.Year);
+            var end = NormalizeRepeatDate(dayOff.EndDate, targetDate.Year);
+            if (end < start)
+            {
+                return targetDate >= start || targetDate <= end;
+            }
+
+            return targetDate >= start && targetDate <= end;
+        }
+
+        return targetDate >= dayOff.StartDate && targetDate <= dayOff.EndDate;
+    }
+
+    private static DateOnly NormalizeRepeatDate(DateOnly source, int year)
+    {
+        var day = Math.Min(source.Day, DateTime.DaysInMonth(year, source.Month));
+        return new DateOnly(year, source.Month, day);
     }
 
     private sealed record CustomerBookingStatusPresentation(string Code, string Label, string Tone, string Icon);

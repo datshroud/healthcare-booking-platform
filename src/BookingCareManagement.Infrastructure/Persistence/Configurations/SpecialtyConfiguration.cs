@@ -19,5 +19,9 @@ public class SpecialtyConfiguration : IEntityTypeConfiguration<Specialty>
             .IsRequired()
             .HasMaxLength(20)
             .HasDefaultValue("#1a73e8");
+
+        e.Property(x => x.Price)
+            .HasColumnType("decimal(18,2)")
+            .HasDefaultValue(0m);
     }
 }

@@ -14,14 +14,43 @@ public class IndexModel : PageModel
 
     public IActionResult OnGet()
     {
-        // If the user is already authenticated and is an admin, redirect them to the admin dashboard.
-        // This preserves the last-signed-in admin cookie so restarting the app will land the admin
-        // on /dashboard instead of the public root.
-        if (User?.Identity?.IsAuthenticated == true && (User.IsInRole("Admin") || User.IsInRole("Doctor")))
+        if (User?.Identity?.IsAuthenticated == true && IsAuthReturnRequest())
         {
-            return Redirect("/dashboard");
+            if (User.IsInRole("Admin"))
+            {
+                return Redirect("/dashboard");
+            }
+
+            if (User.IsInRole("Doctor"))
+            {
+                return Redirect("/doctor/dashboard");
+            }
         }
 
         return Page();
+    }
+
+    private bool IsAuthReturnRequest()
+    {
+        if (Request is null)
+        {
+            return false;
+        }
+
+        if (Request.Query.TryGetValue("authRedirect", out var flag)
+            && flag.Any(value => string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        var referer = Request.Headers["Referer"].ToString();
+        if (string.IsNullOrWhiteSpace(referer))
+        {
+            return false;
+        }
+
+        return referer.Contains("/Identity/Account/Login", StringComparison.OrdinalIgnoreCase)
+            || referer.Contains("/Identity/Account/Register", StringComparison.OrdinalIgnoreCase)
+            || referer.Contains("/Identity/Account/ExternalLogin", StringComparison.OrdinalIgnoreCase);
     }
 }

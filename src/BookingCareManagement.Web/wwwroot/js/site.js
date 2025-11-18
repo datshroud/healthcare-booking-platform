@@ -2,12 +2,52 @@
     const userInfo = document.getElementById("userDropdown");
 
     if (userInfo) {
-        // Ngăn dropdown tự đóng khi click bên trong panel
-        // prevent dropdown from auto-closing when clicking inside the menu
         const dropdownEl = userInfo.closest('.dropdown');
-        if (dropdownEl) {
-            const dropdownMenu = dropdownEl.querySelector(".dropdown-menu");
-            if (dropdownMenu) dropdownMenu.addEventListener("click", (e) => e.stopPropagation());
+        const dropdownMenu = dropdownEl ? dropdownEl.querySelector(".dropdown-menu") : null;
+
+        if (dropdownEl && dropdownMenu) {
+            const openMenu = () => {
+                dropdownEl.classList.add('show');
+                dropdownMenu.classList.add('show');
+                userInfo.setAttribute('aria-expanded', 'true');
+                dropdownMenu.setAttribute('data-open', 'true');
+            };
+
+            const closeMenu = () => {
+                dropdownEl.classList.remove('show');
+                dropdownMenu.classList.remove('show');
+                dropdownMenu.removeAttribute('data-open');
+                userInfo.setAttribute('aria-expanded', 'false');
+            };
+
+            const toggleMenu = () => {
+                const isOpen = dropdownMenu.getAttribute('data-open') === 'true';
+                if (isOpen) {
+                    closeMenu();
+                } else {
+                    openMenu();
+                }
+            };
+
+            userInfo.addEventListener('click', (evt) => {
+                evt.preventDefault();
+                evt.stopPropagation();
+                toggleMenu();
+            });
+
+            dropdownMenu.addEventListener('click', (evt) => evt.stopPropagation());
+
+            document.addEventListener('click', (evt) => {
+                if (!dropdownEl.contains(evt.target)) {
+                    closeMenu();
+                }
+            });
+
+            document.addEventListener('keydown', (evt) => {
+                if (evt.key === 'Escape') {
+                    closeMenu();
+                }
+            });
         }
     }
     // logout button handler

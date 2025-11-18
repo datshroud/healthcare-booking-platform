@@ -11,7 +11,7 @@ using BookingCareManagement.Domain.Aggregates.User;
 using BookingCareManagement.Infrastructure.Persistence;
 using BookingCareManagement.Web.Areas.Admin.Dtos;
 using BookingCareManagement.Web.Areas.Doctor.Dtos;
-using BookingCareManagement.Web.Features.Calendar;
+using BookingCareManagement.Application.Features.Calendar;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -234,10 +234,10 @@ public sealed class AdminAppointmentsController : ControllerBase
 
     [HttpPost]
     public async Task<ActionResult<DoctorAppointmentListItemDto>> Create(
-        [FromBody] AdminAppointmentCreateRequest request,
+        [FromBody] AdminAppointmentUpsertRequest request,
         CancellationToken cancellationToken)
     {
-        var (result, problem) = await ValidateCreateRequestAsync(request, cancellationToken);
+        var (result, problem) = await ValidateUpsertRequestAsync(request, excludeAppointmentId: null, fallbackClinicRoomId: null, cancellationToken);
         if (problem is not null)
         {
             return problem.Status == StatusCodes.Status409Conflict
@@ -253,7 +253,8 @@ public sealed class AdminAppointmentsController : ControllerBase
             TimeSpan.FromMinutes(result.DurationMinutes),
             result.PatientName,
             result.CustomerPhone,
-            result.PatientId);
+            result.PatientId,
+            result.Specialty.Price);
 
         appointment.SetStatus(result.Status);
         await _dbContext.Appointments.AddAsync(appointment, cancellationToken);
@@ -263,8 +264,78 @@ public sealed class AdminAppointmentsController : ControllerBase
         return dto is null ? Problem("Không thể tải dữ liệu cuộc hẹn vừa tạo") : Ok(dto);
     }
 
-    private async Task<(AdminCreateValidationResult? Result, ProblemDetails? Problem)> ValidateCreateRequestAsync(
-        AdminAppointmentCreateRequest request,
+    [HttpPut("{appointmentId:guid}")]
+    public async Task<ActionResult<DoctorAppointmentListItemDto>> Update(
+        Guid appointmentId,
+        [FromBody] AdminAppointmentUpsertRequest request,
+        CancellationToken cancellationToken)
+    {
+        var appointment = await _dbContext.Appointments
+            .FirstOrDefaultAsync(a => a.Id == appointmentId, cancellationToken);
+
+        if (appointment is null)
+        {
+            return NotFound(new ProblemDetails { Title = "Không tìm thấy cuộc hẹn" });
+        }
+
+        var (result, problem) = await ValidateUpsertRequestAsync(
+            request,
+            excludeAppointmentId: appointmentId,
+            fallbackClinicRoomId: appointment.ClinicRoomId,
+            cancellationToken);
+
+        if (problem is not null)
+        {
+            return problem.Status == StatusCodes.Status409Conflict
+                ? Conflict(problem)
+                : BadRequest(problem);
+        }
+
+        appointment.AssignDoctor(result!.Doctor.Id);
+        appointment.ChangeSpecialty(result.Specialty.Id);
+        appointment.AssignClinicRoom(result.ClinicRoomId);
+        appointment.UpdatePatientProfile(result.PatientName, result.CustomerPhone);
+        appointment.AssignPatient(result.PatientId);
+        appointment.Reschedule(result.SlotStartUtc, TimeSpan.FromMinutes(result.DurationMinutes));
+        appointment.SetPrice(result.Specialty.Price);
+        appointment.SetStatus(result.Status);
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var dto = await BuildListItemDtoAsync(appointment.Id, cancellationToken);
+        return dto is null ? Problem("Không thể tải dữ liệu cuộc hẹn vừa cập nhật") : Ok(dto);
+    }
+
+    [HttpPost("{appointmentId:guid}/status")]
+    public async Task<ActionResult<DoctorAppointmentListItemDto>> UpdateStatus(
+        Guid appointmentId,
+        [FromBody] AdminAppointmentStatusRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!AppointmentStatus.IsValid(request.Status))
+        {
+            return BadRequest(new ProblemDetails { Title = "Trạng thái không hợp lệ" });
+        }
+
+        var appointment = await _dbContext.Appointments
+            .FirstOrDefaultAsync(a => a.Id == appointmentId, cancellationToken);
+
+        if (appointment is null)
+        {
+            return NotFound(new ProblemDetails { Title = "Không tìm thấy cuộc hẹn" });
+        }
+
+        appointment.SetStatus(request.Status);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var dto = await BuildListItemDtoAsync(appointment.Id, cancellationToken);
+        return dto is null ? Problem("Không thể tải dữ liệu cuộc hẹn vừa cập nhật") : Ok(dto);
+    }
+
+    private async Task<(AdminUpsertValidationResult? Result, ProblemDetails? Problem)> ValidateUpsertRequestAsync(
+        AdminAppointmentUpsertRequest request,
+        Guid? excludeAppointmentId,
+        Guid? fallbackClinicRoomId,
         CancellationToken cancellationToken)
     {
         if (request.DoctorId == Guid.Empty)
@@ -280,6 +351,7 @@ public sealed class AdminAppointmentsController : ControllerBase
         var doctor = await _dbContext.Doctors
             .Include(d => d.Specialties)
             .Include(d => d.AppUser)
+            .Include(d => d.DaysOff)
             .FirstOrDefaultAsync(d => d.Id == request.DoctorId, cancellationToken);
 
         if (doctor is null || doctor.AppUser is null)
@@ -308,10 +380,17 @@ public sealed class AdminAppointmentsController : ControllerBase
         }
 
         var slotEndUtc = slotStartUtc.AddMinutes(durationMinutes);
+        var slotLocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(slotStartUtc, DisplayTimeZone));
+        if (IsDoctorOnDayOff(slotLocalDate, doctor.DaysOff))
+        {
+            return (null, new ProblemDetails { Title = "Bác sĩ nghỉ trong ngày này" });
+        }
         var hasOverlap = await _dbContext.Appointments
             .AsNoTracking()
             .AnyAsync(
-                a => a.DoctorId == doctor.Id && slotStartUtc < a.EndUtc && a.StartUtc < slotEndUtc,
+                a => a.DoctorId == doctor.Id
+                    && (!excludeAppointmentId.HasValue || a.Id != excludeAppointmentId.Value)
+                    && slotStartUtc < a.EndUtc && a.StartUtc < slotEndUtc,
                 cancellationToken);
 
         if (hasOverlap)
@@ -323,7 +402,19 @@ public sealed class AdminAppointmentsController : ControllerBase
             });
         }
 
-        var clinicRoomId = await ResolveClinicRoomIdAsync(request.ClinicRoomId, cancellationToken);
+        Guid clinicRoomId;
+        if (request.ClinicRoomId.HasValue && request.ClinicRoomId.Value != Guid.Empty)
+        {
+            clinicRoomId = await ResolveClinicRoomIdAsync(request.ClinicRoomId, cancellationToken);
+        }
+        else if (fallbackClinicRoomId.HasValue && fallbackClinicRoomId.Value != Guid.Empty)
+        {
+            clinicRoomId = fallbackClinicRoomId.Value;
+        }
+        else
+        {
+            clinicRoomId = await ResolveClinicRoomIdAsync(null, cancellationToken);
+        }
 
         var patientName = request.PatientName?.Trim();
         var customerPhone = request.CustomerPhone?.Trim();
@@ -359,7 +450,7 @@ public sealed class AdminAppointmentsController : ControllerBase
 
         var normalizedStatus = AppointmentStatus.NormalizeOrDefault(request.Status);
 
-        return (new AdminCreateValidationResult(
+        return (new AdminUpsertValidationResult(
             doctor,
             doctor.AppUser,
             specialty,
@@ -431,11 +522,13 @@ public sealed class AdminAppointmentsController : ControllerBase
         return new DoctorAppointmentListItemDto
         {
             Id = appointment.Id,
+            DoctorId = appointment.DoctorId,
             SpecialtyId = appointment.SpecialtyId,
             SpecialtyName = specialty.Name,
             SpecialtyColor = string.IsNullOrWhiteSpace(specialty.Color) ? "#0ea5e9" : specialty.Color,
             PatientName = appointment.PatientName,
             CustomerPhone = appointment.CustomerPhone,
+            PatientId = appointment.PatientId,
             Status = presentation.Code,
             StatusLabel = presentation.Label,
             StatusTone = presentation.Tone,
@@ -449,7 +542,9 @@ public sealed class AdminAppointmentsController : ControllerBase
             DateKey = startLocal.ToString("yyyy-MM-dd"),
             TimeLabel = timeLabel,
             DurationMinutes = (int)Math.Round((endUtc - startUtc).TotalMinutes),
-            ClinicRoom = BuildClinicRoomLabel(room)
+            ClinicRoomId = appointment.ClinicRoomId,
+            ClinicRoom = BuildClinicRoomLabel(room),
+            Price = appointment.Price
         };
     }
 
@@ -482,7 +577,8 @@ public sealed class AdminAppointmentsController : ControllerBase
             StatusIcon = presentation.Icon,
             ClinicRoom = BuildClinicRoomLabel(room),
             StartUtc = DateTime.SpecifyKind(appointment.StartUtc, DateTimeKind.Utc),
-            EndUtc = DateTime.SpecifyKind(appointment.EndUtc, DateTimeKind.Utc)
+            EndUtc = DateTime.SpecifyKind(appointment.EndUtc, DateTimeKind.Utc),
+            Price = appointment.Price
         };
     }
 
@@ -574,9 +670,50 @@ public sealed class AdminAppointmentsController : ControllerBase
         return TimeZoneInfo.Local;
     }
 
+    private static bool IsDoctorOnDayOff(DateOnly targetDate, IEnumerable<DoctorDayOff>? dayOffs)
+    {
+        if (dayOffs is null)
+        {
+            return false;
+        }
+
+        foreach (var dayOff in dayOffs)
+        {
+            if (IsDateWithinDayOff(targetDate, dayOff))
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static bool IsDateWithinDayOff(DateOnly targetDate, DoctorDayOff dayOff)
+    {
+        if (dayOff.RepeatYearly)
+        {
+            var start = NormalizeRepeatDate(dayOff.StartDate, targetDate.Year);
+            var end = NormalizeRepeatDate(dayOff.EndDate, targetDate.Year);
+            if (end < start)
+            {
+                return targetDate >= start || targetDate <= end;
+            }
+
+            return targetDate >= start && targetDate <= end;
+        }
+
+        return targetDate >= dayOff.StartDate && targetDate <= dayOff.EndDate;
+    }
+
+    private static DateOnly NormalizeRepeatDate(DateOnly source, int year)
+    {
+        var day = Math.Min(source.Day, DateTime.DaysInMonth(year, source.Month));
+        return new DateOnly(year, source.Month, day);
+    }
+
     private sealed record AppointmentStatusPresentation(string Code, string Label, string Tone, string Icon);
 
-    private sealed record AdminCreateValidationResult(
+    private sealed record AdminUpsertValidationResult(
         Domain.Aggregates.Doctor.Doctor Doctor,
         AppUser DoctorUser,
         Specialty Specialty,

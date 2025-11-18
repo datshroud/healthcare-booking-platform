@@ -50,11 +50,12 @@ document.addEventListener('DOMContentLoaded', function () {
             const row = document.createElement('tr');
             row.setAttribute('data-id', doctor.id);
 
-            // ... (Code render table giữ nguyên) ...
             const cellCheckbox = `<td><input type="checkbox"></td>`;
             const resolvedName = resolveDoctorName(doctor);
             const firstLetter = resolvedName ? resolvedName[0].toUpperCase() : 'B';
-            const avatar = doctor.avatarUrl
+
+            // SỬA LỖI HIỂN THỊ AVATAR: Kiểm tra 'avatarUrl' có rỗng/null không
+            const avatar = (doctor.avatarUrl && doctor.avatarUrl.trim() !== "")
                 ? `<img src="${doctor.avatarUrl}" class="employee-avatar" alt="${resolvedName}">`
                 : `<div class="employee-avatar avatar-teal">${firstLetter}</div>`;
 
@@ -98,31 +99,70 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnAddSubmit = document.getElementById('btn-add-employee-submit');
     const addForm = addEmployeeModal.querySelector('form');
 
-    // Khi bấm nút "Thêm nhân viên" trong modal
+    // Lấy input file của modal bác sĩ
+    const fileInput = document.getElementById('fileUploadInput');
+    const uploadArea = document.querySelector('.file-upload-area');
+    const originalUploadAreaContent = uploadArea.innerHTML;
+
+    // ⭐️ HÀM NÀY ĐÃ ĐƯỢC CẬP NHẬT ⭐️
     btnAddSubmit.addEventListener('click', async function () {
 
-        // THAY ĐỔI 1: Lấy ID chuyên khoa *duy nhất* đã chọn
-        // (Select2 ở chế độ 'chọn một' sẽ trả về 1 string ID hoặc null)
-        const selectedSpecialtyId = $('#service').val();
+        // 1. Lấy file đã chọn
+        const file = fileInput?.files?.[0];
+        let avatarUrl = null; // Mặc định là null
 
-        // THAY ĐỔI 2: Tạo một mảng để gửi đi (khớp với backend)
-        let specialtyIdsToSend = [];
-        if (selectedSpecialtyId) {
-            specialtyIdsToSend.push(selectedSpecialtyId); // Bỏ 1 ID duy nhất vào mảng
-        }
-
-        // Thu thập dữ liệu từ form
-        const newDoctorData = {
-            firstName: document.getElementById('firstName').value,
-            lastName: document.getElementById('lastName').value,
-            email: document.getElementById('email').value,
-            phoneNumber: document.getElementById('phone').value,
-
-            // THAY ĐỔI 3: Gán mảng (0 hoặc 1 phần tử)
-            specialtyIds: specialtyIdsToSend
-        };
+        // Hiển thị loading
+        btnAddSubmit.disabled = true;
+        btnAddSubmit.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status"></span>Đang lưu...';
 
         try {
+            // 2. Upload ảnh NẾU CÓ CHỌN FILE
+            if (file) {
+                console.log("Đang upload ảnh bác sĩ...");
+                const formData = new FormData();
+                formData.append("file", file); // Tên "file" phải khớp với API
+
+                // Gọi API Upload
+                // (Bạn phải tạo UploadController.cs để xử lý /api/Upload)
+                const uploadRes = await fetch("/api/Upload", {
+                    method: "POST",
+                    body: formData
+                });
+
+                if (!uploadRes.ok) {
+                    const err = await uploadRes.json().catch(() => ({}));
+                    throw new Error(err.title || err.detail || "Tải ảnh thất bại. Vui lòng thử lại.");
+                }
+
+                const result = await uploadRes.json();
+
+                // Giả định API trả về { "avatarUrl": "..." }
+                avatarUrl = result.avatarUrl;
+
+                if (!avatarUrl) {
+                    throw new Error("API upload không trả về 'avatarUrl'.");
+                }
+                console.log("Upload ảnh thành công:", avatarUrl);
+            }
+
+            // 3. Lấy dữ liệu chữ từ form
+            const selectedSpecialtyId = $('#service').val();
+            let specialtyIdsToSend = [];
+            if (selectedSpecialtyId) {
+                specialtyIdsToSend.push(selectedSpecialtyId);
+            }
+
+            // 4. Gộp dữ liệu (bao gồm cả link ảnh)
+            const newDoctorData = {
+                firstName: document.getElementById('firstName').value,
+                lastName: document.getElementById('lastName').value,
+                email: document.getElementById('email').value,
+                phoneNumber: document.getElementById('phone').value,
+                specialtyIds: specialtyIdsToSend,
+                avatarUrl: avatarUrl // Gửi link ảnh (hoặc null) lên backend
+            };
+
+            // 5. Gửi request tạo Bác sĩ
             const response = await fetch('/api/Doctor', {
                 method: 'POST',
                 headers: {
@@ -139,18 +179,21 @@ document.addEventListener('DOMContentLoaded', function () {
             const createdDoctor = await response.json();
             const modalInstance = bootstrap.Modal.getInstance(addEmployeeModal);
             modalInstance.hide();
-            addForm.reset();
+
             loadDoctors();
             alert(`Thêm bác sĩ ${resolveDoctorName(createdDoctor)} thành công!`);
 
         } catch (error) {
             console.error(error);
             alert(`Lỗi: ${error.message}`);
+        } finally {
+            // 6. Trả lại trạng thái nút bấm
+            btnAddSubmit.disabled = false;
+            btnAddSubmit.innerHTML = 'Thêm bác sĩ';
         }
     });
 
     // === PHẦN 3: XÓA BÁC SĨ (DELETE) ===
-
     doctorTableBody.addEventListener('click', async function (e) {
         // ... (Code xóa giữ nguyên) ...
         const deleteButton = e.target.closest('.btn-delete-doctor');
@@ -160,9 +203,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 return;
             }
             try {
-                const response = await fetch(`/api/Doctor/${doctorId}`, {
-                    method: 'DELETE'
-                });
+                const response = await fetch(`/api/Doctor/${doctorId}`, { method: 'DELETE' });
                 if (!response.ok) {
                     const errorData = await response.json();
                     throw new Error(errorData.detail || 'Không thể xóa bác sĩ.');
@@ -183,9 +224,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // === PHẦN 4: CODE DROPDOWN VÀ SEARCH (Giữ nguyên) ===
-
     doctorTableBody.addEventListener('click', function (e) {
-        // ... (Giữ nguyên) ...
         const actionButton = e.target.closest('.btn-action');
         if (actionButton) {
             toggleDropdown(actionButton);
@@ -193,7 +232,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     function toggleDropdown(btn) {
-        // ... (Giữ nguyên) ...
         const dropdown = btn.nextElementSibling;
         const allDropdowns = document.querySelectorAll('.dropdown-menu-custom');
         allDropdowns.forEach(d => {
@@ -205,7 +243,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     document.addEventListener('click', function (e) {
-        // ... (Giữ nguyên) ...
         if (!e.target.closest('.action-menu')) {
             document.querySelectorAll('.dropdown-menu-custom').forEach(d => {
                 d.classList.remove('show');
@@ -214,13 +251,11 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.getElementById('selectAll').addEventListener('change', function () {
-        // ... (Giữ nguyên) ...
         const checkboxes = doctorTableBody.querySelectorAll('input[type="checkbox"]');
         checkboxes.forEach(cb => cb.checked = this.checked);
     });
 
     document.getElementById('searchInput').addEventListener('input', function (e) {
-        // ... (Giữ nguyên) ...
         const searchTerm = e.target.value.toLowerCase();
         const rows = doctorTableBody.querySelectorAll('tr');
         rows.forEach(row => {
@@ -231,12 +266,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // === PHẦN 5: CODE MODAL (ẢNH, SELECT2) ===
 
-    const fileInput = document.getElementById('fileUploadInput');
-    const uploadArea = document.querySelector('.file-upload-area');
-    const originalUploadAreaContent = uploadArea.innerHTML;
-
     fileInput.addEventListener('change', function (event) {
-        // ... (Code upload ảnh giữ nguyên) ...
         const file = event.target.files[0];
         if (file && file.type.startsWith('image/')) {
             const reader = new FileReader();
@@ -257,18 +287,16 @@ document.addEventListener('DOMContentLoaded', function () {
 
     addEmployeeModal.addEventListener('hidden.bs.modal', function () {
         uploadArea.innerHTML = originalUploadAreaContent;
-        fileInput.value = null;
+        fileInput.value = null; // ⭐️ Reset input file
         uploadArea.classList.remove('has-image');
         addForm.reset();
 
-        // THAY ĐỔI: Reset Select2 về trạng thái rỗng
         const selectBox = document.getElementById('service');
-        selectBox.innerHTML = ''; // Xóa các option cũ
+        selectBox.innerHTML = '';
         $('#service').val(null).trigger('change');
     });
 
     function resolveDoctorName(doctor) {
-        // ... (Giữ nguyên) ...
         if (!doctor) {
             return '';
         }
@@ -305,15 +333,13 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    // THAY ĐỔI: Cập nhật hàm này cho chế độ "chọn một"
     function populateSpecialtyOptions(specialties) {
         const selectBox = document.getElementById('service');
-        selectBox.innerHTML = ''; // Xóa option "loading"
+        selectBox.innerHTML = '';
 
-        // THÊM: Thêm 1 option rỗng ở đầu cho placeholder của Select2
         const placeholderOption = document.createElement('option');
         placeholderOption.value = "";
-        placeholderOption.textContent = ""; // Select2 sẽ dùng placeholder text
+        placeholderOption.textContent = "";
         selectBox.appendChild(placeholderOption);
 
         if (specialties.length === 0) {
@@ -328,10 +354,10 @@ document.addEventListener('DOMContentLoaded', function () {
             });
         }
 
-        // Khởi tạo Select2 (không còn 'multiple')
+        // Khởi tạo Select2 (chọn một)
         $('#service').select2({
-            placeholder: "Chọn (chỉ một) chuyên khoa...", // Sửa placeholder
-            allowClear: true, // Cho phép xóa lựa chọn
+            placeholder: "Chọn (chỉ một) chuyên khoa...",
+            allowClear: true,
             width: '100%',
             dropdownParent: $('#addEmployeeModal')
         });

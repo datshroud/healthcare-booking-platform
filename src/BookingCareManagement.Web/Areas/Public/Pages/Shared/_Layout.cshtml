@@ -30,6 +30,34 @@
 
     displayName = displayName.Trim().Length == 0 ? "User" : displayName.Trim();
     var fallbackInitial = displayName[0].ToString().ToUpperInvariant();
+    var isAdmin = User?.IsInRole("Admin") ?? false;
+    var isDoctor = User?.IsInRole("Doctor") ?? false;
+    string? managementPortalHref = null;
+
+    if (isAdmin)
+    {
+        managementPortalHref = Url.Content("~/dashboard");
+    }
+    else if (isDoctor)
+    {
+        managementPortalHref = Url.Content("~/doctor/dashboard");
+    }
+
+    string BuildProtectedLink(string virtualPath)
+    {
+        var resolvedPath = Url.Content(virtualPath);
+        if (authed || string.IsNullOrWhiteSpace(resolvedPath))
+        {
+            return resolvedPath ?? virtualPath;
+        }
+
+        var loginUrl = Url.Page("/auth/Login", values: new { area = "Identity", returnUrl = resolvedPath });
+        return loginUrl ?? Url.Content("~/auth/login")!;
+    }
+
+    var servicesNavHref = BuildProtectedLink("~/services");
+    var bookingNavHref = BuildProtectedLink("~/booking");
+    var myBookingsNavHref = BuildProtectedLink("~/my-bookings");
 }
 @* <!DOCTYPE html>
 <html lang="en">
@@ -60,7 +88,7 @@
                 <div class="d-flex align-items-center user-info">
                     @if (authed)
                     {
-                        <div class="user-badge">@userName.ToUpper()[0]</div>
+                        <div class="user-badge">@userInitial</div>
                         <span class="user-name">@userName</span>
                     }
                     else {
@@ -100,6 +128,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/chat-widget.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/BookingCareManagement.styles.css" asp-append-version="true" />
     
     @RenderSection("Head", required: false)
@@ -109,10 +138,16 @@
     <header>
         <nav class="navbar navbar-expand-lg fixed-top">
             <div class="container-fluid">
+                <a class="navbar-brand d-flex align-items-center" href="/">
+                    <div class="brand-icon">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <span class="brand-text fw-bold ms-2">Medicare</span>
+                </a>
                 <div class="navbar-nav me-auto">
-                    <a class="nav-link mx-3" href="/services">Chuyên khoa</a>
-                    <a class="nav-link mx-3" href="/booking">Đặt lịch</a>
-                    <a class="nav-link mx-3" href="/my-bookings">Lịch của tôi</a>
+                    <a class="nav-link mx-3" href="@servicesNavHref">Chuyên khoa</a>
+                    <a class="nav-link mx-3" href="@bookingNavHref">Đặt lịch</a>
+                    <a class="nav-link mx-3" href="@myBookingsNavHref">Lịch của tôi</a>
                 </div>
                 @if (authed){
                     <div class="dropdown">
@@ -130,6 +165,16 @@
                             <i class="bi bi-caret-down-fill ms-2"></i>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="userDropdown">
+                            @if (!string.IsNullOrEmpty(managementPortalHref))
+                            {
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center" href="@managementPortalHref">
+                                        <i class="fa-solid fa-gauge-high me-2 text-success"></i>
+                                        Qua trang quản lí
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider my-1" /></li>
+                            }
                             <li><a class="dropdown-item" href="/customer/account-settings/personal-info">Cài đặt tài khoản</a></li>
                             <li><button id="logout-btn" class="dropdown-item text-danger" type="button">Đăng xuất</button></li>
                         </ul>
@@ -143,26 +188,102 @@
             </div>
         </nav>
     </header>
-    <div class="container" style="margin-top:60px;">
-        <div class="@ViewData["BodyClass"]">
+    @* Logic: Nếu là trang FullWidth (như Home) thì không bọc container *@
+    @if (ViewData["IsFullWidth"] as bool? == true)
+    {
+        <main class="@ViewData["BodyClass"]" style="min-height: 100vh;">
             @RenderBody()
+        </main>
+    }
+    else
+    {
+        <div class="container" style="">
+            @* Thêm margin-top vì navbar fixed *@
+            <main class="@ViewData["BodyClass"]">
+                @RenderBody()
+            </main>
+        </div>
+    }
+
+    <footer class="custom-footer">
+        <div class="container">
+            <h2 class="footer-title">medicare</h2>
+            <hr class="footer-line">
+            <p class="footer-text">
+                Powered with care
+                <img src="data:image/svg+xml,%3csvg%20width='24'%20height='24'%20viewBox='0%200%2024%2024'%20fill='%234CAF50'%20xmlns='http://www.w3.org/2000/svg'%3e%3cpath%20d='M19%2011h-6V5h-2v6H5v2h6v6h2v-6h6z'/%3e%3c/svg%3e"
+                     alt="medical-cross-icon" width="24" height="24">
+            </p>
+            <p class="text-muted small mt-2">&copy; @DateTime.Now.Year BookingCareManagement. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <div class="chat-widget" data-chat-widget>
+        <button type="button" class="chat-widget__toggle" data-chat-toggle aria-label="Mở hộp thoại hỗ trợ">
+            <i class="fa-solid fa-comments"></i>
+            <span class="chat-widget__badge d-none" data-chat-badge>0</span>
+        </button>
+        <div class="chat-widget__panel" data-chat-panel aria-hidden="true" aria-label="Hỗ trợ trực tuyến">
+            <div class="chat-widget__header">
+                <div>
+                    <p class="chat-widget__title mb-0">Trợ lý BookingCare</p>
+                    <small class="text-muted">Thường phản hồi trong vài phút</small>
+                </div>
+                <button type="button" class="btn btn-link text-light p-0 chat-widget__close" data-chat-close aria-label="Đóng cửa sổ chat">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="chat-widget__body">
+                <div class="chat-widget__recipient-picker" data-chat-recipient-container>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <p class="chat-widget__recipient-label mb-0">Trao đổi với</p>
+                            <small class="text-muted">Chọn bác sĩ đã đặt lịch hoặc đội ngũ hỗ trợ</small>
+                        </div>
+                        <select class="form-select form-select-sm chat-widget__recipient-select" data-chat-recipient aria-label="Chọn người nhận"></select>
+                    </div>
+                    <div class="chat-widget__recipient-meta" data-chat-recipient-meta>
+                        <div class="chat-widget__recipient-avatar" data-chat-recipient-avatar>
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <div>
+                            <p class="chat-widget__recipient-name mb-0" data-chat-recipient-name>Đang tải...</p>
+                            <small class="chat-widget__recipient-role" data-chat-recipient-role>--</small>
+                        </div>
+                    </div>
+                    <div class="chat-widget__recipient-empty d-none" data-chat-recipient-empty>
+                        <i class="fa-regular fa-circle-question me-2"></i>
+                        <span>Chưa có người nhận khả dụng.</span>
+                    </div>
+                </div>
+                <div class="chat-widget__loading" data-chat-loading>
+                    <div class="spinner-border spinner-border-sm text-light" role="status" aria-hidden="true"></div>
+                    <span>Đang kết nối...</span>
+                </div>
+                <div class="chat-widget__empty d-none" data-chat-empty>
+                    <i class="fa-regular fa-comments mb-2"></i>
+                    <p class="mb-0">Hãy cho chúng tôi biết bạn cần gì.</p>
+                </div>
+                <div class="chat-widget__messages" data-chat-messages aria-live="polite"></div>
+            </div>
+            <form class="chat-widget__composer" data-chat-form novalidate>
+                <div class="chat-widget__error d-none" data-chat-error></div>
+                <div class="chat-widget__composer-row">
+                    <input type="text" class="form-control form-control-sm chat-widget__input" placeholder="Nhập tin nhắn..." data-chat-input autocomplete="off" />
+                    <button type="submit" class="btn btn-primary btn-sm chat-widget__send" data-chat-send>
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
-    <footer class="custom-footer">
-        <h2 class="footer-title">medicare</h2>
-        <hr class="footer-line">
-        <p class="footer-text">
-            Powered with care
-            <img src="data:image/svg+xml,%3csvg%20width='26'%20height='26'%20viewBox='0%200%2024%2024'%20fill='%234CAF50'%20xmlns='http://www.w3.org/2000/svg'%3e%3cpath%20d='M19%2011h-6V5h-2v6H5v2h6v6h2v-6h6z'/%3e%3c/svg%3e"
-                 width="32"
-                 alt="medical-cross-icon">
-        </p>
-    </footer>
-
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>  
+    <script src="~/js/main.js" asp-append-version="true"></script>
 
     @RenderSection("Scripts", required: false)
 </body>

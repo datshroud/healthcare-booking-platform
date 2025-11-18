@@ -31,6 +31,16 @@
 
     displayName = string.IsNullOrWhiteSpace(displayName) ? "Admin User" : displayName.Trim();
     var fallbackInitial = displayName[0].ToString().ToUpperInvariant();
+    var isAdmin = User?.IsInRole("Admin") ?? false;
+    var isDoctor = User?.IsInRole("Doctor") ?? false;
+    var dashboardLink = "/dashboard";
+    var appointmentsLink = "/appointments";
+
+    if (!isAdmin && isDoctor)
+    {
+        dashboardLink = "/doctor/dashboard";
+        appointmentsLink = "/doctor/appointment";
+    }
 }
 <!DOCTYPE html>
 <html lang="en">
@@ -47,6 +57,7 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js"></script>
     <link href="~/css/main.css" rel="stylesheet" asp-append-version="true" />
+    <link href="~/css/chat-widget.css" rel="stylesheet" asp-append-version="true" />
     @RenderSection("Styles", required: false)
 </head>
 <body>
@@ -58,14 +69,24 @@
         </div>
 
         <!-- Menu -->
-        <a href="/calendar"><i class="bi bi-calendar3"></i> Lịch</a>
-        <a href="/dashboard"><i class="bi bi-speedometer2"></i> Bảng điều khiển</a>
-        <a href="/appointments"><i class="bi bi-clipboard-check"></i> Cuộc hẹn</a>
-        <a href="/doctors"><i class="bi bi-people"></i> Bác sĩ</a>
-        <a href="/customers"><i class="bi bi-person-badge"></i> Khách hàng</a>
-        <a href="/specialties"><i class="bi bi-briefcase"></i> Chuyên khoa</a>
-        <a href="/finance"><i class="bi bi-cash-coin"></i> Tài chính</a>
-        <a href="/Invoices"><i class="bi bi-receipt"></i> Hóa đơn</a>
+        @if (isDoctor && !isAdmin)
+        {
+            <a href="/calendar"><i class="bi bi-calendar3"></i> Lịch</a>
+            <a href="@dashboardLink" data-nav="dashboard"><i class="bi bi-speedometer2"></i> Bảng điều khiển</a>
+            <a href="@appointmentsLink"><i class="bi bi-clipboard-check"></i> Cuộc hẹn</a>
+            <a href="/customers"><i class="bi bi-person-badge"></i> Khách hàng</a>
+        }
+        else
+        {
+            <a href="/calendar"><i class="bi bi-calendar3"></i> Lịch</a>
+            <a href="@dashboardLink" data-nav="dashboard"><i class="bi bi-speedometer2"></i> Bảng điều khiển</a>
+            <a href="@appointmentsLink"><i class="bi bi-clipboard-check"></i> Cuộc hẹn</a>
+            <a href="/doctors"><i class="bi bi-people"></i> Bác sĩ</a>
+            <a href="/customers"><i class="bi bi-person-badge"></i> Khách hàng</a>
+            <a href="/specialties"><i class="bi bi-briefcase"></i> Chuyên khoa</a>
+            <a href="/finance"><i class="bi bi-cash-coin"></i> Tài chính</a>
+            <a href="/Invoices"><i class="bi bi-receipt"></i> Hóa đơn</a>
+        }
     </div>
 
     <!-- Navbar -->
@@ -104,8 +125,9 @@
             <div class="dropdown me-3" id="notifDropdownWrapper" data-bs-auto-close="outside">
                 <button class="btn btn-light position-relative" id="notifDropdown" data-bs-toggle="dropdown">
                     <i class="bi bi-bell fs-5"></i>
+                    <span class="badge rounded-pill bg-danger position-absolute top-0 start-100 translate-middle d-none" id="notifUnreadBadge"></span>
                 </button>
-                <div class="dropdown-menu dropdown-menu-end p-3 shadow" style="min-width: 300px;">
+                <div class="dropdown-menu dropdown-menu-end p-3 shadow" style="min-width: 320px;">
                     <ul class="nav nav-tabs" id="notifTabs" role="tablist">
                         <li class="nav-item" role="presentation">
                             <button class="nav-link active" id="alerts-tab" data-bs-toggle="tab"
@@ -121,8 +143,21 @@
                         </li>
                     </ul>
                     <div class="tab-content mt-3" id="notifTabsContent">
-                        <div class="tab-pane fade show active text-center" id="alerts" role="tabpanel">
-                            <small class="text-muted">Không có cảnh báo đặt lịch</small>
+                        <div class="tab-pane fade show active" id="alerts" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="fw-semibold">Nhật ký gần đây</span>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none d-none" id="notifMarkAllBtn">
+                                    Đánh dấu tất cả đã đọc
+                                </button>
+                            </div>
+                            <div id="notifLoadingState" class="text-center py-3">
+                                <div class="spinner-border spinner-border-sm text-secondary" role="status"></div>
+                            </div>
+                            <div id="notifErrorState" class="alert alert-warning py-2 px-3 d-none" role="alert">
+                                Không thể tải danh sách thông báo.
+                            </div>
+                            <div id="notifAlertsContent" class="notif-list d-none"></div>
+                            <div id="notifEmptyState" class="text-center text-muted small">Không có cảnh báo đặt lịch</div>
                         </div>
                         <div class="tab-pane fade text-center" id="news" role="tabpanel">
                             <small class="text-muted">Không có cập nhật mới</small>
@@ -161,6 +196,67 @@
     <main class="main-content">
         @RenderBody()
     </main>
+
+    <div class="chat-widget" data-chat-widget>
+        <button type="button" class="chat-widget__toggle" data-chat-toggle aria-label="Mở hộp thoại hỗ trợ">
+            <i class="fa-solid fa-comments"></i>
+            <span class="chat-widget__badge d-none" data-chat-badge>0</span>
+        </button>
+        <div class="chat-widget__panel" data-chat-panel aria-hidden="true" aria-label="Hỗ trợ trực tuyến">
+            <div class="chat-widget__header">
+                <div>
+                    <p class="chat-widget__title mb-0">Trợ lý BookingCare</p>
+                    <small class="text-muted">Thường phản hồi trong vài phút</small>
+                </div>
+                <button type="button" class="btn btn-link text-light p-0 chat-widget__close" data-chat-close aria-label="Đóng cửa sổ chat">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="chat-widget__body">
+                <div class="chat-widget__recipient-picker" data-chat-recipient-container>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div>
+                            <p class="chat-widget__recipient-label mb-0">Trao đổi với</p>
+                            <small class="text-muted">Chọn bác sĩ đã đặt lịch hoặc đội ngũ hỗ trợ</small>
+                        </div>
+                        <select class="form-select form-select-sm chat-widget__recipient-select" data-chat-recipient aria-label="Chọn người nhận"></select>
+                    </div>
+                    <div class="chat-widget__recipient-meta" data-chat-recipient-meta>
+                        <div class="chat-widget__recipient-avatar" data-chat-recipient-avatar>
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <div>
+                            <p class="chat-widget__recipient-name mb-0" data-chat-recipient-name>Đang tải...</p>
+                            <small class="chat-widget__recipient-role" data-chat-recipient-role>--</small>
+                        </div>
+                    </div>
+                    <div class="chat-widget__recipient-empty d-none" data-chat-recipient-empty>
+                        <i class="fa-regular fa-circle-question me-2"></i>
+                        <span>Chưa có người nhận khả dụng.</span>
+                    </div>
+                </div>
+                <div class="chat-widget__loading" data-chat-loading>
+                    <div class="spinner-border spinner-border-sm text-light" role="status" aria-hidden="true"></div>
+                    <span>Đang kết nối...</span>
+                </div>
+                <div class="chat-widget__empty d-none" data-chat-empty>
+                    <i class="fa-regular fa-comments mb-2"></i>
+                    <p class="mb-0">Hãy cho chúng tôi biết bạn cần gì.</p>
+                </div>
+                <div class="chat-widget__messages" data-chat-messages aria-live="polite"></div>
+            </div>
+            <form class="chat-widget__composer" data-chat-form novalidate>
+                <div class="chat-widget__error d-none" data-chat-error></div>
+                <div class="chat-widget__composer-row">
+                    <input type="text" class="form-control form-control-sm chat-widget__input" placeholder="Nhập tin nhắn..." data-chat-input autocomplete="off" />
+                    <button type="submit" class="btn btn-primary btn-sm chat-widget__send" data-chat-send>
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>

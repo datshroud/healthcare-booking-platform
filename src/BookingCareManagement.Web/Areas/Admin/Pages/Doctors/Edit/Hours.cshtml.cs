@@ -67,6 +67,8 @@ public class HoursModel : PageModel
     [TempData]
     public string? StatusMessage { get; set; }
 
+    public string? ErrorMessage { get; set; }
+
     [BindProperty]
     public ModalSlotInput ModalInput { get; set; } = new();
 
@@ -78,46 +80,19 @@ public class HoursModel : PageModel
 
     public async Task<IActionResult> OnGetAsync(CancellationToken cancellationToken)
     {
+        ErrorMessage = null;
         if (!await LoadDoctorAsync(cancellationToken))
         {
             return NotFound();
         }
 
-        var dto = await _getHoursHandler.Handle(new GetDoctorWorkingHoursQuery(DoctorId), cancellationToken);
-
-        Form = WorkingHoursForm.CreateDefault();
-        Form.LimitAppointments = dto.LimitAppointments;
-
-        foreach (var day in Form.Days)
-        {
-            var matches = dto.Hours
-                .Where(h => h.DayOfWeek == day.DayOfWeek)
-                .OrderBy(h => h.StartTime)
-                .ToList();
-
-            if (matches.Count == 0)
-            {
-                day.Slots.Clear();
-                continue;
-            }
-
-            day.IsEnabled = true;
-            day.Slots = matches
-                .Select(m => new WorkingHourSlotInput
-                {
-                    Id = m.Id,
-                    StartTime = m.StartTime,
-                    EndTime = m.EndTime,
-                    Location = m.Location
-                })
-                .ToList();
-        }
-
+        await PopulateFormAsync(cancellationToken);
         return Page();
     }
 
     public async Task<IActionResult> OnPostAsync(string? command, CancellationToken cancellationToken)
     {
+        ErrorMessage = null;
         if (!await LoadDoctorAsync(cancellationToken))
         {
             return NotFound();
@@ -160,6 +135,8 @@ public class HoursModel : PageModel
 
     private async Task<IActionResult> HandleSaveAsync(CancellationToken cancellationToken)
     {
+        ModelState.Clear();
+
         for (var i = 0; i < Form.Days.Count; i++)
         {
             var day = Form.Days[i];
@@ -174,12 +151,15 @@ public class HoursModel : PageModel
             if (!day.IsEnabled)
             {
                 day.Slots.Clear();
+                ClearSlotModelState(i);
                 continue;
             }
 
             if (day.Slots.Count == 0)
             {
-                ModelState.AddModelError(string.Empty, $"Vui lòng thêm ít nhất một khung giờ cho {GetDayDisplayName(day.DayOfWeek)}.");
+                day.IsEnabled = false;
+                day.Slots.Clear();
+                ClearSlotModelState(i);
                 continue;
             }
 
@@ -226,6 +206,10 @@ public class HoursModel : PageModel
 
         if (!ModelState.IsValid)
         {
+            var details = GetFirstModelStateError();
+            ErrorMessage = string.IsNullOrWhiteSpace(details)
+                ? "Không thể lưu giờ làm việc. Vui lòng kiểm tra lại các khung giờ."
+                : $"Không thể lưu giờ làm việc. {details}";
             return Page();
         }
 
@@ -248,8 +232,10 @@ public class HoursModel : PageModel
         try
         {
             await _updateHoursHandler.Handle(command, cancellationToken);
+            await PopulateFormAsync(cancellationToken);
+            ModelState.Clear();
             StatusMessage = "Cập nhật giờ làm việc thành công.";
-            return RedirectToPage(new { doctorId = DoctorId });
+            return Page();
         }
         catch (NotFoundException)
         {
@@ -258,6 +244,7 @@ public class HoursModel : PageModel
         catch (ArgumentException ex)
         {
             ModelState.AddModelError(string.Empty, ex.Message);
+            ErrorMessage = ex.Message;
             return Page();
         }
     }
@@ -501,6 +488,76 @@ public class HoursModel : PageModel
         return true;
     }
 
+    private async Task PopulateFormAsync(CancellationToken cancellationToken)
+    {
+        var dto = await _getHoursHandler.Handle(new GetDoctorWorkingHoursQuery(DoctorId), cancellationToken);
+
+        Form = WorkingHoursForm.CreateDefault();
+        Form.LimitAppointments = dto.LimitAppointments;
+
+        foreach (var day in Form.Days)
+        {
+            var matches = dto.Hours
+                .Where(h => h.DayOfWeek == day.DayOfWeek)
+                .OrderBy(h => h.StartTime)
+                .ToList();
+
+            if (matches.Count == 0)
+            {
+                day.Slots.Clear();
+                continue;
+            }
+
+            day.IsEnabled = true;
+            day.Slots = matches
+                .Select(m => new WorkingHourSlotInput
+                {
+                    Id = m.Id,
+                    StartTime = m.StartTime,
+                    EndTime = m.EndTime,
+                    Location = m.Location
+                })
+                .ToList();
+        }
+    }
+
+    private string? GetFirstModelStateError()
+    {
+        foreach (var entry in ModelState)
+        {
+            if (entry.Value.Errors.Count == 0)
+            {
+                continue;
+            }
+
+            var error = entry.Value.Errors[0];
+            if (!string.IsNullOrWhiteSpace(error.ErrorMessage))
+            {
+                return error.ErrorMessage;
+            }
+
+            if (error.Exception is not null)
+            {
+                return error.Exception.Message;
+            }
+        }
+
+        return null;
+    }
+
+    private void ClearSlotModelState(int dayIndex)
+    {
+        var prefix = $"Form.Days[{dayIndex}].Slots";
+        var keys = ModelState.Keys
+            .Where(k => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+
+        foreach (var key in keys)
+        {
+            ModelState.Remove(key);
+        }
+    }
+
     public class WorkingHoursForm
     {
         public bool LimitAppointments { get; set; }
@@ -572,11 +629,9 @@ public class HoursModel : PageModel
         public Guid? Id { get; set; }
 
         [Display(Name = "Giờ bắt đầu")]
-        [Required(ErrorMessage = "Vui lòng nhập giờ bắt đầu.")]
         public string StartTime { get; set; } = string.Empty;
 
         [Display(Name = "Giờ kết thúc")]
-        [Required(ErrorMessage = "Vui lòng nhập giờ kết thúc.")]
         public string EndTime { get; set; } = string.Empty;
 
         [Display(Name = "Địa điểm")]

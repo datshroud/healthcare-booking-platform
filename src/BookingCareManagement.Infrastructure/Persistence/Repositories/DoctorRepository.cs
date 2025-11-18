@@ -71,14 +71,21 @@ public class DoctorRepository : IDoctorRepository
             .ToListAsync(cancellationToken);
     }
 
-    public void RemoveWorkingHours(IEnumerable<DoctorWorkingHour> workingHours)
+    public async Task RemoveWorkingHoursAsync(Guid doctorId, CancellationToken cancellationToken = default)
     {
-        if (workingHours is null)
-        {
-            return;
-        }
+        await _context.DoctorWorkingHours
+            .Where(h => h.DoctorId == doctorId)
+            .ExecuteDeleteAsync(cancellationToken);
 
-        _context.Set<DoctorWorkingHour>().RemoveRange(workingHours);
+        var trackedEntries = _context.ChangeTracker
+            .Entries<DoctorWorkingHour>()
+            .Where(e => e.Entity.DoctorId == doctorId)
+            .ToArray();
+
+        foreach (var entry in trackedEntries)
+        {
+            entry.State = EntityState.Detached;
+        }
     }
 
     public void AddWorkingHours(IEnumerable<DoctorWorkingHour> workingHours)

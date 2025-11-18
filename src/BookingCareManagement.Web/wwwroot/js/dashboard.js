@@ -1,35 +1,27 @@
 ﻿document.addEventListener("DOMContentLoaded", () => {
     const FONT_FAMILY = "'Be Vietnam Pro', sans-serif";
 
+    // --- KIỂM TRA DỮ LIỆU TỪ C# ---
+    if (typeof dashboardData === 'undefined') {
+        console.error('LỖI: Không tìm thấy dữ liệu "dashboardData" từ C#. Biểu đồ sẽ dùng dữ liệu tĩnh.');
+        // Tạo dữ liệu giả nếu không có
+        window.dashboardData = {
+            newCustomerSparkline: [0, 0, 0, 1, 1, 0, 0],
+            revenueSparkline: [0, 0, 0, 0, 0, 0, 0],
+            pendingSparkline: [0, 1, 0, 0, 1, 0, 0], // Dữ liệu giả mới
+            mainLineChart: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+            mainLineLabels: ['W', 'T', 'F', 'S', 'S', 'M', 'T', 'W', 'T', 'F', 'S', 'S', 'M', 'T', 'W', 'T', 'F', 'S', 'S', 'M', 'T'],
+            donutNew: 100,
+            donutReturning: 0
+        };
+    }
+
     // --- Cấu hình chung cho Sparkline ---
     const sparklineOptions = {
-        chart: {
-            type: 'line',
-            height: 80,
-            sparkline: {
-                enabled: true
-            }
-        },
-        stroke: {
-            curve: 'smooth',
-            width: 3
-        },
-        tooltip: {
-            enabled: true,
-            x: { show: false },
-            y: {
-                title: {
-                    formatter: () => ''
-                }
-            },
-            marker: { show: false }
-        },
-        grid: {
-            padding: {
-                top: 10,
-                bottom: 10
-            }
-        }
+        chart: { type: 'line', height: 80, sparkline: { enabled: true } },
+        stroke: { curve: 'smooth', width: 3 },
+        tooltip: { enabled: true, x: { show: false }, y: { title: { formatter: () => '' } }, marker: { show: false } },
+        grid: { padding: { top: 10, bottom: 10 } }
     };
 
     // --- Biểu đồ 1: Khách hàng mới (Sparkline) ---
@@ -37,7 +29,7 @@
         ...sparklineOptions,
         series: [{
             name: 'Khách hàng',
-            data: [0, 0, 0, 1, 1, 0, 0]
+            data: dashboardData.newCustomerSparkline
         }],
         colors: ['#28a745']
     };
@@ -49,30 +41,40 @@
         ...sparklineOptions,
         series: [{
             name: 'Doanh thu',
-            data: [0, 0, 0, 0, 0, 0, 0]
+            data: dashboardData.revenueSparkline
         }],
-        colors: ['#6c757d']
+        colors: ['#6c757d'],
+        tooltip: {
+            enabled: true,
+            x: { show: false },
+            y: {
+                title: { formatter: () => '' },
+                formatter: (val) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val)
+            },
+            marker: { show: false }
+        },
     };
     let chartRevenue = new ApexCharts(document.querySelector("#sparkline-revenue"), optionsRevenue);
     chartRevenue.render();
 
-    // --- Biểu đồ 3: Sự chiếm dụng (Sparkline) ---
-    let optionsOccupancy = {
+    // --- Biểu đồ 3: Lịch hẹn đang chờ (Sparkline) ---
+    // ⭐️ THAY THẾ: "Chiếm dụng" -> "Đang chờ" ⭐️
+    let optionsPending = {
         ...sparklineOptions,
         series: [{
-            name: 'Chiếm dụng',
-            data: [0.5, 0.5, 0.5, 1.3, 1.3, 0.5, 0.5]
+            name: 'Đang chờ',
+            data: dashboardData.pendingSparkline // Dữ liệu mới
         }],
-        colors: ['#28a745']
+        colors: ['#f0ac41'] // Màu Vàng/Cam
     };
-    let chartOccupancy = new ApexCharts(document.querySelector("#sparkline-occupancy"), optionsOccupancy);
-    chartOccupancy.render();
+    let chartPending = new ApexCharts(document.querySelector("#sparkline-pending"), optionsPending); // ID MỚI
+    chartPending.render();
 
     // --- Biểu đồ 4: Biểu đồ đường chính (Lịch hẹn) ---
     let optionsMainLine = {
         series: [{
             name: 'Lịch hẹn',
-            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1]
+            data: dashboardData.mainLineChart
         }],
         chart: {
             height: 250,
@@ -90,7 +92,7 @@
             strokeDashArray: 4
         },
         xaxis: {
-            categories: ['W', 'T', 'F', 'S', 'S', 'M', 'T', 'W', 'T', 'F', 'S', 'S', 'M', 'T', 'W', 'T', 'F', 'S', 'S', 'M', 'T', 'W', 'T', 'F'],
+            categories: dashboardData.mainLineLabels, // Dữ liệu thật
             labels: {
                 style: {
                     fontFamily: FONT_FAMILY,
@@ -165,7 +167,7 @@
     // --- Biểu đồ 5: Khách hàng mới (Donut) ---
     let optionsDonutNew = {
         ...donutOptions,
-        series: [100],
+        series: [dashboardData.donutNew],
         labels: ['Khách hàng mới'],
         colors: ['#0d6efd']
     };
@@ -175,75 +177,43 @@
     // --- Biểu đồ 6: Khách hàng quay lại (Donut) ---
     let optionsDonutReturning = {
         ...donutOptions,
-        series: [0],
+        series: [dashboardData.donutReturning],
         labels: ['Khách hàng quay lại'],
         colors: ['#e9ecef']
     };
     let chartDonutReturning = new ApexCharts(document.querySelector("#donut-returning-customer"), optionsDonutReturning);
     chartDonutReturning.render();
 
-    // --- Chức năng Demo Cập nhật Dữ liệu ---
-    const updateData = () => {
-        let newMainData = Array.from({ length: 21 }, () => Math.floor(Math.random() * 5));
-        let newSparkleData = Array.from({ length: 7 }, () => Math.floor(Math.random() * 5));
-        let newDonutNewVal = Math.floor(Math.random() * 100);
-        let newDonutReturningVal = 100 - newDonutNewVal;
-
-        chartMainLine.updateSeries([{ data: newMainData }]);
-        chartNewCustomer.updateSeries([{ data: newSparkleData }]);
-        chartDonutNew.updateSeries([newDonutNewVal]);
-        chartDonutReturning.updateSeries([newDonutReturningVal]);
-        document.querySelector('.card-value').innerText = newSparkleData.reduce((a, b) => a + b, 0);
-    };
-
-    document.getElementById('updateDataButton').addEventListener('click', updateData);
-
-    // --- CẬP NHẬT 2: Kích hoạt Popover cho Heatmap ---
-
-    // Lấy tất cả các ô heatmap
-    const heatmapCells = document.querySelectorAll('.heatmap-cell');
-
-    // Đóng tất cả popover đang mở
-    function closeAllPopovers() {
-        heatmapCells.forEach(cell => {
-            const popover = bootstrap.Popover.getInstance(cell);
-            if (popover) {
-                popover.hide();
-            }
-        });
+    // --- XÓA NÚT DEMO ---
+    const demoButton = document.getElementById('updateDataButton');
+    if (demoButton) {
+        demoButton.remove();
     }
 
-    // Khởi tạo và gán sự kiện cho từng ô
+    // --- Kích hoạt Popover cho Heatmap (Giữ nguyên) ---
+    const heatmapCells = document.querySelectorAll('.heatmap-cell');
     heatmapCells.forEach(cell => {
         const date = cell.getAttribute('data-date');
         const percentage = cell.getAttribute('data-percentage');
-
-        // Nếu ô không có dữ liệu (không có ngày), thì bỏ qua
         if (!date) {
             return;
         }
+        // Sửa định dạng ngày (an toàn hơn)
+        const dateParts = date.split('-'); // yyyy-MM-dd
+        const formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
 
-        // Định dạng lại ngày (từ yyyy-mm-dd -> dd/mm/yyyy)
-        const dateObj = new Date(date + 'T00:00:00'); // Thêm T00 để tránh lỗi múi giờ
-        const formattedDate = dateObj.toLocaleDateString('vi-VN');
-
-        // Tạo nội dung cho popover
         const popoverContent = `
-                    <strong>Ngày:</strong> ${formattedDate}<br>
-                    <strong>Công suất:</strong> ${percentage}
-                `;
-
-        // Khởi tạo popover cho ô này
+                        <strong>Ngày:</strong> ${formattedDate}<br>
+                        <strong>Công suất:</strong> ${percentage}
+                    `;
         const popover = new bootstrap.Popover(cell, {
             title: 'Chi tiết công suất',
             content: popoverContent,
-            trigger: 'click', // Kích hoạt khi bấm
+            trigger: 'click',
             placement: 'top',
-            html: true,       // Cho phép chèn HTML
+            html: true,
             customClass: 'shadow-sm'
         });
-
-        // Thêm sự kiện: Khi một popover được mở, đóng tất cả các cái khác
         cell.addEventListener('shown.bs.popover', () => {
             heatmapCells.forEach(otherCell => {
                 if (otherCell !== cell) {
@@ -256,4 +226,37 @@
         });
     });
 
+
+    // ⭐️⭐️⭐️ BẮT ĐẦU LOGIC LỌC CUỘC HẸN ⭐️⭐️⭐️
+
+    // 1. Hàm lọc danh sách cuộc hẹn
+    function filterAppointmentList() {
+        const filterDropdown = document.getElementById('appointmentStatusFilter');
+        if (!filterDropdown) return;
+
+        const selectedStatus = filterDropdown.value;
+        const appointmentList = document.getElementById('recentAppointmentsList');
+        if (!appointmentList) return;
+
+        const appointments = appointmentList.querySelectorAll('.appointment-item');
+
+        appointments.forEach(item => {
+            const itemStatus = item.dataset.status; // Lấy status từ data-status
+
+            // Hiển thị nếu là "all" hoặc status khớp
+            if (selectedStatus === 'all' || itemStatus === selectedStatus) {
+                // Đổi từ 'display = ""' sang 'display = "grid"'
+                // để khớp với CSS grid của '.appointment-item'
+                item.style.display = 'grid';
+            } else {
+                item.style.display = 'none'; // Ẩn đi
+            }
+        });
+    }
+
+    // 2. Gán sự kiện 'change' cho dropdown
+    const statusFilterDropdown = document.getElementById('appointmentStatusFilter');
+    if (statusFilterDropdown) {
+        statusFilterDropdown.addEventListener('change', filterAppointmentList);
+    }
 });
