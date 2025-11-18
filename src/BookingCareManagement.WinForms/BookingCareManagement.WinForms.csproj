@@ -24,7 +24,6 @@
     <Folder Include="Areas\Customer\" />
     <Folder Include="Areas\Doctor\" />
     <Folder Include="Areas\Admin\Models\" />
-    <Folder Include="Areas\Public\" />
     <Folder Include="NewFolder\" />
   </ItemGroup>
 
