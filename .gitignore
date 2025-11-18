@@ -2,6 +2,6 @@ bin/
 obj/
 .vs/
 *.user
-# *.env
-# src/BookingCareManagement.Web/appsettings.Development.json
+*.env
+src/BookingCareManagement.Web/appsettings.Development.json
 # src/BookingCareManagement.Web/wwwroot/uploads/
