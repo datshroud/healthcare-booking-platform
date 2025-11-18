@@ -72,7 +72,7 @@
             lblTitle.Name = "lblTitle";
             lblTitle.Size = new Size(172, 54);
             lblTitle.TabIndex = 0;
-            lblTitle.Text = "Invoices";
+            lblTitle.Text = "Hóa Đơn";
             // 
             // contentPanel
             // 
@@ -162,7 +162,7 @@
             btnStatusFilter.Padding = new Padding(11, 0, 6, 0);
             btnStatusFilter.Size = new Size(171, 53);
             btnStatusFilter.TabIndex = 3;
-            btnStatusFilter.Text = "⚪ Status";
+            btnStatusFilter.Text = "⚪ Trạng thái";
             btnStatusFilter.TextAlign = ContentAlignment.MiddleLeft;
             btnStatusFilter.UseVisualStyleBackColor = false;
             // 
@@ -178,7 +178,7 @@
             btnServiceFilter.Padding = new Padding(11, 0, 6, 0);
             btnServiceFilter.Size = new Size(171, 53);
             btnServiceFilter.TabIndex = 2;
-            btnServiceFilter.Text = "💼 Service";
+            btnServiceFilter.Text = "💼 Dịch vụ";
             btnServiceFilter.TextAlign = ContentAlignment.MiddleLeft;
             btnServiceFilter.UseVisualStyleBackColor = false;
             // 
@@ -194,7 +194,7 @@
             btnEmployeeFilter.Padding = new Padding(11, 0, 6, 0);
             btnEmployeeFilter.Size = new Size(171, 53);
             btnEmployeeFilter.TabIndex = 1;
-            btnEmployeeFilter.Text = "✏️ Employee";
+            btnEmployeeFilter.Text = "✏️ Nhân viên";
             btnEmployeeFilter.TextAlign = ContentAlignment.MiddleLeft;
             btnEmployeeFilter.UseVisualStyleBackColor = false;
             // 
@@ -211,7 +211,7 @@
             btnCustomerFilter.Padding = new Padding(11, 0, 6, 0);
             btnCustomerFilter.Size = new Size(171, 53);
             btnCustomerFilter.TabIndex = 0;
-            btnCustomerFilter.Text = "👥 Customer";
+            btnCustomerFilter.Text = "👥 Khách hàng";
             btnCustomerFilter.TextAlign = ContentAlignment.MiddleLeft;
             btnCustomerFilter.UseVisualStyleBackColor = false;
             // 
@@ -240,7 +240,7 @@
             btnFilter.Name = "btnFilter";
             btnFilter.Size = new Size(140, 40);
             btnFilter.TabIndex = 1;
-            btnFilter.Text = "🔧 Filters";
+            btnFilter.Text = "🔧 Bộ lọc";
             btnFilter.UseVisualStyleBackColor = false;
             btnFilter.Click += btnFilter_Click;
             // 
@@ -252,7 +252,7 @@
             txtSearch.Location = new Point(23, 27);
             txtSearch.Margin = new Padding(3, 4, 3, 4);
             txtSearch.Name = "txtSearch";
-            txtSearch.PlaceholderText = "🔍 Search for invoices";
+            txtSearch.PlaceholderText = "🔍 Tìm kiếm hóa đơn...";
             txtSearch.Size = new Size(1260, 32);
             txtSearch.TabIndex = 0;
             // 
@@ -268,7 +268,7 @@
             Margin = new Padding(3, 4, 3, 4);
             Name = "InvoiceEditorForm";
             StartPosition = FormStartPosition.CenterScreen;
-            Text = "Invoices";
+            Text = "Quản lý Hóa Đơn";
             Load += InvoiceEditorForm_Load;
             headerPanel.ResumeLayout(false);
             headerPanel.PerformLayout();

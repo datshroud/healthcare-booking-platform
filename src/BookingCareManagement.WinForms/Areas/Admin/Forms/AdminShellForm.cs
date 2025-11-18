@@ -44,6 +44,7 @@ public sealed class AdminShellForm : Form
 
         sidebar.Controls.Add(BuildNavButton("Chuyên khoa", (_, _) => _navigationController.ShowSpecialties(_contentHost)));
         sidebar.Controls.Add(BuildNavButton("Bác sĩ", (_, _) => _navigationController.ShowDoctors(_contentHost)));
+        sidebar.Controls.Add(BuildNavButton("Hóa đơn", (_, _) => _navigationController.ShowInvoices(_contentHost)));
         sidebar.Controls.Add(BuildNavButton("Cài đặt", (_, _) => _navigationController.ShowSettings(_contentHost)));
 
         return sidebar;

@@ -7,20 +7,28 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using BookingCareManagement.WinForms.Areas.Admin.Services;
+using BookingCareManagement.WinForms.Shared.Models.Dtos;
+using BookingCareManagement.WinForms.Shared.Services;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 {
     public sealed partial class InvoiceEditorForm : Form
     {
         private readonly List<CheckedListBox> _filterDropdowns = new();
+        private readonly AdminInvoiceApiClient _invoiceApiClient;
+        private readonly DialogService _dialogService;
+        private List<InvoiceDto> _invoiceCache = new();
 
-        public InvoiceEditorForm()
+        public InvoiceEditorForm(AdminInvoiceApiClient invoiceApiClient, DialogService dialogService)
         {
+            _invoiceApiClient = invoiceApiClient;
+            _dialogService = dialogService;
+            
             InitializeComponent();
             InitializeGridColumns();
             ApplyGridStyling();
             InitializeFilterDropdowns();
-            LoadSampleData();
         }
 
         private void InvoicesEditorForm_Load(object sender, EventArgs e)
@@ -28,50 +36,89 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
         }
 
-        private void InvoiceEditorForm_Load(object sender, EventArgs e)
+        private async void InvoiceEditorForm_Load(object sender, EventArgs e)
         {
+            await LoadInvoiceDataAsync();
+        }
 
+        private async Task LoadInvoiceDataAsync()
+        {
+            try
+            {
+                lblTitle.Text = "Đang tải...";
+                _invoiceCache = (await _invoiceApiClient.GetAllAsync()).ToList();
+                DisplayInvoices(_invoiceCache);
+                lblTitle.Text = $"Invoices ({_invoiceCache.Count})";
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"Không thể tải danh sách hóa đơn: {ex.Message}");
+                lblTitle.Text = "Invoices (Lỗi)";
+            }
+        }
+
+        private void DisplayInvoices(List<InvoiceDto> invoices)
+        {
+            invoiceGrid.Rows.Clear();
+            foreach (var invoice in invoices.OrderByDescending(i => i.InvoiceNumber))
+            {
+                var status = invoice.Status.Equals("Paid", StringComparison.OrdinalIgnoreCase) 
+                    ? "Đã thanh toán" 
+                    : "Đang chờ";
+                
+                invoiceGrid.Rows.Add(
+                    invoice.InvoiceNumber,
+                    invoice.CustomerName,
+                    invoice.InvoiceDate.ToString("dd/MM/yyyy"),
+                    $"📋 {invoice.ServiceName}",
+                    status,
+                    $"{invoice.Total:N0} ₫"
+                );
+                
+                // Lưu Id vào Tag của row để sử dụng sau
+                invoiceGrid.Rows[invoiceGrid.Rows.Count - 1].Tag = invoice.Id;
+            }
         }
 
         private void InitializeGridColumns()
         {
             invoiceGrid.Columns.Clear();
 
-            // Các cột theo hình
+            // Các cột tiếng Việt
             invoiceGrid.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "InvoiceNo",
-                HeaderText = "Invoice #",
+                HeaderText = "Số HĐ",
                 FillWeight = 10
             });
             invoiceGrid.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "Customer",
-                HeaderText = "Customer",
+                HeaderText = "Khách hàng",
                 FillWeight = 25
             });
             invoiceGrid.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "InvoiceDate",
-                HeaderText = "Invoice date",
+                HeaderText = "Ngày lập",
                 FillWeight = 15
             });
             invoiceGrid.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "Service",
-                HeaderText = "Service",
+                HeaderText = "Dịch vụ",
                 FillWeight = 20
             });
             invoiceGrid.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "Status",
-                HeaderText = "Status",
+                HeaderText = "Trạng thái",
                 FillWeight = 15
             });
             invoiceGrid.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "Total",
-                HeaderText = "Total",
+                HeaderText = "Tổng tiền",
                 FillWeight = 10
             });
             invoiceGrid.Columns.Add(new DataGridViewButtonColumn
@@ -119,6 +166,101 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
             // Style cho cột Status - tô màu nền
             invoiceGrid.CellFormatting += InvoiceGrid_CellFormatting;
+            invoiceGrid.CellContentClick += InvoiceGrid_CellContentClick;
+        }
+
+        private async void InvoiceGrid_CellContentClick(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+
+            // Kiểm tra nếu click vào cột Action
+            if (invoiceGrid.Columns[e.ColumnIndex].Name == "Action")
+            {
+                var row = invoiceGrid.Rows[e.RowIndex];
+                var invoiceId = (Guid)row.Tag;
+                var invoice = _invoiceCache.FirstOrDefault(i => i.Id == invoiceId);
+                
+                if (invoice == null) return;
+
+                var contextMenu = new ContextMenuStrip();
+                
+                if (!invoice.Status.Equals("Paid", StringComparison.OrdinalIgnoreCase))
+                {
+                    contextMenu.Items.Add("✅ Đánh dấu đã thanh toán", null, async (s, args) => 
+                    {
+                        await MarkAsPaidAsync(invoice);
+                    });
+                }
+                
+                contextMenu.Items.Add("📄 Tải PDF", null, async (s, args) => 
+                {
+                    await DownloadPdfAsync(invoice);
+                });
+                
+                contextMenu.Items.Add("👁️ Xem chi tiết", null, (s, args) => 
+                {
+                    ShowInvoiceDetails(invoice);
+                });
+
+                var cellRect = invoiceGrid.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, true);
+                var point = invoiceGrid.PointToScreen(new Point(cellRect.Left, cellRect.Bottom));
+                contextMenu.Show(point);
+            }
+        }
+
+        private async Task MarkAsPaidAsync(InvoiceDto invoice)
+        {
+            if (!_dialogService.Confirm($"Đánh dấu hóa đơn #{invoice.InvoiceNumber} là đã thanh toán?"))
+                return;
+
+            try
+            {
+                await _invoiceApiClient.MarkAsPaidAsync(invoice.Id);
+                _dialogService.ShowInfo("Đã cập nhật trạng thái thanh toán.");
+                await LoadInvoiceDataAsync();
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"Không thể cập nhật: {ex.Message}");
+            }
+        }
+
+        private async Task DownloadPdfAsync(InvoiceDto invoice)
+        {
+            try
+            {
+                var pdfBytes = await _invoiceApiClient.GetPdfAsync(invoice.Id);
+                
+                using var saveDialog = new SaveFileDialog
+                {
+                    Filter = "PDF files (*.pdf)|*.pdf",
+                    FileName = $"Invoice-{invoice.InvoiceNumber}.pdf",
+                    DefaultExt = "pdf"
+                };
+
+                if (saveDialog.ShowDialog() == DialogResult.OK)
+                {
+                    await System.IO.File.WriteAllBytesAsync(saveDialog.FileName, pdfBytes);
+                    _dialogService.ShowInfo($"Đã lưu file: {saveDialog.FileName}");
+                }
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"Không thể tải PDF: {ex.Message}");
+            }
+        }
+
+        private void ShowInvoiceDetails(InvoiceDto invoice)
+        {
+            var details = $"Hóa đơn #{invoice.InvoiceNumber}\n\n" +
+                         $"Khách hàng: {invoice.CustomerName}\n" +
+                         $"Email: {invoice.CustomerEmail}\n" +
+                         $"Dịch vụ: {invoice.ServiceName}\n" +
+                         $"Ngày: {invoice.InvoiceDate:dd/MM/yyyy}\n" +
+                         $"Tổng tiền: {invoice.Total:N0} ₫\n" +
+                         $"Trạng thái: {(invoice.Status.Equals("Paid", StringComparison.OrdinalIgnoreCase) ? "Đã thanh toán" : "Đang chờ")}";
+
+            _dialogService.ShowInfo(details);
         }
 
         private void InvoiceGrid_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
@@ -127,14 +269,14 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             {
                 string status = e.Value.ToString() ?? "";
 
-                if (status.Contains("Pending"))
+                if (status.Contains("Pending") || status.Contains("Đang chờ"))
                 {
                     e.CellStyle.BackColor = Color.FromArgb(254, 243, 199); // Màu vàng nhạt
                     e.CellStyle.ForeColor = Color.FromArgb(133, 77, 14);
                     e.CellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
                     e.CellStyle.Padding = new Padding(8, 4, 8, 4);
                 }
-                else if (status.Contains("Paid in full"))
+                else if (status.Contains("Paid") || status.Contains("Đã thanh toán"))
                 {
                     e.CellStyle.BackColor = Color.FromArgb(209, 250, 229); // Màu xanh lá nhạt
                     e.CellStyle.ForeColor = Color.FromArgb(22, 101, 52);
@@ -147,30 +289,17 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private void InitializeFilterDropdowns()
         {
             // Tạo dropdown cho Customer
-            var customerDropdown = CreateFilterDropdown(btnCustomerFilter, new[]
-            {
-                ". Le Ngoc Bao Chan", "Jone Doe", "Nguyen Van A"
-            });
+            var customerDropdown = CreateFilterDropdown(btnCustomerFilter, GetUniqueCustomers());
             _filterDropdowns.Add(customerDropdown);
 
-            // Tạo dropdown cho Employee
-            var employeeDropdown = CreateFilterDropdown(btnEmployeeFilter, new[]
-            {
-                "Employee A", "Employee B", "Employee C"
-            });
-            _filterDropdowns.Add(employeeDropdown);
-
             // Tạo dropdown cho Service
-            var serviceDropdown = CreateFilterDropdown(btnServiceFilter, new[]
-            {
-                "Check Up", "Nhổ răng", "Phẫu thuật nha khoa"
-            });
+            var serviceDropdown = CreateFilterDropdown(btnServiceFilter, GetUniqueServices());
             _filterDropdowns.Add(serviceDropdown);
 
             // Tạo dropdown cho Status
             var statusDropdown = CreateFilterDropdown(btnStatusFilter, new[]
             {
-                "Pending", "Paid in full"
+                "Đang chờ", "Đã thanh toán"
             });
             _filterDropdowns.Add(statusDropdown);
 
@@ -179,6 +308,45 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             ResetFilterButtonStyle(btnEmployeeFilter);
             ResetFilterButtonStyle(btnServiceFilter);
             ResetFilterButtonStyle(btnStatusFilter);
+
+            // Wire search event
+            txtSearch.TextChanged += (s, e) => ApplyFilters();
+        }
+
+        private string[] GetUniqueCustomers()
+        {
+            return _invoiceCache
+                .Select(i => i.CustomerName)
+                .Where(c => !string.IsNullOrWhiteSpace(c))
+                .Distinct()
+                .OrderBy(c => c)
+                .ToArray();
+        }
+
+        private string[] GetUniqueServices()
+        {
+            return _invoiceCache
+                .Select(i => i.ServiceName)
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Distinct()
+                .OrderBy(s => s)
+                .ToArray();
+        }
+
+        private void ApplyFilters()
+        {
+            var searchTerm = txtSearch.Text.Trim().ToLower();
+            var filtered = _invoiceCache.AsEnumerable();
+
+            if (!string.IsNullOrWhiteSpace(searchTerm))
+            {
+                filtered = filtered.Where(i =>
+                    i.CustomerName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    i.ServiceName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    i.InvoiceNumber.ToString().Contains(searchTerm));
+            }
+
+            DisplayInvoices(filtered.ToList());
         }
 
         private void ResetFilterButtonStyle(Button button)
@@ -310,19 +478,6 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             // Lấy text gốc không có số đếm
             var parts = buttonText.Split('(');
             return parts[0].Trim();
-        }
-
-        private void LoadSampleData()
-        {
-            // Load data mẫu theo hình
-            invoiceGrid.Rows.Clear();
-            invoiceGrid.Rows.Add("4", ". Le Ngoc Bao Chan", "November 1...", "📋 Check Up", "Pending", "$200.0");
-            invoiceGrid.Rows.Add("3", ". Le Ngoc Bao Chan", "November 1...", "📋 Check Up", "Pending", "$200.0");
-            invoiceGrid.Rows.Add("2", ". Le Ngoc Bao Chan", "November 1...", "📋 Check Up", "Paid in full", "$200.0");
-            invoiceGrid.Rows.Add("1", "Jone Doe", "November 1...", "📋 Check Up", "Pending", "$200.0");
-
-            // Update title
-            lblTitle.Text = "Invoices";
         }
 
         private void btnFilter_Click(object sender, EventArgs e)

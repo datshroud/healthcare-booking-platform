@@ -47,6 +47,15 @@ public sealed class AdminNavigationController
         _ = control.InitializeAsync();
     }
 
+    public void ShowInvoices(Control host)
+    {
+        host.Controls.Clear();
+        var control = _serviceProvider.GetRequiredService<InvoiceManagementControl>();
+        control.Dock = DockStyle.Fill;
+        host.Controls.Add(control);
+        _ = control.InitializeAsync();
+    }
+
     public void ShowSettings(Control host)
     {
         _dialogService.ShowInfo("Chức năng cài đặt sẽ sớm có mặt.");

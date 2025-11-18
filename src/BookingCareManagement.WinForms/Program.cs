@@ -46,7 +46,7 @@ static class Program
         }
 
         // Run main shell
-        System.Windows.Forms.Application.Run(new MainForm());
+        System.Windows.Forms.Application.Run(new MainForm(services));
     }
 
     private static IHostBuilder CreateHostBuilder()
