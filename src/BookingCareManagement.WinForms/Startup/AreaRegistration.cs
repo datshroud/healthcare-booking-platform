@@ -27,8 +27,11 @@ public static class AreaRegistration
             .AddSingleton<AdminDashboardViewModel>()
             .AddTransient<AdminDoctorApiClient>()
             .AddTransient<AdminSpecialtyApiClient>()
+            .AddTransient<AdminInvoiceApiClient>()
             .AddTransient<SpecialtyManagementControl>()
             .AddTransient<DoctorManagementControl>()
+            .AddTransient<InvoiceManagementControl>()
+            .AddTransient<InvoiceEditorForm>()
             .AddTransient<AdminNavigationController>()
             .AddTransient<AdminShellForm>();
         return services;
@@ -66,7 +69,8 @@ public static class AreaRegistration
         services
             .AddSingleton<PublicContentViewModel>()
             .AddTransient<PublicContentController>()
-            .AddTransient<PublicInformationForm>();
+            .AddTransient<PublicInformationForm>()
+            .AddTransient<MainForm>();
         return services;
     }
 }
