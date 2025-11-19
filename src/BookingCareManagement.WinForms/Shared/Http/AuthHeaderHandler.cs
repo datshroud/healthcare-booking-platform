@@ -20,7 +20,7 @@ namespace BookingCareManagement.WinForms.Shared.Http
 
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (_sessionState.IsAuthenticated && !request.Headers.Contains("Authorization"))
+            if (!string.IsNullOrWhiteSpace(_sessionState.AccessToken) && !request.Headers.Contains("Authorization"))
             {
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _sessionState.AccessToken);
             }

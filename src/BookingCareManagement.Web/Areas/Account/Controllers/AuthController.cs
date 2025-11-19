@@ -72,7 +72,13 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
                     : Array.Empty<string>();
 
                 var redirect = ResolveDashboardRedirect(userRoles);
-                return Ok(new { redirect });
+                return Ok(new
+                {
+                    redirect,
+                    accessToken = resp.AccessToken,
+                    refreshToken = resp.RefreshToken,
+                    expiresAt = resp.ExpiresAt
+                });
             } catch (AuthException ex) {
                 Console.WriteLine($"Login failed for {req?.Email}: {ex.Message}");
                 return Unauthorized(new ProblemDetails {
@@ -110,6 +116,30 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
         public IActionResult ForgotPassword()
         {
             return NoContent();
+        }
+
+        [Authorize]
+        [HttpGet("profile")]
+        public async Task<ActionResult<UserProfileResponse>> GetProfileAsync()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var response = new UserProfileResponse
+            {
+                UserId = user.Id,
+                Email = user.Email ?? string.Empty,
+                FullName = user.GetFullName() ?? user.Email ?? user.UserName ?? string.Empty,
+                Roles = roles.ToArray(),
+                IsAdmin = roles.Any(r => string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase)),
+                IsDoctor = roles.Any(r => string.Equals(r, "Doctor", StringComparison.OrdinalIgnoreCase))
+            };
+
+            return Ok(response);
         }
 
         private readonly UserManager<AppUser> _userManager;
@@ -355,6 +385,16 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
             }
 
             return (parts[0].Trim(), parts[^1].Trim());
+        }
+
+        public sealed class UserProfileResponse
+        {
+            public string UserId { get; init; } = string.Empty;
+            public string Email { get; init; } = string.Empty;
+            public string FullName { get; init; } = string.Empty;
+            public bool IsAdmin { get; init; }
+            public bool IsDoctor { get; init; }
+            public string[] Roles { get; init; } = Array.Empty<string>();
         }
     }
 }

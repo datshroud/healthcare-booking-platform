@@ -16,11 +16,16 @@ public static class DependencyInjection
         services.AddSingleton<IAuthStorage, FileAuthStorage>();
         services.AddSingleton<DialogService>();
         services.AddTransient<AuthHeaderHandler>();
+        // API client services
+        services.AddSingleton<AuthService>();
 
         services.AddHttpClient("BookingCareApi", (sp, client) =>
             {
-                var baseUrl = configuration.GetValue<string>("Api:BaseUrl")
-                    ?? throw new InvalidOperationException("Missing Api:BaseUrl configuration for WinForms client");
+                // Prefer configuration, then environment variable, then fallback to known deployed URL.
+                var baseUrl = configuration["Api:BaseUrl"]
+                              ?? Environment.GetEnvironmentVariable("API_BASE_URL")
+                              ?? "https://healthcare-booking-dzhba4dmdjagcdbq.southeastasia-01.azurewebsites.net";
+
                 client.BaseAddress = new Uri(baseUrl);
             })
             .AddHttpMessageHandler<AuthHeaderHandler>()
