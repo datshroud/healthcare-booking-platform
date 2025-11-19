@@ -1,15 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using BookingCareManagement.WinForms.Areas.Admin.Models;
+using BookingCareManagement.WinForms.Services;
+using BookingCareManagement.WinForms.Shared.Models.Dtos;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 {
     public partial class Specialty : Form
     {
-        private List<SpecialtyInfo> specialties;
-        private List<SpecialtyInfo> filteredSpecialties;
+        private List<SpecialtyDto> specialties = new();
+        private List<SpecialtyDto> filteredSpecialties = new();
+        private List<DoctorDto> doctors = new();
+        private readonly ApiService _apiService = ApiService.Instance;
 
         public Specialty()
         {
@@ -26,31 +34,45 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             this.dataGridViewSpecialties.CellDoubleClick += DataGridViewSpecialties_CellDoubleClick;
         }
 
-        private void Specialty_Load(object sender, EventArgs e)
+        private async void Specialty_Load(object sender, EventArgs e)
         {
-            InitializeSampleData();
-            LoadSpecialties();
-
             // Disable nút sửa và xóa ban đầu
             buttonEdit.Enabled = false;
             buttonDelete.Enabled = false;
 
             // Sự kiện selection changed
             dataGridViewSpecialties.SelectionChanged += DataGridViewSpecialties_SelectionChanged;
+            
+            await LoadDataAsync();
         }
 
-        private void InitializeSampleData()
+        private async Task LoadDataAsync()
         {
-            specialties = new List<SpecialtyInfo>
+            try
             {
-                new SpecialtyInfo { Id = 1, Name = "Nha Khoa", Doctors = "BS. Nguyễn Văn A, BS. Trần Thị B", Price = 200000, ImagePath = "" },
-                new SpecialtyInfo { Id = 2, Name = "Tim Mạch", Doctors = "BS. Phạm Văn D", Price = 500000, ImagePath = "" },
-                new SpecialtyInfo { Id = 3, Name = "Nội Khoa", Doctors = "BS. Đỗ Văn F, BS. Vũ Thị G", Price = 300000, ImagePath = "" },
-                new SpecialtyInfo { Id = 4, Name = "Ngoại Khoa", Doctors = "BS. Bùi Văn H", Price = 800000, ImagePath = "" },
-                new SpecialtyInfo { Id = 5, Name = "Sản Phụ Khoa", Doctors = "BS. Đinh Thị I", Price = 400000, ImagePath = "" },
-            };
-
-            filteredSpecialties = new List<SpecialtyInfo>(specialties);
+                // Hiển thị loading
+                this.Cursor = Cursors.WaitCursor;
+                
+                // Load danh sách chuyên khoa và bác sĩ từ API
+                var specialtiesTask = _apiService.GetAsync<List<SpecialtyDto>>("/api/specialty");
+                var doctorsTask = _apiService.GetAsync<List<DoctorDto>>("/api/doctor");
+                
+                await Task.WhenAll(specialtiesTask, doctorsTask);
+                
+                specialties = specialtiesTask.Result ?? new List<SpecialtyDto>();
+                doctors = doctorsTask.Result ?? new List<DoctorDto>();
+                
+                filteredSpecialties = new List<SpecialtyDto>(specialties);
+                LoadSpecialties();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi tải dữ liệu: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
+            }
         }
 
         private void LoadSpecialties()
@@ -62,34 +84,141 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 int rowIndex = dataGridViewSpecialties.Rows.Add();
                 DataGridViewRow row = dataGridViewSpecialties.Rows[rowIndex];
 
-                // Ảnh
-                if (!string.IsNullOrEmpty(specialty.ImagePath) && System.IO.File.Exists(specialty.ImagePath))
-                {
-                    row.Cells[0].Value = Image.FromFile(specialty.ImagePath);
-                }
-                else
-                {
-                    Bitmap placeholder = new Bitmap(60, 60);
-                    using (Graphics g = Graphics.FromImage(placeholder))
-                    {
-                        g.Clear(Color.FromArgb(220, 220, 220));
-                        using (Font font = new Font("Segoe UI", 20, FontStyle.Bold))
-                        {
-                            string initial = specialty.Name.Length > 0 ? specialty.Name.Substring(0, 1) : "?";
-                            SizeF size = g.MeasureString(initial, font);
-                            g.DrawString(initial, font, Brushes.Gray,
-                                (60 - size.Width) / 2, (60 - size.Height) / 2);
-                        }
-                    }
-                    row.Cells[0].Value = placeholder;
-                }
+                // Tải ảnh thật hoặc tạo placeholder
+                row.Cells[0].Value = LoadSpecialtyImage(specialty);
 
                 row.Cells[1].Value = specialty.Name;
-                row.Cells[2].Value = specialty.Doctors;
-                row.Cells[3].Value = specialty.Price.ToString("N0") + " VNĐ";
+                
+                // Hiển thị danh sách bác sĩ
+                var doctorNames = specialty.Doctors.Select(d => d.FullName);
+                row.Cells[2].Value = doctorNames.Any() ? string.Join(", ", doctorNames) : "(Chưa có bác sĩ)";
+
+                // Hiển thị giá tiền
+                row.Cells[3].Value = specialty.Price > 0 
+                    ? string.Format("{0:N0} VNĐ", specialty.Price) 
+                    : "Liên hệ";
+                
                 row.Tag = specialty.Id;
             }
             labelCount.Text = $"({filteredSpecialties.Count})";
+        }
+
+        /// <summary>
+        /// Load ảnh từ file/URL hoặc tạo placeholder nếu không có ảnh
+        /// </summary>
+        private Image LoadSpecialtyImage(SpecialtyDto specialty)
+        {
+            if (string.IsNullOrEmpty(specialty.ImageUrl))
+            {
+                return CreatePlaceholder(specialty.Name, specialty.Color);
+            }
+
+            try
+            {
+                // Kiểm tra nếu là đường dẫn file local
+                if (File.Exists(specialty.ImageUrl))
+                {
+                    // Load ảnh từ file
+                    using (var originalImage = Image.FromFile(specialty.ImageUrl))
+                    {
+                        // Resize ảnh về 60x60
+                        return ResizeImage(originalImage, 60, 60);
+                    }
+                }
+                // Kiểm tra nếu là URL
+                else if (Uri.TryCreate(specialty.ImageUrl, UriKind.Absolute, out Uri? uriResult) 
+                    && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps))
+                {
+                    // Load ảnh từ URL
+                    using (var webClient = new WebClient())
+                    {
+                        byte[] imageBytes = webClient.DownloadData(specialty.ImageUrl);
+                        using (var ms = new MemoryStream(imageBytes))
+                        {
+                            var originalImage = Image.FromStream(ms);
+                            return ResizeImage(originalImage, 60, 60);
+                        }
+                    }
+                }
+                else
+                {
+                    // Đường dẫn không hợp lệ, tạo placeholder
+                    return CreatePlaceholder(specialty.Name, specialty.Color);
+                }
+            }
+            catch
+            {
+                // Nếu load ảnh thất bại, tạo placeholder
+                return CreatePlaceholder(specialty.Name, specialty.Color);
+            }
+        }
+
+        /// <summary>
+        /// Resize ảnh về kích thước mong muốn
+        /// </summary>
+        private Bitmap ResizeImage(Image image, int width, int height)
+        {
+            var destRect = new Rectangle(0, 0, width, height);
+            var destImage = new Bitmap(width, height);
+
+            destImage.SetResolution(image.HorizontalResolution, image.VerticalResolution);
+
+            using (var graphics = Graphics.FromImage(destImage))
+            {
+                graphics.CompositingMode = System.Drawing.Drawing2D.CompositingMode.SourceCopy;
+                graphics.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+                graphics.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+                graphics.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+
+                using (var wrapMode = new System.Drawing.Imaging.ImageAttributes())
+                {
+                    wrapMode.SetWrapMode(System.Drawing.Drawing2D.WrapMode.TileFlipXY);
+                    graphics.DrawImage(image, destRect, 0, 0, image.Width, image.Height, GraphicsUnit.Pixel, wrapMode);
+                }
+            }
+
+            return destImage;
+        }
+
+        private Bitmap CreatePlaceholder(string name, string? colorHex)
+        {
+            Bitmap placeholder = new Bitmap(60, 60);
+            using (Graphics g = Graphics.FromImage(placeholder))
+            {
+                Color bgColor;
+                try
+                {
+                    bgColor = string.IsNullOrEmpty(colorHex) 
+                        ? Color.FromArgb(220, 220, 220) 
+                        : ColorTranslator.FromHtml(colorHex);
+                }
+                catch
+                {
+                    bgColor = Color.FromArgb(220, 220, 220);
+                }
+                
+                g.Clear(bgColor);
+                using (Font font = new Font("Segoe UI", 20, FontStyle.Bold))
+                {
+                    string initial = name.Length > 0 ? name.Substring(0, 1).ToUpper() : "?";
+                    SizeF size = g.MeasureString(initial, font);
+                    
+                    // Chọn màu chữ dựa trên độ sáng của màu nền
+                    Brush textBrush = GetBrightness(bgColor) > 128 ? Brushes.Black : Brushes.White;
+                    g.DrawString(initial, font, textBrush,
+                        (60 - size.Width) / 2, (60 - size.Height) / 2);
+                }
+            }
+            return placeholder;
+        }
+
+        private int GetBrightness(Color color)
+        {
+            return (int)Math.Sqrt(
+                color.R * color.R * 0.241 +
+                color.G * color.G * 0.691 +
+                color.B * color.B * 0.068);
         }
 
         private void TextBoxSearch_Enter(object sender, EventArgs e)
@@ -114,14 +243,14 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         {
             if (textBoxSearch.Text == "Tìm kiếm chuyên khoa..." || string.IsNullOrWhiteSpace(textBoxSearch.Text))
             {
-                filteredSpecialties = new List<SpecialtyInfo>(specialties);
+                filteredSpecialties = new List<SpecialtyDto>(specialties);
             }
             else
             {
                 string searchText = textBoxSearch.Text.ToLower();
                 filteredSpecialties = specialties.Where(s =>
                     s.Name.ToLower().Contains(searchText) ||
-                    s.Doctors.ToLower().Contains(searchText))
+                    s.Doctors.Any(d => d.FullName.ToLower().Contains(searchText)))
                     .ToList();
             }
 
@@ -135,61 +264,86 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             buttonDelete.Enabled = hasSelection;
         }
 
-        private void ButtonAdd_Click(object sender, EventArgs e)
+        private async void ButtonAdd_Click(object sender, EventArgs e)
         {
-            SpecialtyDialog dialog = new SpecialtyDialog();
-            dialog.Text = "Thêm Chuyên Khoa Mới";
-
-            if (dialog.ShowDialog() == DialogResult.OK)
+            var editorForm = new SpecialtyEditorForm(doctors);
+            if (editorForm.ShowDialog() == DialogResult.OK)
             {
-                SpecialtyInfo newSpecialty = new SpecialtyInfo
+                try
                 {
-                    Id = specialties.Count > 0 ? specialties.Max(s => s.Id) + 1 : 1,
-                    Name = dialog.SpecialtyName,
-                    Doctors = dialog.Doctors,
-                    Price = dialog.Price,
-                    ImagePath = dialog.ImagePath
-                };
-
-                specialties.Add(newSpecialty);
-                filteredSpecialties = new List<SpecialtyInfo>(specialties);
-                LoadSpecialties();
-
-                MessageBox.Show("Thêm chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
-        }
-
-        private void ButtonEdit_Click(object sender, EventArgs e)
-        {
-            if (dataGridViewSpecialties.SelectedRows.Count == 0) return;
-
-            int selectedId = (int)dataGridViewSpecialties.SelectedRows[0].Tag;
-            SpecialtyInfo selectedSpecialty = specialties.FirstOrDefault(s => s.Id == selectedId);
-
-            if (selectedSpecialty != null)
-            {
-                SpecialtyDialog dialog = new SpecialtyDialog(selectedSpecialty);
-                dialog.Text = "Sửa Thông Tin Chuyên Khoa";
-
-                if (dialog.ShowDialog() == DialogResult.OK)
+                    this.Cursor = Cursors.WaitCursor;
+                    
+                    var request = editorForm.BuildRequest();
+                    var createdSpecialty = await _apiService.PostAsync<SpecialtyDto, SpecialtyUpsertRequest>("/api/specialty", request);
+                    
+                    if (createdSpecialty != null)
+                    {
+                        MessageBox.Show("Thêm chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        await LoadDataAsync();
+                    }
+                    else
+                    {
+                        MessageBox.Show("Không thể thêm chuyên khoa. Vui lòng thử lại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                }
+                catch (Exception ex)
                 {
-                    selectedSpecialty.Name = dialog.SpecialtyName;
-                    selectedSpecialty.Doctors = dialog.Doctors;
-                    selectedSpecialty.Price = dialog.Price;
-                    selectedSpecialty.ImagePath = dialog.ImagePath;
-
-                    LoadSpecialties();
-                    MessageBox.Show("Cập nhật chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"Lỗi khi thêm chuyên khoa: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                finally
+                {
+                    this.Cursor = Cursors.Default;
                 }
             }
         }
 
-        private void ButtonDelete_Click(object sender, EventArgs e)
+        private async void ButtonEdit_Click(object sender, EventArgs e)
         {
             if (dataGridViewSpecialties.SelectedRows.Count == 0) return;
 
-            int selectedId = (int)dataGridViewSpecialties.SelectedRows[0].Tag;
-            SpecialtyInfo selectedSpecialty = specialties.FirstOrDefault(s => s.Id == selectedId);
+            Guid selectedId = (Guid)dataGridViewSpecialties.SelectedRows[0].Tag;
+            SpecialtyDto? selectedSpecialty = specialties.FirstOrDefault(s => s.Id == selectedId);
+
+            if (selectedSpecialty != null)
+            {
+                var editorForm = new SpecialtyEditorForm(doctors, selectedSpecialty);
+                if (editorForm.ShowDialog() == DialogResult.OK)
+                {
+                    try
+                    {
+                        this.Cursor = Cursors.WaitCursor;
+                        
+                        var request = editorForm.BuildRequest();
+                        bool success = await _apiService.PutAsync($"/api/specialty/{selectedId}", request);
+                        
+                        if (success)
+                        {
+                            MessageBox.Show("Cập nhật chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            await LoadDataAsync();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Không thể cập nhật chuyên khoa. Vui lòng thử lại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Lỗi khi cập nhật chuyên khoa: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    finally
+                    {
+                        this.Cursor = Cursors.Default;
+                    }
+                }
+            }
+        }
+
+        private async void ButtonDelete_Click(object sender, EventArgs e)
+        {
+            if (dataGridViewSpecialties.SelectedRows.Count == 0) return;
+
+            Guid selectedId = (Guid)dataGridViewSpecialties.SelectedRows[0].Tag;
+            SpecialtyDto? selectedSpecialty = specialties.FirstOrDefault(s => s.Id == selectedId);
 
             if (selectedSpecialty != null)
             {
@@ -199,10 +353,30 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
                 if (result == DialogResult.Yes)
                 {
-                    specialties.Remove(selectedSpecialty);
-                    filteredSpecialties = new List<SpecialtyInfo>(specialties);
-                    LoadSpecialties();
-                    MessageBox.Show("Xóa chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    try
+                    {
+                        this.Cursor = Cursors.WaitCursor;
+                        
+                        bool success = await _apiService.DeleteAsync($"/api/specialty/{selectedId}");
+                        
+                        if (success)
+                        {
+                            MessageBox.Show("Xóa chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                            await LoadDataAsync();
+                        }
+                        else
+                        {
+                            MessageBox.Show("Không thể xóa chuyên khoa. Vui lòng thử lại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Lỗi khi xóa chuyên khoa: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    finally
+                    {
+                        this.Cursor = Cursors.Default;
+                    }
                 }
             }
         }
@@ -210,155 +384,6 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private void DataGridViewSpecialties_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0) ButtonEdit_Click(sender, e);
-        }
-    }
-
-    public class SpecialtyInfo
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
-        public string Doctors { get; set; }
-        public decimal Price { get; set; }
-        public string ImagePath { get; set; }
-    }
-
-    // --- CẬP NHẬT DIALOG ĐỂ CHỌN NHIỀU BÁC SĨ ---
-    public class SpecialtyDialog : Form
-    {
-        private TextBox textBoxName;
-        private CheckedListBox checkedListBoxDoctors; // Thay TextBox bằng CheckedListBox
-        private TextBox textBoxPrice;
-        private TextBox textBoxImagePath;
-        private Button buttonBrowse;
-        private Button buttonSave;
-        private Button buttonCancel;
-
-        // Danh sách bác sĩ giả định (Trong thực tế lấy từ Database)
-        private List<string> availableDoctors = new List<string>
-        {
-            "BS. Nguyễn Văn A", "BS. Trần Thị B", "BS. Lê Văn C",
-            "BS. Phạm Văn D", "BS. Hoàng Thị E", "BS. Đỗ Văn F",
-            "BS. Vũ Thị G", "BS. Bùi Văn H", "BS. Đinh Thị I",
-            "BS. Ngô Văn K", "BS. Phan Thị L", "BS. Mai Văn M"
-        };
-
-        public string SpecialtyName { get; private set; }
-        public string Doctors { get; private set; }
-        public decimal Price { get; private set; }
-        public string ImagePath { get; private set; }
-
-        public SpecialtyDialog(SpecialtyInfo specialty = null)
-        {
-            InitializeDialog();
-
-            if (specialty != null)
-            {
-                textBoxName.Text = specialty.Name;
-                textBoxPrice.Text = specialty.Price.ToString();
-                textBoxImagePath.Text = specialty.ImagePath;
-
-                // Tích chọn các bác sĩ đã có
-                if (!string.IsNullOrEmpty(specialty.Doctors))
-                {
-                    var currentDoctors = specialty.Doctors.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
-                    for (int i = 0; i < checkedListBoxDoctors.Items.Count; i++)
-                    {
-                        string doctorName = checkedListBoxDoctors.Items[i].ToString();
-                        if (currentDoctors.Contains(doctorName))
-                        {
-                            checkedListBoxDoctors.SetItemChecked(i, true);
-                        }
-                    }
-                }
-            }
-        }
-
-        private void InitializeDialog()
-        {
-            this.Size = new Size(550, 450); // Tăng chiều cao form một chút
-            this.StartPosition = FormStartPosition.CenterParent;
-            this.FormBorderStyle = FormBorderStyle.FixedDialog;
-            this.MaximizeBox = false;
-            this.MinimizeBox = false;
-
-            // Tên chuyên khoa
-            Label lblName = new Label { Text = "Tên chuyên khoa:", Location = new Point(20, 20), Size = new Size(120, 25), Font = new Font("Segoe UI", 10) };
-            textBoxName = new TextBox { Location = new Point(150, 20), Size = new Size(350, 25), Font = new Font("Segoe UI", 10) };
-
-            // Bác sĩ (CheckedListBox)
-            Label lblDoctors = new Label { Text = "Chọn Bác sĩ:", Location = new Point(20, 70), Size = new Size(120, 25), Font = new Font("Segoe UI", 10) };
-
-            checkedListBoxDoctors = new CheckedListBox
-            {
-                Location = new Point(150, 70),
-                Size = new Size(350, 120), // Chiều cao lớn hơn để hiện danh sách
-                Font = new Font("Segoe UI", 10),
-                CheckOnClick = true
-            };
-            // Thêm dữ liệu vào List
-            checkedListBoxDoctors.Items.AddRange(availableDoctors.ToArray());
-
-            // Giá tiền
-            Label lblPrice = new Label { Text = "Giá tiền (VNĐ):", Location = new Point(20, 210), Size = new Size(120, 25), Font = new Font("Segoe UI", 10) };
-            textBoxPrice = new TextBox { Location = new Point(150, 210), Size = new Size(350, 25), Font = new Font("Segoe UI", 10) };
-
-            // Đường dẫn ảnh
-            Label lblImage = new Label { Text = "Ảnh:", Location = new Point(20, 260), Size = new Size(120, 25), Font = new Font("Segoe UI", 10) };
-            textBoxImagePath = new TextBox { Location = new Point(150, 260), Size = new Size(270, 25), Font = new Font("Segoe UI", 10), ReadOnly = true };
-            buttonBrowse = new Button { Text = "Chọn...", Location = new Point(430, 258), Size = new Size(70, 29), Font = new Font("Segoe UI", 9) };
-            buttonBrowse.Click += ButtonBrowse_Click;
-
-            // Nút Lưu & Hủy
-            buttonSave = new Button { Text = "Lưu", Location = new Point(280, 320), Size = new Size(100, 35), Font = new Font("Segoe UI", 10, FontStyle.Bold), BackColor = Color.FromArgb(23, 162, 184), ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-            buttonSave.FlatAppearance.BorderSize = 0;
-            buttonSave.Click += ButtonSave_Click;
-
-            buttonCancel = new Button { Text = "Hủy", Location = new Point(400, 320), Size = new Size(100, 35), Font = new Font("Segoe UI", 10), BackColor = Color.Gray, ForeColor = Color.White, FlatStyle = FlatStyle.Flat };
-            buttonCancel.FlatAppearance.BorderSize = 0;
-            buttonCancel.Click += (s, e) => this.DialogResult = DialogResult.Cancel;
-
-            this.Controls.AddRange(new Control[] { lblName, textBoxName, lblDoctors, checkedListBoxDoctors, lblPrice, textBoxPrice, lblImage, textBoxImagePath, buttonBrowse, buttonSave, buttonCancel });
-        }
-
-        private void ButtonBrowse_Click(object sender, EventArgs e)
-        {
-            OpenFileDialog openFileDialog = new OpenFileDialog { Filter = "Image Files|*.jpg;*.jpeg;*.png;*.bmp;*.gif", Title = "Chọn ảnh chuyên khoa" };
-            if (openFileDialog.ShowDialog() == DialogResult.OK) textBoxImagePath.Text = openFileDialog.FileName;
-        }
-
-        private void ButtonSave_Click(object sender, EventArgs e)
-        {
-            if (string.IsNullOrWhiteSpace(textBoxName.Text))
-            {
-                MessageBox.Show("Vui lòng nhập tên chuyên khoa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            if (!decimal.TryParse(textBoxPrice.Text, out decimal price) || price <= 0)
-            {
-                MessageBox.Show("Vui lòng nhập giá tiền hợp lệ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            // Lấy danh sách bác sĩ đã chọn
-            List<string> selectedDocs = new List<string>();
-            foreach (var item in checkedListBoxDoctors.CheckedItems)
-            {
-                selectedDocs.Add(item.ToString());
-            }
-
-            if (selectedDocs.Count == 0)
-            {
-                MessageBox.Show("Vui lòng chọn ít nhất một bác sĩ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            SpecialtyName = textBoxName.Text.Trim();
-            Doctors = string.Join(", ", selectedDocs); // Gộp thành chuỗi
-            Price = price;
-            ImagePath = textBoxImagePath.Text.Trim();
-
-            this.DialogResult = DialogResult.OK;
         }
     }
 }

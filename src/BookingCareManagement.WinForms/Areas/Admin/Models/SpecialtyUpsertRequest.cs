@@ -11,6 +11,7 @@ public sealed class SpecialtyUpsertRequest
     public string? Description { get; set; }
     public string? ImageUrl { get; set; }
     public string Color { get; set; } = "#1a73e8";
+    public decimal Price { get; set; }
     public IReadOnlyCollection<Guid> DoctorIds { get; set; } = Array.Empty<Guid>();
 
     public SpecialtyUpsertRequest Normalize()

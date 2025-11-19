@@ -63,6 +63,11 @@ public class Doctor
         Active = false;
     }
 
+    public void Activate()
+    {
+        Active = true;
+    }
+
     public void SetAppointmentLimit(bool limitAppointments)
     {
         LimitAppointments = limitAppointments;

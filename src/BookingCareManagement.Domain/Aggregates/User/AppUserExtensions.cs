@@ -12,7 +12,8 @@ namespace BookingCareManagement.Domain.Aggregates.User
                 return string.Empty;
             }
 
-            var parts = new[] { user.FirstName, user.LastName }
+            // ✅ SỬA: Họ (LastName) trước, Tên (FirstName) sau (theo quy ước Việt Nam)
+            var parts = new[] { user.LastName, user.FirstName }
                 .Where(s => !string.IsNullOrWhiteSpace(s))
                 .Select(s => s!.Trim());
 

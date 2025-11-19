@@ -4,6 +4,7 @@ using BookingCareManagement.Application.Common.Exceptions;
 using BookingCareManagement.Application.Features.Doctors.Commands;
 using BookingCareManagement.Application.Features.Doctors.Dtos;
 using BookingCareManagement.Application.Features.Doctors.Queries;
+using BookingCareManagement.Domain.Abstractions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BookingCareManagement.Web.Areas.Admin.Controllers;
@@ -281,6 +282,40 @@ public class DoctorController : ControllerBase
         }
     }
 
+    [HttpPut("{id:guid}/toggle-active")]
+    public async Task<IActionResult> ToggleActive(
+        [FromServices] IDoctorRepository doctorRepository,
+        [FromServices] IUnitOfWork unitOfWork,
+        Guid id,
+        [FromBody] ToggleActiveRequest request,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var doctor = await doctorRepository.GetByIdWithTrackingAsync(id, cancellationToken);
+            if (doctor is null)
+            {
+                return NotFound(new ProblemDetails { Title = "Not Found", Detail = $"Doctor with ID {id} was not found." });
+            }
+
+            if (request.Active)
+            {
+                doctor.Activate();
+            }
+            else
+            {
+                doctor.Deactivate();
+            }
+
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ProblemDetails { Title = "Toggle Failed", Detail = ex.Message });
+        }
+    }
+
     [HttpDelete("{id:guid}")]
     public async Task<IActionResult> DeleteDoctor(
         [FromServices] DeleteDoctorCommandHandler handler,
@@ -326,5 +361,10 @@ public class DoctorController : ControllerBase
         public DateOnly EndDate { get; set; }
 
         public bool RepeatYearly { get; set; }
+    }
+
+    public class ToggleActiveRequest
+    {
+        public bool Active { get; set; }
     }
 }

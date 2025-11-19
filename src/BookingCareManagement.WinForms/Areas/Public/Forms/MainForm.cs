@@ -387,7 +387,17 @@ namespace BookingCareManagement.WinForms
                         // Resolve InvoiceEditorForm từ DI container
                         var invoiceForm = _serviceProvider.GetRequiredService<InvoiceEditorForm>();
                         OpenChildForm(invoiceForm);
-                    }    
+                    }
+                    if (btn.Text.Contains("Bác sĩ"))
+                    {
+                        if (!(activeChildForm is Doctor))
+                            OpenChildForm(new Doctor());
+                    }
+                    if (btn.Text.Contains("Chuyên khoa"))
+                    {
+                        if (!(activeChildForm is Specialty))
+                            OpenChildForm(new Specialty());
+                    }
                 };
 
                 // Sự kiện kéo thả
