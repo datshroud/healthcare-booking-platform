@@ -1,6 +1,8 @@
 ﻿using BookingCareManagement.WinForms.Areas.Admin.Controls;
 using BookingCareManagement.WinForms.Areas.Admin.Forms;
 using BookingCareManagement.WinForms.Areas.Admin.Services;
+using BookingCareManagement.WinForms.Areas.Doctor.Forms;
+using BookingCareManagement.WinForms.Shared.State;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -31,17 +33,19 @@ namespace BookingCareManagement.WinForms
 
         // Thêm IServiceProvider để resolve dependencies
         private readonly IServiceProvider _serviceProvider;
+        private readonly SessionState _sessionState;
 
         public MainForm(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
+            _sessionState = serviceProvider.GetRequiredService<SessionState>();
             
             InitializeComponent();
             InitializeCustomComponents();
             CreateSidebar();    
             this.Load += (s, e) =>
             {
-                OpenChildForm(new Calendar());
+                OpenRoleDashboard();
             };
         }
 
@@ -75,6 +79,20 @@ namespace BookingCareManagement.WinForms
             // Sự kiện kéo thả cho sidebar
             sidebarPanel.DragOver += SidebarPanel_DragOver;
             sidebarPanel.DragDrop += SidebarPanel_DragDrop;
+        }
+
+        private void OpenRoleDashboard()
+        {
+            if (_sessionState.IsDoctor && !_sessionState.IsAdmin)
+            {
+                var doctorForm = _serviceProvider.GetRequiredService<DoctorAppointmentsForm>();
+                OpenChildForm(doctorForm);
+            }
+            else
+            {
+                var dashboard = _serviceProvider.GetRequiredService<DashboardForm>();
+                OpenChildForm(dashboard);
+            }
         }
 
         private void CloseAccountMenu()
@@ -373,6 +391,10 @@ namespace BookingCareManagement.WinForms
                 btn.Click += (s, e) =>
                 {
                     SetActiveButton(btn);
+                    if (btn.Text.Contains("Bảng") || btn.Text.Contains("Bang"))
+                    {
+                        OpenRoleDashboard();
+                    }
                     if (btn.Text.Contains("Khách hàng"))
                     {
                         OpenChildForm(new Customer());
@@ -401,7 +423,7 @@ namespace BookingCareManagement.WinForms
 
                 yPos += item.Contains("\n") ? 60 : 50;
 
-                if (item.Contains("Lịch"))
+                if (item.Contains("Bảng") || item.Contains("Bang"))
                 {
                     SetActiveButton(btn);
                 }

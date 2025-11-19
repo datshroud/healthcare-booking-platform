@@ -7,6 +7,7 @@ using Microsoft.Extensions.Hosting;
 using BookingCareManagement.WinForms.Startup;
 using BookingCareManagement.WinForms.Shared.State;
 using BookingCareManagement.WinForms.Areas.Account.Forms;
+using BookingCareManagement.WinForms.Shared.Models;
 
 namespace BookingCareManagement.WinForms;
 
@@ -31,22 +32,39 @@ static class Program
             session.AccessToken = persisted.AccessToken;
             session.RefreshToken = persisted.RefreshToken;
             session.CurrentUserId = persisted.UserId;
+            if (persisted.CookieAuthenticated)
+            {
+                session.MarkCookieAuthenticated();
+            }
+            if (!string.IsNullOrWhiteSpace(persisted.DisplayName) || !string.IsNullOrWhiteSpace(persisted.Email))
+            {
+                var cachedProfile = new UserProfileDto
+                {
+                    UserId = persisted.UserId ?? string.Empty,
+                    FullName = persisted.DisplayName ?? string.Empty,
+                    Email = persisted.Email ?? string.Empty,
+                    IsAdmin = persisted.IsAdmin,
+                    IsDoctor = persisted.IsDoctor,
+                    Roles = persisted.Roles ?? Array.Empty<string>()
+                };
+                session.ApplyProfile(cachedProfile);
+            }
         }
 
-        // If not authenticated, show login form first
-        //if (!session.IsAuthenticated)
-        //{
-        //    using var login = services.GetRequiredService<LoginForm>();
-        //    var result = login.ShowDialog();
-        //    if (result != DialogResult.OK)
-        //    {
-        //        // user cancelled login
-        //        return;
-        //    }
-        //}
+        // If not authenticated, show login form first (designer form)
+        if (!session.IsAuthenticated)
+        {
+            using var login = services.GetRequiredService<Login>();
+            var result = login.ShowDialog();
+            if (result != DialogResult.OK)
+            {
+                // user cancelled login
+                return;
+            }
+        }
 
         // Run main shell
-        System.Windows.Forms.Application.Run(new MainForm(services));
+        Application.Run(ResolveShell(services, session));
     }
 
     private static IHostBuilder CreateHostBuilder()
@@ -61,7 +79,13 @@ static class Program
                 services.AddWinFormsInfrastructure(context.Configuration);
 
                 // Forms
-                services.AddTransient<LoginForm>();
+                services.AddTransient<Login>();
+                services.AddTransient<Register>();
             });
+    }
+
+    private static Form ResolveShell(IServiceProvider services, SessionState session)
+    {
+        return new MainForm(services);
     }
 }

@@ -26,12 +26,14 @@ public static class AreaRegistration
         services
             .AddSingleton<AdminDashboardViewModel>()
             .AddTransient<AdminDoctorApiClient>()
+            .AddTransient<AdminDashboardApiClient>()
             .AddTransient<AdminSpecialtyApiClient>()
             .AddTransient<AdminInvoiceApiClient>()
             .AddTransient<SpecialtyManagementControl>()
             .AddTransient<DoctorManagementControl>()
             .AddTransient<InvoiceManagementControl>()
             .AddTransient<InvoiceEditorForm>()
+            .AddTransient<DashboardForm>()
             .AddTransient<AdminNavigationController>()
             .AddTransient<AdminShellForm>();
         return services;
