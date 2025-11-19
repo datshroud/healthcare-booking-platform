@@ -34,16 +34,16 @@ static class Program
         }
 
         // If not authenticated, show login form first
-        if (!session.IsAuthenticated)
-        {
-            using var login = services.GetRequiredService<LoginForm>();
-            var result = login.ShowDialog();
-            if (result != DialogResult.OK)
-            {
-                // user cancelled login
-                return;
-            }
-        }
+        //if (!session.IsAuthenticated)
+        //{
+        //    using var login = services.GetRequiredService<LoginForm>();
+        //    var result = login.ShowDialog();
+        //    if (result != DialogResult.OK)
+        //    {
+        //        // user cancelled login
+        //        return;
+        //    }
+        //}
 
         // Run main shell
         System.Windows.Forms.Application.Run(new MainForm(services));

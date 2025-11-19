@@ -45,15 +45,13 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         {
             try
             {
-                lblTitle.Text = "Đang tải...";
                 _invoiceCache = (await _invoiceApiClient.GetAllAsync()).ToList();
                 DisplayInvoices(_invoiceCache);
-                lblTitle.Text = $"Invoices ({_invoiceCache.Count})";
             }
             catch (Exception ex)
             {
                 _dialogService.ShowError($"Không thể tải danh sách hóa đơn: {ex.Message}");
-                lblTitle.Text = "Invoices (Lỗi)";
+                UpdateInvoiceCount(0, true);
             }
         }
 
@@ -77,6 +75,20 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 
                 // Lưu Id vào Tag của row để sử dụng sau
                 invoiceGrid.Rows[invoiceGrid.Rows.Count - 1].Tag = invoice.Id;
+            }
+            
+            UpdateInvoiceCount(invoices.Count);
+        }
+
+        private void UpdateInvoiceCount(int count, bool isError = false)
+        {
+            if (isError)
+            {
+                lblTitle.Text = "Hóa đơn (Lỗi)";
+            }
+            else
+            {
+                lblTitle.Text = $"Hóa đơn ({count})";
             }
         }
 
@@ -229,24 +241,13 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         {
             try
             {
-                var pdfBytes = await _invoiceApiClient.GetPdfAsync(invoice.Id);
-                
-                using var saveDialog = new SaveFileDialog
-                {
-                    Filter = "PDF files (*.pdf)|*.pdf",
-                    FileName = $"Invoice-{invoice.InvoiceNumber}.pdf",
-                    DefaultExt = "pdf"
-                };
-
-                if (saveDialog.ShowDialog() == DialogResult.OK)
-                {
-                    await System.IO.File.WriteAllBytesAsync(saveDialog.FileName, pdfBytes);
-                    _dialogService.ShowInfo($"Đã lưu file: {saveDialog.FileName}");
-                }
+                // Mở form report thay vì download trực tiếp
+                var reportForm = new InvoiceReportForm(invoice);
+                reportForm.ShowDialog(this);
             }
             catch (Exception ex)
             {
-                _dialogService.ShowError($"Không thể tải PDF: {ex.Message}");
+                _dialogService.ShowError($"Không thể mở report: {ex.Message}");
             }
         }
 
@@ -346,7 +347,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     i.InvoiceNumber.ToString().Contains(searchTerm));
             }
 
-            DisplayInvoices(filtered.ToList());
+            var filteredList = filtered.ToList();
+            DisplayInvoices(filteredList);
         }
 
         private void ResetFilterButtonStyle(Button button)
