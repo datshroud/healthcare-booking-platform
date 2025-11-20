@@ -7,81 +7,77 @@ using System.Threading;
 using System.Threading.Tasks;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
 
-namespace BookingCareManagement.WinForms.Areas.Admin.Services;
+namespace BookingCareManagement.WinForms.Areas.Doctor.Services;
 
-public sealed class AdminAppointmentsApiClient
+public sealed class DoctorAppointmentsApiClient
 {
     private readonly IHttpClientFactory _httpClientFactory;
 
-    public AdminAppointmentsApiClient(IHttpClientFactory httpClientFactory)
+    public DoctorAppointmentsApiClient(IHttpClientFactory httpClientFactory)
     {
         _httpClientFactory = httpClientFactory;
     }
 
-    public async Task<AdminAppointmentMetadataDto> GetMetadataAsync(CancellationToken cancellationToken = default)
+    public async Task<DoctorAppointmentMetadataDto> GetMetadataAsync(CancellationToken cancellationToken = default)
     {
         var client = _httpClientFactory.CreateClient("BookingCareApi");
-        using var resp = await client.GetAsync("/api/admin/appointments/metadata", cancellationToken);
+        using var resp = await client.GetAsync("/api/doctor/appointments/metadata", cancellationToken);
         await EnsureSuccessAsync(resp);
-        return await resp.Content.ReadFromJsonAsync<AdminAppointmentMetadataDto>(cancellationToken: cancellationToken)
-               ?? new AdminAppointmentMetadataDto();
+        return await resp.Content.ReadFromJsonAsync<DoctorAppointmentMetadataDto>(cancellationToken: cancellationToken)
+               ?? new DoctorAppointmentMetadataDto();
     }
 
     public async Task<IReadOnlyList<DoctorAppointmentListItemDto>> GetAppointmentsAsync(DateOnly? from = null, DateOnly? to = null, CancellationToken cancellationToken = default)
     {
         var client = _httpClientFactory.CreateClient("BookingCareApi");
         var query = BuildDateRangeQuery(from, to);
-        var url = "/api/admin/appointments" + query;
+        var url = "/api/doctor/appointments" + query;
         using var resp = await client.GetAsync(url, cancellationToken);
         await EnsureSuccessAsync(resp);
         var items = await resp.Content.ReadFromJsonAsync<List<DoctorAppointmentListItemDto>>(cancellationToken: cancellationToken);
         return items ?? new List<DoctorAppointmentListItemDto>();
     }
 
-    public async Task<IReadOnlyList<CalendarEventDto>> GetCalendarEventsAsync(DateOnly? from = null, DateOnly? to = null, Guid[]? doctorIds = null, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<CalendarEventDto>> GetCalendarEventsAsync(DateOnly? from = null, DateOnly? to = null, CancellationToken cancellationToken = default)
     {
         var client = _httpClientFactory.CreateClient("BookingCareApi");
-        var query = new List<string>();
-        if (from.HasValue) query.Add($"from={from.Value:yyyy-MM-dd}");
-        if (to.HasValue) query.Add($"to={to.Value:yyyy-MM-dd}");
-        if (doctorIds != null && doctorIds.Length > 0)
-        {
-            foreach (var id in doctorIds)
-            {
-                query.Add($"doctorIds={id}");
-            }
-        }
-
-        var url = "/api/admin/appointments/calendar" + (query.Count > 0 ? "?" + string.Join("&", query) : string.Empty);
+        var query = BuildDateRangeQuery(from, to);
+        var url = "/api/doctor/appointments/calendar" + query;
         using var resp = await client.GetAsync(url, cancellationToken);
         await EnsureSuccessAsync(resp);
-
         var items = await resp.Content.ReadFromJsonAsync<List<CalendarEventDto>>(cancellationToken: cancellationToken);
         return items ?? new List<CalendarEventDto>();
     }
 
-    public async Task<DoctorAppointmentListItemDto?> CreateAsync(AdminAppointmentUpsertRequest request, CancellationToken cancellationToken = default)
+    public async Task<DoctorAppointmentListItemDto?> CreateAsync(DoctorAppointmentUpsertRequest request, CancellationToken cancellationToken = default)
     {
         var client = _httpClientFactory.CreateClient("BookingCareApi");
-        using var resp = await client.PostAsJsonAsync("/api/admin/appointments", request, cancellationToken);
+        using var resp = await client.PostAsJsonAsync("/api/doctor/appointments", request, cancellationToken);
         await EnsureSuccessAsync(resp);
         return await resp.Content.ReadFromJsonAsync<DoctorAppointmentListItemDto>(cancellationToken: cancellationToken);
     }
 
-    public async Task<DoctorAppointmentListItemDto?> UpdateAsync(Guid appointmentId, AdminAppointmentUpsertRequest request, CancellationToken cancellationToken = default)
+    public async Task<DoctorAppointmentListItemDto?> UpdateAsync(Guid appointmentId, DoctorAppointmentUpsertRequest request, CancellationToken cancellationToken = default)
     {
         var client = _httpClientFactory.CreateClient("BookingCareApi");
-        using var resp = await client.PutAsJsonAsync($"/api/admin/appointments/{appointmentId}", request, cancellationToken);
+        using var resp = await client.PutAsJsonAsync($"/api/doctor/appointments/{appointmentId}", request, cancellationToken);
         await EnsureSuccessAsync(resp);
         return await resp.Content.ReadFromJsonAsync<DoctorAppointmentListItemDto>(cancellationToken: cancellationToken);
     }
 
-    public async Task<DoctorAppointmentListItemDto?> UpdateStatusAsync(Guid appointmentId, AdminAppointmentStatusRequest request, CancellationToken cancellationToken = default)
+    public async Task<DoctorAppointmentListItemDto?> UpdateStatusAsync(Guid appointmentId, DoctorAppointmentStatusRequest request, CancellationToken cancellationToken = default)
     {
         var client = _httpClientFactory.CreateClient("BookingCareApi");
-        using var resp = await client.PostAsJsonAsync($"/api/admin/appointments/{appointmentId}/status", request, cancellationToken);
+        using var resp = await client.PostAsJsonAsync($"/api/doctor/appointments/{appointmentId}/status", request, cancellationToken);
         await EnsureSuccessAsync(resp);
         return await resp.Content.ReadFromJsonAsync<DoctorAppointmentListItemDto>(cancellationToken: cancellationToken);
+    }
+
+    public async Task DeleteAsync(Guid appointmentId, CancellationToken cancellationToken = default)
+    {
+        var client = _httpClientFactory.CreateClient("BookingCareApi");
+        using var resp = await client.DeleteAsync($"/api/doctor/appointments/{appointmentId}", cancellationToken);
+        await EnsureSuccessAsync(resp);
     }
 
     private static string BuildDateRangeQuery(DateOnly? from, DateOnly? to)

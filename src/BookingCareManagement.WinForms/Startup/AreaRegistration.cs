@@ -10,6 +10,7 @@ using BookingCareManagement.WinForms.Areas.Customer.Controllers;
 using BookingCareManagement.WinForms.Areas.Customer.Forms;
 using BookingCareManagement.WinForms.Areas.Customer.ViewModels;
 using BookingCareManagement.WinForms.Areas.Doctor.Controllers;
+using BookingCareManagement.WinForms.Areas.Doctor.Services;
 using BookingCareManagement.WinForms.Areas.Doctor.Forms;
 using BookingCareManagement.WinForms.Areas.Doctor.ViewModels;
 using BookingCareManagement.WinForms.Areas.Public.Controllers;
@@ -31,6 +32,7 @@ public static class AreaRegistration
             .AddTransient<AdminSpecialtyApiClient>()
             .AddTransient<AdminInvoiceApiClient>()
             .AddTransient<AdminAppointmentsApiClient>()
+            .AddTransient<AppointmentManagementControl>()
             .AddTransient<AppointmentEditorForm>()
             .AddTransient<SpecialtyManagementControl>()
             .AddTransient<DoctorManagementControl>()
@@ -52,6 +54,7 @@ public static class AreaRegistration
     {
         services
             .AddSingleton<DoctorAppointmentsViewModel>()
+            .AddTransient<DoctorAppointmentsApiClient>()
             .AddTransient<DoctorAppointmentsController>()
             .AddTransient<DoctorAppointmentsForm>();
         return services;
