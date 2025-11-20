@@ -9,12 +9,42 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
     public sealed partial class AppointmentEditorForm : Form
     {
         private readonly List<CheckedListBox> _filterDropdowns = new();
-        
+        private readonly Dictionary<CheckedListBox, List<string>> _filterOptions = new();
+        private readonly Dictionary<CheckedListBox, Button> _dropdownButtons = new();
+        private readonly Dictionary<CheckedListBox, Func<AppointmentRow, string>> _filterSelectors = new();
+
+        private readonly List<AppointmentRow> _appointments = new();
+        private readonly Dictionary<string, (Color Background, Color Foreground)> _statusStyles =
+            new(StringComparer.OrdinalIgnoreCase)
+            {
+                ["approved"] = (Color.FromArgb(220, 252, 231), Color.FromArgb(22, 101, 52)),
+                ["pending"] = (Color.FromArgb(239, 246, 255), Color.FromArgb(37, 99, 235)),
+                ["canceled"] = (Color.FromArgb(254, 242, 242), Color.FromArgb(185, 28, 28)),
+                ["rejected"] = (Color.FromArgb(255, 247, 237), Color.FromArgb(180, 83, 9)),
+                ["noshow"] = (Color.FromArgb(248, 250, 252), Color.FromArgb(107, 114, 128)),
+            };
+
+        private CheckedListBox? _serviceDropdown;
+        private CheckedListBox? _customerDropdown;
+        private CheckedListBox? _employeeDropdown;
+        private CheckedListBox? _statusDropdown;
+
+        private sealed record AppointmentRow(
+            DateTime Start,
+            string Specialty,
+            string Patient,
+            int DurationMinutes,
+            string StatusCode,
+            string StatusLabel,
+            string Doctor,
+            string Note);
+
         public AppointmentEditorForm()
         {
             InitializeComponent();
             InitializeGridColumns();
             ApplyGridStyling();
+            ConfigureInputs();
             InitializeFilterDropdowns();
             LoadSampleData();
         }
@@ -65,6 +95,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 Padding = new Padding(15, 0, 0, 0)
             };
 
+            appointmentGrid.EnableHeadersVisualStyles = false;
+
             // Default cell style
             appointmentGrid.DefaultCellStyle = new DataGridViewCellStyle
             {
@@ -86,35 +118,11 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
         private void InitializeFilterDropdowns()
         {
-            // Tạo dropdown cho Service
-            var serviceDropdown = CreateFilterDropdown(btnServiceFilter, new[]
-            {
-                "Kiểm tra", "Nhổ răng", "Phẫu thuật nha khoa"
-            });
-            _filterDropdowns.Add(serviceDropdown);
+            _serviceDropdown = CreateFilterDropdown(btnServiceFilter, a => a.Specialty);
+            _customerDropdown = CreateFilterDropdown(btnCustomerFilter, a => a.Patient);
+            _employeeDropdown = CreateFilterDropdown(btnEmployeeFilter, a => a.Doctor);
+            _statusDropdown = CreateFilterDropdown(btnStatusFilter, a => a.StatusLabel);
 
-            // Tạo dropdown cho Customer
-            var customerDropdown = CreateFilterDropdown(btnCustomerFilter, new[]
-            {
-                "Jone Doe", "Le Ngoc Bao Chan", "Nguyen Van A"
-            });
-            _filterDropdowns.Add(customerDropdown);
-
-            // Tạo dropdown cho Employee
-            var employeeDropdown = CreateFilterDropdown(btnEmployeeFilter, new[]
-            {
-                "Nhân viên A", "Nhân viên B", "Nhân viên C"
-            });
-            _filterDropdowns.Add(employeeDropdown);
-
-            // Tạo dropdown cho Status - 5 trạng thái
-            var statusDropdown = CreateFilterDropdown(btnStatusFilter, new[]
-            {
-                "Approved", "Pending", "Canceled", "Rejected", "No Show"
-            });
-            _filterDropdowns.Add(statusDropdown);
-
-            // Reset tất cả buttons về màu trắng ban đầu
             ResetFilterButtonStyle(btnServiceFilter);
             ResetFilterButtonStyle(btnCustomerFilter);
             ResetFilterButtonStyle(btnEmployeeFilter);
@@ -128,7 +136,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             button.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
         }
 
-        private CheckedListBox CreateFilterDropdown(Button parentButton, string[] items)
+        private CheckedListBox CreateFilterDropdown(Button parentButton, Func<AppointmentRow, string> selector)
         {
             // Sử dụng Panel làm container cho dropdown để tránh bị che
             var dropdownPanel = new Panel
@@ -138,7 +146,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 BackColor = Color.White,
                 AutoSize = false,
                 Width = parentButton.Width + 100,
-                Height = Math.Min(items.Length * 25 + 50, 220),
+                Height = 220,
                 Padding = new Padding(5)
             };
 
@@ -163,8 +171,10 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 IntegralHeight = false
             };
 
-            // Thêm items
-            dropdown.Items.AddRange(items);
+            // Lưu selector và options cho dropdown
+            _filterOptions[dropdown] = new List<string>();
+            _filterSelectors[dropdown] = selector;
+            _dropdownButtons[dropdown] = parentButton;
 
             // Thêm controls vào panel
             dropdownPanel.Controls.Add(dropdown);
@@ -175,10 +185,15 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             {
                 var searchText = searchBox.Text.ToLower();
                 dropdown.Items.Clear();
-                
-                var filteredItems = items.Where(item => 
-                    item.ToLower().Contains(searchText)).ToArray();
-                
+
+                var source = _filterOptions.TryGetValue(dropdown, out var values)
+                    ? values
+                    : new List<string>();
+
+                var filteredItems = source
+                    .Where(item => item.ToLower().Contains(searchText))
+                    .ToArray();
+
                 if (filteredItems.Length > 0)
                 {
                     dropdown.Items.AddRange(filteredItems);
@@ -219,30 +234,34 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 // Đếm số item đã chọn
                 this.BeginInvoke((MethodInvoker)delegate
                 {
-                    var checkedCount = dropdown.CheckedItems.Count;
-                    var baseText = GetBaseButtonText(parentButton.Text);
-                    
-                    if (checkedCount > 0)
-                    {
-                        parentButton.Text = $"{baseText} ({checkedCount})";
-                        parentButton.BackColor = Color.FromArgb(219, 234, 254);
-                        parentButton.ForeColor = Color.FromArgb(37, 99, 235);
-                        parentButton.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-                    }
-                    else
-                    {
-                        parentButton.Text = baseText;
-                        ResetFilterButtonStyle(parentButton);
-                    }
+                    UpdateFilterButtonVisual(parentButton, dropdown.CheckedItems.Count);
+                    RefreshGrid();
                 });
             };
 
             // Thêm panel vào Form (không phải filterPanel)
             this.Controls.Add(dropdownPanel);
             dropdownPanel.BringToFront();
-            
+
             _filterDropdowns.Add(dropdown);
             return dropdown;
+        }
+
+        private void UpdateFilterButtonVisual(Button parentButton, int checkedCount)
+        {
+            var baseText = GetBaseButtonText(parentButton.Text);
+            if (checkedCount > 0)
+            {
+                parentButton.Text = $"{baseText} ({checkedCount})";
+                parentButton.BackColor = Color.FromArgb(219, 234, 254);
+                parentButton.ForeColor = Color.FromArgb(37, 99, 235);
+                parentButton.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            }
+            else
+            {
+                parentButton.Text = baseText;
+                ResetFilterButtonStyle(parentButton);
+            }
         }
 
         private string GetBaseButtonText(string buttonText)
@@ -254,13 +273,36 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
         private void LoadSampleData()
         {
-            // Load demo data giống web
-            appointmentGrid.Rows.Clear();
-            appointmentGrid.Rows.Add(false, "4:00 pm", "Kiểm tra", ". Le Ngoc Bao Chan", "1h", "Chấp nhận", "C", "", "...");
-            appointmentGrid.Rows.Add(false, "2:00 pm", "Kiểm tra", ". Le Ngoc Bao Chan", "1h", "Chấp nhận", "C", "", "...");
+            _appointments.Clear();
 
-            // Update title với số lượng
-            lblTitle.Text = $"Lịch Hẹn ({appointmentGrid.Rows.Count})";
+            var baseDate = DateTime.Today.AddDays(3);
+            _appointments.AddRange(new[]
+            {
+                new AppointmentRow(baseDate.AddHours(9), "Khám tim mạch", "Nguyễn Văn A", 30, "pending", "Chờ xác nhận", "BS. Lê Ngọc Bảo Chân", "Mang theo kết quả xét nghiệm mới nhất"),
+                new AppointmentRow(baseDate.AddHours(11), "Khám tổng quát", "Trần Thị B", 45, "approved", "Đã xác nhận", "BS. Cấn Văn Thắng", ""),
+                new AppointmentRow(baseDate.AddDays(1).AddHours(14), "Nha khoa", "Phạm Minh C", 60, "approved", "Đã xác nhận", "BS. Lê Ngọc Bảo Chân", "Khám và tư vấn phục hình"),
+                new AppointmentRow(baseDate.AddDays(1).AddHours(16), "Khám da liễu", "Lê Ngọc Bảo Chân", 30, "canceled", "Đã hủy", "BS. Lê Ngọc Bảo Chân", "Khách hàng báo bận"),
+                new AppointmentRow(baseDate.AddDays(2).AddHours(10), "Tai mũi họng", "Đỗ Khánh D", 30, "rejected", "Bị từ chối", "BS. Cấn Văn Thắng", "Lịch trùng bác sĩ"),
+                new AppointmentRow(baseDate.AddDays(2).AddHours(15), "Nội tổng quát", "Phạm Quỳnh E", 30, "noshow", "Vắng mặt", "BS. Lê Ngọc Bảo Chân", "Không liên lạc được"),
+            });
+
+            UpdateFilterOptionsFromData();
+            RefreshGrid();
+        }
+
+        private void ConfigureInputs()
+        {
+            txtSearch.TextChanged += (_, _) => RefreshGrid();
+
+            dtFrom.ShowCheckBox = true;
+            dtTo.ShowCheckBox = true;
+            dtFrom.Value = DateTime.Today.AddDays(-7);
+            dtTo.Value = DateTime.Today.AddDays(7);
+            dtFrom.Checked = false;
+            dtTo.Checked = false;
+
+            dtFrom.ValueChanged += (_, _) => RefreshGrid();
+            dtTo.ValueChanged += (_, _) => RefreshGrid();
         }
 
         private void btnFilter_Click(object sender, EventArgs e)
@@ -284,6 +326,135 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 {
                     dropdown.Parent?.Hide();
                 }
+            }
+        }
+
+        private void RefreshGrid()
+        {
+            IEnumerable<AppointmentRow> data = _appointments;
+
+            if (dtFrom.Checked)
+            {
+                data = data.Where(a => a.Start.Date >= dtFrom.Value.Date);
+            }
+
+            if (dtTo.Checked)
+            {
+                data = data.Where(a => a.Start.Date <= dtTo.Value.Date);
+            }
+
+            var search = txtSearch.Text.Trim().ToLower();
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                data = data.Where(a =>
+                    a.Specialty.ToLower().Contains(search)
+                    || a.Patient.ToLower().Contains(search)
+                    || a.Doctor.ToLower().Contains(search)
+                    || a.Note.ToLower().Contains(search));
+            }
+
+            data = ApplyDropdownFilter(_serviceDropdown, data);
+            data = ApplyDropdownFilter(_customerDropdown, data);
+            data = ApplyDropdownFilter(_employeeDropdown, data);
+            data = ApplyDropdownFilter(_statusDropdown, data);
+
+            var rows = data.OrderBy(a => a.Start).ToList();
+
+            appointmentGrid.Rows.Clear();
+            for (var i = 0; i < rows.Count; i++)
+            {
+                RenderRow(rows[i]);
+            }
+
+            lblTitle.Text = $"Lịch Hẹn ({rows.Count})";
+            appointmentGrid.Visible = rows.Count > 0;
+            emptyStatePanel.Visible = rows.Count == 0;
+        }
+
+        private IEnumerable<AppointmentRow> ApplyDropdownFilter(CheckedListBox? dropdown, IEnumerable<AppointmentRow> source)
+        {
+            if (dropdown == null || !_filterSelectors.TryGetValue(dropdown, out var selector))
+            {
+                return source;
+            }
+
+            var selected = dropdown.CheckedItems.Cast<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
+            if (selected.Count == 0)
+            {
+                return source;
+            }
+
+            return source.Where(a => selected.Contains(selector(a)));
+        }
+
+        private void RenderRow(AppointmentRow row)
+        {
+            var durationText = row.DurationMinutes switch
+            {
+                >= 60 when row.DurationMinutes % 60 == 0 => $"{row.DurationMinutes / 60} giờ",
+                >= 60 => $"{row.DurationMinutes / 60} giờ {row.DurationMinutes % 60} phút",
+                _ => $"{row.DurationMinutes} phút"
+            };
+
+            var formattedTime = row.Start.ToString("HH:mm - dd/MM");
+
+            var index = appointmentGrid.Rows.Add(false, formattedTime, row.Specialty, row.Patient, durationText, row.StatusLabel, row.Doctor, row.Note, "•••");
+            var statusCell = appointmentGrid.Rows[index].Cells["Status"];
+
+            if (_statusStyles.TryGetValue(row.StatusCode, out var style))
+            {
+                statusCell.Style.BackColor = style.Background;
+                statusCell.Style.ForeColor = style.Foreground;
+                statusCell.Style.SelectionBackColor = style.Background;
+                statusCell.Style.SelectionForeColor = style.Foreground;
+            }
+
+            statusCell.Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            statusCell.Style.Padding = new Padding(8, 6, 8, 6);
+            statusCell.Style.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+
+            appointmentGrid.Rows[index].Cells["Action"].Style.Alignment = DataGridViewContentAlignment.MiddleCenter;
+        }
+
+        private void UpdateFilterOptionsFromData()
+        {
+            UpdateDropdownItems(_serviceDropdown, _appointments.Select(a => a.Specialty));
+            UpdateDropdownItems(_customerDropdown, _appointments.Select(a => a.Patient));
+            UpdateDropdownItems(_employeeDropdown, _appointments.Select(a => a.Doctor));
+            UpdateDropdownItems(_statusDropdown, _appointments.Select(a => a.StatusLabel));
+        }
+
+        private void UpdateDropdownItems(CheckedListBox? dropdown, IEnumerable<string> items)
+        {
+            if (dropdown == null)
+            {
+                return;
+            }
+
+            var orderedItems = items
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(x => x)
+                .ToList();
+
+            var selected = dropdown.CheckedItems.Cast<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
+            _filterOptions[dropdown] = orderedItems;
+
+            dropdown.Items.Clear();
+            dropdown.Items.AddRange(orderedItems.ToArray());
+
+            for (var i = 0; i < dropdown.Items.Count; i++)
+            {
+                var item = dropdown.Items[i].ToString();
+                if (item != null && selected.Contains(item))
+                {
+                    dropdown.SetItemChecked(i, true);
+                }
+            }
+
+            if (_dropdownButtons.TryGetValue(dropdown, out var button))
+            {
+                UpdateFilterButtonVisual(button, dropdown.CheckedItems.Count);
             }
         }
     }

@@ -1,127 +1,106 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
-using System.Text.RegularExpressions;
+using System.Net.Http;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using BookingCareManagement.WinForms.Areas.Customer.Services;
+using BookingCareManagement.WinForms.Areas.Customer.Services.Models;
+using BookingCareManagement.WinForms.Shared.Models.Dtos;
 
 namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 {
-    // Đã đổi tên class từ Appointment thành Bookings
     public partial class Bookings : Form
     {
+        private readonly CustomerBookingApiClient _apiClient;
+
+        private Guid selectedSpecialtyId = Guid.Empty;
+        private Guid selectedEmployeeId = Guid.Empty;
         private string selectedSpecialty = "";
-        private string selectedDoctor = "";
-        private decimal selectedPrice = 0;
+        private string selectedEmployee = "";
         private string selectedDate = "";
         private string selectedTime = "";
+        private decimal totalPrice =0;
 
-        private List<string> specialties;
-        private Dictionary<string, List<DoctorInfo>> doctorsBySpecialty;
+        private List<SpecialtyData> specialties = new();
+        private List<EmployeeData> employees = new();
         private List<string> timeSlots;
 
-        // Đã đổi tên Constructor từ Appointment thành Bookings
-        public Bookings()
+        private enum BookingStep
         {
+            Specialty,
+            Employee,
+            DateTime,
+            Payment,
+            ThankYou
+        }
+
+        private BookingStep currentStep = BookingStep.Specialty;
+
+        public Bookings(CustomerBookingApiClient apiClient)
+        {
+            _apiClient = apiClient;
             InitializeComponent();
-            InitializeData();
 
-            this.StartPosition = FormStartPosition.CenterScreen;
-            this.FormBorderStyle = FormBorderStyle.Sizable;
-            this.MaximizeBox = true;
-            this.MinimumSize = new Size(800, 600);
-
-            // Cập nhật tên sự kiện Load và Resize
+            // Thiết lập sự kiện
             this.Load += Bookings_Load;
-            this.Resize += Bookings_Resize;
-
-            this.buttonBookAppointment.Click += ButtonBookAppointment_Click;
+            this.textBoxSearch.Enter += TextBoxSearch_Enter;
+            this.textBoxSearch.Leave += TextBoxSearch_Leave;
+            this.textBoxSearch.TextChanged += TextBoxSearch_TextChanged;
+            this.buttonBack.Click += ButtonBack_Click;
             this.dateTimePickerAppointment.ValueChanged += DateTimePickerAppointment_ValueChanged;
-            this.textBoxPhone.KeyPress += TextBoxPhone_KeyPress;
-            this.textBoxFullName.TextChanged += TextBoxCustomerInfo_Changed;
-            this.textBoxPhone.TextChanged += TextBoxCustomerInfo_Changed;
-            this.textBoxEmail.TextChanged += TextBoxCustomerInfo_Changed;
+            this.buttonConfirmDateTime.Click += ButtonConfirmDateTime_Click;
+            this.buttonApplyPromo.Click += ButtonApplyPromo_Click;
+            this.buttonConfirmBooking.Click += ButtonConfirmBooking_Click;
+            // Back to start button in thank you panel
+            if (this.Controls.Find("buttonBackToStart", true).FirstOrDefault() is Button backToStart)
+            {
+                backToStart.Click += ButtonBackToStart_Click;
+            }
 
-            dateTimePickerAppointment.MinDate = DateTime.Now;
-            dateTimePickerAppointment.MaxDate = DateTime.Now.AddMonths(3);
-            selectedDate = dateTimePickerAppointment.Value.ToString("dd/MM/yyyy");
+            // Ensure cards resize when container changes
+            flowLayoutPanelSpecialties.SizeChanged += (s, e) => AdjustCardWidths();
+            flowLayoutPanelEmployees.SizeChanged += (s, e) => AdjustCardWidths();
+        }
+
+        private async void Bookings_Load(object sender, EventArgs e)
+        {
+            // Load initial data from API, fallback to local static data if API not reachable
+            await InitializeDataAsync();
 
             LoadSpecialties();
+            // Make sure card widths match container
+            AdjustCardWidths();
+            // Server requires min lead of2 days
+            dateTimePickerAppointment.MinDate = DateTime.Now.AddDays(2);
+            dateTimePickerAppointment.MaxDate = DateTime.Now.AddMonths(3);
+            dateTimePickerAppointment.Value = DateTime.Now.AddDays(2);
         }
 
-        // Đã đổi tên hàm xử lý sự kiện Load
-        private void Bookings_Load(object sender, EventArgs e)
+        private async Task InitializeDataAsync()
         {
-            ResponsiveLayout();
-        }
-
-        // Đã đổi tên hàm xử lý sự kiện Resize
-        private void Bookings_Resize(object sender, EventArgs e)
-        {
-            ResponsiveLayout();
-        }
-
-        private void ResponsiveLayout()
-        {
-            int maxContentWidth = 1000;
-            int currentWidth = panelMain.Width;
-
-            if (currentWidth > maxContentWidth)
-            {
-                int padding = (currentWidth - maxContentWidth) / 2;
-                panelMain.Padding = new Padding(padding, 20, padding, 20);
-            }
-            else
-            {
-                panelMain.Padding = new Padding(20);
-            }
-        }
-
-        private void InitializeData()
-        {
-            specialties = new List<string>
-            {
-                "Nha khoa", "Tim mạch", "Nội khoa", "Ngoại khoa",
-                "Sản phụ khoa", "Nhi khoa", "Da liễu", "Mắt"
-            };
-
-            doctorsBySpecialty = new Dictionary<string, List<DoctorInfo>>
-            {
-                { "Nha khoa", new List<DoctorInfo> {
-                    new DoctorInfo { Name = "BS. Nguyễn Văn A", Specialty = "Nha khoa", Experience = "10 năm", Price = 200000 },
-                    new DoctorInfo { Name = "BS. Trần Thị B", Specialty = "Nha khoa", Experience = "8 năm", Price = 150000 },
-                    new DoctorInfo { Name = "BS. Lê Văn C", Specialty = "Nha khoa", Experience = "12 năm", Price = 250000 }
-                }},
-                { "Tim mạch", new List<DoctorInfo> {
-                    new DoctorInfo { Name = "BS. Phạm Văn D", Specialty = "Tim mạch", Experience = "15 năm", Price = 500000 },
-                    new DoctorInfo { Name = "BS. Hoàng Thị E", Specialty = "Tim mạch", Experience = "11 năm", Price = 450000 }
-                }},
-                { "Nội khoa", new List<DoctorInfo> {
-                    new DoctorInfo { Name = "BS. Đỗ Văn F", Specialty = "Nội khoa", Experience = "9 năm", Price = 200000 },
-                    new DoctorInfo { Name = "BS. Vũ Thị G", Specialty = "Nội khoa", Experience = "14 năm", Price = 300000 }
-                }},
-                { "Ngoại khoa", new List<DoctorInfo> {
-                    new DoctorInfo { Name = "BS. Bùi Văn H", Specialty = "Ngoại khoa", Experience = "16 năm", Price = 350000 }
-                }},
-                { "Sản phụ khoa", new List<DoctorInfo> {
-                    new DoctorInfo { Name = "BS. Đinh Thị I", Specialty = "Sản phụ khoa", Experience = "13 năm", Price = 300000 }
-                }},
-                { "Nhi khoa", new List<DoctorInfo> {
-                    new DoctorInfo { Name = "BS. Ngô Văn K", Specialty = "Nhi khoa", Experience = "10 năm", Price = 200000 }
-                }},
-                { "Da liễu", new List<DoctorInfo> {
-                    new DoctorInfo { Name = "BS. Phan Thị L", Specialty = "Da liễu", Experience = "7 năm", Price = 250000 }
-                }},
-                { "Mắt", new List<DoctorInfo> {
-                    new DoctorInfo { Name = "BS. Mai Văn M", Specialty = "Mắt", Experience = "11 năm", Price = 220000 }
-                }}
-            };
-
+            // Default time slots (fallback)
             timeSlots = new List<string>
             {
-                "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-                "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30"
+                
             };
+
+            try
+            {
+                var dtos = await _apiClient.GetSpecialtiesAsync();
+                specialties = dtos.Select(d => new SpecialtyData
+                {
+                    Id = d.Id,
+                    Name = d.Name,
+                    Price = d.Price
+                }).ToList();
+            }
+            catch
+            {
+                
+            }
         }
 
         private void LoadSpecialties()
@@ -130,351 +109,553 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
             foreach (var specialty in specialties)
             {
-                Button btnSpecialty = new Button
-                {
-                    Text = specialty,
-                    Size = new Size(200, 50),
-                    Font = new Font("Segoe UI", 11),
-                    ForeColor = Color.FromArgb(66, 66, 66),
-                    BackColor = Color.White,
-                    FlatStyle = FlatStyle.Flat,
-                    Cursor = Cursors.Hand,
-                    Margin = new Padding(10),
-                    Tag = specialty
-                };
-                btnSpecialty.FlatAppearance.BorderColor = Color.FromArgb(220, 220, 220);
-                btnSpecialty.Click += BtnSpecialty_Click;
-
-                flowLayoutPanelSpecialties.Controls.Add(btnSpecialty);
+                Panel card = CreateSpecialtyCard(specialty);
+                flowLayoutPanelSpecialties.Controls.Add(card);
             }
+            AdjustCardWidths();
         }
 
-        private void BtnSpecialty_Click(object sender, EventArgs e)
+        private Panel CreateSpecialtyCard(SpecialtyData specialty)
         {
-            ResetStep2AndAfter();
-
-            Button clickedButton = (Button)sender;
-            selectedSpecialty = clickedButton.Tag.ToString();
-
-            foreach (Button btn in flowLayoutPanelSpecialties.Controls)
+            var cardWidth =570;
+            if (flowLayoutPanelSpecialties != null && flowLayoutPanelSpecialties.ClientSize.Width >200)
             {
-                btn.BackColor = Color.White;
-                btn.ForeColor = Color.FromArgb(66, 66, 66);
+                cardWidth = Math.Max(200, flowLayoutPanelSpecialties.ClientSize.Width -30);
             }
-
-            clickedButton.BackColor = Color.FromArgb(23, 162, 184);
-            clickedButton.ForeColor = Color.White;
-
-            groupBoxStep2.Enabled = true;
-            LoadDoctors(selectedSpecialty);
-        }
-
-        private void LoadDoctors(string specialty)
-        {
-            flowLayoutPanelDoctors.Controls.Clear();
-            flowLayoutPanelDoctors.SuspendLayout();
-
-            if (doctorsBySpecialty.ContainsKey(specialty))
-            {
-                foreach (var doctor in doctorsBySpecialty[specialty])
-                {
-                    Panel doctorPanel = CreateDoctorCard(doctor);
-                    flowLayoutPanelDoctors.Controls.Add(doctorPanel);
-                }
-            }
-
-            flowLayoutPanelDoctors.ResumeLayout();
-        }
-
-        private Panel CreateDoctorCard(DoctorInfo doctor)
-        {
+            
             Panel panel = new Panel
             {
-                Size = new Size(280, 100),
+                Size = new Size(cardWidth,80),
                 BackColor = Color.White,
-                BorderStyle = BorderStyle.FixedSingle,
-                Cursor = Cursors.Hand,
                 Margin = new Padding(10),
-                Tag = doctor
+                Cursor = Cursors.Hand,
+                BorderStyle = BorderStyle.FixedSingle,
+                Tag = specialty
             };
 
-            // Tên Bác sĩ
             Label lblName = new Label
             {
-                Text = doctor.Name,
-                Font = new Font("Segoe UI", 11, FontStyle.Bold),
-                ForeColor = Color.FromArgb(33, 33, 33),
-                Location = new Point(10, 10),
+                Text = specialty.Name,
+                Font = new Font("Segoe UI",12, FontStyle.Bold),
+                ForeColor = Color.FromArgb(33,33,33),
+                Location = new Point(15,15),
                 AutoSize = true
             };
-
-            // Chuyên khoa
-            Label lblSpecialty = new Label
-            {
-                Text = $"Chuyên khoa: {doctor.Specialty}",
-                Font = new Font("Segoe UI", 9),
-                ForeColor = Color.Gray,
-                Location = new Point(10, 40),
-                AutoSize = true
-            };
-
-            // Kinh nghiệm
-            Label lblExperience = new Label
-            {
-                Text = $"Kinh nghiệm: {doctor.Experience}",
-                Font = new Font("Segoe UI", 9),
-                ForeColor = Color.Gray,
-                Location = new Point(10, 65),
-                AutoSize = true
-            };
-
 
             Label lblPrice = new Label
             {
-                Text = $"{doctor.Price:N0}đ",
-                Font = new Font("Segoe UI", 12, FontStyle.Bold),
-                ForeColor = Color.FromArgb(33, 33, 33),
-                Location = new Point(160, 65),
-                AutoSize = false,
-                Size = new Size(110, 25),
-                TextAlign = ContentAlignment.MiddleRight
+                Text = $"{specialty.Price:N0} VNĐ",
+                Font = new Font("Segoe UI",11),
+                ForeColor = Color.FromArgb(255,165,0),
+                Location = new Point(15,45),
+                AutoSize = true
             };
 
             panel.Controls.Add(lblName);
-            panel.Controls.Add(lblSpecialty);
-            panel.Controls.Add(lblExperience);
             panel.Controls.Add(lblPrice);
 
-            panel.Click += DoctorPanel_Click;
-            lblName.Click += DoctorPanel_Click;
-            lblSpecialty.Click += DoctorPanel_Click;
-            lblExperience.Click += DoctorPanel_Click;
-            lblPrice.Click += DoctorPanel_Click;
+            panel.Click += async (s, e) => await SelectSpecialtyAsync(specialty);
+            lblName.Click += async (s, e) => await SelectSpecialtyAsync(specialty);
+            lblPrice.Click += async (s, e) => await SelectSpecialtyAsync(specialty);
 
             return panel;
         }
 
-        private void DoctorPanel_Click(object sender, EventArgs e)
+        private async Task SelectSpecialtyAsync(SpecialtyData specialty)
         {
-            Control control = (Control)sender;
-            Panel panel = control as Panel ?? control.Parent as Panel;
+            selectedSpecialtyId = specialty.Id;
+            selectedSpecialty = specialty.Name;
+            totalPrice = specialty.Price;
 
-            if (panel != null && panel.Tag is DoctorInfo)
+            labelSelectedSpecialtyValue.Text = specialty.Name;
+            labelTotalPrice.Text = $"{totalPrice:N0} VNĐ";
+            labelCheckoutTotal.Text = $"{totalPrice:N0} VNĐ";
+            panelTotalSection.Visible = true;
+
+            // Chuyển sang bước chọn nhân viên
+            ShowStep(BookingStep.Employee);
+            await LoadEmployeesAsync(specialty.Id);
+        }
+
+        private async Task LoadEmployeesAsync(Guid specialtyId)
+        {
+            flowLayoutPanelEmployees.Controls.Clear();
+
+            employees.Clear();
+
+            if (_apiClient != null)
             {
-                DoctorInfo doctor = (DoctorInfo)panel.Tag;
-                selectedDoctor = doctor.Name;
-                selectedPrice = doctor.Price;
-
-                foreach (Control c in flowLayoutPanelDoctors.Controls)
+                try
                 {
-                    if (c is Panel p) p.BackColor = Color.White;
+                    var docs = await _apiClient.GetDoctorsBySpecialtyAsync(specialtyId);
+                    employees = docs.Select(d => new EmployeeData
+                    {
+                        Id = d.Id,
+                        Name = d.FullName,
+                        Specialty = selectedSpecialty
+                    }).ToList();
                 }
-
-                panel.BackColor = Color.FromArgb(230, 247, 255);
-
-                ResetStep3AndAfter();
-                groupBoxStep3.Enabled = true;
-                LoadTimeSlots();
+                catch
+                {
+                    // ignore and fallback
+                }
             }
+
+            // If still empty, show placeholder employees
+            if (employees.Count ==0)
+            {
+                employees = new List<EmployeeData>
+                {
+                };
+            }
+
+            foreach (var employee in employees)
+            {
+                Panel card = CreateEmployeeCard(employee);
+                flowLayoutPanelEmployees.Controls.Add(card);
+            }
+        }
+
+        private Panel CreateEmployeeCard(EmployeeData employee)
+        {
+            var cardWidth =570;
+            if (flowLayoutPanelEmployees != null && flowLayoutPanelEmployees.ClientSize.Width >200)
+            {
+                cardWidth = Math.Max(200, flowLayoutPanelEmployees.ClientSize.Width -30);
+            }
+            
+            Panel panel = new Panel
+            {
+                Size = new Size(cardWidth,80),
+                BackColor = Color.White,
+                Margin = new Padding(10),
+                Cursor = Cursors.Hand,
+                BorderStyle = BorderStyle.FixedSingle,
+                Tag = employee
+            };
+
+            Label lblName = new Label
+            {
+                Text = employee.Name,
+                Font = new Font("Segoe UI",12, FontStyle.Bold),
+                ForeColor = Color.FromArgb(33,33,33),
+                Location = new Point(15,15),
+                AutoSize = true
+            };
+
+            Label lblSpecialty = new Label
+            {
+                Text = $"Chuyên khoa: {employee.Specialty}",
+                Font = new Font("Segoe UI",10),
+                ForeColor = Color.Gray,
+                Location = new Point(15,45),
+                AutoSize = true
+            };
+
+            panel.Controls.Add(lblName);
+            panel.Controls.Add(lblSpecialty);
+
+            panel.Click += (s, e) => SelectEmployee(employee);
+            lblName.Click += (s, e) => SelectEmployee(employee);
+            lblSpecialty.Click += (s, e) => SelectEmployee(employee);
+
+            return panel;
+        }
+
+        private void SelectEmployee(EmployeeData employee)
+        {
+            selectedEmployeeId = employee.Id;
+            selectedEmployee = employee.Name;
+            labelSelectedEmployeeValue.Text = employee.Name;
+
+            // Chuyển sang bước chọn ngày giờ
+            ShowStep(BookingStep.DateTime);
+            _ = LoadTimeSlotsAsync();
         }
 
         private void DateTimePickerAppointment_ValueChanged(object sender, EventArgs e)
         {
             selectedDate = dateTimePickerAppointment.Value.ToString("dd/MM/yyyy");
-            LoadTimeSlots();
-            UpdateSummary();
+            _ = LoadTimeSlotsAsync();
         }
 
-        private void LoadTimeSlots()
+        private async Task LoadTimeSlotsAsync()
         {
-            flowLayoutPanelTimeSlots.Controls.Clear();
-            if (timeSlots == null) return;
+            comboBoxTimeSlot.Items.Clear();
+            comboBoxTimeSlot.Enabled = false;
 
-            foreach (var time in timeSlots)
+            // Prefer API slots for selected doctor and date
+            if (_apiClient != null && selectedEmployeeId != Guid.Empty)
             {
-                Button btnTime = new Button
+                try
                 {
-                    Text = time,
-                    Size = new Size(110, 45),
-                    Font = new Font("Segoe UI", 10),
-                    ForeColor = Color.FromArgb(66, 66, 66),
-                    BackColor = Color.White,
-                    FlatStyle = FlatStyle.Flat,
-                    Cursor = Cursors.Hand,
-                    Margin = new Padding(8),
-                    Tag = time
-                };
-                btnTime.FlatAppearance.BorderColor = Color.FromArgb(220, 220, 220);
-                btnTime.Click += BtnTime_Click;
-
-                flowLayoutPanelTimeSlots.Controls.Add(btnTime);
-            }
-        }
-
-        private void BtnTime_Click(object sender, EventArgs e)
-        {
-            Button clickedButton = (Button)sender;
-            selectedTime = clickedButton.Tag.ToString();
-
-            foreach (Button btn in flowLayoutPanelTimeSlots.Controls)
-            {
-                btn.BackColor = Color.White;
-                btn.ForeColor = Color.FromArgb(66, 66, 66);
-            }
-
-            clickedButton.BackColor = Color.FromArgb(23, 162, 184);
-            clickedButton.ForeColor = Color.White;
-
-            groupBoxStep4.Enabled = true;
-            textBoxFullName.Focus();
-
-            UpdateSummary();
-            CheckEnableBookButton();
-        }
-
-        private void TextBoxPhone_KeyPress(object sender, KeyPressEventArgs e)
-        {
-            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
-            {
-                e.Handled = true;
-            }
-        }
-
-        private void TextBoxCustomerInfo_Changed(object sender, EventArgs e)
-        {
-            UpdateSummary();
-            CheckEnableBookButton();
-        }
-
-        private void CheckEnableBookButton()
-        {
-            bool allFieldsFilled = !string.IsNullOrWhiteSpace(selectedSpecialty) &&
-                                  !string.IsNullOrWhiteSpace(selectedDoctor) &&
-                                  !string.IsNullOrWhiteSpace(selectedTime) &&
-                                  !string.IsNullOrWhiteSpace(textBoxFullName.Text) &&
-                                  !string.IsNullOrWhiteSpace(textBoxPhone.Text) &&
-                                  !string.IsNullOrWhiteSpace(textBoxEmail.Text);
-
-            buttonBookAppointment.Enabled = allFieldsFilled;
-            buttonBookAppointment.BackColor = allFieldsFilled ?
-                Color.FromArgb(23, 162, 184) : Color.Gray;
-        }
-
-        private void UpdateSummary()
-        {
-            if (!string.IsNullOrEmpty(selectedSpecialty) && !string.IsNullOrEmpty(selectedDoctor))
-            {
-                string summary = $"Chuyên khoa: {selectedSpecialty} | Bác sĩ: {selectedDoctor}";
-                if (!string.IsNullOrEmpty(selectedTime))
-                {
-                    summary += $" | Ngày: {dateTimePickerAppointment.Value:dd/MM/yyyy} - Giờ: {selectedTime}";
+                    var date = DateOnly.FromDateTime(dateTimePickerAppointment.Value);
+                    var slots = await _apiClient.GetDoctorSlotsAsync(selectedEmployeeId, date);
+                    var available = slots.Where(s => s.IsAvailable).OrderBy(s => s.StartLocal).ToList();
+                    foreach (var s in available)
+                    {
+                        // show range: start - end
+                        comboBoxTimeSlot.Items.Add($"{s.StartLocal:HH:mm} - {s.EndLocal:HH:mm}");
+                    }
                 }
-                labelSummary.Text = summary;
+                catch
+                {
+                    // fallback to static list below
+                }
+            }
+
+            if (comboBoxTimeSlot.Items.Count ==0)
+            {
+                // fallback static slots
+                foreach (var time in timeSlots)
+                {
+                    // assume default duration30 minutes
+                    if (TimeSpan.TryParse(time, out var tsStart))
+                    {
+                        var tsEnd = tsStart.Add(TimeSpan.FromMinutes(30));
+                        var startStr = tsStart.ToString(@"hh\:mm");
+                        var endStr = tsEnd.ToString(@"hh\:mm");
+                        comboBoxTimeSlot.Items.Add($"{startStr} - {endStr}");
+                    }
+                    else
+                    {
+                        comboBoxTimeSlot.Items.Add(time);
+                    }
+                }
+            }
+
+            if (comboBoxTimeSlot.Items.Count >0)
+            {
+                comboBoxTimeSlot.Enabled = true;
+                comboBoxTimeSlot.SelectedIndex =0;
+            }
+        }
+
+        private void ButtonConfirmDateTime_Click(object sender, EventArgs e)
+        {
+            if (comboBoxTimeSlot.SelectedItem == null)
+            {
+                MessageBox.Show("Vui lòng chọn giờ!", "Thông báo",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            selectedTime = comboBoxTimeSlot.SelectedItem.ToString();
+            selectedDate = dateTimePickerAppointment.Value.ToString("dd/MM/yyyy");
+
+            labelSelectedDateTimeValue.Text = $"{selectedDate} - {selectedTime}";
+
+            // Chuyển sang bước thanh toán
+            ShowStep(BookingStep.Payment);
+        }
+
+        private void ButtonApplyPromo_Click(object sender, EventArgs e)
+        {
+            string promoCode = textBoxPromoCode.Text.Trim().ToUpper();
+
+            if (string.IsNullOrEmpty(promoCode))
+            {
+                MessageBox.Show("Vui lòng nhập mã khuyến mãi!", "Thông báo",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Giả lập kiểm tra mã
+            if (promoCode == "GIAM10")
+            {
+                decimal discount = totalPrice *0.1m;
+                totalPrice -= discount;
+                labelCheckoutTotal.Text = $"{totalPrice:N0} VNĐ";
+                labelTotalPrice.Text = $"{totalPrice:N0} VNĐ";
+
+                MessageBox.Show($"Áp dụng mã thành công!\nGiảm giá: {discount:N0} VNĐ",
+                    "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             else
             {
-                labelSummary.Text = "Vui lòng hoàn thành các bước để đặt lịch";
+                MessageBox.Show("Mã khuyến mãi không hợp lệ!",
+                    "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-        private void ButtonBookAppointment_Click(object sender, EventArgs e)
+        private async Task<bool> SaveBooking()
         {
-            if (!ValidateCustomerInfo()) return;
-
-            string appointmentInfo = $"THÔNG TIN LỊCH HẸN\n\n" +
-                                    $"Chuyên khoa: {selectedSpecialty}\n" +
-                                    $"Bác sĩ: {selectedDoctor}\n" +
-                                    $"Phí khám: {selectedPrice:N0} VNĐ\n" +
-                                    $"Ngày khám: {dateTimePickerAppointment.Value:dd/MM/yyyy}\n" +
-                                    $"Giờ khám: {selectedTime}\n\n" +
-                                    $"THÔNG TIN KHÁCH HÀNG\n\n" +
-                                    $"Họ tên: {textBoxFullName.Text}\n" +
-                                    $"Số điện thoại: {textBoxPhone.Text}\n" +
-                                    $"Email: {textBoxEmail.Text}";
-
-            DialogResult result = MessageBox.Show(
-                appointmentInfo + "\n\nXác nhận đặt lịch hẹn?", "Xác nhận đặt lịch",
-                MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-            if (result == DialogResult.Yes)
+            try
             {
-                if (SaveAppointment())
+                if (selectedSpecialtyId == Guid.Empty)
                 {
-                    MessageBox.Show("Đặt lịch hẹn thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    this.Close();
+                    MessageBox.Show("Vui lòng chọn chuyên khoa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
                 }
-                else
+
+                if (selectedEmployeeId == Guid.Empty)
                 {
-                    MessageBox.Show("Có lỗi xảy ra!", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    MessageBox.Show("Vui lòng chọn bác sĩ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
                 }
+
+                if (string.IsNullOrWhiteSpace(selectedDate) || string.IsNullOrWhiteSpace(selectedTime))
+                {
+                    MessageBox.Show("Vui lòng chọn ngày và giờ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
+                }
+
+                // Parse local date + time
+                DateTime startLocal;
+                try
+                {
+                    // selectedTime may be a range like "14:30 -15:00". Extract start time
+                    var timePart = selectedTime.Split('-')[0].Trim();
+                    startLocal = DateTime.ParseExact($"{selectedDate} {timePart}", "dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
+                    startLocal = DateTime.SpecifyKind(startLocal, DateTimeKind.Local);
+                }
+                catch (FormatException)
+                {
+                    MessageBox.Show("Định dạng ngày giờ không hợp lệ.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+
+                var startUtc = startLocal.ToUniversalTime();
+
+                var req = new CreateCustomerBookingRequest
+                {
+                    SpecialtyId = selectedSpecialtyId,
+                    DoctorId = selectedEmployeeId,
+                    SlotStartUtc = startUtc,
+                    DurationMinutes =30,
+                    CustomerName = textBoxName.Text.Trim(),
+                    CustomerPhone = textBoxPhone.Text.Trim()
+                };
+
+                var resp = await _apiClient.CreateAsync(req);
+                if (resp is null)
+                {
+                    MessageBox.Show("Đã xảy ra lỗi khi tạo lịch", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+
+                MessageBox.Show("Đặt lịch thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return true;
+            }
+            catch (HttpRequestException ex)
+            {
+                MessageBox.Show($"Lỗi kết nối: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
             }
         }
 
-        private bool ValidateCustomerInfo()
+        private async void ButtonConfirmBooking_Click(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(textBoxFullName.Text))
+            // Validate
+            if (string.IsNullOrWhiteSpace(textBoxName.Text))
             {
-                MessageBox.Show("Vui lòng nhập họ tên!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                textBoxFullName.Focus(); return false;
+                MessageBox.Show("Vui lòng nhập họ tên!", "Thông báo",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                textBoxName.Focus();
+                return;
             }
+
             if (string.IsNullOrWhiteSpace(textBoxPhone.Text))
             {
-                MessageBox.Show("Vui lòng nhập số điện thoại!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                textBoxPhone.Focus(); return false;
+                MessageBox.Show("Vui lòng nhập số điện thoại!", "Thông báo",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                textBoxPhone.Focus();
+                return;
             }
-            if (!Regex.IsMatch(textBoxPhone.Text, @"^0\d{9,10}$"))
+
+            // Lưu đặt lịch
+            bool success = await SaveBooking();
+
+            if (success)
             {
-                MessageBox.Show("Số điện thoại không hợp lệ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                textBoxPhone.Focus(); return false;
+                ShowStep(BookingStep.ThankYou);
             }
-            if (string.IsNullOrWhiteSpace(textBoxEmail.Text))
-            {
-                MessageBox.Show("Vui lòng nhập email!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                textBoxEmail.Focus(); return false;
-            }
-            if (!Regex.IsMatch(textBoxEmail.Text, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
-            {
-                MessageBox.Show("Email không hợp lệ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                textBoxEmail.Focus(); return false;
-            }
-            return true;
         }
 
-        private bool SaveAppointment()
+        private void ShowStep(BookingStep step)
         {
-            // Logic lưu vào database sẽ nằm ở đây
-            return true;
+            currentStep = step;
+
+            // Ẩn tất cả panels
+            panelSpecialty.Visible = false;
+            panelEmployee.Visible = false;
+            panelDateTime.Visible = false;
+            panelPayment.Visible = false;
+            panelThankYou.Visible = false;
+
+            // Hiển thị panel tương ứng
+            switch (step)
+            {
+                case BookingStep.Specialty:
+                    panelSpecialty.Visible = true;
+                    labelLeftTitle.Text = "Chọn chuyên khoa";
+                    buttonBack.Visible = false;
+                    textBoxSearch.Visible = true;
+                    break;
+
+                case BookingStep.Employee:
+                    panelEmployee.Visible = true;
+                    labelLeftTitle.Text = "Chọn nhân viên";
+                    buttonBack.Visible = true;
+                    textBoxSearch.Visible = false;
+                    break;
+
+                case BookingStep.DateTime:
+                    panelDateTime.Visible = true;
+                    labelLeftTitle.Text = "Chọn ngày & giờ";
+                    buttonBack.Visible = true;
+                    textBoxSearch.Visible = false;
+                    break;
+
+                case BookingStep.Payment:
+                    panelPayment.Visible = true;
+                    labelLeftTitle.Text = "Thanh toán";
+                    buttonBack.Visible = true;
+                    textBoxSearch.Visible = false;
+                    break;
+
+                case BookingStep.ThankYou:
+                    panelThankYou.Visible = true;
+                    labelLeftTitle.Text = "Hoàn tất";
+                    buttonBack.Visible = false;
+                    textBoxSearch.Visible = false;
+                    break;
+            }
         }
 
-        private void ResetStep2AndAfter()
+        private void ButtonBack_Click(object sender, EventArgs e)
         {
-            selectedDoctor = "";
-            selectedPrice = 0;
-            flowLayoutPanelDoctors.Controls.Clear();
-            groupBoxStep2.Enabled = false;
-            ResetStep3AndAfter();
+            switch (currentStep)
+            {
+                case BookingStep.Employee:
+                    ShowStep(BookingStep.Specialty);
+                    break;
+                case BookingStep.DateTime:
+                    ShowStep(BookingStep.Employee);
+                    break;
+                case BookingStep.Payment:
+                    ShowStep(BookingStep.DateTime);
+                    break;
+            }
         }
 
-        private void ResetStep3AndAfter()
+        private void ButtonBackToStart_Click(object? sender, EventArgs e)
         {
-            selectedTime = "";
-            groupBoxStep3.Enabled = false;
-            groupBoxStep4.Enabled = false;
-            flowLayoutPanelTimeSlots.Controls.Clear();
-            textBoxFullName.Clear();
-            textBoxPhone.Clear();
-            textBoxEmail.Clear();
-            buttonBookAppointment.Enabled = false;
-            buttonBookAppointment.BackColor = Color.Gray;
-            UpdateSummary();
+            ResetBookingForm();
+            ShowStep(BookingStep.Specialty);
+        }
+
+        private void ResetBookingForm()
+        {
+            // Reset selections and UI
+            selectedSpecialty = string.Empty;
+            selectedEmployee = string.Empty;
+            selectedSpecialtyId = Guid.Empty;
+            selectedEmployeeId = Guid.Empty;
+            selectedDate = string.Empty;
+            selectedTime = string.Empty;
+            totalPrice =0;
+
+            labelSelectedSpecialtyValue.Text = "Chưa chọn";
+            labelSelectedEmployeeValue.Text = "Chưa chọn";
+            labelSelectedDateTimeValue.Text = "Chưa chọn";
+            labelTotalPrice.Text = "0 VNĐ";
+            labelCheckoutTotal.Text = "0 VNĐ";
+            panelTotalSection.Visible = false;
+
+            textBoxName.Text = string.Empty;
+            textBoxPhone.Text = string.Empty;
+            textBoxPromoCode.Text = string.Empty;
+
+            // Clear flow panels
+            flowLayoutPanelEmployees.Controls.Clear();
+            // reload specialties from cached list
+            LoadSpecialties();
+        }
+
+        private void TextBoxSearch_Enter(object sender, EventArgs e)
+        {
+            if (textBoxSearch.Text == "Tìm kiếm chuyên khoa")
+            {
+                textBoxSearch.Text = "";
+                textBoxSearch.ForeColor = Color.Black;
+            }
+        }
+
+        private void TextBoxSearch_Leave(object sender, EventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(textBoxSearch.Text))
+            {
+                textBoxSearch.Text = "Tìm kiếm chuyên khoa";
+                textBoxSearch.ForeColor = Color.Gray;
+            }
+        }
+
+        private void TextBoxSearch_TextChanged(object sender, EventArgs e)
+        {
+            if (textBoxSearch.Text == "Tìm kiếm chuyên khoa" || string.IsNullOrWhiteSpace(textBoxSearch.Text))
+            {
+                LoadSpecialties();
+                return;
+            }
+
+            string searchText = textBoxSearch.Text.ToLower();
+            var filtered = specialties.Where(s => s.Name.ToLower().Contains(searchText)).ToList();
+
+            flowLayoutPanelSpecialties.Controls.Clear();
+            foreach (var specialty in filtered)
+            {
+                Panel card = CreateSpecialtyCard(specialty);
+                flowLayoutPanelSpecialties.Controls.Add(card);
+            }
+        }
+
+        private void AdjustCardWidths()
+        {
+            try
+            {
+                if (flowLayoutPanelSpecialties != null)
+                {
+                    var w = Math.Max(200, flowLayoutPanelSpecialties.ClientSize.Width -30);
+                    foreach (Panel p in flowLayoutPanelSpecialties.Controls.OfType<Panel>())
+                    {
+                        p.Width = w;
+                    }
+                }
+
+                if (flowLayoutPanelEmployees != null)
+                {
+                    var w = Math.Max(200, flowLayoutPanelEmployees.ClientSize.Width -30);
+                    foreach (Panel p in flowLayoutPanelEmployees.Controls.OfType<Panel>())
+                    {
+                        p.Width = w;
+                    }
+                }
+            }
+            catch
+            {
+                // ignore layout exceptions
+            }
         }
     }
 
-    public class DoctorInfo
+    // Classes dữ liệu
+    public class SpecialtyData
     {
+        public Guid Id { get; set; }
+        public string Name { get; set; }
+        public decimal Price { get; set; }
+    }
+
+    public class EmployeeData
+    {
+        public Guid Id { get; set; }
         public string Name { get; set; }
         public string Specialty { get; set; }
-        public string Experience { get; set; }
-        public decimal Price { get; set; }
     }
 }

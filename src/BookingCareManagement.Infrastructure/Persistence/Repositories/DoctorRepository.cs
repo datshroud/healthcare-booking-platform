@@ -71,6 +71,18 @@ public class DoctorRepository : IDoctorRepository
             .ToListAsync(cancellationToken);
     }
 
+    public void Remove(Doctor doctor)
+    {
+        if (doctor is null)
+        {
+            return;
+        }
+
+        _context.Doctors.Remove(doctor);
+
+
+    }
+
     public async Task RemoveWorkingHoursAsync(Guid doctorId, CancellationToken cancellationToken = default)
     {
         await _context.DoctorWorkingHours

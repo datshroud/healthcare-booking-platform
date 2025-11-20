@@ -12,8 +12,23 @@ public sealed class SpecialtyEditorForm : Form
 {
     private readonly TextBox _txtName = new() { Dock = DockStyle.Fill };
     private readonly TextBox _txtSlug = new() { Dock = DockStyle.Fill };
-    private readonly TextBox _txtColor = new() { Dock = DockStyle.Fill, Text = "#1a73e8" };
-    private readonly TextBox _txtImageUrl = new() { Dock = DockStyle.Fill };
+    private readonly TextBox _txtImageUrl = new() { Dock = DockStyle.Fill, ReadOnly = true };
+    private readonly Button _btnBrowseImage = new()
+    {
+        Text = "...",
+        Width = 40,
+        Height = 27,
+        Cursor = Cursors.Hand
+    };
+    private readonly NumericUpDown _numPrice = new()
+    {
+        Dock = DockStyle.Fill,
+        Minimum = 0,
+        Maximum = 99999999,
+        DecimalPlaces = 0,
+        ThousandsSeparator = true,
+        Value = 0
+    };
     private readonly TextBox _txtDescription = new()
     {
         Dock = DockStyle.Fill,
@@ -42,9 +57,11 @@ public sealed class SpecialtyEditorForm : Form
 
         Text = existing is null ? "Thêm chuyên khoa" : "Cập nhật chuyên khoa";
         StartPosition = FormStartPosition.CenterParent;
-        Size = new Size(760, 580);
-        MinimumSize = new Size(640, 520);
+        Size = new Size(760, 620);
+        MinimumSize = new Size(640, 560);
         Font = new Font("Segoe UI", 10);
+        FormBorderStyle = FormBorderStyle.FixedDialog;
+        MaximizeBox = false;
 
         (_btnSave, _btnCancel) = BuildFooterButtons();
         AcceptButton = _btnSave;
@@ -63,7 +80,7 @@ public sealed class SpecialtyEditorForm : Form
         var root = new TableLayoutPanel
         {
             Dock = DockStyle.Fill,
-            Padding = new Padding(16, 16, 16, 72),
+            Padding = new Padding(20, 20, 20, 100),
             ColumnCount = 2,
             RowCount = 6,
             AutoScroll = true
@@ -71,12 +88,48 @@ public sealed class SpecialtyEditorForm : Form
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 180));
         root.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
 
-        AddLabeledControl(root, "Tên chuyên khoa", _txtName, 0);
-        AddLabeledControl(root, "Slug", _txtSlug, 1);
-        AddLabeledControl(root, "Màu sắc", _txtColor, 2);
-        AddLabeledControl(root, "Ảnh (URL)", _txtImageUrl, 3);
-        AddLabeledControl(root, "Mô tả", _txtDescription, 4);
-        AddLabeledControl(root, "Bác sĩ đảm nhiệm", _doctorList, 5);
+        int row = 0;
+
+        // Tên chuyên khoa
+        AddLabeledControl(root, "Tên chuyên khoa", _txtName, row++);
+
+        // Slug
+        AddLabeledControl(root, "Slug", _txtSlug, row++);
+
+        // Ảnh với nút browse
+        var imagePanel = new Panel { Dock = DockStyle.Fill, Height = 30 };
+        _txtImageUrl.Dock = DockStyle.None;
+        _txtImageUrl.Width = 460;
+        _txtImageUrl.Left = 0;
+        _txtImageUrl.Top = 0;
+        _btnBrowseImage.Left = 470;
+        _btnBrowseImage.Top = 0;
+        imagePanel.Controls.Add(_txtImageUrl);
+        imagePanel.Controls.Add(_btnBrowseImage);
+        AddLabeledControl(root, "Ảnh (URL)", imagePanel, row++);
+
+        // Nút browse click event
+        _btnBrowseImage.Click += (s, e) =>
+        {
+            using var dialog = new OpenFileDialog
+            {
+                Filter = "Image Files|*.jpg;*.jpeg;*.png;*.gif;*.bmp",
+                Title = "Chọn ảnh chuyên khoa"
+            };
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                _txtImageUrl.Text = dialog.FileName;
+            }
+        };
+
+        // Giá khám
+        AddLabeledControl(root, "Giá khám (VNĐ)", _numPrice, row++);
+
+        // Bác sĩ đảm nhiệm (moved above description)
+        AddLabeledControl(root, "Bác sĩ đảm nhiệm", _doctorList, row++);
+
+        // Mô tả
+        AddLabeledControl(root, "Mô tả", _txtDescription, row++);
 
         Controls.Add(root);
         Controls.Add(BuildFooterPanel());
@@ -94,7 +147,9 @@ public sealed class SpecialtyEditorForm : Form
             Text = labelText,
             Dock = DockStyle.Fill,
             TextAlign = ContentAlignment.MiddleLeft,
-            Padding = new Padding(0, 0, 8, 8)
+            Padding = new Padding(0, 8, 12, 8),
+            AutoSize = false,
+            Height = 35
         };
 
         layout.Controls.Add(label, 0, row);
@@ -106,21 +161,34 @@ public sealed class SpecialtyEditorForm : Form
         var footer = new Panel
         {
             Dock = DockStyle.Bottom,
-            Height = 64,
-            Padding = new Padding(16),
+            Height = 70,
             BackColor = Color.FromArgb(246, 248, 252)
         };
 
-        var buttons = new FlowLayoutPanel
+        // Container cho buttons ở góc phải dưới
+        var buttonContainer = new Panel
         {
-            Dock = DockStyle.Right,
-            FlowDirection = FlowDirection.LeftToRight,
-            AutoSize = true
+            AutoSize = false,
+            Width = 180,
+            Height = 40,
+            Location = new Point(footer.Width - 200, 15)
         };
 
-        buttons.Controls.Add(_btnSave);
-        buttons.Controls.Add(_btnCancel);
-        footer.Controls.Add(buttons);
+        // Đặt buttons trực tiếp vào container
+        _btnSave.Location = new Point(0, 0);
+        _btnCancel.Location = new Point(90, 0);
+
+        buttonContainer.Controls.Add(_btnSave);
+        buttonContainer.Controls.Add(_btnCancel);
+        
+        footer.Controls.Add(buttonContainer);
+        
+        // Đảm bảo buttons luôn ở góc phải khi resize
+        footer.Resize += (s, e) =>
+        {
+            buttonContainer.Location = new Point(footer.Width - 200, 15);
+        };
+        
         return footer;
     }
 
@@ -129,18 +197,30 @@ public sealed class SpecialtyEditorForm : Form
         var btnSave = new Button
         {
             Text = _existing is null ? "Thêm" : "Lưu",
-            AutoSize = true,
-            Padding = new Padding(18, 6, 18, 6)
+            Width = 80,
+            Height = 35,
+            BackColor = Color.FromArgb(23, 162, 184),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 10, FontStyle.Bold),
+            Cursor = Cursors.Hand
         };
+        btnSave.FlatAppearance.BorderSize = 0;
         btnSave.Click += (_, _) => HandleSave();
 
         var btnCancel = new Button
         {
             Text = "Hủy",
-            AutoSize = true,
-            Padding = new Padding(18, 6, 18, 6),
-            DialogResult = DialogResult.Cancel
+            Width = 80,
+            Height = 35,
+            BackColor = Color.Gray,
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 10),
+            DialogResult = DialogResult.Cancel,
+            Cursor = Cursors.Hand
         };
+        btnCancel.FlatAppearance.BorderSize = 0;
 
         return (btnSave, btnCancel);
     }
@@ -148,7 +228,15 @@ public sealed class SpecialtyEditorForm : Form
     private void PopulateDoctors()
     {
         _doctorList.Items.Clear();
-        foreach (var doctor in _doctorOptions)
+        
+        // Filter to show only doctors without specialty (or if editing, include current specialty's doctors)
+        var doctorsToShow = _doctorOptions.Where(d => 
+            d.Specialties == null || 
+            !d.Specialties.Any() || 
+            (_existing != null && d.Specialties.Contains(_existing.Name))
+        ).ToList();
+
+        foreach (var doctor in doctorsToShow)
         {
             _doctorList.Items.Add(new DoctorListItem(doctor.Id, ResolveDoctorName(doctor)), false);
         }
@@ -158,8 +246,8 @@ public sealed class SpecialtyEditorForm : Form
     {
         _txtName.Text = dto.Name;
         _txtSlug.Text = dto.Slug;
-        _txtColor.Text = dto.Color;
         _txtImageUrl.Text = dto.ImageUrl ?? string.Empty;
+        _numPrice.Value = dto.Price;
         _txtDescription.Text = dto.Description ?? string.Empty;
 
         var selectedIds = new HashSet<Guid>(dto.Doctors.Select(d => d.Id));
@@ -177,6 +265,14 @@ public sealed class SpecialtyEditorForm : Form
         if (string.IsNullOrWhiteSpace(_txtName.Text))
         {
             MessageBox.Show(this, "Vui lòng nhập tên chuyên khoa", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _txtName.Focus();
+            return;
+        }
+
+        if (_numPrice.Value < 0)
+        {
+            MessageBox.Show(this, "Giá khám không hợp lệ", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _numPrice.Focus();
             return;
         }
 
@@ -193,11 +289,12 @@ public sealed class SpecialtyEditorForm : Form
 
         return new SpecialtyUpsertRequest
         {
-            Name = _txtName.Text,
-            Slug = _txtSlug.Text,
-            Color = _txtColor.Text,
-            Description = _txtDescription.Text,
-            ImageUrl = _txtImageUrl.Text,
+            Name = _txtName.Text.Trim(),
+            Slug = _txtSlug.Text.Trim(),
+            Color = "#1a73e8", // Default color since field removed
+            Price = _numPrice.Value,
+            Description = _txtDescription.Text.Trim(),
+            ImageUrl = string.IsNullOrWhiteSpace(_txtImageUrl.Text) ? null : _txtImageUrl.Text.Trim(),
             DoctorIds = doctorIds
         };
     }

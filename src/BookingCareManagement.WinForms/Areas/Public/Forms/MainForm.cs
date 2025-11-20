@@ -1,6 +1,11 @@
 ﻿using BookingCareManagement.WinForms.Areas.Admin.Controls;
 using BookingCareManagement.WinForms.Areas.Admin.Forms;
 using BookingCareManagement.WinForms.Areas.Admin.Services;
+using BookingCareManagement.WinForms.Areas.Doctor.Forms;
+using BookingCareManagement.WinForms.Areas.Customer.Forms;
+using BookingCareManagement.WinForms.Shared.State;
+using BookingCareManagement.WinForms.Areas.Account.Forms;
+using BookingCareManagement.WinForms.Shared.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -12,37 +17,74 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Net.Http;
+using System.IO;
 
 namespace BookingCareManagement.WinForms
 {
     public partial class MainForm : Form
     {
-        private Panel sidebarPanel;
-        private Panel navbarPanel;
-        private Panel contentPanel;
-        private SidebarButton activeButton;
-        private Form activeChildForm = null;
+        private Panel sidebarPanel = null!;
+        private Panel navbarPanel = null!;
+        private Panel contentPanel = null!;
+        private SidebarButton? activeButton = null;
+        private Form? activeChildForm = null;
 
         // Biến cho chức năng kéo thả
-        private SidebarButton draggedButton = null;
+        private SidebarButton? draggedButton = null;
         private Point dragStartPoint;
-        private Panel dragIndicator;
+        private Panel? dragIndicator = null;
         private int dragInsertIndex = -1;
 
-        // Thêm IServiceProvider để resolve dependencies
         private readonly IServiceProvider _serviceProvider;
+        private readonly SessionState _sessionState;
 
         public MainForm(IServiceProvider serviceProvider)
         {
+            try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] MainForm: constructor start\n"); } catch {}
             _serviceProvider = serviceProvider;
+            _sessionState = serviceProvider.GetRequiredService<SessionState>();
             
             InitializeComponent();
             InitializeCustomComponents();
             CreateSidebar();    
+            try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] MainForm: after CreateSidebar\n"); } catch {}
+            // Rebuild sidebar when session/profile changes (e.g. after login)
+            _sessionState.StateChanged += (s, e) =>
+            {
+                if (this.IsHandleCreated && this.InvokeRequired)
+                {
+                    this.BeginInvoke(new Action(() =>
+                    {
+                        RebuildSidebar();
+                        UpdateAccountDisplay();
+                    }));
+                }
+                else
+                {
+                    RebuildSidebar();
+                    UpdateAccountDisplay();
+                }
+            };
+
             this.Load += (s, e) =>
             {
-                OpenChildForm(new Calendar());
+                try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] MainForm: Load event\n"); } catch {}
+                OpenRoleDashboard();
             };
+        }
+
+        private void RebuildSidebar()
+        {
+            // Remove existing SidebarButton controls only, preserve other controls like dragIndicator
+            var toRemove = sidebarPanel.Controls.OfType<SidebarButton>().ToList();
+            foreach (var c in toRemove)
+            {
+                sidebarPanel.Controls.Remove(c);
+                c.Dispose();
+            }
+
+            CreateSidebar();
         }
 
         private void InitializeCustomComponents()
@@ -70,11 +112,24 @@ namespace BookingCareManagement.WinForms
                 Visible = false
             };
             sidebarPanel.Controls.Add(dragIndicator);
-            dragIndicator.BringToFront();
+            if (dragIndicator != null) dragIndicator.BringToFront();
 
             // Sự kiện kéo thả cho sidebar
             sidebarPanel.DragOver += SidebarPanel_DragOver;
             sidebarPanel.DragDrop += SidebarPanel_DragDrop;
+        }
+
+        private void OpenRoleDashboard()
+        {
+            if (HasDoctorAccess() && !HasAdminAccess())
+            {
+                var doctorForm = _serviceProvider.GetRequiredService<DoctorAppointmentsForm>();
+                OpenChildForm(doctorForm);
+                return;
+            }
+
+            var dashboard = _serviceProvider.GetRequiredService<DashboardForm>();
+            OpenChildForm(dashboard);
         }
 
         private void CloseAccountMenu()
@@ -88,7 +143,7 @@ namespace BookingCareManagement.WinForms
             }
         }
 
-        private void MainForm_Resize(object sender, EventArgs e)
+        private void MainForm_Resize(object? sender, EventArgs e)
         {
             AdjustNavbarButtons();
         }
@@ -164,6 +219,9 @@ namespace BookingCareManagement.WinForms
                 BackColor = Color.Transparent
             };
 
+            userAvatarText.Name = "account_avatarText";
+            userAvatar.Name = "account_avatar";
+
             Label userName = new Label
             {
                 Text = "Dai Tran",
@@ -172,6 +230,7 @@ namespace BookingCareManagement.WinForms
                 Font = new Font("Segoe UI", 11, FontStyle.Bold),
                 ForeColor = Color.FromArgb(15, 23, 42)
             };
+            userName.Name = "account_userName";
 
             Label userEmail = new Label
             {
@@ -181,6 +240,7 @@ namespace BookingCareManagement.WinForms
                 Font = new Font("Segoe UI", 9),
                 ForeColor = Color.Black
             };
+            userEmail.Name = "account_userEmail";
 
             userInfo.Controls.Add(userAvatar);
             userInfo.Controls.Add(userAvatarText);
@@ -213,7 +273,27 @@ namespace BookingCareManagement.WinForms
 
             accountSettingsBtn.Click += (s, e) =>
             {
-                MessageBox.Show("Bạn đã nhấn Cài đặt tài khoản!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                try
+                {
+                    var editor = _serviceProvider.GetService<Areas.Account.Forms.AccountEditorForm>();
+                    if (editor != null)
+                    {
+                        var res = editor.ShowDialog(this);
+                        if (res == DialogResult.OK)
+                        {
+                            // profile saved -> session updated inside editor
+                            UpdateAccountDisplay();
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Cài đặt tài khoản chưa được đăng ký.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Không thể mở cài đặt tài khoản: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             };
 
             Panel divider2 = new Panel
@@ -247,9 +327,36 @@ namespace BookingCareManagement.WinForms
 
                 if (result == DialogResult.Yes)
                 {
-                    MessageBox.Show("Đăng xuất thành công!", "Thông báo",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    this.Close();
+                    // Perform logout via AuthService then prompt for re-login
+                    var auth = _serviceProvider.GetService<Shared.Services.AuthService>();
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            if (auth != null)
+                            {
+                                await auth.LogoutAsync();
+                            }
+                        }
+                        catch { }
+                        // show login dialog on UI thread
+                        this.BeginInvoke(new Action(() =>
+                        {
+                            var login = _serviceProvider.GetService<Login>();
+                            if (login != null)
+                            {
+                                var r = login.ShowDialog(this);
+                                if (r != DialogResult.OK)
+                                {
+                                    this.Close();
+                                }
+                            }
+                            else
+                            {
+                                this.Close();
+                            }
+                        }));
+                    });
                 }
             };
 
@@ -334,92 +441,432 @@ namespace BookingCareManagement.WinForms
             AdjustNavbarButtons();
         }
 
-        private void CreateSidebar()
+        private void UpdateAccountDisplay()
         {
-            string[] menuItems = {
-                "📅 Lịch",
-                "📊 Bảng điều khiển",
-                "✅ Cuộc hẹn",
-                "👥 Bác sĩ",
-                "👤 Khách hàng",
-                "🎯 Chuyên khoa",
-                "💰 Hóa đơn",
-                "⚙️ Cài đặt"
-            };
-
-            int yPos = 20;
-
-            foreach (string item in menuItems)
+            try
             {
-                SidebarButton btn = new SidebarButton
+                var avatarText = navbarPanel.Controls["avatarText"] as Label;
+                var avatar = navbarPanel.Controls["avatar"] as PictureBox;
+
+                Panel accountMenu = this.Controls["accountMenu"] as Panel
+                                    ?? navbarPanel.Controls["accountMenu"] as Panel;
+
+                var userName = accountMenu?.Controls["account_userName"] as Label;
+                var userEmail = accountMenu?.Controls["account_userEmail"] as Label;
+                var accountAvatarText = accountMenu?.Controls["account_avatarText"] as Label;
+
+                var name = _sessionState.DisplayName;
+                var email = _sessionState.Email;
+                string initials = string.Empty;
+                if (!string.IsNullOrWhiteSpace(name))
                 {
-                    Text = item,
-                    Location = new Point(10, yPos),
-                    Size = new Size(230, item.Contains("\n") ? 55 : 45),
-                    BackColor = Color.Transparent,
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10),
-                    TextAlign = ContentAlignment.MiddleLeft,
-                    FlatStyle = FlatStyle.Flat,
-                    Cursor = Cursors.Hand,
-                    Padding = new Padding(15, 0, 0, 0),
-                    AllowDrop = true
-                };
+                    var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length == 1)
+                        initials = parts[0].Substring(0, 1).ToUpperInvariant();
+                    else
+                        initials = (parts[0].Substring(0, 1) + parts[parts.Length - 1].Substring(0, 1)).ToUpperInvariant();
+                }
 
-                btn.FlatAppearance.BorderSize = 0;
-                btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, 41, 59);
+                if (userName != null) userName.Text = string.IsNullOrWhiteSpace(name) ? email : name;
+                if (userEmail != null) userEmail.Text = email;
 
-                // Sự kiện click
-                btn.Click += (s, e) =>
+                // Try to load avatar image asynchronously. If AvatarUrl missing or loading fails, fall back to initials.
+                var avatarUrl = _sessionState.AvatarUrl;
+                if (!string.IsNullOrWhiteSpace(avatarUrl) && avatar != null && avatarText != null && accountAvatarText != null)
                 {
-                    SetActiveButton(btn);
-                    if (btn.Text.Contains("Khách hàng"))
+                    // Start a background task to fetch the image so we don't block UI
+                    Task.Run(async () =>
                     {
-                        OpenChildForm(new Customer());
-                    }
-                    if (btn.Text.Contains("Lịch"))
-                    {
-                        if (!(activeChildForm is Calendar))
-                            OpenChildForm(new Calendar());
-                    }
-                    if (btn.Text.Contains("Hóa đơn"))
-                    {
-                        // Resolve InvoiceEditorForm từ DI container
-                        var invoiceForm = _serviceProvider.GetRequiredService<InvoiceEditorForm>();
-                        OpenChildForm(invoiceForm);
-                    }    
-                };
+                        try
+                        {
+                            var httpFactory = _serviceProvider.GetService(typeof(IHttpClientFactory)) as IHttpClientFactory;
+                            string resolvedUrl = avatarUrl;
+                            var apiClient = httpFactory?.CreateClient("BookingCareApi");
+                            if (!resolvedUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) && apiClient?.BaseAddress != null)
+                            {
+                                resolvedUrl = new Uri(apiClient.BaseAddress, resolvedUrl).ToString();
+                            }
 
-                // Sự kiện kéo thả
-                btn.MouseDown += Button_MouseDown;
-                btn.MouseMove += Button_MouseMove;
-                btn.DragOver += Button_DragOver;
-                btn.DragDrop += Button_DragDrop;
-                btn.QueryContinueDrag += Button_QueryContinueDrag;
+                            // Use the configured BookingCareApi client so auth headers (if any) are applied
+                            if (apiClient != null)
+                            {
+                                using var resp = await apiClient.GetAsync(resolvedUrl);
+                                resp.EnsureSuccessStatusCode();
+                                using var ms = await resp.Content.ReadAsStreamAsync();
+                                var img = Image.FromStream(ms);
 
-                sidebarPanel.Controls.Add(btn);
+                                // Apply image on UI thread
+                                if (!this.IsDisposed)
+                                {
+                                    this.BeginInvoke(new Action(() =>
+                                    {
+                                        try
+                                        {
+                                            avatar.Image = img;
+                                            avatarText.Visible = false;
+                                            if (accountAvatarText != null) accountAvatarText.Visible = false;
+                                        }
+                                        catch { }
+                                    }));
+                                }
+                                return;
+                            }
 
-                yPos += item.Contains("\n") ? 60 : 50;
+                            // Fallback: try plain HttpClient if named client not available
+                            using var http = new HttpClient();
+                            var bytes = await http.GetByteArrayAsync(resolvedUrl);
+                            using var ms2 = new System.IO.MemoryStream(bytes);
+                            var img2 = Image.FromStream(ms2);
 
-                if (item.Contains("Lịch"))
+                            if (!this.IsDisposed)
+                            {
+                                this.BeginInvoke(new Action(() =>
+                                {
+                                    try
+                                    {
+                                        avatar.Image = img2;
+                                        avatarText.Visible = false;
+                                        if (accountAvatarText != null) accountAvatarText.Visible = false;
+                                    }
+                                    catch { }
+                                }));
+                            }
+
+                            // (done above for both success paths)
+                        }
+                        catch {
+                            // fallback to initials — ensure UI shows initials
+                            if (!this.IsDisposed)
+                            {
+                                this.BeginInvoke(new Action(() =>
+                                {
+                                    try
+                                    {
+                                        if (avatar != null) avatar.Image = null;
+                                        if (avatarText != null) avatarText.Text = initials;
+                                        if (accountAvatarText != null) accountAvatarText.Text = initials;
+                                        if (avatarText != null) avatarText.Visible = true;
+                                        if (accountAvatarText != null) accountAvatarText.Visible = true;
+                                    }
+                                    catch { }
+                                }));
+                            }
+                        }
+                    });
+                }
+                else
                 {
-                    SetActiveButton(btn);
+                    if (avatar != null) avatar.Image = null;
+                    if (avatarText != null) avatarText.Text = initials;
+                    if (accountAvatarText != null) accountAvatarText.Text = initials;
+                    if (avatarText != null) avatarText.Visible = true;
+                    if (accountAvatarText != null) accountAvatarText.Visible = true;
                 }
             }
+            catch { }
+        }
+
+        private void CreateSidebar()
+        {
+            // Role-aware sidebar
+            // If the current session is Admin -> show an admin placeholder image/label
+            // If Doctor (and not Admin) -> show a doctor placeholder
+            // Otherwise (customer) -> show three main buttons: Dịch vụ, Đặt lịch, Lịch của tôi
+
+            int yPos = 20;
+            var isAdmin = HasAdminAccess();
+            var isDoctor = HasDoctorAccess() && !isAdmin;
+
+            if (isAdmin)
+            {
+                // Admin: show the full admin menu
+                string[] adminItems = {
+                    "📅 Lịch",
+                    "📊 Bảng điều khiển",
+                    "✅ Cuộc hẹn",
+                    "👥 Bác sĩ",
+                    "👤 Khách hàng",
+                    "🎯 Chuyên khoa",
+                    "💰 Hóa đơn",
+                    "⚙️ Cài đặt"
+                };
+
+                int ay = yPos;
+                foreach (var item in adminItems)
+                {
+                    SidebarButton btn = new SidebarButton
+                    {
+                        Text = item,
+                        Location = new Point(10, ay),
+                        Size = new Size(230, item.Contains("\n") ? 55 : 45),
+                        BackColor = Color.Transparent,
+                        ForeColor = Color.White,
+                        Font = new Font("Segoe UI", 10),
+                        TextAlign = ContentAlignment.MiddleLeft,
+                        FlatStyle = FlatStyle.Flat,
+                        Cursor = Cursors.Hand,
+                        Padding = new Padding(15, 0, 0, 0),
+                        AllowDrop = true
+                    };
+
+                    btn.FlatAppearance.BorderSize = 0;
+                    btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, 41, 59);
+
+                    btn.Click += (s, e) =>
+                    {
+                        SetActiveButton(btn);
+                        if (btn.Text.Contains("Bảng") || btn.Text.Contains("Bang"))
+                        {
+                            OpenRoleDashboard();
+                        }
+                        if (btn.Text.Contains("Khách hàng"))
+                        {
+                            var customerForm = _serviceProvider.GetRequiredService<Customer>();
+                            OpenChildForm(customerForm);
+                        }
+                        if (btn.Text.Contains("Lịch"))
+                        {
+                            if (!(activeChildForm is Calendar))
+                            {
+                                var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
+                                OpenChildForm(new Calendar(appointmentsApiClient));
+                            }
+                        }
+                        if (btn.Text.Contains("Cuộc hẹn"))
+                        {
+                            if (!(activeChildForm is AppointmentEditorForm))
+                            {
+                                var appointmentForm = _serviceProvider.GetRequiredService<AppointmentEditorForm>();
+                                OpenChildForm(appointmentForm);
+                            }
+                        }
+                        if (btn.Text.Contains("Hóa đơn"))
+                        {
+                            var invoiceForm = _serviceProvider.GetRequiredService<InvoiceEditorForm>();
+                            OpenChildForm(invoiceForm);
+                        }
+                        if (btn.Text.Contains("Bác sĩ"))
+                        {
+                            if (!(activeChildForm is Doctor))
+                            {
+                                var doctorForm = _serviceProvider.GetRequiredService<Doctor>();
+                                OpenChildForm(doctorForm);
+                            }
+                        }
+                        if (btn.Text.Contains("Chuyên khoa"))
+                        {
+                            if (!(activeChildForm is Specialty))
+                            {
+                                var specialtyForm = _serviceProvider.GetRequiredService<Specialty>();
+                                OpenChildForm(specialtyForm);
+                            }
+                        }
+                    };
+
+                    btn.MouseDown += Button_MouseDown;
+                    btn.MouseMove += Button_MouseMove;
+                    btn.DragOver += Button_DragOver;
+                    btn.DragDrop += Button_DragDrop;
+                    btn.QueryContinueDrag += Button_QueryContinueDrag;
+
+                    sidebarPanel.Controls.Add(btn);
+                    ay += item.Contains("\n") ? 60 : 50;
+
+                    if (item.Contains("Bảng") || item.Contains("Bang"))
+                    {
+                        SetActiveButton(btn);
+                    }
+                }
+                return;
+            }
+
+            if (isDoctor)
+            {
+                // Doctor: simplified menu
+                string[] doctorItems = {
+                    "📅 Lịch",
+                    "✅ Cuộc hẹn",
+                    "👥 Bác sĩ",
+                    "📊 Thống kê"
+                };
+
+                int dy = yPos;
+                foreach (var item in doctorItems)
+                {
+                    SidebarButton btn = new SidebarButton
+                    {
+                        Text = item,
+                        Location = new Point(10, dy),
+                        Size = new Size(230, 45),
+                        BackColor = Color.Transparent,
+                        ForeColor = Color.White,
+                        Font = new Font("Segoe UI", 10),
+                        TextAlign = ContentAlignment.MiddleLeft,
+                        FlatStyle = FlatStyle.Flat,
+                        Cursor = Cursors.Hand,
+                        Padding = new Padding(15, 0, 0, 0),
+                        AllowDrop = true
+                    };
+
+                    btn.FlatAppearance.BorderSize = 0;
+                    btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, 41, 59);
+
+                    btn.Click += (s, e) =>
+                    {
+                        SetActiveButton(btn);
+                        if (item.Contains("Lịch"))
+                        {
+                            var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
+                            OpenChildForm(new Calendar(appointmentsApiClient));
+                        }
+                        if (item.Contains("Cuộc hẹn"))
+                        {
+                            var doctorAppointments = _serviceProvider.GetRequiredService<DoctorAppointmentsForm>();
+                            OpenChildForm(doctorAppointments);
+                        }
+                    };
+
+                    btn.MouseDown += Button_MouseDown;
+                    btn.MouseMove += Button_MouseMove;
+                    btn.DragOver += Button_DragOver;
+                    btn.DragDrop += Button_DragDrop;
+                    btn.QueryContinueDrag += Button_QueryContinueDrag;
+
+                    sidebarPanel.Controls.Add(btn);
+                    dy += 50;
+                }
+
+                return;
+            }
+
+            // Default: Customer view — three primary buttons
+            SidebarButton btnServices = new SidebarButton
+            {
+                Text = "🩺  Dịch vụ",
+                Location = new Point(10, yPos),
+                Size = new Size(230, 45),
+                BackColor = Color.Transparent,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10),
+                TextAlign = ContentAlignment.MiddleLeft,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Padding = new Padding(15, 0, 0, 0)
+            };
+            yPos += 50;
+
+            SidebarButton btnBook = new SidebarButton
+            {
+                Text = "📆  Đặt lịch",
+                Location = new Point(10, yPos),
+                Size = new Size(230, 45),
+                BackColor = Color.Transparent,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10),
+                TextAlign = ContentAlignment.MiddleLeft,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Padding = new Padding(15, 0, 0, 0)
+            };
+            yPos += 50;
+
+            SidebarButton btnMyBookings = new SidebarButton
+            {
+                Text = "📋  Lịch của tôi",
+                Location = new Point(10, yPos),
+                Size = new Size(230, 45),
+                BackColor = Color.Transparent,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10),
+                TextAlign = ContentAlignment.MiddleLeft,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Padding = new Padding(15, 0, 0, 0)
+            };
+
+            foreach (var b in new[] { btnServices, btnBook, btnMyBookings })
+            {
+                b.FlatAppearance.BorderSize = 0;
+                b.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, 41, 59);
+                b.MouseDown += Button_MouseDown;
+                b.MouseMove += Button_MouseMove;
+                b.DragOver += Button_DragOver;
+                b.DragDrop += Button_DragDrop;
+                b.QueryContinueDrag += Button_QueryContinueDrag;
+                sidebarPanel.Controls.Add(b);
+            }
+
+            // Handlers
+            btnServices.Click += (s, e) =>
+            {
+                SetActiveButton(btnServices);
+                if (!(activeChildForm is Service))
+                {
+                    var serviceForm = _serviceProvider.GetRequiredService<Service>();
+                    OpenChildForm(serviceForm);
+                }
+            };
+
+            btnBook.Click += (s, e) =>
+            {
+                SetActiveButton(btnBook);
+                if (!(activeChildForm is Bookings))
+                {
+                    var bookingsForm = _serviceProvider.GetRequiredService<Bookings>();
+                    OpenChildForm(bookingsForm);
+                }
+            };
+
+            btnMyBookings.Click += (s, e) =>
+            {
+                SetActiveButton(btnMyBookings);
+                if (!(activeChildForm is MyBookingForm))
+                {
+                    var myBookings = _serviceProvider.GetRequiredService<MyBookingForm>();
+                    OpenChildForm(myBookings);
+                }
+            };
+
+            // Default active for customer
+            SetActiveButton(btnServices);
+        }
+
+        private bool HasDoctorAccess()
+        {
+            if (_sessionState.IsDoctor)
+            {
+                return true;
+            }
+
+            var redirect = _sessionState.LastRedirect;
+            return redirect.IndexOf("doctor", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private bool HasAdminAccess()
+        {
+            if (_sessionState.IsAdmin)
+            {
+                return true;
+            }
+
+            var redirect = _sessionState.LastRedirect;
+            return redirect.IndexOf("/doctor", StringComparison.OrdinalIgnoreCase) < 0 &&
+                   redirect.IndexOf("/dashboard", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         // Sự kiện kéo thả cho sidebar buttons
-        private void Button_MouseDown(object sender, MouseEventArgs e)
+        private void Button_MouseDown(object? sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
-                SidebarButton btn = sender as SidebarButton;
+                var btn = sender as SidebarButton;
+                if (btn == null) return;
                 dragStartPoint = e.Location;
                 draggedButton = btn;
             }
         }
 
-        private void Button_MouseMove(object sender, MouseEventArgs e)
+        private void Button_MouseMove(object? sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left && draggedButton != null)
             {
@@ -431,27 +878,27 @@ namespace BookingCareManagement.WinForms
             }
         }
 
-        private void Button_DragOver(object sender, DragEventArgs e)
+        private void Button_DragOver(object? sender, DragEventArgs e)
         {
             e.Effect = DragDropEffects.Move;
         }
 
-        private void Button_DragDrop(object sender, DragEventArgs e)
+        private void Button_DragDrop(object? sender, DragEventArgs e)
         {
             // Xử lý trong SidebarPanel_DragDrop
         }
 
-        private void Button_QueryContinueDrag(object sender, QueryContinueDragEventArgs e)
+        private void Button_QueryContinueDrag(object? sender, QueryContinueDragEventArgs e)
         {
             if (e.EscapePressed)
             {
                 e.Action = DragAction.Cancel;
-                dragIndicator.Visible = false;
+                if (dragIndicator != null) dragIndicator.Visible = false;
                 draggedButton = null;
             }
         }
 
-        private void SidebarPanel_DragOver(object sender, DragEventArgs e)
+        private void SidebarPanel_DragOver(object? sender, DragEventArgs e)
         {
             if (draggedButton == null) return;
 
@@ -483,25 +930,28 @@ namespace BookingCareManagement.WinForms
             }
 
             // Hiển thị drag indicator
-            if (dragInsertIndex < buttons.Count)
+            if (dragIndicator != null)
             {
-                dragIndicator.Location = new Point(10, buttons[dragInsertIndex].Top - 2);
-            }
-            else if (buttons.Count > 0)
-            {
-                SidebarButton lastBtn = buttons[buttons.Count - 1];
-                dragIndicator.Location = new Point(10, lastBtn.Bottom + 3);
-            }
+                if (dragInsertIndex < buttons.Count)
+                {
+                    dragIndicator.Location = new Point(10, buttons[dragInsertIndex].Top - 2);
+                }
+                else if (buttons.Count > 0)
+                {
+                    SidebarButton lastBtn = buttons[buttons.Count - 1];
+                    dragIndicator.Location = new Point(10, lastBtn.Bottom + 3);
+                }
 
-            dragIndicator.Visible = true;
-            dragIndicator.BringToFront();
+                dragIndicator.Visible = true;
+            }
+            if (dragIndicator != null) dragIndicator.BringToFront();
         }
 
-        private void SidebarPanel_DragDrop(object sender, DragEventArgs e)
+        private void SidebarPanel_DragDrop(object? sender, DragEventArgs e)
         {
             if (draggedButton == null || dragInsertIndex == -1)
             {
-                dragIndicator.Visible = false;
+                if (dragIndicator != null) dragIndicator.Visible = false;
                 return;
             }
 
@@ -513,7 +963,7 @@ namespace BookingCareManagement.WinForms
 
             if (oldIndex == dragInsertIndex || oldIndex + 1 == dragInsertIndex)
             {
-                dragIndicator.Visible = false;
+                if (dragIndicator != null) dragIndicator.Visible = false;
                 draggedButton = null;
                 return;
             }
@@ -539,7 +989,7 @@ namespace BookingCareManagement.WinForms
                 yPos += btn.Height + 5;
             }
 
-            dragIndicator.Visible = false;
+            if (dragIndicator != null) dragIndicator.Visible = false;
             draggedButton = null;
         }
 
@@ -613,7 +1063,8 @@ namespace BookingCareManagement.WinForms
         {
             if (this.Visible)
             {
-                OpenChildForm(new Calendar());
+                var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
+                OpenChildForm(new Calendar(appointmentsApiClient));
             }
         }
 

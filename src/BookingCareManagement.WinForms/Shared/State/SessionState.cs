@@ -1,4 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using BookingCareManagement.WinForms.Shared.Models;
 
 namespace BookingCareManagement.WinForms.Shared.State;
 
@@ -11,11 +14,23 @@ public sealed class SessionState
 
     private string? _accessToken;
     private string? _refreshToken;
-    private Guid? _currentUserId;
+    private string? _currentUserId;
+    private string? _displayName;
+    private string? _email;
+    private string? _firstName;
+    private string? _lastName;
+    private string? _avatarUrl;
+    private DateTime? _dateOfBirth;
+    private string[] _roles = Array.Empty<string>();
+    private bool _isAdmin;
+    private bool _isDoctor;
+    private bool _cookieAuthenticated;
+    private string? _lastRedirect;
 
     public event EventHandler? StateChanged;
 
-    public bool IsAuthenticated => !string.IsNullOrWhiteSpace(_accessToken);
+    public bool IsAuthenticated => _cookieAuthenticated || !string.IsNullOrWhiteSpace(_accessToken);
+    public bool HasCookieSession => _cookieAuthenticated;
 
     public string? AccessToken
     {
@@ -43,7 +58,7 @@ public sealed class SessionState
         }
     }
 
-    public Guid? CurrentUserId
+    public string? CurrentUserId
     {
         get => _currentUserId;
         set
@@ -56,6 +71,66 @@ public sealed class SessionState
         }
     }
 
+    public string DisplayName
+    {
+        get => _displayName ?? string.Empty;
+        private set
+        {
+            lock (_syncRoot)
+            {
+                _displayName = value;
+                OnStateChanged();
+            }
+        }
+    }
+
+    public string FirstName => _firstName ?? string.Empty;
+    public string LastName => _lastName ?? string.Empty;
+    public string AvatarUrl => _avatarUrl ?? string.Empty;
+    public DateTime? DateOfBirth => _dateOfBirth;
+
+    public string Email
+    {
+        get => _email ?? string.Empty;
+        private set
+        {
+            lock (_syncRoot)
+            {
+                _email = value;
+                OnStateChanged();
+            }
+        }
+    }
+
+    public IReadOnlyList<string> Roles => _roles;
+    public bool IsAdmin => _isAdmin;
+    public bool IsDoctor => _isDoctor;
+    public string LastRedirect => _lastRedirect ?? string.Empty;
+
+    public void ApplyProfile(UserProfileDto profile)
+    {
+        if (profile is null)
+        {
+            return;
+        }
+
+        lock (_syncRoot)
+        {
+            _currentUserId = string.IsNullOrWhiteSpace(profile.UserId) ? null : profile.UserId;
+            _firstName = profile.FirstName;
+            _lastName = profile.LastName;
+            _displayName = string.IsNullOrWhiteSpace(profile.FullName) ? profile.Email : profile.FullName;
+            _email = profile.Email;
+            _avatarUrl = profile.AvatarUrl;
+            _dateOfBirth = profile.DateOfBirth;
+            _roles = profile.Roles ?? Array.Empty<string>();
+            _isAdmin = profile.IsAdmin;
+            _isDoctor = profile.IsDoctor;
+            ApplyRoleHintInternal(_lastRedirect);
+            OnStateChanged();
+        }
+    }
+
     public void Clear()
     {
         lock (_syncRoot)
@@ -63,8 +138,72 @@ public sealed class SessionState
             _accessToken = null;
             _refreshToken = null;
             _currentUserId = null;
+            _displayName = null;
+            _email = null;
+            _roles = Array.Empty<string>();
+            _isAdmin = false;
+            _isDoctor = false;
+            _cookieAuthenticated = false;
+            _lastRedirect = null;
             OnStateChanged();
         }
+    }
+
+    public void MarkCookieAuthenticated()
+    {
+        lock (_syncRoot)
+        {
+            _cookieAuthenticated = true;
+            OnStateChanged();
+        }
+    }
+
+    public void ApplyRoleHint(string? redirect)
+    {
+        lock (_syncRoot)
+        {
+            if (ApplyRoleHintInternal(redirect))
+            {
+                OnStateChanged();
+            }
+        }
+    }
+
+    private bool ApplyRoleHintInternal(string? redirect)
+    {
+        if (string.IsNullOrWhiteSpace(redirect))
+        {
+            return false;
+        }
+
+        var changed = false;
+        _lastRedirect = redirect;
+        var normalized = redirect.Trim().ToLowerInvariant();
+
+        var doctorHint = normalized.Contains("doctor");
+        var adminHint = normalized.Contains("/dashboard") && !doctorHint;
+
+        if (doctorHint && !_isDoctor)
+        {
+            _isDoctor = true;
+            if (!_roles.Contains("Doctor", StringComparer.OrdinalIgnoreCase))
+            {
+                _roles = _roles.Append("Doctor").ToArray();
+            }
+            changed = true;
+        }
+
+        if (adminHint && !_isAdmin)
+        {
+            _isAdmin = true;
+            if (!_roles.Contains("Admin", StringComparer.OrdinalIgnoreCase))
+            {
+                _roles = _roles.Append("Admin").ToArray();
+            }
+            changed = true;
+        }
+
+        return changed;
     }
 
     private void OnStateChanged()

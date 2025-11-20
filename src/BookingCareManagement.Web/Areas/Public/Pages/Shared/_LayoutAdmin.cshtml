@@ -33,14 +33,11 @@
     var fallbackInitial = displayName[0].ToString().ToUpperInvariant();
     var isAdmin = User?.IsInRole("Admin") ?? false;
     var isDoctor = User?.IsInRole("Doctor") ?? false;
-    var dashboardLink = "/dashboard";
-    var appointmentsLink = "/appointments";
-
-    if (!isAdmin && isDoctor)
-    {
-        dashboardLink = "/doctor/dashboard";
-        appointmentsLink = "/doctor/appointment";
-    }
+    var resolvedArea = !isAdmin && isDoctor ? "Doctor" : "Admin";
+    var dashboardLink = Url.Page("/Dashboard/dashboard", new { area = resolvedArea })
+        ?? (!isAdmin && isDoctor ? "/doctor/dashboard" : "/dashboard");
+    var appointmentsLink = Url.Page("/Appointment/Appointment", new { area = resolvedArea })
+        ?? (!isAdmin && isDoctor ? "/doctor/appointment" : "/appointments");
 }
 <!DOCTYPE html>
 <html lang="en">

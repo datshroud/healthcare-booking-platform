@@ -69,6 +69,7 @@ builder.Services.AddScoped<CreateDoctorCommandHandler>();
 builder.Services.AddScoped<GetDoctorByIdQueryHandler>();
 builder.Services.AddScoped<UpdateDoctorCommandHandler>();
 builder.Services.AddScoped<DeleteDoctorCommandHandler>();
+builder.Services.AddScoped<UpdateDoctorStatusCommandHandler>();
 
 builder.Services.AddScoped<GetAllSpecialtiesQueryHandler>();
 builder.Services.AddScoped<CreateSpecialtyCommandHandler>();

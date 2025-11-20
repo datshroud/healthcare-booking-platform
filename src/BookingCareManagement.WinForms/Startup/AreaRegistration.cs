@@ -16,6 +16,7 @@ using BookingCareManagement.WinForms.Areas.Public.Controllers;
 using BookingCareManagement.WinForms.Areas.Public.Forms;
 using BookingCareManagement.WinForms.Areas.Public.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
+using BookingCareManagement.WinForms.Areas.Customer.Services.Models;
 
 namespace BookingCareManagement.WinForms.Startup;
 
@@ -26,14 +27,24 @@ public static class AreaRegistration
         services
             .AddSingleton<AdminDashboardViewModel>()
             .AddTransient<AdminDoctorApiClient>()
+            .AddTransient<AdminDashboardApiClient>()
             .AddTransient<AdminSpecialtyApiClient>()
             .AddTransient<AdminInvoiceApiClient>()
+            .AddTransient<AdminAppointmentsApiClient>()
+            .AddTransient<AppointmentEditorForm>()
             .AddTransient<SpecialtyManagementControl>()
             .AddTransient<DoctorManagementControl>()
             .AddTransient<InvoiceManagementControl>()
             .AddTransient<InvoiceEditorForm>()
+            .AddTransient<DashboardForm>()
+            .AddTransient<Calendar>()
             .AddTransient<AdminNavigationController>()
-            .AddTransient<AdminShellForm>();
+            .AddTransient<AdminShellForm>()
+            // Register WinForms for Admin area so DI can inject API clients
+            .AddTransient<Doctor>()
+            .AddTransient<Specialty>()
+            .AddTransient<CustomerService>()
+            .AddTransient<Customer>();
         return services;
     }
 
@@ -51,7 +62,12 @@ public static class AreaRegistration
         services
             .AddSingleton<CustomerQueueViewModel>()
             .AddTransient<CustomerQueueController>()
-            .AddTransient<CustomerQueueForm>();
+            .AddTransient<CustomerQueueForm>()
+            // Register customer-facing forms
+            .AddTransient<Service>()
+            .AddTransient<Bookings>()
+            .AddTransient<MyBookingForm>()
+            .AddTransient<CustomerBookingApiClient>();
         return services;
     }
 

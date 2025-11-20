@@ -313,7 +313,7 @@ public sealed class DoctorManagementControl : UserControl
     private async Task AddDoctorAsync()
     {
         await EnsureSpecialtyOptionsAsync();
-        var editor = new DoctorEditorForm(_specialtyOptions);
+        var editor = new DoctorEditorForm(_specialtyOptions, _doctorApiClient);
         if (editor.ShowDialog(FindForm()) != DialogResult.OK)
         {
             return;
@@ -347,7 +347,7 @@ public sealed class DoctorManagementControl : UserControl
         }
 
         await EnsureSpecialtyOptionsAsync();
-        var editor = new DoctorEditorForm(_specialtyOptions, doctor);
+        var editor = new DoctorEditorForm(_specialtyOptions, _doctorApiClient, doctor);
         if (editor.ShowDialog(FindForm()) != DialogResult.OK)
         {
             return;
