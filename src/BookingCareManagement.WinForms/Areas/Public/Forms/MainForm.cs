@@ -402,7 +402,10 @@ namespace BookingCareManagement.WinForms
                     if (btn.Text.Contains("Lịch"))
                     {
                         if (!(activeChildForm is Calendar))
-                            OpenChildForm(new Calendar());
+                        {
+                            var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
+                            OpenChildForm(new Calendar(appointmentsApiClient));
+                        }
                     }
                     if (btn.Text.Contains("Hóa đơn"))
                     {
@@ -635,7 +638,8 @@ namespace BookingCareManagement.WinForms
         {
             if (this.Visible)
             {
-                OpenChildForm(new Calendar());
+                var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
+                OpenChildForm(new Calendar(appointmentsApiClient));
             }
         }
 

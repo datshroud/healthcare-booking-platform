@@ -50,7 +50,9 @@ static class Program
                 session.ApplyProfile(cachedProfile);
             }
         }
-
+        //2 dòng clear để đảm bảo mỗi lần chạy chương trình đều bắt đầu từ form login
+        storage.Clear();
+        session.Clear();
         // If not authenticated, show login form first (designer form)
         if (!session.IsAuthenticated)
         {
