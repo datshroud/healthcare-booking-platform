@@ -61,7 +61,11 @@ public sealed class DoctorEditorForm : Form
         Padding = new Padding(15, 10, 15, 100), // Tăng bottom padding lên 100px
         BackColor = Color.FromArgb(248, 250, 252)
     };
-    private readonly Dictionary<DayOfWeek, (CheckBox chk, DateTimePicker start, DateTimePicker end, CheckBox chkBreak, DateTimePicker breakStart, DateTimePicker breakEnd)> _scheduleControls = new();
+    // For multiple slots per day: store (CheckBox, ListBox display, Manage button)
+    private readonly Dictionary<DayOfWeek, (CheckBox chk, ListBox slotsDisplay, Button manage)> _scheduleControls = new();
+    // Internal storage of slots per day
+    private readonly Dictionary<DayOfWeek, List<WorkingHourInfo>> _slotsPerDay = new();
+
     private readonly string[] _daysOfWeek = { "Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "Chủ Nhật" };
 
     // Phần 2: Ngày nghỉ
@@ -372,6 +376,7 @@ public sealed class DoctorEditorForm : Form
     {
         _flowSchedule.Controls.Clear();
         _scheduleControls.Clear();
+        _slotsPerDay.Clear();
 
         // Header
         var headerPanel = new Panel
@@ -400,16 +405,7 @@ public sealed class DoctorEditorForm : Form
             ForeColor = Color.FromArgb(51, 65, 85)
         };
 
-        var lblHeaderBreak = new Label
-        {
-            Text = "Giờ nghỉ trưa",
-            Location = new Point(380, 8),
-            AutoSize = true,
-            Font = new Font("Segoe UI", 9, FontStyle.Bold),
-            ForeColor = Color.FromArgb(51, 65, 85)
-        };
-
-        headerPanel.Controls.AddRange(new Control[] { lblHeaderDay, lblHeaderTime, lblHeaderBreak });
+        headerPanel.Controls.AddRange(new Control[] { lblHeaderDay, lblHeaderTime });
         _flowSchedule.Controls.Add(headerPanel);
 
         // Tạo dòng cho từng ngày
@@ -435,114 +431,65 @@ public sealed class DoctorEditorForm : Form
                 ForeColor = Color.FromArgb(30, 41, 59)
             };
 
-            var dtpStart = new DateTimePicker
+            // ListBox to display multiple slots
+            var lbSlots = new ListBox
             {
-                Location = new Point(125, 8),
-                Width = 85,
-                Format = DateTimePickerFormat.Time,
-                ShowUpDown = true,
-                Enabled = false,
+                Location = new Point(360, 6),
+                Size = new Size(320, 28),
                 Font = new Font("Segoe UI", 9),
-                Value = DateTime.Today.AddHours(8)
+                Enabled = false
             };
 
-            var lblTo1 = new Label
+            // Manage button to open dialog for add/edit/delete
+            var btnManage = new Button
             {
-                Text = "→",
-                Location = new Point(215, 10),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                ForeColor = Color.FromArgb(100, 116, 139)
-            };
-
-            var dtpEnd = new DateTimePicker
-            {
-                Location = new Point(238, 8),
-                Width = 85,
-                Format = DateTimePickerFormat.Time,
-                ShowUpDown = true,
-                Enabled = false,
+                Text = "Quản lý",
+                Location = new Point(690, 6),
+                Size = new Size(80, 28),
                 Font = new Font("Segoe UI", 9),
-                Value = DateTime.Today.AddHours(17)
-            };
-
-            var separator = new Panel
-            {
-                Location = new Point(335, 5),
-                Size = new Size(1, 30),
-                BackColor = Color.FromArgb(226, 232, 240)
-            };
-
-            var chkBreak = new CheckBox
-            {
-                Text = "Nghỉ",
-                Location = new Point(345, 10),
-                Width = 60,
                 Enabled = false,
-                Font = new Font("Segoe UI", 9),
-                ForeColor = Color.FromArgb(30, 41, 59)
+                Cursor = Cursors.Hand,
+                FlatStyle = FlatStyle.Flat
             };
-
-            var dtpBreakStart = new DateTimePicker
-            {
-                Location = new Point(410, 8),
-                Width = 85,
-                Format = DateTimePickerFormat.Time,
-                ShowUpDown = true,
-                Enabled = false,
-                Font = new Font("Segoe UI", 9),
-                Value = DateTime.Today.AddHours(12)
-            };
-
-            var lblTo2 = new Label
-            {
-                Text = "→",
-                Location = new Point(500, 10),
-                AutoSize = true,
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                ForeColor = Color.FromArgb(100, 116, 139)
-            };
-
-            var dtpBreakEnd = new DateTimePicker
-            {
-                Location = new Point(523, 8),
-                Width = 85,
-                Format = DateTimePickerFormat.Time,
-                ShowUpDown = true,
-                Enabled = false,
-                Font = new Font("Segoe UI", 9),
-                Value = DateTime.Today.AddHours(13)
-            };
+            btnManage.FlatAppearance.BorderSize = 0;
 
             chkDay.CheckedChanged += (s, e) =>
             {
-                dtpStart.Enabled = chkDay.Checked;
-                dtpEnd.Enabled = chkDay.Checked;
-                chkBreak.Enabled = chkDay.Checked;
-                
+                lbSlots.Enabled = chkDay.Checked;
+                btnManage.Enabled = chkDay.Checked;
                 pnlRow.BackColor = chkDay.Checked 
                     ? Color.FromArgb(240, 249, 255) 
                     : Color.White;
-                
-                if (!chkDay.Checked)
+
+                // if unchecked, clear slots display (but keep underlying slots)
+                // we leave underlying slots intact so user can re-enable
+            };
+
+            // initialize empty list
+            _slotsPerDay[dayOfWeek] = new List<WorkingHourInfo>();
+
+            btnManage.Click += (s, e) =>
+            {
+                var updated = ShowManageSlotsDialog(dayOfWeek, _slotsPerDay[dayOfWeek]);
+                if (updated != null)
                 {
-                    chkBreak.Checked = false;
+                    _slotsPerDay[dayOfWeek] = updated;
+                    // refresh listbox
+                    lbSlots.Items.Clear();
+                    foreach (var slot in updated)
+                    {
+                        lbSlots.Items.Add($"{slot.Start:hh\\:mm} - {slot.End:hh\\:mm}");
+                    }
+                    lbSlots.SelectedIndex = lbSlots.Items.Count - 1 >= 0 ? lbSlots.Items.Count - 1 : -1;
                 }
             };
 
-            chkBreak.CheckedChanged += (s, e) =>
-            {
-                dtpBreakStart.Enabled = chkBreak.Checked;
-                dtpBreakEnd.Enabled = chkBreak.Checked;
-            };
-
             pnlRow.Controls.AddRange(new Control[] { 
-                chkDay, dtpStart, lblTo1, dtpEnd, 
-                separator, chkBreak, dtpBreakStart, lblTo2, dtpBreakEnd 
+                chkDay, lbSlots, btnManage
             });
             _flowSchedule.Controls.Add(pnlRow);
 
-            _scheduleControls.Add(dayOfWeek, (chkDay, dtpStart, dtpEnd, chkBreak, dtpBreakStart, dtpBreakEnd));
+            _scheduleControls.Add(dayOfWeek, (chkDay, lbSlots, btnManage));
         }
 
         // Thêm một panel spacer ở cuối để đảm bảo có thể scroll đến Chủ Nhật
@@ -555,6 +502,138 @@ public sealed class DoctorEditorForm : Form
         _flowSchedule.Controls.Add(spacerPanel);
 
         _grpWorkingHours.Controls.Add(_flowSchedule);
+    }
+
+    // Dialog to manage slots for a specific day
+    private List<WorkingHourInfo>? ShowManageSlotsDialog(DayOfWeek day, List<WorkingHourInfo> current)
+    {
+        using var dlg = new Form();
+        dlg.Text = $"Quản lý giờ - {day}";
+        dlg.StartPosition = FormStartPosition.CenterParent;
+        dlg.Size = new Size(420, 320);
+        dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+        dlg.MaximizeBox = false;
+
+        var lb = new ListBox { Location = new Point(10, 10), Size = new Size(380, 170), Font = new Font("Segoe UI", 9) };
+        foreach (var s in current)
+            lb.Items.Add($"{s.Start:hh\\:mm} - {s.End:hh\\:mm}");
+
+        var btnAdd = new Button { Text = "➕ Thêm", Location = new Point(10, 190), Size = new Size(90, 30) };
+        var btnEdit = new Button { Text = "✏️ Sửa", Location = new Point(110, 190), Size = new Size(90, 30), Enabled = false };
+        var btnDelete = new Button { Text = "🗑️ Xóa", Location = new Point(210, 190), Size = new Size(90, 30), Enabled = false };
+        var btnOk = new Button { Text = "OK", Location = new Point(220, 240), Size = new Size(80, 30), DialogResult = DialogResult.OK };
+        var btnCancel = new Button { Text = "Hủy", Location = new Point(310, 240), Size = new Size(80, 30), DialogResult = DialogResult.Cancel };
+
+        lb.SelectedIndexChanged += (s, e) =>
+        {
+            bool sel = lb.SelectedIndex >= 0;
+            btnEdit.Enabled = sel;
+            btnDelete.Enabled = sel;
+        };
+
+        btnAdd.Click += (s, e) =>
+        {
+            var newSlot = ShowEditSlotDialog();
+            if (newSlot != null)
+            {
+                // validate overlap with existing slots
+                if (HasOverlap(current, newSlot!))
+                {
+                    MessageBox.Show("Khung giờ này chồng lấn với khung giờ đã tồn tại. Vui lòng chọn khung giờ khác.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+                current.Add(newSlot!);
+                lb.Items.Add($"{newSlot!.Start:hh\\:mm} - {newSlot!.End:hh\\:mm}");
+            }
+        };
+
+        btnEdit.Click += (s, e) =>
+        {
+            if (lb.SelectedIndex < 0) return;
+            var idx = lb.SelectedIndex;
+            var existing = current[idx];
+            var edited = ShowEditSlotDialog(existing);
+            if (edited != null)
+            {
+                // validate overlap with other slots excluding the one being edited
+                if (HasOverlap(current, edited!, idx))
+                {
+                    MessageBox.Show("Khung giờ chỉnh sửa chồng lấn với khung giờ khác. Vui lòng điều chỉnh.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return;
+                }
+
+                current[idx] = edited!;
+                lb.Items[idx] = $"{edited!.Start:hh\\:mm} - {edited!.End:hh\\:mm}";
+            }
+        };
+
+        btnDelete.Click += (s, e) =>
+        {
+            if (lb.SelectedIndex < 0) return;
+            int idx = lb.SelectedIndex;
+            if (MessageBox.Show("Bạn có chắc muốn xóa khung giờ này?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+            {
+                current.RemoveAt(idx);
+                lb.Items.RemoveAt(idx);
+            }
+        };
+
+        dlg.Controls.AddRange(new Control[] { lb, btnAdd, btnEdit, btnDelete, btnOk, btnCancel });
+
+        if (dlg.ShowDialog(this) == DialogResult.OK)
+        {
+            // return a copy
+            return current.OrderBy(s => s.Start).ToList();
+        }
+
+        return null;
+    }
+
+    // Small dialog to add/edit a single slot
+    private WorkingHourInfo? ShowEditSlotDialog(WorkingHourInfo? existing = null)
+    {
+        using var dlg = new Form();
+        dlg.Text = existing == null ? "Thêm giờ" : "Sửa giờ";
+        dlg.StartPosition = FormStartPosition.CenterParent;
+        dlg.Size = new Size(360, 160);
+        dlg.FormBorderStyle = FormBorderStyle.FixedDialog;
+        dlg.MaximizeBox = false;
+
+        var lblFrom = new Label { Text = "Bắt đầu:", Location = new Point(10, 15), AutoSize = true };
+        var dtpFrom = new DateTimePicker { Format = DateTimePickerFormat.Time, ShowUpDown = true, Location = new Point(80, 10), Width = 100 };
+        var lblTo = new Label { Text = "Kết thúc:", Location = new Point(200, 15), AutoSize = true };
+        var dtpTo = new DateTimePicker { Format = DateTimePickerFormat.Time, ShowUpDown = true, Location = new Point(270, 10), Width = 80 };
+
+        if (existing != null)
+        {
+            dtpFrom.Value = DateTime.Today.Add(existing.Start);
+            dtpTo.Value = DateTime.Today.Add(existing.End);
+        }
+        else
+        {
+            dtpFrom.Value = DateTime.Today.AddHours(8);
+            dtpTo.Value = DateTime.Today.AddHours(17);
+        }
+
+        var btnOk = new Button { Text = "OK", Location = new Point(170, 70), Size = new Size(80, 30), DialogResult = DialogResult.OK };
+        var btnCancel = new Button { Text = "Hủy", Location = new Point(260, 70), Size = new Size(80, 30), DialogResult = DialogResult.Cancel };
+
+        dlg.Controls.AddRange(new Control[] { lblFrom, dtpFrom, lblTo, dtpTo, btnOk, btnCancel });
+
+        if (dlg.ShowDialog(this) == DialogResult.OK)
+        {
+            var start = dtpFrom.Value.TimeOfDay;
+            var end = dtpTo.Value.TimeOfDay;
+            if (start >= end)
+            {
+                MessageBox.Show("Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc.", "Dữ liệu không hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return null;
+            }
+
+            return new WorkingHourInfo(start, end);
+        }
+
+        return null;
     }
 
     private void BuildDaysOffControls()
@@ -849,36 +928,26 @@ public sealed class DoctorEditorForm : Form
             
             if (hours?.Hours != null && hours.Hours.Any())
             {
+                // clear existing
+                foreach (var kvp in _scheduleControls)
+                {
+                    kvp.Value.slotsDisplay.Items.Clear();
+                    kvp.Value.chk.Checked = false;
+                    _slotsPerDay[kvp.Key] = new List<WorkingHourInfo>();
+                }
+
                 foreach (var hour in hours.Hours)
                 {
                     var dayOfWeek = (DayOfWeek)hour.DayOfWeek;
                     if (_scheduleControls.TryGetValue(dayOfWeek, out var controls))
                     {
                         controls.chk.Checked = true;
-                        
-                        if (TimeSpan.TryParse(hour.StartTime, out var startTime))
-                        {
-                            controls.start.Value = DateTime.Today.Add(startTime);
-                        }
-                        
-                        if (TimeSpan.TryParse(hour.EndTime, out var endTime))
-                        {
-                            controls.end.Value = DateTime.Today.Add(endTime);
-                        }
 
-                        if (!string.IsNullOrEmpty(hour.BreakStartTime) && !string.IsNullOrEmpty(hour.BreakEndTime))
+                        if (TimeSpan.TryParse(hour.StartTime, out var startTime) && TimeSpan.TryParse(hour.EndTime, out var endTime))
                         {
-                            controls.chkBreak.Checked = true;
-                            
-                            if (TimeSpan.TryParse(hour.BreakStartTime, out var breakStartTime))
-                            {
-                                controls.breakStart.Value = DateTime.Today.Add(breakStartTime);
-                            }
-                            
-                            if (TimeSpan.TryParse(hour.BreakEndTime, out var breakEndTime))
-                            {
-                                controls.breakEnd.Value = DateTime.Today.Add(breakEndTime);
-                            }
+                            var info = new WorkingHourInfo(startTime, endTime);
+                            _slotsPerDay[dayOfWeek].Add(info);
+                            controls.slotsDisplay.Items.Add($"{info.Start:hh\\:mm} - {info.End:hh\\:mm}");
                         }
                     }
                 }
@@ -942,45 +1011,20 @@ public sealed class DoctorEditorForm : Form
         Close();
     }
 
-    public DoctorUpsertRequest BuildRequest()
+    // Return dictionary of day -> list of slots
+    public Dictionary<DayOfWeek, List<WorkingHourInfo>> GetWorkingHours()
     {
-        var selectedSpecialty = _cboSpecialty.SelectedItem as SpecialtyItem;
-        var specialtyIds = selectedSpecialty?.Id != Guid.Empty
-            ? new[] { selectedSpecialty!.Id }
-            : Array.Empty<Guid>();
-
-        return new DoctorUpsertRequest
-        {
-            FirstName = _txtFirstName.Text.Trim(),
-            LastName = _txtLastName.Text.Trim(),
-            Email = _txtEmail.Text.Trim(),
-            PhoneNumber = _txtPhone.Text.Trim(),
-            AvatarUrl = string.IsNullOrWhiteSpace(_txtAvatarUrl.Text) ? null : _txtAvatarUrl.Text.Trim(),
-            SpecialtyIds = specialtyIds
-        };
-    }
-
-    public Dictionary<DayOfWeek, WorkingHourInfo> GetWorkingHours()
-    {
-        var result = new Dictionary<DayOfWeek, WorkingHourInfo>();
+        var result = new Dictionary<DayOfWeek, List<WorkingHourInfo>>();
 
         foreach (var kvp in _scheduleControls)
         {
             if (kvp.Value.chk.Checked)
             {
-                var start = kvp.Value.start.Value.TimeOfDay;
-                var end = kvp.Value.end.Value.TimeOfDay;
-                
-                TimeSpan? breakStart = null;
-                TimeSpan? breakEnd = null;
-                
-                if (kvp.Value.chkBreak.Checked)
+                var day = kvp.Key;
+                if (_slotsPerDay.TryGetValue(day, out var list) && list.Any())
                 {
-                    breakStart = kvp.Value.breakStart.Value.TimeOfDay;
-                    breakEnd = kvp.Value.breakEnd.Value.TimeOfDay;
+                    result.Add(day, list.Select(s => new WorkingHourInfo(s.Start, s.End)).ToList());
                 }
-                
-                result.Add(kvp.Key, new WorkingHourInfo(start, end, breakStart, breakEnd));
             }
         }
 
@@ -992,7 +1036,7 @@ public sealed class DoctorEditorForm : Form
         return _daysOffList;
     }
 
-    public sealed record WorkingHourInfo(TimeSpan Start, TimeSpan End, TimeSpan? BreakStart, TimeSpan? BreakEnd);
+    public sealed record WorkingHourInfo(TimeSpan Start, TimeSpan End);
 
     public sealed class DayOffInfo
     {
@@ -1161,5 +1205,44 @@ public sealed class DoctorEditorForm : Form
         _btnAddDayOff.BackColor = Color.FromArgb(34, 197, 94);
         _btnAddDayOff.Click -= BtnUpdateDayOff_Click;
         _btnAddDayOff.Click += BtnAddDayOff_Click;
+    }
+
+    public DoctorUpsertRequest BuildRequest()
+    {
+        var selectedSpecialty = _cboSpecialty.SelectedItem as SpecialtyItem;
+        var specialtyIds = selectedSpecialty?.Id != Guid.Empty
+            ? new[] { selectedSpecialty!.Id }
+            : Array.Empty<Guid>();
+        
+        return new DoctorUpsertRequest
+        {
+            FirstName = _txtFirstName.Text.Trim(),
+            LastName = _txtLastName.Text.Trim(),
+            Email = _txtEmail.Text.Trim(),
+            PhoneNumber = _txtPhone.Text.Trim(),
+            AvatarUrl = string.IsNullOrWhiteSpace(_txtAvatarUrl.Text) ? null : _txtAvatarUrl.Text.Trim(),
+            SpecialtyIds = specialtyIds
+        };
+    }
+
+    // Check if candidate overlaps any slot in list. If excludeIndex provided, skip that index (useful when editing).
+    private static bool HasOverlap(List<WorkingHourInfo> slots, WorkingHourInfo candidate, int? excludeIndex = null)
+    {
+        for (int i = 0; i < slots.Count; i++)
+        {
+            if (excludeIndex.HasValue && excludeIndex.Value == i) continue;
+            var s = slots[i];
+            if (IntervalsOverlap(s.Start, s.End, candidate.Start, candidate.End))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static bool IntervalsOverlap(TimeSpan aStart, TimeSpan aEnd, TimeSpan bStart, TimeSpan bEnd)
+    {
+        // overlap if aStart < bEnd && bStart < aEnd
+        return aStart < bEnd && bStart < aEnd;
     }
 }
