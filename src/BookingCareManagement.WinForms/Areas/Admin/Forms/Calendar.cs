@@ -535,12 +535,7 @@ namespace BookingCareManagement.WinForms
             // center monthLabel between prev and next
             if (monthLabel != null)
             {
-                Size measure = TextRenderer.MeasureText(monthLabel.Text, monthLabel.Font);
-                monthLabel.Size = new Size(measure.Width, 40);
-
-                int midX = (prevBtn.Location.X + prevBtn.Width + nextBtn.Location.X) / 2;
-                monthLabel.Location = new Point(midX - monthLabel.Width / 2, monthLabel.Location.Y);
-
+                // First set the text based on view
                 if (currentView == "Month")
                 {
                     // Hiển thị dạng số ngắn: MM/yyyy (ví dụ 11/2025)
@@ -548,19 +543,26 @@ namespace BookingCareManagement.WinForms
                     await LoadMonthEventsAsync();
                     CreateCalendar();
                 }
-                if (currentView == "Week")
+                else if (currentView == "Week")
                 {
                     var startOfWeek = currentDate.AddDays(-(int)currentDate.DayOfWeek + 1);
                     var endOfWeek = startOfWeek.AddDays(6);
                     monthLabel.Text = $"{startOfWeek:dd/MM} - {endOfWeek:dd/MM/yyyy}";
                     CreateWeekView();
                 }
-                if (currentView == "Day")
+                else if (currentView == "Day")
                 {
                     // Hiển thị: Thứ, dd/MM/yyyy
                     monthLabel.Text = currentDate.ToString("dddd, dd/MM/yyyy", new CultureInfo("vi-VN"));
                     CreateDayView();
                 }
+
+                // Now measure and position the label after text updated
+                Size measure = TextRenderer.MeasureText(monthLabel.Text, monthLabel.Font);
+                monthLabel.Size = new Size(measure.Width, 40);
+
+                int midX = (prevBtn.Location.X + prevBtn.Width + nextBtn.Location.X) / 2;
+                monthLabel.Location = new Point(Math.Max(0, midX - monthLabel.Width / 2), monthLabel.Location.Y);
             }
         }
 
