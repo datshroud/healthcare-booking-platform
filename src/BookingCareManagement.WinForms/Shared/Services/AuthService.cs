@@ -243,6 +243,31 @@ public sealed class AuthService
             // ignore profile errors to avoid breaking login
         }
     }
+    public async Task<bool> LogoutAsync()
+    {
+        try
+        {
+            var client = _httpFactory.CreateClient("BookingCareApi");
+            try
+            {
+                var resp = await client.PostAsync("api/account/Auth/logout", null);
+                // ignore response status; proceed to clear local state
+            }
+            catch
+            {
+                // ignore network errors on logout
+            }
+
+            _storage.Clear();
+            _session.Clear();
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AuthService] Logout exception: {ex}");
+            return false;
+        }
+    }
     private AuthResponseDto NormalizeAuthResponse(string rawResponse, AuthResponseDto? auth)
     {
         auth ??= new AuthResponseDto();

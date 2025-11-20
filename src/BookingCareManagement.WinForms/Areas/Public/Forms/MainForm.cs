@@ -4,6 +4,8 @@ using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms.Areas.Doctor.Forms;
 using BookingCareManagement.WinForms.Areas.Customer.Forms;
 using BookingCareManagement.WinForms.Shared.State;
+using BookingCareManagement.WinForms.Areas.Account.Forms;
+using BookingCareManagement.WinForms.Shared.Services;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -15,6 +17,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Net.Http;
+using System.IO;
 
 namespace BookingCareManagement.WinForms
 {
@@ -49,9 +53,18 @@ namespace BookingCareManagement.WinForms
             _sessionState.StateChanged += (s, e) =>
             {
                 if (this.IsHandleCreated && this.InvokeRequired)
-                    this.BeginInvoke(new Action(RebuildSidebar));
+                {
+                    this.BeginInvoke(new Action(() =>
+                    {
+                        RebuildSidebar();
+                        UpdateAccountDisplay();
+                    }));
+                }
                 else
+                {
                     RebuildSidebar();
+                    UpdateAccountDisplay();
+                }
             };
 
             this.Load += (s, e) =>
@@ -206,6 +219,9 @@ namespace BookingCareManagement.WinForms
                 BackColor = Color.Transparent
             };
 
+            userAvatarText.Name = "account_avatarText";
+            userAvatar.Name = "account_avatar";
+
             Label userName = new Label
             {
                 Text = "Dai Tran",
@@ -214,6 +230,7 @@ namespace BookingCareManagement.WinForms
                 Font = new Font("Segoe UI", 11, FontStyle.Bold),
                 ForeColor = Color.FromArgb(15, 23, 42)
             };
+            userName.Name = "account_userName";
 
             Label userEmail = new Label
             {
@@ -223,6 +240,7 @@ namespace BookingCareManagement.WinForms
                 Font = new Font("Segoe UI", 9),
                 ForeColor = Color.Black
             };
+            userEmail.Name = "account_userEmail";
 
             userInfo.Controls.Add(userAvatar);
             userInfo.Controls.Add(userAvatarText);
@@ -255,7 +273,27 @@ namespace BookingCareManagement.WinForms
 
             accountSettingsBtn.Click += (s, e) =>
             {
-                MessageBox.Show("Bạn đã nhấn Cài đặt tài khoản!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                try
+                {
+                    var editor = _serviceProvider.GetService<Areas.Account.Forms.AccountEditorForm>();
+                    if (editor != null)
+                    {
+                        var res = editor.ShowDialog(this);
+                        if (res == DialogResult.OK)
+                        {
+                            // profile saved -> session updated inside editor
+                            UpdateAccountDisplay();
+                        }
+                    }
+                    else
+                    {
+                        MessageBox.Show("Cài đặt tài khoản chưa được đăng ký.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show("Không thể mở cài đặt tài khoản: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             };
 
             Panel divider2 = new Panel
@@ -289,9 +327,36 @@ namespace BookingCareManagement.WinForms
 
                 if (result == DialogResult.Yes)
                 {
-                    MessageBox.Show("Đăng xuất thành công!", "Thông báo",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                    this.Close();
+                    // Perform logout via AuthService then prompt for re-login
+                    var auth = _serviceProvider.GetService<Shared.Services.AuthService>();
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            if (auth != null)
+                            {
+                                await auth.LogoutAsync();
+                            }
+                        }
+                        catch { }
+                        // show login dialog on UI thread
+                        this.BeginInvoke(new Action(() =>
+                        {
+                            var login = _serviceProvider.GetService<Login>();
+                            if (login != null)
+                            {
+                                var r = login.ShowDialog(this);
+                                if (r != DialogResult.OK)
+                                {
+                                    this.Close();
+                                }
+                            }
+                            else
+                            {
+                                this.Close();
+                            }
+                        }));
+                    });
                 }
             };
 
@@ -374,6 +439,107 @@ namespace BookingCareManagement.WinForms
             avatarText.BringToFront();
 
             AdjustNavbarButtons();
+        }
+
+        private void UpdateAccountDisplay()
+        {
+            try
+            {
+                var avatarText = navbarPanel.Controls["avatarText"] as Label;
+                var avatar = navbarPanel.Controls["avatar"] as PictureBox;
+
+                Panel accountMenu = this.Controls["accountMenu"] as Panel
+                                    ?? navbarPanel.Controls["accountMenu"] as Panel;
+
+                var userName = accountMenu?.Controls["account_userName"] as Label;
+                var userEmail = accountMenu?.Controls["account_userEmail"] as Label;
+                var accountAvatarText = accountMenu?.Controls["account_avatarText"] as Label;
+
+                var name = _sessionState.DisplayName;
+                var email = _sessionState.Email;
+                string initials = string.Empty;
+                if (!string.IsNullOrWhiteSpace(name))
+                {
+                    var parts = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length == 1)
+                        initials = parts[0].Substring(0, 1).ToUpperInvariant();
+                    else
+                        initials = (parts[0].Substring(0, 1) + parts[parts.Length - 1].Substring(0, 1)).ToUpperInvariant();
+                }
+
+                if (userName != null) userName.Text = string.IsNullOrWhiteSpace(name) ? email : name;
+                if (userEmail != null) userEmail.Text = email;
+
+                // Try to load avatar image asynchronously. If AvatarUrl missing or loading fails, fall back to initials.
+                var avatarUrl = _sessionState.AvatarUrl;
+                if (!string.IsNullOrWhiteSpace(avatarUrl) && avatar != null && avatarText != null && accountAvatarText != null)
+                {
+                    // Start a background task to fetch the image so we don't block UI
+                    Task.Run(async () =>
+                    {
+                        try
+                        {
+                            var httpFactory = _serviceProvider.GetService(typeof(IHttpClientFactory)) as IHttpClientFactory;
+                            string resolvedUrl = avatarUrl;
+                            if (!resolvedUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) && httpFactory != null)
+                            {
+                                var client = httpFactory.CreateClient("BookingCareApi");
+                                if (client?.BaseAddress != null)
+                                {
+                                    resolvedUrl = new Uri(client.BaseAddress, resolvedUrl).ToString();
+                                }
+                            }
+
+                            using var http = new HttpClient();
+                            var bytes = await http.GetByteArrayAsync(resolvedUrl);
+                            using var ms = new System.IO.MemoryStream(bytes);
+                            var img = Image.FromStream(ms);
+
+                            // Apply image on UI thread
+                            if (!this.IsDisposed)
+                            {
+                                this.BeginInvoke(new Action(() =>
+                                {
+                                    try
+                                    {
+                                        avatar.Image = img;
+                                        avatarText.Visible = false;
+                                        if (accountAvatarText != null) accountAvatarText.Visible = false;
+                                    }
+                                    catch { }
+                                }));
+                            }
+                        }
+                        catch {
+                            // fallback to initials — ensure UI shows initials
+                            if (!this.IsDisposed)
+                            {
+                                this.BeginInvoke(new Action(() =>
+                                {
+                                    try
+                                    {
+                                        if (avatar != null) avatar.Image = null;
+                                        if (avatarText != null) avatarText.Text = initials;
+                                        if (accountAvatarText != null) accountAvatarText.Text = initials;
+                                        if (avatarText != null) avatarText.Visible = true;
+                                        if (accountAvatarText != null) accountAvatarText.Visible = true;
+                                    }
+                                    catch { }
+                                }));
+                            }
+                        }
+                    });
+                }
+                else
+                {
+                    if (avatar != null) avatar.Image = null;
+                    if (avatarText != null) avatarText.Text = initials;
+                    if (accountAvatarText != null) accountAvatarText.Text = initials;
+                    if (avatarText != null) avatarText.Visible = true;
+                    if (accountAvatarText != null) accountAvatarText.Visible = true;
+                }
+            }
+            catch { }
         }
 
         private void CreateSidebar()

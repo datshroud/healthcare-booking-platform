@@ -17,6 +17,10 @@ public sealed class SessionState
     private string? _currentUserId;
     private string? _displayName;
     private string? _email;
+    private string? _firstName;
+    private string? _lastName;
+    private string? _avatarUrl;
+    private DateTime? _dateOfBirth;
     private string[] _roles = Array.Empty<string>();
     private bool _isAdmin;
     private bool _isDoctor;
@@ -80,6 +84,11 @@ public sealed class SessionState
         }
     }
 
+    public string FirstName => _firstName ?? string.Empty;
+    public string LastName => _lastName ?? string.Empty;
+    public string AvatarUrl => _avatarUrl ?? string.Empty;
+    public DateTime? DateOfBirth => _dateOfBirth;
+
     public string Email
     {
         get => _email ?? string.Empty;
@@ -108,8 +117,12 @@ public sealed class SessionState
         lock (_syncRoot)
         {
             _currentUserId = string.IsNullOrWhiteSpace(profile.UserId) ? null : profile.UserId;
+            _firstName = profile.FirstName;
+            _lastName = profile.LastName;
             _displayName = string.IsNullOrWhiteSpace(profile.FullName) ? profile.Email : profile.FullName;
             _email = profile.Email;
+            _avatarUrl = profile.AvatarUrl;
+            _dateOfBirth = profile.DateOfBirth;
             _roles = profile.Roles ?? Array.Empty<string>();
             _isAdmin = profile.IsAdmin;
             _isDoctor = profile.IsDoctor;

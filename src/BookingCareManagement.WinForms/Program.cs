@@ -121,6 +121,7 @@ static class Program
                 // Forms
                 services.AddTransient<Login>();
                 services.AddTransient<Register>();
+                services.AddTransient<Areas.Account.Forms.AccountEditorForm>();
             });
     }
 
