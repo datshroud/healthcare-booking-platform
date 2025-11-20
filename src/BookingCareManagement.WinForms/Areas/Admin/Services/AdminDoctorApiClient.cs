@@ -35,6 +35,49 @@ public sealed class AdminDoctorApiClient
         return (await response.Content.ReadFromJsonAsync<DoctorDto>(cancellationToken: cancellationToken))!;
     }
 
+    public async Task<DoctorWorkingHoursDto> GetWorkingHoursAsync(Guid doctorId, CancellationToken cancellationToken = default)
+    {
+        var client = CreateClient();
+        using var response = await client.GetAsync($"/api/doctor/{doctorId}/hours", cancellationToken);
+        await EnsureSuccessAsync(response);
+        return (await response.Content.ReadFromJsonAsync<DoctorWorkingHoursDto>(cancellationToken: cancellationToken))!;
+    }
+
+    public async Task<IReadOnlyList<DoctorDayOffDto>> GetDayOffsAsync(Guid doctorId, CancellationToken cancellationToken = default)
+    {
+        var client = CreateClient();
+        using var response = await client.GetAsync($"/api/doctor/{doctorId}/dayoffs", cancellationToken);
+        await EnsureSuccessAsync(response);
+        var dtos = await response.Content.ReadFromJsonAsync<List<DoctorDayOffDto>>(cancellationToken: cancellationToken);
+        return dtos ?? new List<DoctorDayOffDto>();
+    }
+
+    public async Task<DoctorDayOffDto?> CreateDayOffAsync(Guid doctorId, object dayOffRequest, CancellationToken cancellationToken = default)
+    {
+        var client = CreateClient();
+        using var response = await client.PostAsJsonAsync($"/api/doctor/{doctorId}/dayoffs", dayOffRequest, cancellationToken);
+        if (!response.IsSuccessStatusCode)
+        {
+            await EnsureSuccessAsync(response);
+            return default;
+        }
+        return await response.Content.ReadFromJsonAsync<DoctorDayOffDto>(cancellationToken: cancellationToken);
+    }
+
+    public async Task UpdateDayOffAsync(Guid doctorId, Guid dayOffId, object dayOffRequest, CancellationToken cancellationToken = default)
+    {
+        var client = CreateClient();
+        using var response = await client.PutAsJsonAsync($"/api/doctor/{doctorId}/dayoffs/{dayOffId}", dayOffRequest, cancellationToken);
+        await EnsureSuccessAsync(response);
+    }
+
+    public async Task DeleteDayOffAsync(Guid doctorId, Guid dayOffId, CancellationToken cancellationToken = default)
+    {
+        var client = CreateClient();
+        using var response = await client.DeleteAsync($"/api/doctor/{doctorId}/dayoffs/{dayOffId}", cancellationToken);
+        await EnsureSuccessAsync(response);
+    }
+
     public async Task<DoctorDto> CreateAsync(DoctorUpsertRequest request, CancellationToken cancellationToken = default)
     {
         request.Normalize();
@@ -67,6 +110,21 @@ public sealed class AdminDoctorApiClient
 
         var client = CreateClient();
         using var response = await client.PutAsJsonAsync($"/api/Doctor/{doctorId}", payload, cancellationToken);
+        await EnsureSuccessAsync(response);
+    }
+
+    // profile / hours update
+    public async Task UpdateProfileAsync(Guid doctorId, object profileRequest, CancellationToken cancellationToken = default)
+    {
+        var client = CreateClient();
+        using var response = await client.PutAsJsonAsync($"/api/doctor/{doctorId}/profile", profileRequest, cancellationToken);
+        await EnsureSuccessAsync(response);
+    }
+
+    public async Task UpdateWorkingHoursAsync(Guid doctorId, object hoursRequest, CancellationToken cancellationToken = default)
+    {
+        var client = CreateClient();
+        using var response = await client.PutAsJsonAsync($"/api/doctor/{doctorId}/hours", hoursRequest, cancellationToken);
         await EnsureSuccessAsync(response);
     }
 

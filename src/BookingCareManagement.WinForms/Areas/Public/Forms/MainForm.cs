@@ -31,7 +31,6 @@ namespace BookingCareManagement.WinForms
         private Panel dragIndicator;
         private int dragInsertIndex = -1;
 
-        // Thêm IServiceProvider để resolve dependencies
         private readonly IServiceProvider _serviceProvider;
         private readonly SessionState _sessionState;
 
@@ -412,7 +411,24 @@ namespace BookingCareManagement.WinForms
                         // Resolve InvoiceEditorForm từ DI container
                         var invoiceForm = _serviceProvider.GetRequiredService<InvoiceEditorForm>();
                         OpenChildForm(invoiceForm);
-                    }    
+                    }
+                    if (btn.Text.Contains("Bác sĩ"))
+                    {
+                        if (!(activeChildForm is Doctor))
+                        {
+                            // Resolve Doctor form from DI
+                            var doctorForm = _serviceProvider.GetRequiredService<Doctor>();
+                            OpenChildForm(doctorForm);
+                        }
+                    }
+                    if (btn.Text.Contains("Chuyên khoa"))
+                    {
+                        if (!(activeChildForm is Specialty))
+                        {
+                            var specialtyForm = _serviceProvider.GetRequiredService<Specialty>();
+                            OpenChildForm(specialtyForm);
+                        }
+                    }
                 };
 
                 // Sự kiện kéo thả
