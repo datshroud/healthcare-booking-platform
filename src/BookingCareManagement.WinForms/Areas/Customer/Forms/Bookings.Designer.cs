@@ -148,7 +148,7 @@
             panelThankYou.Controls.Add(labelThankYouMessage);
             panelThankYou.Controls.Add(labelThankYouTitle);
             panelThankYou.Dock = DockStyle.Fill;
-            panelThankYou.Location = new Point(0, 1846);
+            panelThankYou.Location = new Point(0, 1000);
             panelThankYou.Margin = new Padding(4, 5, 4, 5);
             panelThankYou.Name = "panelThankYou";
             panelThankYou.Size = new Size(813, 0);
@@ -181,6 +181,7 @@
             // 
             // panelPayment
             // 
+            panelPayment.AutoScroll = true;
             panelPayment.Controls.Add(buttonConfirmBooking);
             panelPayment.Controls.Add(textBoxPhone);
             panelPayment.Controls.Add(labelPhone);
@@ -193,17 +194,11 @@
             panelPayment.Controls.Add(labelCheckoutTotal);
             panelPayment.Controls.Add(labelTotalPayment);
             panelPayment.Controls.Add(labelPaymentTitle);
-
-            // SỬA: Đổi thành Fill để nó bung ra hết khung chứa
             panelPayment.Dock = DockStyle.Fill;
-
-            // QUAN TRỌNG: Bật cuộn riêng cho panel này
-            panelPayment.AutoScroll = true;
-
-            panelPayment.Location = new Point(0, 0); // Khi Dock=Fill thì Location tự về 0,0
+            panelPayment.Location = new Point(0, 1000);
             panelPayment.Margin = new Padding(4, 5, 4, 5);
             panelPayment.Name = "panelPayment";
-            panelPayment.Size = new Size(813, 580); // Kích thước theo panelLeftContent
+            panelPayment.Size = new Size(813, 0);
             panelPayment.TabIndex = 3;
             panelPayment.Visible = false;
             // 
