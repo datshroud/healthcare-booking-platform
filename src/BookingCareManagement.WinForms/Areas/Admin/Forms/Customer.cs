@@ -1118,6 +1118,7 @@ namespace BookingCareManagement.WinForms
                 await _customerService.UpdateAsync(_customer.Id, request);
 
                 // Cập nhật local object
+
                 _customer.FirstName = txtFirstName.Text.Trim();
                 _customer.LastName = txtLastName.Text.Trim();
                 _customer.FullName = $"{txtFirstName.Text.Trim()} {_customer.LastName.Trim()}";
@@ -1138,6 +1139,7 @@ namespace BookingCareManagement.WinForms
         {
             return new UpdateCustomerRequest
             {
+                Id = _customer.Id,
                 FirstName = txtFirstName.Text.Trim(),
                 LastName = txtLastName.Text.Trim(),
                 Email = txtEmail.Text.Trim(),
