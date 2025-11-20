@@ -40,7 +40,9 @@ public static class AreaRegistration
             .AddTransient<AdminShellForm>()
             // Register WinForms for Admin area so DI can inject API clients
             .AddTransient<Doctor>()
-            .AddTransient<Specialty>();
+            .AddTransient<Specialty>()
+            .AddTransient<CustomerService>()
+            .AddTransient<Customer>();
         return services;
     }
 

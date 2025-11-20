@@ -41,7 +41,9 @@
         /// </summary>
         private void InitializeComponent()
         {
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
             headerPanel = new Panel();
             title = new Label();
             exportBtn = new RoundedButton();
@@ -83,7 +85,7 @@
             title.ForeColor = Color.FromArgb(17, 24, 39);
             title.Location = new Point(30, 20);
             title.Name = "title";
-            title.Size = new Size(287, 54);
+            title.Size = new Size(308, 54);
             title.TabIndex = 0;
             title.Text = "Khách hàng (1)";
             // 
@@ -148,7 +150,7 @@
             // 
             // whitePanel
             // 
-            whitePanel.BackColor = Color.FromArgb(243, 244, 246);
+            whitePanel.BackColor = Color.White;
             whitePanel.Controls.Add(customersDataGridView);
             whitePanel.Controls.Add(searchPanel);
             whitePanel.Dock = DockStyle.Fill;
@@ -167,17 +169,55 @@
             customersDataGridView.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             customersDataGridView.BackgroundColor = Color.White;
             customersDataGridView.BorderStyle = BorderStyle.None;
-            customersDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
+            customersDataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = Color.FromArgb(220, 220, 220);
+            dataGridViewCellStyle1.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            dataGridViewCellStyle1.ForeColor = Color.FromArgb(60, 60, 60);
+            dataGridViewCellStyle1.Padding = new Padding(10, 20, 20, 20);
+            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
+            customersDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             customersDataGridView.ColumnHeadersHeight = 50;
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = SystemColors.Window;
+            dataGridViewCellStyle2.Font = new Font("Segoe UI", 12F);
+            dataGridViewCellStyle2.ForeColor = SystemColors.ControlText;
+            dataGridViewCellStyle2.SelectionBackColor = Color.FromArgb(243, 244, 246);
+            dataGridViewCellStyle2.SelectionForeColor = Color.FromArgb(15, 23, 42);
+            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
+            customersDataGridView.DefaultCellStyle = dataGridViewCellStyle2;
+            // ĐẶT CÁC THUỘC TÍNH STYLE NGAYỞ ĐÂY - TRƯỚC CÁC THUỘC TÍNH KHÁC
+            customersDataGridView.EnableHeadersVisualStyles = false;
+            // Header background: neutral light gray
+            customersDataGridView.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(236,236,236);
+            customersDataGridView.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(60,60,60);
+            customersDataGridView.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI",10, FontStyle.Bold);
+            customersDataGridView.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            customersDataGridView.ColumnHeadersDefaultCellStyle.Padding = new Padding(10,0,0,0);
+            // Ensure header stays gray when focused/selected
+            customersDataGridView.ColumnHeadersDefaultCellStyle.SelectionBackColor = customersDataGridView.ColumnHeadersDefaultCellStyle.BackColor;
+            customersDataGridView.ColumnHeadersDefaultCellStyle.SelectionForeColor = customersDataGridView.ColumnHeadersDefaultCellStyle.ForeColor;
+
+            // Make cell borders more prominent
+            customersDataGridView.CellBorderStyle = DataGridViewCellBorderStyle.Single;
+            customersDataGridView.GridColor = Color.FromArgb(200,200,200); // darker grid lines
+            customersDataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
+
             customersDataGridView.Dock = DockStyle.Fill;
             customersDataGridView.Font = new Font("Segoe UI", 12F);
-            customersDataGridView.GridColor = Color.FromArgb(243, 244, 246);
+            customersDataGridView.GridColor = Color.FromArgb(200, 200, 200);
             customersDataGridView.Location = new Point(30, 70);
-            customersDataGridView.Margin = new Padding(3, 4, 3, 4);
+            customersDataGridView.Margin = new Padding(3, 20, 20, 20);
             customersDataGridView.MultiSelect = false;
             customersDataGridView.Name = "customersDataGridView";
+            customersDataGridView.ReadOnly = true;
             customersDataGridView.RowHeadersVisible = false;
             customersDataGridView.RowHeadersWidth = 51;
+            dataGridViewCellStyle3.SelectionBackColor = Color.FromArgb(243, 244, 246);
+            dataGridViewCellStyle3.SelectionForeColor = Color.FromArgb(15, 23, 42);
+            customersDataGridView.RowsDefaultCellStyle = dataGridViewCellStyle3;
             customersDataGridView.RowTemplate.Height = 70;
             customersDataGridView.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             customersDataGridView.Size = new Size(1262, 493);

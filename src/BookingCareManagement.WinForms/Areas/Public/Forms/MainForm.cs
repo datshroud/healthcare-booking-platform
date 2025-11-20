@@ -396,7 +396,8 @@ namespace BookingCareManagement.WinForms
                     }
                     if (btn.Text.Contains("Khách hàng"))
                     {
-                        OpenChildForm(new Customer());
+                        var customerForm = _serviceProvider.GetRequiredService<Customer>();
+                        OpenChildForm(customerForm);
                     }
                     if (btn.Text.Contains("Lịch"))
                     {
