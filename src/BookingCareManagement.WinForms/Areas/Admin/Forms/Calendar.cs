@@ -12,6 +12,7 @@ using System.Windows.Forms;
 using static BookingCareManagement.WinForms.Customer;
 using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
+using System.Globalization;
 
 namespace BookingCareManagement.WinForms
 {
@@ -29,6 +30,9 @@ namespace BookingCareManagement.WinForms
         private Point dragStartPoint;
         private Panel sourcePanel = null;
 
+        // state for active view
+        private Button? _activeViewButton;
+
         // Chỉ giữ lại constructor DI
         public Calendar(AdminAppointmentsApiClient appointmentsApiClient)
         {
@@ -42,6 +46,17 @@ namespace BookingCareManagement.WinForms
         {
             // Gắn sự kiện cho các nút đã được tạo bởi Designer
             AttachEventHandlers();
+            ApplyButtonStyling();
+            // ensure prev/next vertical align and remove their borders
+            prevBtn.FlatAppearance.BorderSize = 0;
+            nextBtn.FlatAppearance.BorderSize = 0;
+            prevBtn.Location = new Point(prevBtn.Location.X, 19);
+            nextBtn.Location = new Point(nextBtn.Location.X, 19);
+
+            // set default combo selection
+            comboBox1.SelectedIndex = 0;
+            comboBox1.SelectedIndexChanged += (s, e) => RefreshCalendar();
+
             RefreshCalendar();
         }
 
@@ -69,83 +84,68 @@ namespace BookingCareManagement.WinForms
                 RefreshCalendar();
             };
 
-
-
             CreateUserPanel();
+        }
+
+        private void ApplyButtonStyling()
+        {
+            // set base styles for non-add buttons
+            var buttons = new[] { btnToday, monthBtn, weekBtn, dayBtn };
+            foreach (var b in buttons)
+            {
+                if (b == null) continue;
+                b.FlatStyle = FlatStyle.Flat;
+                b.FlatAppearance.BorderSize = 1;
+                b.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+                b.BackColor = Color.FromArgb(255, 255, 255);
+                b.ForeColor = Color.FromArgb(55, 65, 81);
+                b.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
+                b.Cursor = Cursors.Hand;
+                b.Padding = new Padding(8, 6, 8, 6);
+                // no hover for view buttons
+            }
+
+            // primary action (add) keep static blue, no hover/active
+            if (newAppointmentBtn != null)
+            {
+                newAppointmentBtn.FlatStyle = FlatStyle.Flat;
+                newAppointmentBtn.FlatAppearance.BorderSize = 1;
+                newAppointmentBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+                newAppointmentBtn.BackColor = Color.FromArgb(37, 99, 235);
+                newAppointmentBtn.ForeColor = Color.White;
+                newAppointmentBtn.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+                newAppointmentBtn.Cursor = Cursors.Hand;
+                // remove hover handlers if any
+                newAppointmentBtn.MouseEnter -= (s, e) => newAppointmentBtn.BackColor = Color.FromArgb(29, 78, 216);
+                newAppointmentBtn.MouseLeave -= (s, e) => newAppointmentBtn.BackColor = Color.FromArgb(37, 99, 235);
+            }
+
+            // wire view buttons to an explicit activator to ensure only one active
+            Action<Button> activate = b =>
+            {
+                if (_activeViewButton != null && _activeViewButton != b)
+                {
+                    _activeViewButton.BackColor = Color.White;
+                    _activeViewButton.ForeColor = Color.FromArgb(55, 65, 81);
+                    _activeViewButton.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+                }
+                _activeViewButton = b;
+                _activeViewButton.BackColor = Color.FromArgb(37, 99, 235);
+                _activeViewButton.ForeColor = Color.White;
+                _activeViewButton.FlatAppearance.BorderColor = Color.FromArgb(37, 99, 235);
+            };
+
+            monthBtn.Click += (s, e) => { currentView = "Month"; activate(monthBtn); RefreshCalendar(); };
+            weekBtn.Click += (s, e) => { currentView = "Week"; activate(weekBtn); RefreshCalendar(); };
+            dayBtn.Click += (s, e) => { currentView = "Day"; activate(dayBtn); RefreshCalendar(); };
+
+            // set initial
+            activate(monthBtn);
         }
 
         private void CreateUserPanel()
         {
-            // Tạo container panel cho user info để có thể kéo thả
-            Panel userContainer = new Panel
-            {
-                Location = new Point(30, 10),
-                Size = new Size(100, 100),
-                BackColor = Color.Transparent,
-                Cursor = Cursors.SizeAll
-            };
-
-            CircularPictureBox avatar = new CircularPictureBox
-            {
-                Location = new Point(0, 0),
-                Size = new Size(60, 60),
-                BackColor = Color.FromArgb(219, 234, 254),
-                SizeMode = PictureBoxSizeMode.Zoom
-            };
-
-            Label avatarInitial = new Label
-            {
-                Text = "👤",
-                Location = new Point(0, 0),
-                Size = new Size(60, 60),
-                TextAlign = ContentAlignment.MiddleCenter,
-                Font = new Font("Segoe UI", 24),
-                BackColor = Color.Transparent
-            };
-
-            Label userName = new Label
-            {
-                Text = "Jane\nDoe",
-                Location = new Point(10, 65),
-                Size = new Size(40, 35),
-                Font = new Font("Segoe UI", 9, FontStyle.Bold),
-                ForeColor = Color.FromArgb(17, 24, 39),
-                TextAlign = ContentAlignment.TopCenter
-            };
-
-            userContainer.Controls.Add(avatar);
-            userContainer.Controls.Add(avatarInitial);
-            userContainer.Controls.Add(userName);
-            avatarInitial.BringToFront();
-
-            // Thêm khả năng kéo thả cho user container
-            Point dragStart = Point.Empty;
-            userContainer.MouseDown += (s, e) =>
-            {
-                if (e.Button == MouseButtons.Left)
-                {
-                    dragStart = e.Location;
-                    userContainer.BringToFront();
-                }
-            };
-
-            userContainer.MouseMove += (s, e) =>
-            {
-                if (e.Button == MouseButtons.Left && dragStart != Point.Empty)
-                {
-                    userContainer.Location = new Point(
-                        userContainer.Location.X + e.X - dragStart.X,
-                        userContainer.Location.Y + e.Y - dragStart.Y
-                    );
-                }
-            };
-
-            userContainer.MouseUp += (s, e) =>
-            {
-                dragStart = Point.Empty;
-            };
-
-            userPanel.Controls.Add(userContainer);
+            // userPanel hidden by designer; nothing here
         }
 
         private void SwitchView(string view)
@@ -169,23 +169,22 @@ namespace BookingCareManagement.WinForms
         // ======================= CALENDAR VIEWS ==========================
 
 
-
         private string GetWeekRangeText()
         {
             DateTime startOfWeek = currentDate.AddDays(-(int)currentDate.DayOfWeek + 1);
             DateTime endOfWeek = startOfWeek.AddDays(6);
-            return $"{startOfWeek:MMM dd} - {endOfWeek:MMM dd, yyyy}";
+            return $"{startOfWeek:dd/MM} - {endOfWeek:dd/MM/yyyy}";
         }
 
 
 
-        // ======================= MONTH VIEW ==========================
+        // ======================= MONTH VIEW =========================_
         private void CreateCalendar()
         {
             calendarPanel.Controls.Clear();
 
-            // Header thứ trong tuần
-            string[] dayNames = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+            // Header thứ trong tuần (Tiếng Việt)
+            string[] dayNames = { "T2", "T3", "T4", "T5", "T6", "T7", "CN" };
             int headerY = 15;
             int cellWidth = (this.ClientSize.Width - 60) / 7;
 
@@ -260,103 +259,178 @@ namespace BookingCareManagement.WinForms
             DateTime startOfWeek = currentDate.AddDays(-(int)currentDate.DayOfWeek + 1);
             if (startOfWeek > currentDate) startOfWeek = startOfWeek.AddDays(-7);
 
-            //Panel main = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
-            //contentPanel.Controls.Add(main);
+            // header strip
+            var headerStrip = new Panel { Dock = DockStyle.Top, Height = 40, BackColor = Color.White };
+            calendarPanel.Controls.Add(headerStrip);
 
-            //Panel header = new Panel { Height = 60, Dock = DockStyle.Top, BackColor = Color.White };
-            //main.Controls.Add(header);
+            int totalWidth = Math.Max(700, calendarPanel.ClientSize.Width);
+            int leftColWidth = 60;
+            int columnWidth = (totalWidth - leftColWidth) / 7;
 
-            string[] days = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
-
+            string[] days = { "T2", "T3", "T4", "T5", "T6", "T7", "CN" };
             for (int i = 0; i < 7; i++)
             {
                 DateTime day = startOfWeek.AddDays(i);
-
-                Label lbl = new Label
+                var lbl = new Label
                 {
-                    Text = $"{days[i]}\n{day:dd}",
-                    Width = (calendarPanel.Width - 60) / 7,
-                    Height = 60,
-                    Location = new Point(60 + i * ((calendarPanel.Width - 60) / 7), 0),
+                    Text = $"{days[i]} {day:dd/MM}",
+                    Width = columnWidth,
+                    Height = 40,
+                    Location = new Point(leftColWidth + i * columnWidth, 0),
                     TextAlign = ContentAlignment.MiddleCenter,
-                    Font = new Font("Segoe UI", 10),
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
                     ForeColor = (day.Date == DateTime.Today ? Color.FromArgb(37, 99, 235) : Color.Black)
                 };
-                calendarPanel.Controls.Add(lbl);
+                headerStrip.Controls.Add(lbl);
             }
 
-            // GRID
-            Panel grid = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
-            calendarPanel.Controls.Add(grid);
+            // scrollable content panel
+            var content = new Panel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Color.White };
+            calendarPanel.Controls.Add(content);
 
-            int hours = 13;
-            int startHour = 7;
+            int hours = 24;
+            int slotHeight = 60;
 
-            for (int h = 1; h < hours; h++)
+            // time column and rows inside a large inner panel to enable scrolling
+            var inner = new Panel { Location = new Point(0, 0), Width = leftColWidth + 7 * columnWidth, Height = hours * slotHeight }; // will be scrolled
+            content.Controls.Add(inner);
+
+            for (int h = 0; h < hours; h++)
             {
-                Label time = new Label
+                var time = new Label
                 {
-                    Text = $"{startHour + h}:00",
-                    Width = 60,
-                    Height = 50,
-                    Location = new Point(0, h * 50),
+                    Text = $"{h:D2}:00",
+                    Width = leftColWidth,
+                    Height = slotHeight,
+                    Location = new Point(0, h * slotHeight),
                     Font = new Font("Segoe UI", 9),
                     ForeColor = Color.Gray,
                     TextAlign = ContentAlignment.MiddleRight
                 };
-                grid.Controls.Add(time);
-            }
+                inner.Controls.Add(time);
 
-            for (int h = 0; h < hours; h++)
-            {
                 for (int d = 0; d < 7; d++)
                 {
-                    Panel cell = new Panel
+                    var cell = new Panel
                     {
-                        Width = (grid.Width - 60) / 7,
-                        Height = 50,
-                        Location = new Point(60 + d * ((grid.Width - 60) / 7), h * 50),
+                        Width = columnWidth,
+                        Height = slotHeight,
+                        Location = new Point(leftColWidth + d * columnWidth, h * slotHeight),
                         BorderStyle = BorderStyle.FixedSingle
                     };
-                    grid.Controls.Add(cell);
+                    inner.Controls.Add(cell);
                 }
             }
+
+            // Render appointment blocks
+            foreach (var ev in _events)
+            {
+                var localStart = ev.StartUtc.ToLocalTime();
+                var localEnd = ev.EndUtc.ToLocalTime();
+                if (localStart.Date < startOfWeek.Date || localStart.Date > startOfWeek.AddDays(6).Date)
+                    continue;
+
+                int col = (localStart.Date - startOfWeek.Date).Days;
+                double minutesFromStart = localStart.Hour * 60 + localStart.Minute;
+                double durationMinutes = (localEnd - localStart).TotalMinutes;
+                if (minutesFromStart < 0) minutesFromStart = 0;
+                if (durationMinutes < 15) durationMinutes = 15;
+
+                int top = (int)(minutesFromStart * slotHeight / 60.0);
+                int height = (int)(durationMinutes * slotHeight / 60.0);
+
+                var ap = new Panel
+                {
+                    Location = new Point(leftColWidth + col * columnWidth + 6, top),
+                    Size = new Size(columnWidth - 12, Math.Max(24, height)),
+                    BackColor = Color.FromArgb(207, 232, 255),
+                    Cursor = Cursors.Hand,
+                    Tag = ev
+                };
+                ap.Padding = new Padding(6);
+
+                string primary = comboBox1.SelectedItem?.ToString() switch
+                {
+                    "Bác sĩ" => ev.DoctorName,
+                    "Khách hàng" => ev.PatientName,
+                    "Chuyên môn" => ev.SpecialtyName,
+                    _ => ev.DoctorName
+                };
+
+                var lbl1 = new Label { Text = primary, AutoSize = false, Height = 18, Dock = DockStyle.Top, Font = new Font("Segoe UI", 9F, FontStyle.Bold), ForeColor = Color.FromArgb(17, 24, 39) };
+                var lbl2 = new Label { Text = $"{localStart:HH:mm} - {localEnd:HH:mm}", AutoSize = false, Height = 16, Dock = DockStyle.Top, Font = new Font("Segoe UI", 8.5F), ForeColor = Color.FromArgb(55, 65, 81) };
+                ap.Controls.Add(lbl2); ap.Controls.Add(lbl1);
+                ap.Click += (s, e) => MessageBox.Show($"{ev.SpecialtyName}\n{ev.DoctorName}\n{ev.PatientName}\n{ev.StartUtc.ToLocalTime():HH:mm} - {ev.EndUtc.ToLocalTime():HH:mm}", "Chi tiết cuộc hẹn", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                inner.Controls.Add(ap);
+                ap.BringToFront();
+            }
         }
-        // ============= DAY VIEW =============
+
         private void CreateDayView()
         {
             calendarPanel.Controls.Clear();
 
+            int hours = 24;
+            int slotHeight = 60;
+            int leftColWidth = 70;
+            int totalWidth = Math.Max(500, calendarPanel.ClientSize.Width);
+            int columnWidth = totalWidth - leftColWidth;
 
-            int hours = 12;
-            int startHour = 8;
+            // header
+            var header = new Panel { Dock = DockStyle.Top, Height = 40, BackColor = Color.White };
+            var headerLabel = new Label { Text = currentDate.ToString("dddd, dd/MM/yyyy", new CultureInfo("vi-VN")), Dock = DockStyle.Fill, Font = new Font("Segoe UI", 12, FontStyle.Bold), TextAlign = ContentAlignment.MiddleCenter };
+            header.Controls.Add(headerLabel);
+            calendarPanel.Controls.Add(header);
+
+            var content = new Panel { Dock = DockStyle.Fill, BackColor = Color.White, AutoScroll = true };
+            calendarPanel.Controls.Add(content);
+
+            var inner = new Panel { Location = new Point(0, 0), Width = leftColWidth + columnWidth, Height = hours * slotHeight };
+            content.Controls.Add(inner);
 
             for (int h = 0; h < hours; h++)
             {
-                Label time = new Label
-                {
-                    Text = $"{startHour + h}:00",
-                    Width = 60,
-                    Height = 60,
-                    Location = new Point(0, h * 60),
-                    Font = new Font("Segoe UI", 9),
-                    ForeColor = Color.Gray,
-                    TextAlign = ContentAlignment.MiddleRight,
-                };
-                calendarPanel.Controls.Add(time);
+                var time = new Label { Text = $"{h:D2}:00", Width = leftColWidth, Height = slotHeight, Location = new Point(0, h * slotHeight), Font = new Font("Segoe UI", 9), ForeColor = Color.Gray, TextAlign = ContentAlignment.MiddleRight };
+                inner.Controls.Add(time);
+                var cell = new Panel { Width = columnWidth, Height = slotHeight, Location = new Point(leftColWidth, h * slotHeight), BorderStyle = BorderStyle.FixedSingle };
+                inner.Controls.Add(cell);
+            }
 
-                Panel cell = new Panel
+            DateTime dayStart = currentDate.Date;
+            foreach (var ev in _events.Where(e => e.StartUtc.ToLocalTime().Date == dayStart))
+            {
+                var localStart = ev.StartUtc.ToLocalTime();
+                var localEnd = ev.EndUtc.ToLocalTime();
+                double minutesFromStart = localStart.Hour * 60 + localStart.Minute;
+                double durationMinutes = (localEnd - localStart).TotalMinutes;
+                if (minutesFromStart < 0) minutesFromStart = 0;
+                if (durationMinutes < 15) durationMinutes = 15;
+
+                int top = (int)(minutesFromStart * slotHeight / 60.0);
+                int height = (int)(durationMinutes * slotHeight / 60.0);
+
+                var ap = new Panel { Location = new Point(leftColWidth + 6, top), Size = new Size(columnWidth - 12, Math.Max(24, height)), BackColor = Color.FromArgb(207, 232, 255), Cursor = Cursors.Hand, Tag = ev };
+                ap.Padding = new Padding(6);
+
+                string primary = comboBox1.SelectedItem?.ToString() switch
                 {
-                    Width = calendarPanel.Width - 70,
-                    Height = 60,
-                    Location = new Point(70, h * 60),
-                    BorderStyle = BorderStyle.FixedSingle
+                    "Bác sĩ" => ev.DoctorName,
+                    "Khách hàng" => ev.PatientName,
+                    "Chuyên môn" => ev.SpecialtyName,
+                    _ => ev.DoctorName
                 };
-                calendarPanel.Controls.Add(cell);
+
+                var lbl1 = new Label { Text = primary, AutoSize = false, Height = 18, Dock = DockStyle.Top, Font = new Font("Segoe UI", 9F, FontStyle.Bold), ForeColor = Color.FromArgb(17, 24, 39) };
+                var lbl2 = new Label { Text = $"{localStart:HH:mm} - {localEnd:HH:mm}", AutoSize = false, Height = 16, Dock = DockStyle.Top, Font = new Font("Segoe UI", 8.5F), ForeColor = Color.FromArgb(55, 65, 81) };
+                ap.Controls.Add(lbl2); ap.Controls.Add(lbl1);
+                ap.Click += (s, e) => MessageBox.Show($"{ev.SpecialtyName}\n{ev.DoctorName}\n{ev.PatientName}\n{ev.StartUtc.ToLocalTime():HH:mm} - {ev.EndUtc.ToLocalTime():HH:mm}", "Chi tiết cuộc hẹn", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+                inner.Controls.Add(ap);
+                ap.BringToFront();
             }
         }
 
-        
 
         private async Task LoadMonthEventsAsync()
         {
@@ -424,9 +498,17 @@ namespace BookingCareManagement.WinForms
             int y = 28;
             foreach (var ev in evs)
             {
+                string display = comboBox1.SelectedItem?.ToString() switch
+                {
+                    "Bác sĩ" => ev.DoctorName,
+                    "Khách hàng" => ev.PatientName,
+                    "Chuyên môn" => ev.SpecialtyName,
+                    _ => ev.DoctorName
+                };
+
                 var lbl = new Label
                 {
-                    Text = ev.DoctorName,
+                    Text = display,
                     AutoSize = false,
                     Size = new Size(cell.Width - 16, 18),
                     Location = new Point(8, y),
@@ -439,7 +521,7 @@ namespace BookingCareManagement.WinForms
                 lbl.Click += (s, e) =>
                 {
                     var evt = (CalendarEventDto)((Label)s).Tag;
-                    MessageBox.Show($"{evt.DoctorName}\n{evt.StartUtc:HH:mm} - {evt.EndUtc:HH:mm}\n{evt.SpecialtyName}");
+                    MessageBox.Show($"{evt.DoctorName}\n{evt.StartUtc.ToLocalTime():HH:mm} - {evt.EndUtc.ToLocalTime():HH:mm}\n{evt.SpecialtyName}", "Chi tiết cuộc hẹn", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 };
                 cell.Controls.Add(lbl);
                 y += 20;
@@ -450,29 +532,33 @@ namespace BookingCareManagement.WinForms
         private async void RefreshCalendar()
         {
             Label monthLabel = navigationPanel.Controls["monthLabel"] as Label;
-            Button NextBtn = navigationPanel.Controls["nextBtn"] as Button;
+            // center monthLabel between prev and next
             if (monthLabel != null)
             {
+                Size measure = TextRenderer.MeasureText(monthLabel.Text, monthLabel.Font);
+                monthLabel.Size = new Size(measure.Width, 40);
+
+                int midX = (prevBtn.Location.X + prevBtn.Width + nextBtn.Location.X) / 2;
+                monthLabel.Location = new Point(midX - monthLabel.Width / 2, monthLabel.Location.Y);
+
                 if (currentView == "Month")
                 {
-                    monthLabel.Text = currentDate.ToString(" MMMM, yyyy");
-                    monthLabel.Size = new Size(300, 40);
-                    NextBtn.Location = new Point(400, 15);
+                    // Hiển thị dạng số ngắn: MM/yyyy (ví dụ 11/2025)
+                    monthLabel.Text = currentDate.ToString("MM/yyyy", new CultureInfo("vi-VN"));
                     await LoadMonthEventsAsync();
                     CreateCalendar();
                 }
                 if (currentView == "Week")
                 {
-                    monthLabel.Text = currentDate.ToString(" MMMM, yyyy");
-                    monthLabel.Size = new Size(350, 40);
-                    NextBtn.Location = new Point(400, 15);
+                    var startOfWeek = currentDate.AddDays(-(int)currentDate.DayOfWeek + 1);
+                    var endOfWeek = startOfWeek.AddDays(6);
+                    monthLabel.Text = $"{startOfWeek:dd/MM} - {endOfWeek:dd/MM/yyyy}";
                     CreateWeekView();
                 }
                 if (currentView == "Day")
                 {
-                    monthLabel.Text = currentDate.ToString("dddd, dd, MMMM, yyyy");
-                    monthLabel.Size = new Size(400, 40);
-                    NextBtn.Location = new Point(520, 15);
+                    // Hiển thị: Thứ, dd/MM/yyyy
+                    monthLabel.Text = currentDate.ToString("dddd, dd/MM/yyyy", new CultureInfo("vi-VN"));
                     CreateDayView();
                 }
             }
@@ -535,7 +621,7 @@ namespace BookingCareManagement.WinForms
                 );
             }
         }
-        
+
 
         // Giữ nguyên class AppointmentDialog
         public class AppointmentDialog : Form
@@ -558,7 +644,7 @@ namespace BookingCareManagement.WinForms
             private void InitializeComponent1()
             {
                 // ... (giữ nguyên toàn bộ code khởi tạo của AppointmentDialog)
-                this.Text = "Add Appointment";
+                this.Text = "Thêm cuộc hẹn";
                 this.Size = new Size(600, 520);
                 this.BackColor = Color.White;
                 this.StartPosition = FormStartPosition.CenterParent;
@@ -594,7 +680,7 @@ namespace BookingCareManagement.WinForms
                     Font = new Font("Segoe UI", 10),
                     DropDownStyle = ComboBoxStyle.DropDownList,
                 };
-                serviceComboBox.Items.AddRange(new string[] { "General Checkup", "Dental Care", "Cardiology", "Pediatrics" });
+                serviceComboBox.Items.AddRange(new string[] { "Khám tổng quát", "Nha khoa", "Tim mạch", "Nhi khoa" });
 
                 // Label "Employees"
                 Label employeeLabel = new Label
@@ -614,7 +700,7 @@ namespace BookingCareManagement.WinForms
                     Font = new Font("Segoe UI", 10),
                     DropDownStyle = ComboBoxStyle.DropDownList,
                 };
-                employeeComboBox.Items.AddRange(new string[] { "Dr. John Smith", "Dr. Sarah Johnson", "Dr. Michael Brown" });
+                employeeComboBox.Items.AddRange(new string[] { "BS. Nguyễn Văn A", "BS. Trần Thị B", "BS. Lê Văn C" });
 
                 // Label "Date"
                 Label dateLabel = new Label
@@ -682,22 +768,13 @@ namespace BookingCareManagement.WinForms
                 };
                 newCustomerLink.Click += (s, e) =>
                 {
-                    // Sử dụng dialog Add Customer
                     AddCustomerForm addCustomerForm = new AddCustomerForm();
-
-                    // Có thể truyền dữ liệu nếu cần
-                    // addCustomerForm.SomeProperty = someValue;
-
                     DialogResult result = addCustomerForm.ShowDialog();
-
-                    // Xử lý kết quả sau khi dialog đóng
                     if (result == DialogResult.OK)
                     {
-                        // Lấy dữ liệu từ form nếu cần
                         MessageBox.Show("Khách hàng đã được thêm thành công!", "Thông báo",
                                       MessageBoxButtons.OK, MessageBoxIcon.Information);
 
-                        // Refresh dữ liệu hoặc thực hiện hành động khác
                         RefreshCustomerList();
                     }
 
@@ -729,12 +806,12 @@ namespace BookingCareManagement.WinForms
                     Size = new Size(475, 25),
                     Font = new Font("Segoe UI", 10),
                     BorderStyle = BorderStyle.None,
-                    Text = "Start typing a customer name"
+                    Text = "Gõ tên khách hàng"
                 };
                 customerTextBox.ForeColor = Color.Gray;
                 customerTextBox.Enter += (s, e) =>
                 {
-                    if (customerTextBox.Text == "Start typing a customer name")
+                    if (customerTextBox.Text == "Gõ tên khách hàng")
                     {
                         customerTextBox.Text = "";
                         customerTextBox.ForeColor = Color.Black;
@@ -744,7 +821,7 @@ namespace BookingCareManagement.WinForms
                 {
                     if (string.IsNullOrWhiteSpace(customerTextBox.Text))
                     {
-                        customerTextBox.Text = "Start typing a customer name";
+                        customerTextBox.Text = "Gõ tên khách hàng";
                         customerTextBox.ForeColor = Color.Gray;
                     }
                 };
@@ -810,6 +887,7 @@ namespace BookingCareManagement.WinForms
                 this.Controls.Add(cancelBtn);
                 this.Controls.Add(saveBtn);
             }
+
             private void RefreshCustomerList()
             {
                 // Code để refresh danh sách khách hàng
@@ -819,37 +897,37 @@ namespace BookingCareManagement.WinForms
             {
                 if (serviceComboBox.SelectedIndex == -1)
                 {
-                    MessageBox.Show("Please select a service", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Vui lòng chọn dịch vụ", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
                 if (employeeComboBox.SelectedIndex == -1)
                 {
-                    MessageBox.Show("Please select an employee", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Vui lòng chọn bác sĩ", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
                 if (timeComboBox.SelectedIndex == -1)
                 {
-                    MessageBox.Show("Please select a time", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Vui lòng chọn thời gian", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                if (string.IsNullOrWhiteSpace(customerTextBox.Text) || customerTextBox.Text == "Start typing a customer name")
+                if (string.IsNullOrWhiteSpace(customerTextBox.Text) || customerTextBox.Text == "Gõ tên khách hàng")
                 {
-                    MessageBox.Show("Please enter a customer name", "Validation Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    MessageBox.Show("Vui lòng nhập tên khách hàng", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                     return;
                 }
 
-                string message = $"Appointment created successfully!\n\n" +
-                               $"Service: {serviceComboBox.SelectedItem}\n" +
-                               $"Employee: {employeeComboBox.SelectedItem}\n" +
-                               $"Date: {datePicker.Value.ToShortDateString()}\n" +
-                               $"Time: {timeComboBox.SelectedItem}\n" +
-                               $"Customer: {customerTextBox.Text}\n" +
-                               $"Notification: {(notificationCheckBox.Checked ? "Yes" : "No")}";
+                string message = $"Tạo cuộc hẹn thành công!\n\n" +
+                               $"Dịch vụ: {serviceComboBox.SelectedItem}\n" +
+                               $"Bác sĩ: {employeeComboBox.SelectedItem}\n" +
+                               $"Ngày: {datePicker.Value:dd/MM/yyyy}\n" +
+                               $"Thời gian: {timeComboBox.SelectedItem}\n" +
+                               $"Khách hàng: {customerTextBox.Text}\n" +
+                               $"Thông báo: {(notificationCheckBox.Checked ? "Có" : "Không")}";
 
-                MessageBox.Show(message, "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                MessageBox.Show(message, "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 this.DialogResult = DialogResult.OK;
                 this.Close();
             }

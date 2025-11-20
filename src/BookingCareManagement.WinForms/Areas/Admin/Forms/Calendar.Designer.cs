@@ -64,13 +64,15 @@
             // newAppointmentBtn
             // 
             newAppointmentBtn.BackColor = Color.FromArgb(37, 99, 235);
+            newAppointmentBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            newAppointmentBtn.FlatStyle = FlatStyle.Flat;
             newAppointmentBtn.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             newAppointmentBtn.ForeColor = Color.White;
             newAppointmentBtn.Location = new Point(1317, 28);
             newAppointmentBtn.Name = "newAppointmentBtn";
             newAppointmentBtn.Size = new Size(250, 50);
             newAppointmentBtn.TabIndex = 1;
-            newAppointmentBtn.Text = "+  Thêm cuôc hẹn";
+            newAppointmentBtn.Text = "+ Thêm cuộc hẹn";
             newAppointmentBtn.UseVisualStyleBackColor = false;
             newAppointmentBtn.Click += newAppointmentBtn_Click;
             // 
@@ -95,6 +97,7 @@
             userPanel.Padding = new Padding(30, 25, 30, 25);
             userPanel.Size = new Size(1600, 125);
             userPanel.TabIndex = 1;
+            userPanel.Visible = false;
             // 
             // navigationPanel
             // 
@@ -118,11 +121,13 @@
             // 
             // btnToday
             // 
+            btnToday.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            btnToday.FlatStyle = FlatStyle.Flat;
             btnToday.Font = new Font("Segoe UI", 10F);
             btnToday.ForeColor = Color.Black;
-            btnToday.Location = new Point(12, 26);
+            btnToday.Location = new Point(40, 18);
             btnToday.Name = "btnToday";
-            btnToday.Size = new Size(100, 40);
+            btnToday.Size = new Size(100, 50);
             btnToday.TabIndex = 9;
             btnToday.Text = "Hôm nay";
             btnToday.UseVisualStyleBackColor = true;
@@ -130,30 +135,36 @@
             // 
             // comboBox1
             // 
+            comboBox1.DropDownStyle = ComboBoxStyle.DropDownList;
             comboBox1.FormattingEnabled = true;
-            comboBox1.Location = new Point(1034, 35);
+            comboBox1.Items.AddRange(new object[] { "Bác sĩ", "Khách hàng", "Chuyên môn" });
+            comboBox1.Location = new Point(996, 33);
             comboBox1.Name = "comboBox1";
-            comboBox1.Size = new Size(80, 28);
+            comboBox1.Size = new Size(141, 28);
             comboBox1.TabIndex = 8;
             // 
             // filtersBtn
             // 
+            filtersBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            filtersBtn.FlatStyle = FlatStyle.Flat;
             filtersBtn.Font = new Font("Segoe UI", 10F);
             filtersBtn.ForeColor = Color.Black;
-            filtersBtn.Location = new Point(1400, 26);
+            filtersBtn.Location = new Point(1428, 20);
             filtersBtn.Name = "filtersBtn";
-            filtersBtn.Size = new Size(100, 40);
+            filtersBtn.Size = new Size(100, 50);
             filtersBtn.TabIndex = 7;
             filtersBtn.Text = "⚙ Bộ lọc";
             filtersBtn.UseVisualStyleBackColor = true;
             // 
             // dayBtn
             // 
+            dayBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            dayBtn.FlatStyle = FlatStyle.Flat;
             dayBtn.Font = new Font("Segoe UI", 10F);
             dayBtn.ForeColor = Color.Black;
-            dayBtn.Location = new Point(1310, 26);
+            dayBtn.Location = new Point(1338, 20);
             dayBtn.Name = "dayBtn";
-            dayBtn.Size = new Size(80, 40);
+            dayBtn.Size = new Size(80, 50);
             dayBtn.TabIndex = 6;
             dayBtn.Text = "Ngày";
             dayBtn.UseVisualStyleBackColor = true;
@@ -161,11 +172,13 @@
             // 
             // weekBtn
             // 
+            weekBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            weekBtn.FlatStyle = FlatStyle.Flat;
             weekBtn.Font = new Font("Segoe UI", 10F);
             weekBtn.ForeColor = Color.Black;
-            weekBtn.Location = new Point(1220, 26);
+            weekBtn.Location = new Point(1248, 20);
             weekBtn.Name = "weekBtn";
-            weekBtn.Size = new Size(80, 40);
+            weekBtn.Size = new Size(80, 50);
             weekBtn.TabIndex = 5;
             weekBtn.Text = "Tuần";
             weekBtn.UseVisualStyleBackColor = true;
@@ -173,11 +186,13 @@
             // 
             // monthBtn
             // 
+            monthBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            monthBtn.FlatStyle = FlatStyle.Flat;
             monthBtn.Font = new Font("Segoe UI", 10F);
             monthBtn.ForeColor = Color.Black;
-            monthBtn.Location = new Point(1130, 26);
+            monthBtn.Location = new Point(1158, 20);
             monthBtn.Name = "monthBtn";
-            monthBtn.Size = new Size(80, 40);
+            monthBtn.Size = new Size(80, 50);
             monthBtn.TabIndex = 4;
             monthBtn.Text = "Tháng";
             monthBtn.UseVisualStyleBackColor = true;
@@ -188,7 +203,7 @@
             nextBtn.FlatAppearance.BorderSize = 0;
             nextBtn.FlatStyle = FlatStyle.Flat;
             nextBtn.Font = new Font("Segoe UI", 12F);
-            nextBtn.Location = new Point(520, 19);
+            nextBtn.Location = new Point(548, 13);
             nextBtn.Margin = new Padding(3, 4, 3, 4);
             nextBtn.Name = "nextBtn";
             nextBtn.Size = new Size(40, 50);
@@ -198,29 +213,27 @@
             // 
             // monthLabel
             // 
-            monthLabel.AutoSize = true;
             monthLabel.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
             monthLabel.ForeColor = Color.FromArgb(17, 24, 39);
-            monthLabel.Location = new Point(177, 28);
+            monthLabel.Location = new Point(248, 22);
             monthLabel.Name = "monthLabel";
-            monthLabel.Size = new Size(340, 32);
+            monthLabel.Size = new Size(260, 32);
             monthLabel.TabIndex = 2;
             monthLabel.Text = "Monday November 17, 2025";
-            monthLabel.TextAlign = ContentAlignment.MiddleLeft;
+            monthLabel.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // prevBtn
             // 
             prevBtn.FlatAppearance.BorderSize = 0;
             prevBtn.FlatStyle = FlatStyle.Flat;
             prevBtn.Font = new Font("Segoe UI", 12F);
-            prevBtn.Location = new Point(120, 19);
+            prevBtn.Location = new Point(148, 13);
             prevBtn.Margin = new Padding(3, 4, 3, 4);
             prevBtn.Name = "prevBtn";
             prevBtn.Size = new Size(40, 50);
             prevBtn.TabIndex = 1;
             prevBtn.Text = "◀";
             prevBtn.UseVisualStyleBackColor = true;
-            prevBtn.Click += prevBtn_Click;
             // 
             // calendarPanel
             // 
@@ -263,7 +276,6 @@
             headerPanel.ResumeLayout(false);
             headerPanel.PerformLayout();
             navigationPanel.ResumeLayout(false);
-            navigationPanel.PerformLayout();
             ResumeLayout(false);
 
         }
