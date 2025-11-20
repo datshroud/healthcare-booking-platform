@@ -128,15 +128,15 @@ public class DoctorAppointmentsController : ControllerBase
 
         if (from.HasValue)
         {
-            var fromLocal = DateTime.SpecifyKind(from.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Local);
-            var fromUtc = fromLocal.ToUniversalTime();
+            var fromLocal = SpecifyVietnamLocal(from.Value.ToDateTime(TimeOnly.MinValue));
+            var fromUtc = TimeZoneInfo.ConvertTimeToUtc(fromLocal, VietnamTimeZone);
             query = query.Where(x => x.appointment.StartUtc >= fromUtc);
         }
 
         if (to.HasValue)
         {
-            var toLocal = DateTime.SpecifyKind(to.Value.ToDateTime(new TimeOnly(23, 59, 59)), DateTimeKind.Local);
-            var toUtc = toLocal.ToUniversalTime();
+            var toLocal = SpecifyVietnamLocal(to.Value.ToDateTime(new TimeOnly(23, 59, 59)));
+            var toUtc = TimeZoneInfo.ConvertTimeToUtc(toLocal, VietnamTimeZone);
             query = query.Where(x => x.appointment.StartUtc <= toUtc);
         }
 
@@ -173,15 +173,15 @@ public class DoctorAppointmentsController : ControllerBase
 
         if (from.HasValue)
         {
-            var fromLocal = DateTime.SpecifyKind(from.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Local);
-            var fromUtc = fromLocal.ToUniversalTime();
+            var fromLocal = SpecifyVietnamLocal(from.Value.ToDateTime(TimeOnly.MinValue));
+            var fromUtc = TimeZoneInfo.ConvertTimeToUtc(fromLocal, VietnamTimeZone);
             query = query.Where(x => x.appointment.StartUtc >= fromUtc);
         }
 
         if (to.HasValue)
         {
-            var toLocal = DateTime.SpecifyKind(to.Value.ToDateTime(new TimeOnly(23, 59, 59)), DateTimeKind.Local);
-            var toUtc = toLocal.ToUniversalTime();
+            var toLocal = SpecifyVietnamLocal(to.Value.ToDateTime(new TimeOnly(23, 59, 59)));
+            var toUtc = TimeZoneInfo.ConvertTimeToUtc(toLocal, VietnamTimeZone);
             query = query.Where(x => x.appointment.StartUtc <= toUtc);
         }
 
@@ -369,8 +369,8 @@ public class DoctorAppointmentsController : ControllerBase
         var slotStartUtc = DateTime.SpecifyKind(request.SlotStartUtc, DateTimeKind.Utc);
         var slotEndUtc = slotStartUtc.AddMinutes(durationMinutes);
 
-        var minLeadLocal = DateTime.SpecifyKind(DateTime.Now.Date.AddDays(2), DateTimeKind.Local);
-        var minLeadUtc = minLeadLocal.ToUniversalTime();
+        var minLeadLocal = GetVietnamDate().AddDays(2);
+        var minLeadUtc = TimeZoneInfo.ConvertTimeToUtc(minLeadLocal, VietnamTimeZone);
         if (slotStartUtc < minLeadUtc)
         {
             var limitMessage = $"Ngày đặt phải từ {minLeadLocal:dd/MM/yyyy} trở đi";
@@ -617,6 +617,17 @@ public class DoctorAppointmentsController : ControllerBase
         return value.Length == 1
             ? value.ToUpper(VietnamCulture)
             : char.ToUpper(value[0], VietnamCulture) + value[1..];
+    }
+
+    private static DateTime GetVietnamDate()
+    {
+        var todayLocal = TimeZoneInfo.ConvertTime(DateTime.UtcNow, VietnamTimeZone).Date;
+        return DateTime.SpecifyKind(todayLocal, DateTimeKind.Unspecified);
+    }
+
+    private static DateTime SpecifyVietnamLocal(DateTime value)
+    {
+        return DateTime.SpecifyKind(value, DateTimeKind.Unspecified);
     }
 
     private static TimeZoneInfo ResolveVietnamTimeZone()

@@ -115,10 +115,10 @@ public class CustomerBookingController : ControllerBase
             return Ok(Array.Empty<DoctorTimeSlotDto>());
         }
 
-        var dayStartLocal = DateTime.SpecifyKind(targetDate.ToDateTime(TimeOnly.MinValue), DateTimeKind.Local);
+        var dayStartLocal = SpecifyAsLocalVietnam(targetDate.ToDateTime(TimeOnly.MinValue));
         var dayEndLocal = dayStartLocal.AddDays(1);
-        var dayStartUtc = dayStartLocal.ToUniversalTime();
-        var dayEndUtc = dayEndLocal.ToUniversalTime();
+        var dayStartUtc = TimeZoneInfo.ConvertTimeToUtc(dayStartLocal, VietnamTimeZone);
+        var dayEndUtc = TimeZoneInfo.ConvertTimeToUtc(dayEndLocal, VietnamTimeZone);
 
         var targetAppointmentId = excludeAppointmentId ?? Guid.Empty;
 
@@ -231,8 +231,8 @@ public class CustomerBookingController : ControllerBase
         var durationMinutes = request.DurationMinutes <= 0 ? 30 : request.DurationMinutes;
         var slotEndUtc = slotStartUtc.AddMinutes(durationMinutes);
 
-        var minLeadLocal = DateTime.SpecifyKind(DateTime.Now.Date.AddDays(2), DateTimeKind.Local);
-        var minLeadUtc = minLeadLocal.ToUniversalTime();
+        var minLeadLocal = GetVietnamDate().AddDays(2);
+        var minLeadUtc = TimeZoneInfo.ConvertTimeToUtc(minLeadLocal, VietnamTimeZone);
         if (slotStartUtc < minLeadUtc)
         {
             var limitMessage = $"Ngày đặt phải từ {minLeadLocal.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)} trở đi";
@@ -381,8 +381,8 @@ public class CustomerBookingController : ControllerBase
         var newStartUtc = DateTime.SpecifyKind(request.SlotStartUtc, DateTimeKind.Utc);
         var newEndUtc = newStartUtc.AddMinutes(durationMinutes);
 
-        var minLeadLocal = DateTime.SpecifyKind(DateTime.Now.Date.AddDays(2), DateTimeKind.Local);
-        var minLeadUtc = minLeadLocal.ToUniversalTime();
+        var minLeadLocal = GetVietnamDate().AddDays(2);
+        var minLeadUtc = TimeZoneInfo.ConvertTimeToUtc(minLeadLocal, VietnamTimeZone);
         if (newStartUtc < minLeadUtc)
         {
             var limitMessage = $"Ngày đổi lịch phải từ {minLeadLocal.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)} trở đi";
@@ -699,6 +699,17 @@ public class CustomerBookingController : ControllerBase
         return char.ToUpper(value[0], VietnamCulture) + value[1..];
     }
 
+    private static DateTime GetVietnamDate()
+    {
+        var todayLocal = TimeZoneInfo.ConvertTime(DateTime.UtcNow, VietnamTimeZone).Date;
+        return DateTime.SpecifyKind(todayLocal, DateTimeKind.Unspecified);
+    }
+
+    private static DateTime SpecifyAsLocalVietnam(DateTime dateTime)
+    {
+        return DateTime.SpecifyKind(dateTime, DateTimeKind.Unspecified);
+    }
+
     private static TimeZoneInfo ResolveVietnamTimeZone()
     {
         var candidates = new[] { "Asia/Ho_Chi_Minh", "SE Asia Standard Time" };
@@ -745,7 +756,7 @@ public class CustomerBookingController : ControllerBase
     {
         var slots = new List<DoctorTimeSlotDto>();
         var slotLength = TimeSpan.FromMinutes(30);
-        var dateStartLocal = DateTime.SpecifyKind(date.ToDateTime(TimeOnly.MinValue), DateTimeKind.Local);
+        var dateStartLocal = SpecifyAsLocalVietnam(date.ToDateTime(TimeOnly.MinValue));
 
         foreach (var window in windows)
         {
@@ -755,8 +766,8 @@ public class CustomerBookingController : ControllerBase
                 var startLocal = dateStartLocal.Add(current);
                 var endLocal = startLocal.Add(slotLength);
 
-                var startUtc = startLocal.ToUniversalTime();
-                var endUtc = endLocal.ToUniversalTime();
+                var startUtc = TimeZoneInfo.ConvertTimeToUtc(startLocal, VietnamTimeZone);
+                var endUtc = TimeZoneInfo.ConvertTimeToUtc(endLocal, VietnamTimeZone);
 
                 var overlaps = taken.Any(existing =>
                     startUtc < existing.End && existing.Start < endUtc);

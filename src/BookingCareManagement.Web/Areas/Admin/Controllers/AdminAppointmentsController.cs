@@ -160,15 +160,15 @@ public sealed class AdminAppointmentsController : ControllerBase
 
         if (from.HasValue)
         {
-            var fromLocal = DateTime.SpecifyKind(from.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Local);
-            var fromUtc = fromLocal.ToUniversalTime();
+            var fromLocal = SpecifyVietnamLocal(from.Value.ToDateTime(TimeOnly.MinValue));
+            var fromUtc = TimeZoneInfo.ConvertTimeToUtc(fromLocal, DisplayTimeZone);
             query = query.Where(x => x.appointment.StartUtc >= fromUtc);
         }
 
         if (to.HasValue)
         {
-            var toLocal = DateTime.SpecifyKind(to.Value.ToDateTime(new TimeOnly(23, 59, 59)), DateTimeKind.Local);
-            var toUtc = toLocal.ToUniversalTime();
+            var toLocal = SpecifyVietnamLocal(to.Value.ToDateTime(new TimeOnly(23, 59, 59)));
+            var toUtc = TimeZoneInfo.ConvertTimeToUtc(toLocal, DisplayTimeZone);
             query = query.Where(x => x.appointment.StartUtc <= toUtc);
         }
 
@@ -209,15 +209,15 @@ public sealed class AdminAppointmentsController : ControllerBase
 
         if (from.HasValue)
         {
-            var fromLocal = DateTime.SpecifyKind(from.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Local);
-            var fromUtc = fromLocal.ToUniversalTime();
+            var fromLocal = SpecifyVietnamLocal(from.Value.ToDateTime(TimeOnly.MinValue));
+            var fromUtc = TimeZoneInfo.ConvertTimeToUtc(fromLocal, DisplayTimeZone);
             query = query.Where(x => x.appointment.StartUtc >= fromUtc);
         }
 
         if (to.HasValue)
         {
-            var toLocal = DateTime.SpecifyKind(to.Value.ToDateTime(new TimeOnly(23, 59, 59)), DateTimeKind.Local);
-            var toUtc = toLocal.ToUniversalTime();
+            var toLocal = SpecifyVietnamLocal(to.Value.ToDateTime(new TimeOnly(23, 59, 59)));
+            var toUtc = TimeZoneInfo.ConvertTimeToUtc(toLocal, DisplayTimeZone);
             query = query.Where(x => x.appointment.StartUtc <= toUtc);
         }
 
@@ -372,8 +372,8 @@ public sealed class AdminAppointmentsController : ControllerBase
         }
 
         var durationMinutes = request.DurationMinutes > 0 ? request.DurationMinutes : 30;
-        var minLeadLocal = DateTime.SpecifyKind(DateTime.Now.Date.AddDays(2), DateTimeKind.Local);
-        var minLeadUtc = minLeadLocal.ToUniversalTime();
+        var minLeadLocal = GetVietnamDate().AddDays(2);
+        var minLeadUtc = TimeZoneInfo.ConvertTimeToUtc(minLeadLocal, DisplayTimeZone);
         if (slotStartUtc < minLeadUtc)
         {
             return (null, new ProblemDetails { Title = $"Ngày đặt phải từ {minLeadLocal:dd/MM/yyyy} trở đi" });
@@ -648,6 +648,17 @@ public sealed class AdminAppointmentsController : ControllerBase
         }
 
         return (email ?? userName ?? string.Empty).Trim();
+    }
+
+    private static DateTime GetVietnamDate()
+    {
+        var todayLocal = TimeZoneInfo.ConvertTime(DateTime.UtcNow, DisplayTimeZone).Date;
+        return DateTime.SpecifyKind(todayLocal, DateTimeKind.Unspecified);
+    }
+
+    private static DateTime SpecifyVietnamLocal(DateTime value)
+    {
+        return DateTime.SpecifyKind(value, DateTimeKind.Unspecified);
     }
 
     private static TimeZoneInfo ResolveVietnamTimeZone()
