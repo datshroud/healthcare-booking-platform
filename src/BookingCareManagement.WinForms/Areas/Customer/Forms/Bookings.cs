@@ -206,8 +206,6 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             {
                 employees = new List<EmployeeData>
                 {
-                    new EmployeeData { Id = Guid.NewGuid(), Name = "BS. A", Specialty = selectedSpecialty },
-                    new EmployeeData { Id = Guid.NewGuid(), Name = "BS. B", Specialty = selectedSpecialty }
                 };
             }
 
