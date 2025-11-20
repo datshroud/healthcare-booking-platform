@@ -316,8 +316,33 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             buttonLearnMore.FlatAppearance.BorderColor = Color.FromArgb(220, 220, 220);
             buttonLearnMore.Click += (s, e) =>
             {
-                // Functionality temporarily removed — keep button visible
-                MessageBox.Show("Tính năng xem chi tiết hiện đang tắt.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                try
+                {
+                    // Try to find DTO for this service if available
+                    CustomerSpecialtyDto? dto = null;
+                    if (_specialtyDtos != null)
+                    {
+                        dto = _specialtyDtos.FirstOrDefault(x => x.Id == service.Id);
+                    }
+
+                    var details = new SpecialtyDetailsForm(service, dto);
+
+                    // If hosted inside MainForm shell, show as modal owned by shell
+                    var mainShell = System.Windows.Forms.Application.OpenForms.OfType<global::BookingCareManagement.WinForms.MainForm>().FirstOrDefault();
+                    if (mainShell != null)
+                    {
+                        details.ShowDialog(mainShell);
+                    }
+                    else
+                    {
+                        details.ShowDialog(this);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] Open SpecialtyDetails exception: {ex}\n"); } catch {}
+                    MessageBox.Show("Không thể mở chi tiết chuyên khoa.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             };
 
             Button buttonBookNow = new Button
