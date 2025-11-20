@@ -84,7 +84,7 @@ static class Program
             // If not authenticated, show login form first (designer form)
             if (!session.IsAuthenticated)
             {
-                using var login = services.GetRequiredService<Bookings>();
+                using var login = services.GetRequiredService<Login>();
                 var result = login.ShowDialog();
                 if (result != DialogResult.OK)
                 {

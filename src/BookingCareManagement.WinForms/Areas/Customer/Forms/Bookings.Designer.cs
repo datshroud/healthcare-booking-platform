@@ -35,6 +35,7 @@
             panelThankYou = new Panel();
             labelThankYouMessage = new Label();
             labelThankYouTitle = new Label();
+            buttonBackToStart = new Button();
             panelPayment = new Panel();
             buttonConfirmBooking = new Button();
             textBoxPhone = new TextBox();
@@ -120,7 +121,7 @@
             // panelLeft
             // 
             panelLeft.Anchor = AnchorStyles.None;
-            panelLeft.BackColor = Color.FromArgb(100, 200, 210);
+            panelLeft.BackColor = Color.FromArgb(52, 58, 64);
             panelLeft.Controls.Add(panelLeftContent);
             panelLeft.Controls.Add(textBoxSearch);
             panelLeft.Controls.Add(panelLeftHeader);
@@ -147,6 +148,7 @@
             // 
             panelThankYou.Controls.Add(labelThankYouMessage);
             panelThankYou.Controls.Add(labelThankYouTitle);
+            panelThankYou.Controls.Add(buttonBackToStart);
             panelThankYou.Dock = DockStyle.Fill;
             panelThankYou.Location = new Point(0, 1000);
             panelThankYou.Margin = new Padding(4, 5, 4, 5);
@@ -178,6 +180,20 @@
             labelThankYouTitle.TabIndex = 0;
             labelThankYouTitle.Text = "Cảm ơn!";
             labelThankYouTitle.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // buttonBackToStart
+            // 
+            buttonBackToStart.BackColor = Color.FromArgb(255, 165, 0);
+            buttonBackToStart.FlatAppearance.BorderSize = 0;
+            buttonBackToStart.FlatStyle = FlatStyle.Flat;
+            buttonBackToStart.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            buttonBackToStart.ForeColor = Color.White;
+            buttonBackToStart.Location = new Point(200, 360);
+            buttonBackToStart.Name = "buttonBackToStart";
+            buttonBackToStart.Size = new Size(413, 60);
+            buttonBackToStart.TabIndex = 2;
+            buttonBackToStart.Text = "Đặt tiếp";
+            buttonBackToStart.UseVisualStyleBackColor = false;
             // 
             // panelPayment
             // 
@@ -522,7 +538,7 @@
             // panelRight
             // 
             panelRight.Anchor = AnchorStyles.None;
-            panelRight.BackColor = Color.FromArgb(100, 200, 210);
+            panelRight.BackColor = Color.FromArgb(52, 58, 64);
             panelRight.Controls.Add(panelRightContent);
             panelRight.Controls.Add(labelRightTitle);
             panelRight.Location = new Point(973, 169);
@@ -747,6 +763,7 @@
         private System.Windows.Forms.Panel panelThankYou;
         private System.Windows.Forms.Label labelThankYouMessage;
         private System.Windows.Forms.Label labelThankYouTitle;
+        private System.Windows.Forms.Button buttonBackToStart;
         private System.Windows.Forms.Panel panelPayment;
         private System.Windows.Forms.Button buttonConfirmBooking;
         private System.Windows.Forms.TextBox textBoxPhone;

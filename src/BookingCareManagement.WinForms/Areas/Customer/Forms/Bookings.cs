@@ -54,6 +54,11 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             this.buttonConfirmDateTime.Click += ButtonConfirmDateTime_Click;
             this.buttonApplyPromo.Click += ButtonApplyPromo_Click;
             this.buttonConfirmBooking.Click += ButtonConfirmBooking_Click;
+            // Back to start button in thank you panel
+            if (this.Controls.Find("buttonBackToStart", true).FirstOrDefault() is Button backToStart)
+            {
+                backToStart.Click += ButtonBackToStart_Click;
+            }
         }
 
         private async void Bookings_Load(object sender, EventArgs e)
@@ -73,22 +78,22 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             // Default time slots (fallback)
             timeSlots = new List<string>
             {
-                "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
-                "11:00", "11:30", "14:00", "14:30", "15:00", "15:30",
-                "16:00", "16:30", "17:00", "17:30"
+                //"08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
+                //"11:00", "11:30", "14:00", "14:30", "15:00", "15:30",
+                //"16:00", "16:30", "17:00", "17:30"
             };
 
-            if (_apiClient is null)
-            {
-                // fallback to local sample specialties
-                specialties = new List<SpecialtyData>
-                {
-                    new SpecialtyData { Id = Guid.NewGuid(), Name = "Nha Khoa", Price =200000 },
-                    new SpecialtyData { Id = Guid.NewGuid(), Name = "Tim Mạch", Price =500000 },
-                    new SpecialtyData { Id = Guid.NewGuid(), Name = "Nội Khoa", Price =300000 }
-                };
-                return;
-            }
+            //if (_apiClient is null)
+            //{
+            //    // fallback to local sample specialties
+            //    specialties = new List<SpecialtyData>
+            //    {
+            //        new SpecialtyData { Id = Guid.NewGuid(), Name = "Nha Khoa", Price =200000 },
+            //        new SpecialtyData { Id = Guid.NewGuid(), Name = "Tim Mạch", Price =500000 },
+            //        new SpecialtyData { Id = Guid.NewGuid(), Name = "Nội Khoa", Price =300000 }
+            //    };
+            //    return;
+            //}
 
             try
             {
@@ -103,12 +108,12 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             catch
             {
                 // ignore and fallback to sample data
-                specialties = new List<SpecialtyData>
-                {
-                    new SpecialtyData { Id = Guid.NewGuid(), Name = "Nha Khoa", Price =200000 },
-                    new SpecialtyData { Id = Guid.NewGuid(), Name = "Tim Mạch", Price =500000 },
-                    new SpecialtyData { Id = Guid.NewGuid(), Name = "Nội Khoa", Price =300000 }
-                };
+                //specialties = new List<SpecialtyData>
+                //{
+                //    new SpecialtyData { Id = Guid.NewGuid(), Name = "Nha Khoa", Price =200000 },
+                //    new SpecialtyData { Id = Guid.NewGuid(), Name = "Tim Mạch", Price =500000 },
+                //    new SpecialtyData { Id = Guid.NewGuid(), Name = "Nội Khoa", Price =300000 }
+                //};
             }
         }
 
@@ -292,7 +297,8 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                     var available = slots.Where(s => s.IsAvailable).OrderBy(s => s.StartLocal).ToList();
                     foreach (var s in available)
                     {
-                        comboBoxTimeSlot.Items.Add(s.StartLocal.ToString("HH:mm"));
+                        // show range: start - end
+                        comboBoxTimeSlot.Items.Add($"{s.StartLocal:HH:mm} - {s.EndLocal:HH:mm}");
                     }
                 }
                 catch
@@ -306,7 +312,18 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 // fallback static slots
                 foreach (var time in timeSlots)
                 {
-                    comboBoxTimeSlot.Items.Add(time);
+                    // assume default duration30 minutes
+                    if (TimeSpan.TryParse(time, out var tsStart))
+                    {
+                        var tsEnd = tsStart.Add(TimeSpan.FromMinutes(30));
+                        var startStr = tsStart.ToString(@"hh\:mm");
+                        var endStr = tsEnd.ToString(@"hh\:mm");
+                        comboBoxTimeSlot.Items.Add($"{startStr} - {endStr}");
+                    }
+                    else
+                    {
+                        comboBoxTimeSlot.Items.Add(time);
+                    }
                 }
             }
 
@@ -390,7 +407,9 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 DateTime startLocal;
                 try
                 {
-                    startLocal = DateTime.ParseExact($"{selectedDate} {selectedTime}", "dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
+                    // selectedTime may be a range like "14:30 -15:00". Extract start time
+                    var timePart = selectedTime.Split('-')[0].Trim();
+                    startLocal = DateTime.ParseExact($"{selectedDate} {timePart}", "dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
                     startLocal = DateTime.SpecifyKind(startLocal, DateTimeKind.Local);
                 }
                 catch (FormatException)
@@ -526,6 +545,40 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                     ShowStep(BookingStep.DateTime);
                     break;
             }
+        }
+
+        private void ButtonBackToStart_Click(object? sender, EventArgs e)
+        {
+            ResetBookingForm();
+            ShowStep(BookingStep.Specialty);
+        }
+
+        private void ResetBookingForm()
+        {
+            // Reset selections and UI
+            selectedSpecialty = string.Empty;
+            selectedEmployee = string.Empty;
+            selectedSpecialtyId = Guid.Empty;
+            selectedEmployeeId = Guid.Empty;
+            selectedDate = string.Empty;
+            selectedTime = string.Empty;
+            totalPrice =0;
+
+            labelSelectedSpecialtyValue.Text = "Chưa chọn";
+            labelSelectedEmployeeValue.Text = "Chưa chọn";
+            labelSelectedDateTimeValue.Text = "Chưa chọn";
+            labelTotalPrice.Text = "0 VNĐ";
+            labelCheckoutTotal.Text = "0 VNĐ";
+            panelTotalSection.Visible = false;
+
+            textBoxName.Text = string.Empty;
+            textBoxPhone.Text = string.Empty;
+            textBoxPromoCode.Text = string.Empty;
+
+            // Clear flow panels
+            flowLayoutPanelEmployees.Controls.Clear();
+            // reload specialties from cached list
+            LoadSpecialties();
         }
 
         private void TextBoxSearch_Enter(object sender, EventArgs e)
