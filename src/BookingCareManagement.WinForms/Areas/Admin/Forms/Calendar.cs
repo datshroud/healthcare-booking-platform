@@ -6,9 +6,12 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using static BookingCareManagement.WinForms.Customer;
+using BookingCareManagement.WinForms.Areas.Admin.Services;
+using BookingCareManagement.WinForms.Shared.Models.Dtos;
 
 namespace BookingCareManagement.WinForms
 {
@@ -16,17 +19,23 @@ namespace BookingCareManagement.WinForms
     {
         private DateTime currentDate;
         private string currentView = "Month";
+        private readonly AdminAppointmentsApiClient _appointmentsApiClient;
+        private List<CalendarEventDto> _events = new();
+        private CancellationTokenSource? _loadCts;
+        private DateTime _lastLoadedMonth = DateTime.MinValue;
 
         // Biến cho drag & drop
         private Label draggedAppointment = null;
         private Point dragStartPoint;
         private Panel sourcePanel = null;
 
-        public Calendar()
+        // Chỉ giữ lại constructor DI
+        public Calendar(AdminAppointmentsApiClient appointmentsApiClient)
         {
+            _appointmentsApiClient = appointmentsApiClient;
             currentDate = DateTime.Now;
-            InitializeComponent(); // Sử dụng Designer-generated code
-            InitializeCustomComponents(); // Khởi tạo các component tùy chỉnh
+            InitializeComponent();
+            InitializeCustomComponents();
         }
 
         private void InitializeCustomComponents()
@@ -347,8 +356,50 @@ namespace BookingCareManagement.WinForms
             }
         }
 
+        
+
+        private async Task LoadMonthEventsAsync()
+        {
+            _loadCts?.Cancel();
+            _loadCts = new CancellationTokenSource();
+            var token = _loadCts.Token;
+            var firstDay = new DateTime(currentDate.Year, currentDate.Month, 1);
+            var lastDay = firstDay.AddMonths(1).AddDays(-1);
+            if (_lastLoadedMonth.Year == firstDay.Year && _lastLoadedMonth.Month == firstDay.Month)
+                return;
+            try
+            {
+                var events = await _appointmentsApiClient.GetCalendarEventsAsync(
+                    from: DateOnly.FromDateTime(firstDay),
+                    to: DateOnly.FromDateTime(lastDay),
+                    doctorIds: null,
+                    cancellationToken: token);
+                _events = events.ToList();
+                _lastLoadedMonth = firstDay;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(this, $"Không thể tải lịch: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                _events = new List<CalendarEventDto>();
+            }
+        }
+
         private Panel CreateDayCell(int day, bool isOtherMonth, int col, int row, int width, int height)
         {
+            DateTime cellDate = new DateTime(currentDate.Year, currentDate.Month, 1).AddDays(day - 1);
+            if (isOtherMonth)
+            {
+                if (day > 20) // đầu tháng trước
+                {
+                    var prevMonth = currentDate.AddMonths(-1);
+                    cellDate = new DateTime(prevMonth.Year, prevMonth.Month, day);
+                }
+                else // đầu tháng sau
+                {
+                    var nextMonth = currentDate.AddMonths(1);
+                    cellDate = new DateTime(nextMonth.Year, nextMonth.Month, day);
+                }
+            }
             Panel cell = new Panel
             {
                 Location = new Point(15 + col * width, 50 + row * height),
@@ -366,12 +417,37 @@ namespace BookingCareManagement.WinForms
                 Font = new Font("Segoe UI", 11, FontStyle.Bold),
                 ForeColor = isOtherMonth ? Color.FromArgb(156, 163, 175) : Color.FromArgb(75, 85, 99)
             };
-
             cell.Controls.Add(dayLabel);
+
+            // Render appointments for this day
+            var evs = _events.Where(ev => ev.StartUtc.ToLocalTime().Date == cellDate.Date).ToList();
+            int y = 28;
+            foreach (var ev in evs)
+            {
+                var lbl = new Label
+                {
+                    Text = ev.DoctorName,
+                    AutoSize = false,
+                    Size = new Size(cell.Width - 16, 18),
+                    Location = new Point(8, y),
+                    BackColor = Color.FromArgb(207, 232, 255),
+                    ForeColor = Color.FromArgb(17, 24, 39),
+                    Font = new Font("Segoe UI", 9, FontStyle.Regular),
+                    Padding = new Padding(2, 0, 2, 0),
+                    Tag = ev
+                };
+                lbl.Click += (s, e) =>
+                {
+                    var evt = (CalendarEventDto)((Label)s).Tag;
+                    MessageBox.Show($"{evt.DoctorName}\n{evt.StartUtc:HH:mm} - {evt.EndUtc:HH:mm}\n{evt.SpecialtyName}");
+                };
+                cell.Controls.Add(lbl);
+                y += 20;
+            }
             return cell;
         }
 
-        private void RefreshCalendar()
+        private async void RefreshCalendar()
         {
             Label monthLabel = navigationPanel.Controls["monthLabel"] as Label;
             Button NextBtn = navigationPanel.Controls["nextBtn"] as Button;
@@ -382,6 +458,7 @@ namespace BookingCareManagement.WinForms
                     monthLabel.Text = currentDate.ToString(" MMMM, yyyy");
                     monthLabel.Size = new Size(300, 40);
                     NextBtn.Location = new Point(400, 15);
+                    await LoadMonthEventsAsync();
                     CreateCalendar();
                 }
                 if (currentView == "Week")

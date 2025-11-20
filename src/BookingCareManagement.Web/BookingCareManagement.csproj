@@ -36,6 +36,7 @@
   <ItemGroup>
     <Folder Include="Areas\Doctor\Pages\Appointment\" />
     <Folder Include="Areas\Doctor\Pages\Calendar\" />
+    <Folder Include="Controllers\" />
     <Folder Include="Reports\Models\" />
     <Folder Include="wwwroot\images\" />
     <Folder Include="wwwroot\fonts\" />

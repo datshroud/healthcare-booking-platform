@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using BookingCareManagement.WinForms.Areas.Doctor.ViewModels;
@@ -23,9 +24,16 @@ public sealed class DoctorAppointmentsController
         try
         {
             var client = _httpClientFactory.CreateClient("BookingCareApi");
-            // TODO: call /api/doctor/appointments/summary when backend is ready
-            await Task.Delay(250, cancellationToken);
-            _viewModel.TodayAppointments = Random.Shared.Next(0, 12);
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var resp = await client.GetAsync($"api/doctor/appointments?from={today:yyyy-MM-dd}&to={today:yyyy-MM-dd}", cancellationToken);
+            resp.EnsureSuccessStatusCode();
+            var appointments = await resp.Content.ReadFromJsonAsync<System.Collections.Generic.List<BookingCareManagement.WinForms.Shared.Models.Dtos.DoctorAppointmentListItemDto>>(cancellationToken: cancellationToken);
+            _viewModel.TodayAppointments = appointments?.Count ?? 0;
+        }
+        catch (Exception ex)
+        {
+            // Có thể log lỗi hoặc hiển thị thông báo
+            _viewModel.TodayAppointments = 0;
         }
         finally
         {

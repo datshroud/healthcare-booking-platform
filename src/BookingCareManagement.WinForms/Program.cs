@@ -50,7 +50,8 @@ static class Program
                 session.ApplyProfile(cachedProfile);
             }
         }
-
+        storage.Clear();
+        session.Clear();
         // If not authenticated, show login form first (designer form)
         if (!session.IsAuthenticated)
         {

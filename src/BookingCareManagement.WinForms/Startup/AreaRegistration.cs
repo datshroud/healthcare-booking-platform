@@ -29,11 +29,13 @@ public static class AreaRegistration
             .AddTransient<AdminDashboardApiClient>()
             .AddTransient<AdminSpecialtyApiClient>()
             .AddTransient<AdminInvoiceApiClient>()
+            .AddTransient<AdminAppointmentsApiClient>()
             .AddTransient<SpecialtyManagementControl>()
             .AddTransient<DoctorManagementControl>()
             .AddTransient<InvoiceManagementControl>()
             .AddTransient<InvoiceEditorForm>()
             .AddTransient<DashboardForm>()
+            .AddTransient<Calendar>()
             .AddTransient<AdminNavigationController>()
             .AddTransient<AdminShellForm>();
         return services;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
+using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using BookingCareManagement.Domain.Aggregates.Appointment;
