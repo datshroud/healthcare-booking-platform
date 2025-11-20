@@ -8,6 +8,7 @@ using BookingCareManagement.WinForms.Startup;
 using BookingCareManagement.WinForms.Shared.State;
 using BookingCareManagement.WinForms.Areas.Account.Forms;
 using BookingCareManagement.WinForms.Shared.Models;
+using BookingCareManagement.WinForms.Areas.Customer.Forms;
 
 namespace BookingCareManagement.WinForms;
 

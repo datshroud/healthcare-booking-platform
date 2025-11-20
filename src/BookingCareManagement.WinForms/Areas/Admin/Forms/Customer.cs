@@ -1138,6 +1138,7 @@ namespace BookingCareManagement.WinForms
         {
             return new UpdateCustomerRequest
             {
+                Id = _customer.Id,
                 FirstName = txtFirstName.Text.Trim(),
                 LastName = txtLastName.Text.Trim(),
                 Email = txtEmail.Text.Trim(),
