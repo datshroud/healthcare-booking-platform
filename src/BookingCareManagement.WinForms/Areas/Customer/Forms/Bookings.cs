@@ -1,21 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
+using System.Net.Http;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using BookingCareManagement.WinForms.Areas.Customer.Services;
+using BookingCareManagement.WinForms.Areas.Customer.Services.Models;
+using BookingCareManagement.WinForms.Shared.Models.Dtos;
 
 namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 {
     public partial class Bookings : Form
     {
+        private readonly CustomerBookingApiClient _apiClient;
+
+        private Guid selectedSpecialtyId = Guid.Empty;
+        private Guid selectedEmployeeId = Guid.Empty;
         private string selectedSpecialty = "";
         private string selectedEmployee = "";
         private string selectedDate = "";
         private string selectedTime = "";
-        private decimal totalPrice = 0;
+        private decimal totalPrice =0;
 
-        private List<SpecialtyData> specialties;
-        private List<EmployeeData> employees;
+        private List<SpecialtyData> specialties = new();
+        private List<EmployeeData> employees = new();
         private List<string> timeSlots;
 
         private enum BookingStep
@@ -29,8 +39,9 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
         private BookingStep currentStep = BookingStep.Specialty;
 
-        public Bookings()
+        public Bookings(CustomerBookingApiClient apiClient)
         {
+            _apiClient = apiClient;
             InitializeComponent();
 
             // Thiết lập sự kiện
@@ -43,49 +54,67 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             this.buttonConfirmDateTime.Click += ButtonConfirmDateTime_Click;
             this.buttonApplyPromo.Click += ButtonApplyPromo_Click;
             this.buttonConfirmBooking.Click += ButtonConfirmBooking_Click;
+            // Back to start button in thank you panel
+            if (this.Controls.Find("buttonBackToStart", true).FirstOrDefault() is Button backToStart)
+            {
+                backToStart.Click += ButtonBackToStart_Click;
+            }
         }
 
-        private void Bookings_Load(object sender, EventArgs e)
+        private async void Bookings_Load(object sender, EventArgs e)
         {
-            InitializeData();
+            // Load initial data from API, fallback to local static data if API not reachable
+            await InitializeDataAsync();
+
             LoadSpecialties();
-            dateTimePickerAppointment.MinDate = DateTime.Now;
+            // Server requires min lead of2 days
+            dateTimePickerAppointment.MinDate = DateTime.Now.AddDays(2);
             dateTimePickerAppointment.MaxDate = DateTime.Now.AddMonths(3);
-            dateTimePickerAppointment.Value = DateTime.Now.AddDays(1);
+            dateTimePickerAppointment.Value = DateTime.Now.AddDays(2);
         }
 
-        private void InitializeData()
+        private async Task InitializeDataAsync()
         {
-            // Dữ liệu chuyên khoa
-            specialties = new List<SpecialtyData>
-            {
-                new SpecialtyData { Name = "Nha Khoa", Price = 200000 },
-                new SpecialtyData { Name = "Tim Mạch", Price = 500000 },
-                new SpecialtyData { Name = "Nội Khoa", Price = 300000 },
-                new SpecialtyData { Name = "Ngoại Khoa", Price = 800000 },
-                new SpecialtyData { Name = "Sản Phụ Khoa", Price = 400000 },
-                new SpecialtyData { Name = "Nhi Khoa", Price = 250000 },
-                new SpecialtyData { Name = "Da Liễu", Price = 350000 },
-                new SpecialtyData { Name = "Mắt", Price = 280000 }
-            };
-
-            // Dữ liệu nhân viên
-            employees = new List<EmployeeData>
-            {
-                new EmployeeData { Name = "BS. Nguyễn Văn A", Specialty = "Nha Khoa" },
-                new EmployeeData { Name = "BS. Trần Thị B", Specialty = "Nha Khoa" },
-                new EmployeeData { Name = "BS. Phạm Văn C", Specialty = "Tim Mạch" },
-                new EmployeeData { Name = "BS. Hoàng Thị D", Specialty = "Nội Khoa" },
-                new EmployeeData { Name = "BS. Lê Văn E", Specialty = "Ngoại Khoa" }
-            };
-
-            // Khung giờ
+            // Default time slots (fallback)
             timeSlots = new List<string>
             {
-                "08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
-                "11:00", "11:30", "14:00", "14:30", "15:00", "15:30",
-                "16:00", "16:30", "17:00", "17:30"
+                //"08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
+                //"11:00", "11:30", "14:00", "14:30", "15:00", "15:30",
+                //"16:00", "16:30", "17:00", "17:30"
             };
+
+            //if (_apiClient is null)
+            //{
+            //    // fallback to local sample specialties
+            //    specialties = new List<SpecialtyData>
+            //    {
+            //        new SpecialtyData { Id = Guid.NewGuid(), Name = "Nha Khoa", Price =200000 },
+            //        new SpecialtyData { Id = Guid.NewGuid(), Name = "Tim Mạch", Price =500000 },
+            //        new SpecialtyData { Id = Guid.NewGuid(), Name = "Nội Khoa", Price =300000 }
+            //    };
+            //    return;
+            //}
+
+            try
+            {
+                var dtos = await _apiClient.GetSpecialtiesAsync();
+                specialties = dtos.Select(d => new SpecialtyData
+                {
+                    Id = d.Id,
+                    Name = d.Name,
+                    Price = d.Price
+                }).ToList();
+            }
+            catch
+            {
+                // ignore and fallback to sample data
+                //specialties = new List<SpecialtyData>
+                //{
+                //    new SpecialtyData { Id = Guid.NewGuid(), Name = "Nha Khoa", Price =200000 },
+                //    new SpecialtyData { Id = Guid.NewGuid(), Name = "Tim Mạch", Price =500000 },
+                //    new SpecialtyData { Id = Guid.NewGuid(), Name = "Nội Khoa", Price =300000 }
+                //};
+            }
         }
 
         private void LoadSpecialties()
@@ -103,7 +132,7 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
         {
             Panel panel = new Panel
             {
-                Size = new Size(570, 80),
+                Size = new Size(570,80),
                 BackColor = Color.White,
                 Margin = new Padding(10),
                 Cursor = Cursors.Hand,
@@ -114,33 +143,34 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             Label lblName = new Label
             {
                 Text = specialty.Name,
-                Font = new Font("Segoe UI", 12, FontStyle.Bold),
-                ForeColor = Color.FromArgb(33, 33, 33),
-                Location = new Point(15, 15),
+                Font = new Font("Segoe UI",12, FontStyle.Bold),
+                ForeColor = Color.FromArgb(33,33,33),
+                Location = new Point(15,15),
                 AutoSize = true
             };
 
             Label lblPrice = new Label
             {
                 Text = $"{specialty.Price:N0} VNĐ",
-                Font = new Font("Segoe UI", 11),
-                ForeColor = Color.FromArgb(255, 165, 0),
-                Location = new Point(15, 45),
+                Font = new Font("Segoe UI",11),
+                ForeColor = Color.FromArgb(255,165,0),
+                Location = new Point(15,45),
                 AutoSize = true
             };
 
             panel.Controls.Add(lblName);
             panel.Controls.Add(lblPrice);
 
-            panel.Click += (s, e) => SelectSpecialty(specialty);
-            lblName.Click += (s, e) => SelectSpecialty(specialty);
-            lblPrice.Click += (s, e) => SelectSpecialty(specialty);
+            panel.Click += async (s, e) => await SelectSpecialtyAsync(specialty);
+            lblName.Click += async (s, e) => await SelectSpecialtyAsync(specialty);
+            lblPrice.Click += async (s, e) => await SelectSpecialtyAsync(specialty);
 
             return panel;
         }
 
-        private void SelectSpecialty(SpecialtyData specialty)
+        private async Task SelectSpecialtyAsync(SpecialtyData specialty)
         {
+            selectedSpecialtyId = specialty.Id;
             selectedSpecialty = specialty.Name;
             totalPrice = specialty.Price;
 
@@ -151,16 +181,44 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
             // Chuyển sang bước chọn nhân viên
             ShowStep(BookingStep.Employee);
-            LoadEmployees(specialty.Name);
+            await LoadEmployeesAsync(specialty.Id);
         }
 
-        private void LoadEmployees(string specialtyName)
+        private async Task LoadEmployeesAsync(Guid specialtyId)
         {
             flowLayoutPanelEmployees.Controls.Clear();
 
-            var filteredEmployees = employees.Where(e => e.Specialty == specialtyName).ToList();
+            employees.Clear();
 
-            foreach (var employee in filteredEmployees)
+            if (_apiClient != null)
+            {
+                try
+                {
+                    var docs = await _apiClient.GetDoctorsBySpecialtyAsync(specialtyId);
+                    employees = docs.Select(d => new EmployeeData
+                    {
+                        Id = d.Id,
+                        Name = d.FullName,
+                        Specialty = selectedSpecialty
+                    }).ToList();
+                }
+                catch
+                {
+                    // ignore and fallback
+                }
+            }
+
+            // If still empty, show placeholder employees
+            if (employees.Count ==0)
+            {
+                employees = new List<EmployeeData>
+                {
+                    new EmployeeData { Id = Guid.NewGuid(), Name = "BS. A", Specialty = selectedSpecialty },
+                    new EmployeeData { Id = Guid.NewGuid(), Name = "BS. B", Specialty = selectedSpecialty }
+                };
+            }
+
+            foreach (var employee in employees)
             {
                 Panel card = CreateEmployeeCard(employee);
                 flowLayoutPanelEmployees.Controls.Add(card);
@@ -171,7 +229,7 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
         {
             Panel panel = new Panel
             {
-                Size = new Size(570, 80),
+                Size = new Size(570,80),
                 BackColor = Color.White,
                 Margin = new Padding(10),
                 Cursor = Cursors.Hand,
@@ -182,18 +240,18 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             Label lblName = new Label
             {
                 Text = employee.Name,
-                Font = new Font("Segoe UI", 12, FontStyle.Bold),
-                ForeColor = Color.FromArgb(33, 33, 33),
-                Location = new Point(15, 15),
+                Font = new Font("Segoe UI",12, FontStyle.Bold),
+                ForeColor = Color.FromArgb(33,33,33),
+                Location = new Point(15,15),
                 AutoSize = true
             };
 
             Label lblSpecialty = new Label
             {
                 Text = $"Chuyên khoa: {employee.Specialty}",
-                Font = new Font("Segoe UI", 10),
+                Font = new Font("Segoe UI",10),
                 ForeColor = Color.Gray,
-                Location = new Point(15, 45),
+                Location = new Point(15,45),
                 AutoSize = true
             };
 
@@ -209,33 +267,70 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
         private void SelectEmployee(EmployeeData employee)
         {
+            selectedEmployeeId = employee.Id;
             selectedEmployee = employee.Name;
             labelSelectedEmployeeValue.Text = employee.Name;
 
             // Chuyển sang bước chọn ngày giờ
             ShowStep(BookingStep.DateTime);
-            LoadTimeSlots();
+            _ = LoadTimeSlotsAsync();
         }
 
         private void DateTimePickerAppointment_ValueChanged(object sender, EventArgs e)
         {
             selectedDate = dateTimePickerAppointment.Value.ToString("dd/MM/yyyy");
-            LoadTimeSlots();
+            _ = LoadTimeSlotsAsync();
         }
 
-        private void LoadTimeSlots()
+        private async Task LoadTimeSlotsAsync()
         {
             comboBoxTimeSlot.Items.Clear();
-            comboBoxTimeSlot.Enabled = true;
+            comboBoxTimeSlot.Enabled = false;
 
-            foreach (var time in timeSlots)
+            // Prefer API slots for selected doctor and date
+            if (_apiClient != null && selectedEmployeeId != Guid.Empty)
             {
-                comboBoxTimeSlot.Items.Add(time);
+                try
+                {
+                    var date = DateOnly.FromDateTime(dateTimePickerAppointment.Value);
+                    var slots = await _apiClient.GetDoctorSlotsAsync(selectedEmployeeId, date);
+                    var available = slots.Where(s => s.IsAvailable).OrderBy(s => s.StartLocal).ToList();
+                    foreach (var s in available)
+                    {
+                        // show range: start - end
+                        comboBoxTimeSlot.Items.Add($"{s.StartLocal:HH:mm} - {s.EndLocal:HH:mm}");
+                    }
+                }
+                catch
+                {
+                    // fallback to static list below
+                }
             }
 
-            if (comboBoxTimeSlot.Items.Count > 0)
+            if (comboBoxTimeSlot.Items.Count ==0)
             {
-                comboBoxTimeSlot.SelectedIndex = 0;
+                // fallback static slots
+                foreach (var time in timeSlots)
+                {
+                    // assume default duration30 minutes
+                    if (TimeSpan.TryParse(time, out var tsStart))
+                    {
+                        var tsEnd = tsStart.Add(TimeSpan.FromMinutes(30));
+                        var startStr = tsStart.ToString(@"hh\:mm");
+                        var endStr = tsEnd.ToString(@"hh\:mm");
+                        comboBoxTimeSlot.Items.Add($"{startStr} - {endStr}");
+                    }
+                    else
+                    {
+                        comboBoxTimeSlot.Items.Add(time);
+                    }
+                }
+            }
+
+            if (comboBoxTimeSlot.Items.Count >0)
+            {
+                comboBoxTimeSlot.Enabled = true;
+                comboBoxTimeSlot.SelectedIndex =0;
             }
         }
 
@@ -271,7 +366,7 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             // Giả lập kiểm tra mã
             if (promoCode == "GIAM10")
             {
-                decimal discount = totalPrice * 0.1m;
+                decimal discount = totalPrice *0.1m;
                 totalPrice -= discount;
                 labelCheckoutTotal.Text = $"{totalPrice:N0} VNĐ";
                 labelTotalPrice.Text = $"{totalPrice:N0} VNĐ";
@@ -286,7 +381,78 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             }
         }
 
-        private void ButtonConfirmBooking_Click(object sender, EventArgs e)
+        private async Task<bool> SaveBooking()
+        {
+            try
+            {
+                if (selectedSpecialtyId == Guid.Empty)
+                {
+                    MessageBox.Show("Vui lòng chọn chuyên khoa!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
+                }
+
+                if (selectedEmployeeId == Guid.Empty)
+                {
+                    MessageBox.Show("Vui lòng chọn bác sĩ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
+                }
+
+                if (string.IsNullOrWhiteSpace(selectedDate) || string.IsNullOrWhiteSpace(selectedTime))
+                {
+                    MessageBox.Show("Vui lòng chọn ngày và giờ!", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    return false;
+                }
+
+                // Parse local date + time
+                DateTime startLocal;
+                try
+                {
+                    // selectedTime may be a range like "14:30 -15:00". Extract start time
+                    var timePart = selectedTime.Split('-')[0].Trim();
+                    startLocal = DateTime.ParseExact($"{selectedDate} {timePart}", "dd/MM/yyyy HH:mm", CultureInfo.InvariantCulture);
+                    startLocal = DateTime.SpecifyKind(startLocal, DateTimeKind.Local);
+                }
+                catch (FormatException)
+                {
+                    MessageBox.Show("Định dạng ngày giờ không hợp lệ.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+
+                var startUtc = startLocal.ToUniversalTime();
+
+                var req = new CreateCustomerBookingRequest
+                {
+                    SpecialtyId = selectedSpecialtyId,
+                    DoctorId = selectedEmployeeId,
+                    SlotStartUtc = startUtc,
+                    DurationMinutes =30,
+                    CustomerName = textBoxName.Text.Trim(),
+                    CustomerPhone = textBoxPhone.Text.Trim()
+                };
+
+                var resp = await _apiClient.CreateAsync(req);
+                if (resp is null)
+                {
+                    MessageBox.Show("Đã xảy ra lỗi khi tạo lịch", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return false;
+                }
+
+                MessageBox.Show("Đặt lịch thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return true;
+            }
+            catch (HttpRequestException ex)
+            {
+                MessageBox.Show($"Lỗi kết nối: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+        }
+
+        private async void ButtonConfirmBooking_Click(object sender, EventArgs e)
         {
             // Validate
             if (string.IsNullOrWhiteSpace(textBoxName.Text))
@@ -305,19 +471,13 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 return;
             }
 
-            // Lưu đặt lịch (TODO: Kết nối database)
-            bool success = SaveBooking();
+            // Lưu đặt lịch
+            bool success = await SaveBooking();
 
             if (success)
             {
                 ShowStep(BookingStep.ThankYou);
             }
-        }
-
-        private bool SaveBooking()
-        {
-            // TODO: Lưu vào database
-            return true;
         }
 
         private void ShowStep(BookingStep step)
@@ -387,6 +547,40 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             }
         }
 
+        private void ButtonBackToStart_Click(object? sender, EventArgs e)
+        {
+            ResetBookingForm();
+            ShowStep(BookingStep.Specialty);
+        }
+
+        private void ResetBookingForm()
+        {
+            // Reset selections and UI
+            selectedSpecialty = string.Empty;
+            selectedEmployee = string.Empty;
+            selectedSpecialtyId = Guid.Empty;
+            selectedEmployeeId = Guid.Empty;
+            selectedDate = string.Empty;
+            selectedTime = string.Empty;
+            totalPrice =0;
+
+            labelSelectedSpecialtyValue.Text = "Chưa chọn";
+            labelSelectedEmployeeValue.Text = "Chưa chọn";
+            labelSelectedDateTimeValue.Text = "Chưa chọn";
+            labelTotalPrice.Text = "0 VNĐ";
+            labelCheckoutTotal.Text = "0 VNĐ";
+            panelTotalSection.Visible = false;
+
+            textBoxName.Text = string.Empty;
+            textBoxPhone.Text = string.Empty;
+            textBoxPromoCode.Text = string.Empty;
+
+            // Clear flow panels
+            flowLayoutPanelEmployees.Controls.Clear();
+            // reload specialties from cached list
+            LoadSpecialties();
+        }
+
         private void TextBoxSearch_Enter(object sender, EventArgs e)
         {
             if (textBoxSearch.Text == "Tìm kiếm chuyên khoa")
@@ -428,12 +622,14 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
     // Classes dữ liệu
     public class SpecialtyData
     {
+        public Guid Id { get; set; }
         public string Name { get; set; }
         public decimal Price { get; set; }
     }
 
     public class EmployeeData
     {
+        public Guid Id { get; set; }
         public string Name { get; set; }
         public string Specialty { get; set; }
     }
