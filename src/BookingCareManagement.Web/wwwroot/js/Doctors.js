@@ -74,6 +74,8 @@ document.addEventListener('DOMContentLoaded', function () {
                 ? '<span class="status-badge">Có sẵn</span>'
                 : '<span class="status-badge status-inactive">Vô hiệu hóa</span>';
             const cellStatus = `<td>${statusBadge}</td>`;
+            const toggleLabel = doctor.active ? 'Vô hiệu hóa bác sĩ' : 'Kích hoạt bác sĩ';
+            const toggleIcon = doctor.active ? 'fa-user-slash' : 'fa-user-check';
             const cellActions = `
                 <td>
                     <div class="action-menu">
@@ -81,6 +83,9 @@ document.addEventListener('DOMContentLoaded', function () {
                         <div class="dropdown-menu-custom">
                             <button class="dropdown-item-custom btn-edit-doctor" data-id="${doctor.id}">
                                 <i class="fas fa-edit"></i> Chỉnh sửa bác sĩ
+                            </button>
+                            <button class="dropdown-item-custom btn-toggle-doctor-status" data-id="${doctor.id}" data-active="${doctor.active}">
+                                <i class="fas ${toggleIcon}"></i> ${toggleLabel}
                             </button>
                             <button class="dropdown-item-custom btn-delete-doctor text-danger" data-id="${doctor.id}">
                                 <i class="fas fa-trash"></i> Xóa bác sĩ
@@ -194,21 +199,76 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     // === PHẦN 3: XÓA BÁC SĨ (DELETE) ===
+    async function parseJsonSafe(response) {
+        const contentType = response.headers.get('content-type') || '';
+        const contentLength = response.headers.get('content-length');
+
+        if (contentLength === '0') {
+            return null;
+        }
+
+        const text = await response.text();
+        if (!text || !contentType.includes('application/json')) {
+            return null;
+        }
+
+        try {
+            return JSON.parse(text);
+        } catch {
+            return null;
+        }
+    }
+
     doctorTableBody.addEventListener('click', async function (e) {
         // ... (Code xóa giữ nguyên) ...
         const deleteButton = e.target.closest('.btn-delete-doctor');
         if (deleteButton) {
             const doctorId = deleteButton.getAttribute('data-id');
-            if (!confirm('Bạn có chắc chắn muốn xóa bác sĩ này?\n(Hành động này sẽ vô hiệu hóa bác sĩ)')) {
+            if (!confirm('Bạn có chắc chắn muốn xóa bác sĩ này khỏi hệ thống?\n(Hành động này sẽ xóa vĩnh viễn dữ liệu bác sĩ)')) {
                 return;
             }
             try {
                 const response = await fetch(`/api/Doctor/${doctorId}`, { method: 'DELETE' });
                 if (!response.ok) {
-                    const errorData = await response.json();
-                    throw new Error(errorData.detail || 'Không thể xóa bác sĩ.');
+                    const errorData = await parseJsonSafe(response);
+                    const message = errorData?.detail || errorData?.title || 'Không thể xóa bác sĩ.';
+                    throw new Error(message);
                 }
-                alert('Xóa (vô hiệu hóa) bác sĩ thành công.');
+                alert('Xóa bác sĩ thành công.');
+                loadDoctors();
+            } catch (error) {
+                console.error(error);
+                alert(`Lỗi: ${error.message}`);
+            }
+        }
+
+        const toggleButton = e.target.closest('.btn-toggle-doctor-status');
+        if (toggleButton) {
+            const doctorId = toggleButton.getAttribute('data-id');
+            const isActive = toggleButton.getAttribute('data-active') === 'true';
+            const targetActive = !isActive;
+            const actionText = targetActive ? 'kích hoạt' : 'vô hiệu hóa';
+
+            if (!confirm(`Bạn có chắc chắn muốn ${actionText} bác sĩ này?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/Doctor/${doctorId}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ active: targetActive })
+                });
+
+                if (!response.ok) {
+                    const errorData = await parseJsonSafe(response);
+                    const message = errorData?.detail || errorData?.title || 'Không thể cập nhật trạng thái bác sĩ.';
+                    throw new Error(message);
+                }
+
+                alert(`${targetActive ? 'Đã kích hoạt' : 'Đã vô hiệu hóa'} bác sĩ thành công.`);
                 loadDoctors();
             } catch (error) {
                 console.error(error);

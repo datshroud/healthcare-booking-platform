@@ -287,7 +287,7 @@ public class DoctorController : ControllerBase
         [FromServices] IDoctorRepository doctorRepository,
         [FromServices] IUnitOfWork unitOfWork,
         Guid id,
-        [FromBody] ToggleActiveRequest request,
+        [FromBody] UpdateDoctorStatusRequest request,
         CancellationToken cancellationToken)
     {
         try
@@ -335,6 +335,34 @@ public class DoctorController : ControllerBase
         }
     }
 
+    [HttpPut("{id:guid}/status")]
+    public async Task<IActionResult> UpdateDoctorStatus(
+        [FromServices] UpdateDoctorStatusCommandHandler handler,
+        Guid id,
+        [FromBody] UpdateDoctorStatusRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new UpdateDoctorStatusCommand
+        {
+            DoctorId = id,
+            Active = request.Active
+        };
+
+        try
+        {
+            await handler.Handle(command, cancellationToken);
+            return NoContent();
+        }
+        catch (NotFoundException ex)
+        {
+            return NotFound(new ProblemDetails { Title = "Not Found", Detail = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new ProblemDetails { Title = "Update Failed", Detail = ex.Message });
+        }
+    }
+
     public class DoctorProfileRequest
     {
         [Required]
@@ -363,7 +391,7 @@ public class DoctorController : ControllerBase
         public bool RepeatYearly { get; set; }
     }
 
-    public class ToggleActiveRequest
+    public class UpdateDoctorStatusRequest
     {
         public bool Active { get; set; }
     }

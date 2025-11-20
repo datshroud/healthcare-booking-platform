@@ -320,29 +320,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
     });
 
 
-    // 5.1. Hàm tạo các lựa chọn thời gian (9:00 AM - 4:00 PM, 30 phút)
-    function generateTimeOptions() {
-        const options = [];
-        const startTime = 9 * 60; // 9:00 AM
-        const endTime = 16 * 60; // 4:00 PM (16:00)
-        const interval = 30; // 30 phút
-
-        for (let minutes = startTime; minutes <= endTime; minutes += interval) {
-            const hour = Math.floor(minutes / 60);
-            const min = minutes % 60;
-            const ampm = hour >= 12 ? 'PM' : 'AM';
-            const displayHour = hour % 12 === 0 ? 12 : hour % 12;
-            const displayMin = min === 0 ? '00' : min;
-
-            const timeValue = `${displayHour}:${displayMin} ${ampm}`;
-            options.push({
-                value: timeValue,
-                text: timeValue
-            });
-        }
-        return options;
-    }
-
     function handleModalDateSelection(selectedDates) {
         if (!tomTime) {
             return;
@@ -365,11 +342,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }
 
         showNewAppointmentAlert(null);
-        tomTime.enable();
-        tomTime.clear(true);
-        tomTime.clearOptions();
-        tomTime.addOptions(generateTimeOptions());
-        tomTime.input?.setAttribute('placeholder', 'Chọn khung giờ khám');
+        loadAvailableTimeSlots();
     }
 
     if (typeof TomSelect !== 'undefined') {
@@ -537,7 +510,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                 return;
             }
 
-            const slotStartIso = combineDateAndTimeToUtcIso(date, time);
+            const slotStartIso = normalizeSlotStartIso(time);
             if (!slotStartIso) {
                 showNewAppointmentAlert('Khung giờ bạn chọn không hợp lệ, vui lòng thử lại.');
                 return;
@@ -1417,43 +1390,106 @@ function handleDateRangeChanged() {
     }
 }
 
-function combineDateAndTimeToUtcIso(dateObj, timeLabel) {
-    if (!(dateObj instanceof Date) || !timeLabel) {
-        return null;
+function formatSlotLabel(startValue, endValue) {
+    const start = startValue ? new Date(startValue) : null;
+    const end = endValue ? new Date(endValue) : null;
+
+    if (!start || Number.isNaN(start.valueOf()) || !end || Number.isNaN(end.valueOf())) {
+        return '';
     }
 
-    const timeInfo = parseTimeLabel(timeLabel);
-    if (!timeInfo) {
-        return null;
-    }
-
-    const localDate = new Date(dateObj.getTime());
-    localDate.setHours(timeInfo.hours, timeInfo.minutes, 0, 0);
-    return localDate.toISOString();
+    const options = { hour: '2-digit', minute: '2-digit', hour12: false };
+    return `${start.toLocaleTimeString([], options)} - ${end.toLocaleTimeString([], options)}`;
 }
 
-function parseTimeLabel(label) {
-    if (!label) {
+function normalizeSlotStartIso(selectedValue) {
+    const normalizedValue = normalizeTomSelectValue(selectedValue);
+    if (!normalizedValue) {
         return null;
     }
 
-    const match = label.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-    if (!match) {
+    const parsed = new Date(normalizedValue);
+    if (Number.isNaN(parsed.valueOf())) {
         return null;
     }
 
-    let hours = parseInt(match[1], 10);
-    const minutes = parseInt(match[2], 10);
-    const period = match[3].toUpperCase();
+    return parsed.toISOString();
+}
 
-    if (period === 'PM' && hours < 12) {
-        hours += 12;
-    }
-    if (period === 'AM' && hours === 12) {
-        hours = 0;
+function renderModalTimeSlots(slots, preselectStartUtc = null) {
+    if (!tomTime) {
+        return;
     }
 
-    return { hours, minutes };
+    tomTime.clear(true);
+    tomTime.clearOptions();
+
+    const options = (slots ?? [])
+        .filter(slot => slot?.startUtc)
+        .map(slot => ({
+            value: slot.startUtc,
+            text: formatSlotLabel(slot.startLocal || slot.startUtc, slot.endLocal || slot.endUtc) || 'Khung giờ'
+        }));
+
+    if (!options.length) {
+        tomTime.disable();
+        tomTime.input?.setAttribute('placeholder', 'Không có khung giờ trống');
+        return;
+    }
+
+    tomTime.addOptions(options);
+    tomTime.enable();
+    tomTime.input?.setAttribute('placeholder', 'Chọn khung giờ khám');
+
+    if (preselectStartUtc) {
+        tomTime.setValue(String(preselectStartUtc), true);
+    }
+}
+
+async function loadAvailableTimeSlots(preselectStartUtc = null) {
+    if (!tomTime) {
+        return;
+    }
+
+    const doctorId = normalizeGuidValue(tomEmployee?.getValue());
+    const selectedDate = fpModalDate?.selectedDates?.[0];
+
+    if (!doctorId) {
+        resetModalTimeSelect(tomTime);
+        tomTime.input?.setAttribute('placeholder', 'Vui lòng chọn bác sĩ trước');
+        return;
+    }
+
+    if (!(selectedDate instanceof Date)) {
+        resetModalTimeSelect(tomTime);
+        return;
+    }
+
+    const excludeParam = appointmentModalMode === 'edit' && editingAppointmentId
+        ? `&excludeAppointmentId=${editingAppointmentId}`
+        : '';
+
+    try {
+        tomTime.disable();
+        tomTime.clear(true);
+        tomTime.clearOptions();
+        tomTime.addOption({ value: '', text: 'Đang tải...' });
+        tomTime.refreshOptions(false);
+
+        const response = await fetch(`/api/customer-booking/doctors/${doctorId}/time-slots?date=${formatDateOnly(selectedDate)}${excludeParam}`);
+        if (!response.ok) {
+            throw await buildApiError(response);
+        }
+
+        const slots = await response.json();
+        renderModalTimeSlots(slots, preselectStartUtc);
+    } catch (error) {
+        resetModalTimeSelect(tomTime);
+        tomTime.input?.setAttribute('placeholder', 'Không tải được khung giờ');
+        if (error?.message) {
+            showNewAppointmentAlert(error.message, 'danger');
+        }
+    }
 }
 
 function buildAdminAppointmentRequest({
@@ -1568,6 +1604,16 @@ function bindAdminModalEvents() {
                 tomEmployee.clear(true);
             }
             updateAdminDoctorSelect(normalizedValue);
+        });
+    }
+
+    if (tomEmployee) {
+        tomEmployee.on('change', () => {
+            if (fpModalDate?.selectedDates?.length) {
+                loadAvailableTimeSlots();
+            } else {
+                resetModalTimeSelect(tomTime);
+            }
         });
     }
 
@@ -1776,34 +1822,6 @@ function ensureTomSelectOption(instance, value, label) {
     }
 }
 
-function ensureTimeOptionExists(optionLabel) {
-    if (!tomTime || !optionLabel) {
-        return;
-    }
-
-    if (!tomTime.options?.[optionLabel]) {
-        tomTime.addOption({ value: optionLabel, text: optionLabel });
-    }
-}
-
-function formatSlotLabelFromUtc(utcValue) {
-    if (!utcValue) {
-        return '';
-    }
-
-    const date = utcValue instanceof Date ? utcValue : new Date(utcValue);
-    if (Number.isNaN(date.valueOf())) {
-        return '';
-    }
-
-    let hours = date.getHours();
-    const minutes = date.getMinutes();
-    const period = hours >= 12 ? 'PM' : 'AM';
-    const displayHour = ((hours + 11) % 12) + 1;
-    const displayMinutes = String(minutes).padStart(2, '0');
-    return `${displayHour}:${displayMinutes} ${period}`;
-}
-
 function openEditAppointmentModal(appointmentId) {
     if (appointmentState.mode !== 'admin') {
         return;
@@ -1893,14 +1911,7 @@ function openEditAppointmentModal(appointmentId) {
             const effectiveMin = slotStart < defaultMin ? slotStart : defaultMin;
             fpModalDate.set('minDate', effectiveMin);
             fpModalDate.setDate(slotStart, true);
-            handleModalDateSelection([slotStart]);
-            const timeLabel = formatSlotLabelFromUtc(slotStart);
-            if (timeLabel) {
-                ensureTimeOptionExists(timeLabel);
-                tomTime?.setValue(timeLabel, true);
-            } else {
-                tomTime?.clear(true);
-            }
+            loadAvailableTimeSlots(appointment.startUtc);
         }
     }
 
