@@ -602,10 +602,18 @@ namespace BookingCareManagement.WinForms
             btnServices.Click += (s, e) =>
             {
                 SetActiveButton(btnServices);
-                if (!(activeChildForm is Service))
+                try
                 {
-                    var serviceForm = _serviceProvider.GetRequiredService<Service>();
-                    OpenChildForm(serviceForm);
+                    if (!(activeChildForm is Service))
+                    {
+                        var serviceForm = _serviceProvider.GetRequiredService<Service>();
+                        OpenChildForm(serviceForm);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] Error opening Service form: {ex}\n"); } catch {}
+                    MessageBox.Show($"Không thể mở trang Dịch vụ: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             };
 

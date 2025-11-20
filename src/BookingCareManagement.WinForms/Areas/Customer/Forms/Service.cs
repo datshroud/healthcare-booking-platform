@@ -1,14 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
+using System.Threading.Tasks;
 using System.Windows.Forms;
+using BookingCareManagement.WinForms.Areas.Admin.Services;
+using BookingCareManagement.WinForms.Shared.Models.Dtos;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 {
     public partial class Service : Form
     {
-        private List<ServiceItem> services;
+        private List<ServiceItem> services = new List<ServiceItem>();
+        private IReadOnlyList<CustomerSpecialtyDto>? _specialtyDtos;
+        private readonly AdminSpecialtyApiClient? _specialtyApiClient;
+        private readonly IServiceProvider? _serviceProvider;
 
+        // Parameterless constructor (used by designer)
         public Service()
         {
             InitializeComponent();
@@ -23,21 +32,54 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             // [QUAN TRỌNG] Thêm sự kiện Resize để căn giữa khi phóng to/thu nhỏ
             this.Resize += Service_Resize;
 
-            this.textBoxSearch.Enter += TextBoxSearch_Enter;
-            this.textBoxSearch.Leave += TextBoxSearch_Leave;
-            this.textBoxSearch.TextChanged += TextBoxSearch_TextChanged;
+            if (this.textBoxSearch != null)
+            {
+                this.textBoxSearch.Enter += TextBoxSearch_Enter;
+                this.textBoxSearch.Leave += TextBoxSearch_Leave;
+                this.textBoxSearch.TextChanged += TextBoxSearch_TextChanged;
+
+                // Set Vietnamese placeholder
+                this.textBoxSearch.Text = "Tìm kiếm dịch vụ...";
+                this.textBoxSearch.ForeColor = Color.Gray;
+            }
         }
 
-        private void Service_Load(object sender, EventArgs e)
+        // Constructor dùng khi có AdminSpecialtyApiClient (ví dụ gọi từ DI)
+        public Service(AdminSpecialtyApiClient specialtyApiClient, IServiceProvider serviceProvider) : this()
         {
-            // Khởi tạo dữ liệu mẫu
-            InitializeSampleData();
+            _specialtyApiClient = specialtyApiClient;
+            _serviceProvider = serviceProvider;
+        }
 
-            // Hiển thị tất cả dịch vụ
-            DisplayServices(services);
+        private async void Service_Load(object sender, EventArgs e)
+        {
+            try
+            {
+                try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] Service_Load start. SpecialtyApiClient is {(_specialtyApiClient != null ? "present" : "null")}.\n"); } catch {}
 
-            // Gọi hàm căn chỉnh lần đầu
-            CenterServiceCards();
+                if (_specialtyApiClient != null)
+                {
+                    await LoadSpecialtiesAsync();
+                }
+                else
+                {
+                    // Khởi tạo dữ liệu mẫu nếu không có API client
+                    InitializeSampleData();
+                }
+
+                // Hiển thị tất cả dịch vụ
+                DisplayServices(services ?? new List<ServiceItem>());
+
+                // Gọi hàm căn chỉnh lần đầu
+                CenterServiceCards();
+
+                try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] Service_Load completed successfully. Services count: {(services?.Count ?? 0)}\n"); } catch {}
+            }
+            catch (Exception ex)
+            {
+                try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] Service_Load exception: {ex}\n"); } catch {}
+                MessageBox.Show(this, $"Lỗi khi mở trang Dịch vụ:\n{ex}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         // Sự kiện khi thay đổi kích thước Form
@@ -49,25 +91,55 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
         // Hàm tính toán để căn giữa nội dung
         private void CenterServiceCards()
         {
-            // Kích thước Card (350) + Margin Trái (10) + Margin Phải (10) = 370
             int cardFullWidth = 370;
-            int panelWidth = flowLayoutPanelServices.ClientSize.Width;
-
-            // Tính xem 1 hàng chứa được tối đa bao nhiêu card
-            // Math.Max(1, ...) để đảm bảo ít nhất là 1 cột
+            int panelWidth = flowLayoutPanelServices?.ClientSize.Width ?? 0;
             int columns = Math.Max(1, panelWidth / cardFullWidth);
-
-            // Tính tổng chiều rộng thực tế của các card trong 1 hàng
             int totalContentWidth = columns * cardFullWidth;
-
-            // Tính khoảng trống thừa ra
             int remainingSpace = panelWidth - totalContentWidth;
-
-            // Chia đôi khoảng trống để làm Padding trái (để căn giữa)
             int paddingLeft = Math.Max(0, remainingSpace / 2);
+            if (flowLayoutPanelServices != null)
+                flowLayoutPanelServices.Padding = new Padding(paddingLeft, 20, 0, 20);
+        }
 
-            // Set Padding cho FlowLayoutPanel (Trên dưới giữ nguyên là 20)
-            flowLayoutPanelServices.Padding = new Padding(paddingLeft, 20, 0, 20);
+        private async Task LoadSpecialtiesAsync()
+        {
+            try
+            {
+                this.Cursor = Cursors.WaitCursor;
+                // Use customer-facing API endpoint to get duration and doctors
+                var dtos = await _specialtyApiClient!.GetCustomerAllAsync();
+                _specialtyDtos = dtos;
+
+                // Map specialties -> services, filter active ones (assume presence means active)
+                services = dtos
+                    .Select(s => new ServiceItem
+                    {
+                        Id = s.Id,
+                        Name = s.Name,
+                        Price = s.Price ?? 0m,
+                        Duration = FormatDuration(s.DurationMinutes),
+                        Capacity = s.Doctors?.Count ?? 0,
+                        ImagePath = string.IsNullOrWhiteSpace(s.ImageUrl) ? string.Empty : s.ImageUrl!,
+                        Description = string.IsNullOrWhiteSpace(s.Description) ? string.Empty : s.Description!
+                    })
+                    .ToList();
+
+                if (services.Count == 0)
+                {
+                    // fallback sample for visual
+                    InitializeSampleData();
+                }
+            }
+            catch (Exception ex)
+            {
+                try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] LoadSpecialtiesAsync exception: {ex}\n"); } catch {}
+                MessageBox.Show($"Không thể tải chuyên khoa từ API: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                InitializeSampleData();
+            }
+            finally
+            {
+                this.Cursor = Cursors.Default;
+            }
         }
 
         private void InitializeSampleData()
@@ -78,17 +150,22 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             {
                 services.Add(new ServiceItem
                 {
+                    Id = Guid.NewGuid(),
                     Name = i % 2 == 0 ? "Nha Khoa Thẩm Mỹ " + i : "Khám Tổng Quát " + i,
                     Price = i * 150000.00m,
                     Duration = i + "h",
                     Capacity = 1,
-                    ImagePath = ""
+                    ImagePath = "",
+                    Description = "Mô tả mẫu cho chuyên khoa."
                 });
             }
         }
 
         private void DisplayServices(List<ServiceItem> servicesToDisplay)
         {
+            if (flowLayoutPanelServices == null)
+                return;
+
             flowLayoutPanelServices.Controls.Clear();
             flowLayoutPanelServices.SuspendLayout();
 
@@ -107,7 +184,7 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
         private Panel CreateServiceCard(ServiceItem service)
         {
             int cardWidth = 350;
-            int cardHeight = 420;
+            int cardHeight = 340; // reduced to bring bottom border closer to buttons
 
             // Panel chính cho card
             Panel cardPanel = new Panel
@@ -116,21 +193,56 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 BackColor = Color.White,
                 // Margin: Left/Right = 10 -> Tổng chiều rộng chiếm dụng là 370
                 Margin = new Padding(10, 10, 10, 20),
-                BorderStyle = BorderStyle.FixedSingle
+                BorderStyle = BorderStyle.FixedSingle,
+                Tag = service
             };
 
+            int pictureHeight = 160;
             // PictureBox
             PictureBox pictureBox = new PictureBox
             {
-                Size = new Size(cardWidth, 200),
+                Size = new Size(cardWidth, pictureHeight),
                 Location = new Point(0, 0),
-                SizeMode = PictureBoxSizeMode.Zoom,
+                // We'll draw a cropped/filled image into the PictureBox.Image, so use Normal
+                SizeMode = PictureBoxSizeMode.Normal,
                 BackColor = Color.FromArgb(245, 245, 245)
             };
 
-            if (!string.IsNullOrEmpty(service.ImagePath) && System.IO.File.Exists(service.ImagePath))
+            if (!string.IsNullOrEmpty(service.ImagePath))
             {
-                pictureBox.Image = Image.FromFile(service.ImagePath);
+                try
+                {
+                    // Load image from URL or local path safely
+                    Image? loaded = null;
+                    if (Uri.IsWellFormedUriString(service.ImagePath, UriKind.Absolute))
+                    {
+                        var req = System.Net.WebRequest.Create(service.ImagePath);
+                        using var resp = req.GetResponse();
+                        using var stream = resp.GetResponseStream();
+                        loaded = Image.FromStream(stream!);
+                    }
+                    else if (System.IO.File.Exists(service.ImagePath))
+                    {
+                        loaded = Image.FromFile(service.ImagePath);
+                    }
+
+                    if (loaded is not null)
+                    {
+                        // Create a cover/cropped image that fills the picture box (center-crop)
+                        var cover = CreateCoverImage(loaded, pictureBox.Width, pictureBox.Height);
+                        pictureBox.Image = cover;
+
+                        // Dispose original if different
+                        if (!object.ReferenceEquals(cover, loaded))
+                        {
+                            loaded.Dispose();
+                        }
+                    }
+                }
+                catch
+                {
+                    // ignore image load errors
+                }
             }
 
             // Label giá tiền
@@ -152,7 +264,7 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 Text = service.Name,
                 Font = new Font("Segoe UI", 13, FontStyle.Bold),
                 ForeColor = Color.FromArgb(33, 33, 33),
-                Location = new Point(10, 215),
+                Location = new Point(10, pictureHeight + 10),
                 Size = new Size(cardWidth - 20, 30)
             };
 
@@ -162,24 +274,24 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 Text = $"Thời gian: {service.Duration}",
                 Font = new Font("Segoe UI", 9),
                 ForeColor = Color.Gray,
-                Location = new Point(10, 250),
+                Location = new Point(10, pictureHeight + 45),
                 AutoSize = true
             };
 
             // Label sức chứa
             Label labelCapacity = new Label
             {
-                Text = $"Sức chứa: {service.Capacity}",
+                Text = $"Bác sĩ: {service.Capacity}",
                 Font = new Font("Segoe UI", 9),
                 ForeColor = Color.Gray,
-                Location = new Point(160, 250),
+                Location = new Point(160, pictureHeight + 45),
                 AutoSize = true
             };
 
-            // Nút bấm
+            // Re-add buttons visually but keep functionality disabled (show notification)
             int btnWidth = 155;
             int btnHeight = 40;
-            int btnY = 360;
+            int btnY = cardHeight - 70; // position buttons relative to card bottom
 
             Button buttonLearnMore = new Button
             {
@@ -190,10 +302,15 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 FlatStyle = FlatStyle.Flat,
                 Size = new Size(btnWidth, btnHeight),
                 Location = new Point(10, btnY),
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                Tag = service
             };
             buttonLearnMore.FlatAppearance.BorderColor = Color.FromArgb(220, 220, 220);
-            buttonLearnMore.Click += (s, e) => ButtonLearnMore_Click(service);
+            buttonLearnMore.Click += (s, e) =>
+            {
+                // Functionality temporarily removed — keep button visible
+                MessageBox.Show("Tính năng xem chi tiết hiện đang tắt.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
 
             Button buttonBookNow = new Button
             {
@@ -204,10 +321,15 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 FlatStyle = FlatStyle.Flat,
                 Size = new Size(btnWidth, btnHeight),
                 Location = new Point(10 + btnWidth + 10, btnY),
-                Cursor = Cursors.Hand
+                Cursor = Cursors.Hand,
+                Tag = service
             };
             buttonBookNow.FlatAppearance.BorderSize = 0;
-            buttonBookNow.Click += (s, e) => ButtonBookNow_Click(service);
+            buttonBookNow.Click += (s, e) =>
+            {
+                // Functionality temporarily removed — keep button visible
+                MessageBox.Show("Tính năng đặt lịch hiện đang tắt.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            };
 
             // Add controls
             cardPanel.Controls.Add(pictureBox);
@@ -216,6 +338,9 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             cardPanel.Controls.Add(labelCapacity);
             cardPanel.Controls.Add(buttonLearnMore);
             cardPanel.Controls.Add(buttonBookNow);
+
+            // Log card creation
+            try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] Service card created: {service.Name}\n"); } catch {}
 
             return cardPanel;
         }
@@ -229,15 +354,12 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
         private void ButtonBookNow_Click(ServiceItem service)
         {
-            // Mở form đặt lịch (Appointment) và truyền dữ liệu nếu cần
-            // Appointment appointmentForm = new Appointment(); 
-            // appointmentForm.ShowDialog(); 
             MessageBox.Show($"Bạn chọn đặt: {service.Name}", "Xác nhận");
         }
 
         private void TextBoxSearch_Enter(object sender, EventArgs e)
         {
-            if (textBoxSearch.Text == "Search services")
+            if (textBoxSearch.Text == "Tìm kiếm dịch vụ...")
             {
                 textBoxSearch.Text = "";
                 textBoxSearch.ForeColor = Color.Black;
@@ -248,14 +370,22 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
         {
             if (string.IsNullOrWhiteSpace(textBoxSearch.Text))
             {
-                textBoxSearch.Text = "Search services";
+                textBoxSearch.Text = "Tìm kiếm dịch vụ...";
                 textBoxSearch.ForeColor = Color.Gray;
             }
         }
 
         private void TextBoxSearch_TextChanged(object sender, EventArgs e)
         {
-            if (textBoxSearch.Text == "Search services" || string.IsNullOrWhiteSpace(textBoxSearch.Text))
+            // if services not loaded yet, ignore
+            if (services == null || services.Count == 0)
+            {
+                // if placeholder text or empty, nothing to display
+                if (string.IsNullOrWhiteSpace(textBoxSearch?.Text) || textBoxSearch?.Text == "Tìm kiếm dịch vụ...")
+                    return;
+            }
+
+            if (textBoxSearch.Text == "Tìm kiếm dịch vụ..." || string.IsNullOrWhiteSpace(textBoxSearch.Text))
             {
                 DisplayServices(services);
                 return;
@@ -267,14 +397,77 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
             DisplayServices(filteredServices);
         }
+
+        private static string FormatDuration(int? minutes)
+        {
+            if (!minutes.HasValue || minutes.Value <= 0)
+            {
+                return "30 phút";
+            }
+
+            var m = minutes.Value;
+            if (m % 60 == 0)
+            {
+                var hours = m / 60;
+                return hours == 1 ? "1 giờ" : $"{hours} giờ";
+            }
+
+            return $"{m} phút";
+        }
+
+        // Helper: create a cover (center-crop) image to fill target size preserving aspect ratio
+        private static Image CreateCoverImage(Image src, int targetWidth, int targetHeight)
+        {
+            if (src == null)
+                throw new ArgumentNullException(nameof(src));
+
+            var dest = new Bitmap(targetWidth, targetHeight);
+            using (var g = Graphics.FromImage(dest))
+            {
+                g.InterpolationMode = System.Drawing.Drawing2D.InterpolationMode.HighQualityBicubic;
+                g.PixelOffsetMode = System.Drawing.Drawing2D.PixelOffsetMode.HighQuality;
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.HighQuality;
+
+                // fill background with same color as picture box
+                g.Clear(Color.FromArgb(245, 245, 245));
+
+                double srcRatio = (double)src.Width / src.Height;
+                double dstRatio = (double)targetWidth / targetHeight;
+
+                Rectangle srcRect;
+                if (srcRatio > dstRatio)
+                {
+                    // source is wider, crop left/right
+                    int srcHeight = src.Height;
+                    int srcWidth = (int)(srcHeight * dstRatio);
+                    int srcX = (src.Width - srcWidth) / 2;
+                    srcRect = new Rectangle(srcX, 0, srcWidth, srcHeight);
+                }
+                else
+                {
+                    // source is taller, crop top/bottom
+                    int srcWidth = src.Width;
+                    int srcHeight = (int)(srcWidth / dstRatio);
+                    int srcY = (src.Height - srcHeight) / 2;
+                    srcRect = new Rectangle(0, srcY, srcWidth, srcHeight);
+                }
+
+                var destRect = new Rectangle(0, 0, targetWidth, targetHeight);
+                g.DrawImage(src, destRect, srcRect, GraphicsUnit.Pixel);
+            }
+
+            return dest;
+        }
     }
 
     public class ServiceItem
     {
-        public string Name { get; set; }
+        public Guid Id { get; set; }
+        public string Name { get; set; } = string.Empty;
         public decimal Price { get; set; }
-        public string Duration { get; set; }
+        public string Duration { get; set; } = string.Empty;
         public int Capacity { get; set; }
-        public string ImagePath { get; set; }
+        public string ImagePath { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
     }
 }
