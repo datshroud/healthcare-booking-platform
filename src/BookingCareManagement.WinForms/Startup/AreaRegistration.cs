@@ -16,6 +16,7 @@ using BookingCareManagement.WinForms.Areas.Public.Controllers;
 using BookingCareManagement.WinForms.Areas.Public.Forms;
 using BookingCareManagement.WinForms.Areas.Public.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
+using BookingCareManagement.WinForms.Areas.Customer.Services.Models;
 
 namespace BookingCareManagement.WinForms.Startup;
 
@@ -64,7 +65,8 @@ public static class AreaRegistration
             // Register customer-facing forms
             .AddTransient<Service>()
             .AddTransient<Bookings>()
-            .AddTransient<MyBookingForm>();
+            .AddTransient<MyBookingForm>()
+            .AddTransient<CustomerBookingApiClient>();
         return services;
     }
 

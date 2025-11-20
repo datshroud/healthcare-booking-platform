@@ -8,6 +8,7 @@ using BookingCareManagement.WinForms.Startup;
 using BookingCareManagement.WinForms.Shared.State;
 using BookingCareManagement.WinForms.Areas.Account.Forms;
 using BookingCareManagement.WinForms.Shared.Models;
+using BookingCareManagement.WinForms.Areas.Customer.Forms;
 
 namespace BookingCareManagement.WinForms;
 
@@ -83,7 +84,7 @@ static class Program
             // If not authenticated, show login form first (designer form)
             if (!session.IsAuthenticated)
             {
-                using var login = services.GetRequiredService<Login>();
+                using var login = services.GetRequiredService<Bookings>();
                 var result = login.ShowDialog();
                 if (result != DialogResult.OK)
                 {
