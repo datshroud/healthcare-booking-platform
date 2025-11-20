@@ -32,16 +32,7 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             // [QUAN TRỌNG] Thêm sự kiện Resize để căn giữa khi phóng to/thu nhỏ
             this.Resize += Service_Resize;
 
-            if (this.textBoxSearch != null)
-            {
-                this.textBoxSearch.Enter += TextBoxSearch_Enter;
-                this.textBoxSearch.Leave += TextBoxSearch_Leave;
-                this.textBoxSearch.TextChanged += TextBoxSearch_TextChanged;
-
-                // Set Vietnamese placeholder
-                this.textBoxSearch.Text = "Tìm kiếm dịch vụ...";
-                this.textBoxSearch.ForeColor = Color.Gray;
-            }
+            // NOTE: do not attach textBoxSearch handlers here to avoid TextChanged firing during construction
         }
 
         // Constructor dùng khi có AdminSpecialtyApiClient (ví dụ gọi từ DI)
@@ -65,6 +56,23 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 {
                     // Khởi tạo dữ liệu mẫu nếu không có API client
                     InitializeSampleData();
+                }
+
+                // Attach search box events and placeholder (attach after InitializeComponent to avoid constructor-time TextChanged)
+                if (this.textBoxSearch != null)
+                {
+                    // Ensure no duplicate handlers
+                    this.textBoxSearch.Enter -= TextBoxSearch_Enter;
+                    this.textBoxSearch.Leave -= TextBoxSearch_Leave;
+                    this.textBoxSearch.TextChanged -= TextBoxSearch_TextChanged;
+
+                    this.textBoxSearch.Enter += TextBoxSearch_Enter;
+                    this.textBoxSearch.Leave += TextBoxSearch_Leave;
+                    this.textBoxSearch.TextChanged += TextBoxSearch_TextChanged;
+
+                    // Set Vietnamese placeholder
+                    this.textBoxSearch.Text = "Tìm kiếm dịch vụ...";
+                    this.textBoxSearch.ForeColor = Color.Gray;
                 }
 
                 // Hiển thị tất cả dịch vụ
@@ -325,10 +333,60 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 Tag = service
             };
             buttonBookNow.FlatAppearance.BorderSize = 0;
-            buttonBookNow.Click += (s, e) =>
+            buttonBookNow.Click += async (s, e) =>
             {
-                // Functionality temporarily removed — keep button visible
-                MessageBox.Show("Tính năng đặt lịch hiện đang tắt.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                try
+                {
+                    if (_serviceProvider is null)
+                    {
+                        MessageBox.Show("Không thể mở form đặt lịch: DI provider chưa khởi tạo.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    // If this Service form is hosted inside MainForm, ask MainForm to show Bookings in the content area
+                    // Prefer resolving MainForm from DI so we target the shell instance created by the host.
+                    // Prefer locating the already-displayed MainForm instance in Application.OpenForms (the actual shell).
+                    // Only fallback to DI if no shell instance is found (DI would create a new instance otherwise).
+                    var main = System.Windows.Forms.Application.OpenForms
+                        .OfType<global::BookingCareManagement.WinForms.MainForm>()
+                        .FirstOrDefault()
+                        ?? _serviceProvider?.GetService<global::BookingCareManagement.WinForms.MainForm>();
+                     if (main != null)
+                     {
+                         // Use BeginInvoke so we don't close the current child (Service) while still in its event handler
+                         main.BeginInvoke(new Action(() =>
+                         {
+                             try
+                             {
+                                // Fire-and-forget the async helper on the UI thread
+                                _ = main.ShowBookingsForSpecialtyAsync(service.Id, service.Name, service.Price);
+                             }
+                             catch (Exception ex)
+                             {
+                                 try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] BeginInvoke ShowBookings exception: {ex}\n"); } catch {}
+                             }
+                         }));
+
+                         return;
+                     }
+
+                    // Fallback: create and show modal Bookings if not hosted in shell
+                    var bookings = _serviceProvider.GetService<Bookings>();
+                    if (bookings is null)
+                    {
+                        MessageBox.Show("Không tìm thấy form đặt lịch.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        return;
+                    }
+
+                    // Pre-initialize bookings (load data) BEFORE showing modal to avoid blank flicker
+                    await bookings.OpenForSpecialtyAsync(service.Id, service.Name, service.Price);
+                    bookings.ShowDialog(this);
+                }
+                catch (Exception ex)
+                {
+                    try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] Open bookings exception: {ex}\n"); } catch {}
+                    MessageBox.Show($"Không thể mở form đặt lịch:\n{ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
             };
 
             // Add controls

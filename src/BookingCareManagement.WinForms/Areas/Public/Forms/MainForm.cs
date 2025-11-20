@@ -319,6 +319,14 @@ namespace BookingCareManagement.WinForms
             childForm.Show();
         }
 
+        // Expose a safe public API so other forms can request being shown in the main content area
+        public void ShowChildFormInShell(Form childForm)
+        {
+            // Delegate to existing OpenChildForm logic
+            if (childForm == null) return;
+            OpenChildForm(childForm);
+        }
+
         private void ToggleAccountMenu()
         {
             Panel accountMenu = this.Controls["accountMenu"] as Panel
@@ -884,6 +892,44 @@ namespace BookingCareManagement.WinForms
             if (this.Visible)
             {
                 OpenChildForm(new Customer());
+            }
+        }
+
+        // Open Bookings and preselect specialty safely from shell
+        public async Task ShowBookingsForSpecialtyAsync(Guid specialtyId, string specialtyName, decimal price)
+        {
+            try
+            {
+                // If there's already a Bookings instance hosted, reuse it
+                if (activeChildForm is BookingCareManagement.WinForms.Areas.Customer.Forms.Bookings existingBookings)
+                {
+                    await existingBookings.OpenForSpecialtyAsync(specialtyId, specialtyName, price);
+
+                    // ensure it's visible and focused
+                    existingBookings.BringToFront();
+                    existingBookings.Show();
+                    activeChildForm = existingBookings;
+                    return;
+                }
+
+                // Resolve from DI so MainForm controls creation on UI thread
+                var bookings = _serviceProvider.GetService<Bookings>();
+                if (bookings is null)
+                {
+                    System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] ShowBookingsForSpecialtyAsync: Bookings service not registered.\n");
+                    return;
+                }
+
+                // Ensure bookings loads data before showing to avoid blank flicker
+                await bookings.OpenForSpecialtyAsync(specialtyId, specialtyName, price);
+
+                // Show inside content area
+                OpenChildForm(bookings);
+            }
+            catch (Exception ex)
+            {
+                try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] ShowBookingsForSpecialtyAsync exception: {ex}\n"); } catch {}
+                MessageBox.Show($"Không thể mở trang đặt lịch: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
     }
