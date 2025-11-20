@@ -24,16 +24,16 @@ namespace BookingCareManagement.WinForms
 {
     public partial class MainForm : Form
     {
-        private Panel sidebarPanel;
-        private Panel navbarPanel;
-        private Panel contentPanel;
-        private SidebarButton activeButton;
-        private Form activeChildForm = null;
+        private Panel sidebarPanel = null!;
+        private Panel navbarPanel = null!;
+        private Panel contentPanel = null!;
+        private SidebarButton? activeButton = null;
+        private Form? activeChildForm = null;
 
         // Biến cho chức năng kéo thả
-        private SidebarButton draggedButton = null;
+        private SidebarButton? draggedButton = null;
         private Point dragStartPoint;
-        private Panel dragIndicator;
+        private Panel? dragIndicator = null;
         private int dragInsertIndex = -1;
 
         private readonly IServiceProvider _serviceProvider;
@@ -112,7 +112,7 @@ namespace BookingCareManagement.WinForms
                 Visible = false
             };
             sidebarPanel.Controls.Add(dragIndicator);
-            dragIndicator.BringToFront();
+            if (dragIndicator != null) dragIndicator.BringToFront();
 
             // Sự kiện kéo thả cho sidebar
             sidebarPanel.DragOver += SidebarPanel_DragOver;
@@ -143,7 +143,7 @@ namespace BookingCareManagement.WinForms
             }
         }
 
-        private void MainForm_Resize(object sender, EventArgs e)
+        private void MainForm_Resize(object? sender, EventArgs e)
         {
             AdjustNavbarButtons();
         }
@@ -481,34 +481,58 @@ namespace BookingCareManagement.WinForms
                         {
                             var httpFactory = _serviceProvider.GetService(typeof(IHttpClientFactory)) as IHttpClientFactory;
                             string resolvedUrl = avatarUrl;
-                            if (!resolvedUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) && httpFactory != null)
+                            var apiClient = httpFactory?.CreateClient("BookingCareApi");
+                            if (!resolvedUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase) && apiClient?.BaseAddress != null)
                             {
-                                var client = httpFactory.CreateClient("BookingCareApi");
-                                if (client?.BaseAddress != null)
-                                {
-                                    resolvedUrl = new Uri(client.BaseAddress, resolvedUrl).ToString();
-                                }
+                                resolvedUrl = new Uri(apiClient.BaseAddress, resolvedUrl).ToString();
                             }
 
+                            // Use the configured BookingCareApi client so auth headers (if any) are applied
+                            if (apiClient != null)
+                            {
+                                using var resp = await apiClient.GetAsync(resolvedUrl);
+                                resp.EnsureSuccessStatusCode();
+                                using var ms = await resp.Content.ReadAsStreamAsync();
+                                var img = Image.FromStream(ms);
+
+                                // Apply image on UI thread
+                                if (!this.IsDisposed)
+                                {
+                                    this.BeginInvoke(new Action(() =>
+                                    {
+                                        try
+                                        {
+                                            avatar.Image = img;
+                                            avatarText.Visible = false;
+                                            if (accountAvatarText != null) accountAvatarText.Visible = false;
+                                        }
+                                        catch { }
+                                    }));
+                                }
+                                return;
+                            }
+
+                            // Fallback: try plain HttpClient if named client not available
                             using var http = new HttpClient();
                             var bytes = await http.GetByteArrayAsync(resolvedUrl);
-                            using var ms = new System.IO.MemoryStream(bytes);
-                            var img = Image.FromStream(ms);
+                            using var ms2 = new System.IO.MemoryStream(bytes);
+                            var img2 = Image.FromStream(ms2);
 
-                            // Apply image on UI thread
                             if (!this.IsDisposed)
                             {
                                 this.BeginInvoke(new Action(() =>
                                 {
                                     try
                                     {
-                                        avatar.Image = img;
+                                        avatar.Image = img2;
                                         avatarText.Visible = false;
                                         if (accountAvatarText != null) accountAvatarText.Visible = false;
                                     }
                                     catch { }
                                 }));
                             }
+
+                            // (done above for both success paths)
                         }
                         catch {
                             // fallback to initials — ensure UI shows initials
@@ -606,6 +630,14 @@ namespace BookingCareManagement.WinForms
                             {
                                 var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
                                 OpenChildForm(new Calendar(appointmentsApiClient));
+                            }
+                        }
+                        if (btn.Text.Contains("Cuộc hẹn"))
+                        {
+                            if (!(activeChildForm is AppointmentEditorForm))
+                            {
+                                var appointmentForm = _serviceProvider.GetRequiredService<AppointmentEditorForm>();
+                                OpenChildForm(appointmentForm);
                             }
                         }
                         if (btn.Text.Contains("Hóa đơn"))
@@ -823,17 +855,18 @@ namespace BookingCareManagement.WinForms
         }
 
         // Sự kiện kéo thả cho sidebar buttons
-        private void Button_MouseDown(object sender, MouseEventArgs e)
+        private void Button_MouseDown(object? sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left)
             {
-                SidebarButton btn = sender as SidebarButton;
+                var btn = sender as SidebarButton;
+                if (btn == null) return;
                 dragStartPoint = e.Location;
                 draggedButton = btn;
             }
         }
 
-        private void Button_MouseMove(object sender, MouseEventArgs e)
+        private void Button_MouseMove(object? sender, MouseEventArgs e)
         {
             if (e.Button == MouseButtons.Left && draggedButton != null)
             {
@@ -845,27 +878,27 @@ namespace BookingCareManagement.WinForms
             }
         }
 
-        private void Button_DragOver(object sender, DragEventArgs e)
+        private void Button_DragOver(object? sender, DragEventArgs e)
         {
             e.Effect = DragDropEffects.Move;
         }
 
-        private void Button_DragDrop(object sender, DragEventArgs e)
+        private void Button_DragDrop(object? sender, DragEventArgs e)
         {
             // Xử lý trong SidebarPanel_DragDrop
         }
 
-        private void Button_QueryContinueDrag(object sender, QueryContinueDragEventArgs e)
+        private void Button_QueryContinueDrag(object? sender, QueryContinueDragEventArgs e)
         {
             if (e.EscapePressed)
             {
                 e.Action = DragAction.Cancel;
-                dragIndicator.Visible = false;
+                if (dragIndicator != null) dragIndicator.Visible = false;
                 draggedButton = null;
             }
         }
 
-        private void SidebarPanel_DragOver(object sender, DragEventArgs e)
+        private void SidebarPanel_DragOver(object? sender, DragEventArgs e)
         {
             if (draggedButton == null) return;
 
@@ -897,25 +930,28 @@ namespace BookingCareManagement.WinForms
             }
 
             // Hiển thị drag indicator
-            if (dragInsertIndex < buttons.Count)
+            if (dragIndicator != null)
             {
-                dragIndicator.Location = new Point(10, buttons[dragInsertIndex].Top - 2);
-            }
-            else if (buttons.Count > 0)
-            {
-                SidebarButton lastBtn = buttons[buttons.Count - 1];
-                dragIndicator.Location = new Point(10, lastBtn.Bottom + 3);
-            }
+                if (dragInsertIndex < buttons.Count)
+                {
+                    dragIndicator.Location = new Point(10, buttons[dragInsertIndex].Top - 2);
+                }
+                else if (buttons.Count > 0)
+                {
+                    SidebarButton lastBtn = buttons[buttons.Count - 1];
+                    dragIndicator.Location = new Point(10, lastBtn.Bottom + 3);
+                }
 
-            dragIndicator.Visible = true;
-            dragIndicator.BringToFront();
+                dragIndicator.Visible = true;
+            }
+            if (dragIndicator != null) dragIndicator.BringToFront();
         }
 
-        private void SidebarPanel_DragDrop(object sender, DragEventArgs e)
+        private void SidebarPanel_DragDrop(object? sender, DragEventArgs e)
         {
             if (draggedButton == null || dragInsertIndex == -1)
             {
-                dragIndicator.Visible = false;
+                if (dragIndicator != null) dragIndicator.Visible = false;
                 return;
             }
 
@@ -927,7 +963,7 @@ namespace BookingCareManagement.WinForms
 
             if (oldIndex == dragInsertIndex || oldIndex + 1 == dragInsertIndex)
             {
-                dragIndicator.Visible = false;
+                if (dragIndicator != null) dragIndicator.Visible = false;
                 draggedButton = null;
                 return;
             }
@@ -953,7 +989,7 @@ namespace BookingCareManagement.WinForms
                 yPos += btn.Height + 5;
             }
 
-            dragIndicator.Visible = false;
+            if (dragIndicator != null) dragIndicator.Visible = false;
             draggedButton = null;
         }
 

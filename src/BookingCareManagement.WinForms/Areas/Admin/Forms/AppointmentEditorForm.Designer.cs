@@ -34,6 +34,10 @@
             lblTitle = new Label();
             contentPanel = new Panel();
             whitePanel = new Panel();
+            listContainer = new Panel();
+            emptyStatePanel = new Panel();
+            lblEmptyMessage = new Label();
+            lblEmptySubtitle = new Label();
             appointmentGrid = new DataGridView();
             filterContainerPanel = new Panel();
             filterPanel = new Panel();
@@ -42,13 +46,17 @@
             btnCustomerFilter = new Button();
             btnServiceFilter = new Button();
             searchPanel = new Panel();
+            searchBoxPanel = new Panel();
+            txtSearch = new TextBox();
+            lblSearchIcon = new Label();
             btnFilter = new Button();
             dtTo = new DateTimePicker();
             dtFrom = new DateTimePicker();
-            txtSearch = new TextBox();
             headerPanel.SuspendLayout();
             contentPanel.SuspendLayout();
             whitePanel.SuspendLayout();
+            listContainer.SuspendLayout();
+            emptyStatePanel.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)appointmentGrid).BeginInit();
             filterContainerPanel.SuspendLayout();
             filterPanel.SuspendLayout();
@@ -128,7 +136,7 @@
             // 
             whitePanel.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             whitePanel.BackColor = Color.White;
-            whitePanel.Controls.Add(appointmentGrid);
+            whitePanel.Controls.Add(listContainer);
             whitePanel.Controls.Add(filterContainerPanel);
             whitePanel.Controls.Add(searchPanel);
             whitePanel.Location = new Point(34, 13);
@@ -137,9 +145,57 @@
             whitePanel.Padding = new Padding(34, 13, 34, 67);
             whitePanel.Size = new Size(1531, 921);
             whitePanel.TabIndex = 0;
-            // 
+            //
+            // listContainer
+            //
+            listContainer.Controls.Add(emptyStatePanel);
+            listContainer.Controls.Add(appointmentGrid);
+            listContainer.Dock = DockStyle.Fill;
+            listContainer.Location = new Point(34, 199);
+            listContainer.Margin = new Padding(3, 4, 3, 4);
+            listContainer.Name = "listContainer";
+            listContainer.Size = new Size(1463, 655);
+            listContainer.TabIndex = 3;
+            //
+            // emptyStatePanel
+            //
+            emptyStatePanel.BackColor = Color.FromArgb(249, 250, 251);
+            emptyStatePanel.Controls.Add(lblEmptyMessage);
+            emptyStatePanel.Controls.Add(lblEmptySubtitle);
+            emptyStatePanel.Dock = DockStyle.Fill;
+            emptyStatePanel.Location = new Point(0, 0);
+            emptyStatePanel.Margin = new Padding(3, 4, 3, 4);
+            emptyStatePanel.Name = "emptyStatePanel";
+            emptyStatePanel.Size = new Size(1463, 655);
+            emptyStatePanel.TabIndex = 2;
+            emptyStatePanel.Visible = false;
+            //
+            // lblEmptyMessage
+            //
+            lblEmptyMessage.Anchor = AnchorStyles.None;
+            lblEmptyMessage.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            lblEmptyMessage.ForeColor = Color.FromArgb(17, 24, 39);
+            lblEmptyMessage.Location = new Point(0, 285);
+            lblEmptyMessage.Name = "lblEmptyMessage";
+            lblEmptyMessage.Size = new Size(1463, 32);
+            lblEmptyMessage.TabIndex = 1;
+            lblEmptyMessage.Text = "Không có cuộc hẹn nào";
+            lblEmptyMessage.TextAlign = ContentAlignment.MiddleCenter;
+            //
+            // lblEmptySubtitle
+            //
+            lblEmptySubtitle.Anchor = AnchorStyles.None;
+            lblEmptySubtitle.Font = new Font("Segoe UI", 10F);
+            lblEmptySubtitle.ForeColor = Color.FromArgb(107, 114, 128);
+            lblEmptySubtitle.Location = new Point(0, 318);
+            lblEmptySubtitle.Name = "lblEmptySubtitle";
+            lblEmptySubtitle.Size = new Size(1463, 32);
+            lblEmptySubtitle.TabIndex = 0;
+            lblEmptySubtitle.Text = "Vui lòng điều chỉnh bộ lọc hoặc phạm vi ngày để tìm kiếm cuộc hẹn phù hợp.";
+            lblEmptySubtitle.TextAlign = ContentAlignment.MiddleCenter;
+            //
             // appointmentGrid
-            // 
+            //
             appointmentGrid.AllowUserToAddRows = false;
             appointmentGrid.AllowUserToDeleteRows = false;
             appointmentGrid.AllowUserToResizeRows = false;
@@ -149,7 +205,7 @@
             appointmentGrid.ColumnHeadersHeight = 50;
             appointmentGrid.Dock = DockStyle.Fill;
             appointmentGrid.GridColor = Color.FromArgb(243, 244, 246);
-            appointmentGrid.Location = new Point(34, 199);
+            appointmentGrid.Location = new Point(0, 0);
             appointmentGrid.Margin = new Padding(3, 4, 3, 4);
             appointmentGrid.MultiSelect = false;
             appointmentGrid.Name = "appointmentGrid";
@@ -160,9 +216,9 @@
             appointmentGrid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             appointmentGrid.Size = new Size(1463, 655);
             appointmentGrid.TabIndex = 1;
-            // 
+            //
             // filterContainerPanel
-            // 
+            //
             filterContainerPanel.BackColor = Color.White;
             filterContainerPanel.Controls.Add(filterPanel);
             filterContainerPanel.Dock = DockStyle.Top;
@@ -256,61 +312,89 @@
             // searchPanel
             // 
             searchPanel.BackColor = Color.White;
+            searchPanel.Controls.Add(searchBoxPanel);
             searchPanel.Controls.Add(btnFilter);
             searchPanel.Controls.Add(dtTo);
             searchPanel.Controls.Add(dtFrom);
-            searchPanel.Controls.Add(txtSearch);
             searchPanel.Dock = DockStyle.Top;
             searchPanel.Location = new Point(34, 13);
             searchPanel.Margin = new Padding(3, 4, 3, 4);
             searchPanel.Name = "searchPanel";
             searchPanel.Size = new Size(1463, 93);
             searchPanel.TabIndex = 0;
-            // 
-            // btnFilter
-            // 
-            btnFilter.BackColor = Color.FromArgb(229, 231, 235);
-            btnFilter.FlatStyle = FlatStyle.Flat;
-            btnFilter.Location = new Point(640, 27);
-            btnFilter.Margin = new Padding(3, 4, 3, 4);
-            btnFilter.Name = "btnFilter";
-            btnFilter.Size = new Size(91, 40);
-            btnFilter.TabIndex = 3;
-            btnFilter.Text = "Lọc";
-            btnFilter.UseVisualStyleBackColor = false;
-            btnFilter.Click += btnFilter_Click;
-            // 
-            // dtTo
-            // 
-            dtTo.Format = DateTimePickerFormat.Short;
-            dtTo.Location = new Point(480, 27);
-            dtTo.Margin = new Padding(3, 4, 3, 4);
-            dtTo.Name = "dtTo";
-            dtTo.Size = new Size(137, 27);
-            dtTo.TabIndex = 2;
-            // 
-            // dtFrom
-            // 
-            dtFrom.Format = DateTimePickerFormat.Short;
-            dtFrom.Location = new Point(331, 27);
-            dtFrom.Margin = new Padding(3, 4, 3, 4);
-            dtFrom.Name = "dtFrom";
-            dtFrom.Size = new Size(137, 27);
-            dtFrom.TabIndex = 1;
-            // 
+            //
+            // searchBoxPanel
+            //
+            searchBoxPanel.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            searchBoxPanel.BackColor = Color.FromArgb(249, 250, 251);
+            searchBoxPanel.BorderStyle = BorderStyle.FixedSingle;
+            searchBoxPanel.Controls.Add(txtSearch);
+            searchBoxPanel.Controls.Add(lblSearchIcon);
+            searchBoxPanel.Location = new Point(23, 23);
+            searchBoxPanel.Margin = new Padding(3, 4, 3, 4);
+            searchBoxPanel.Name = "searchBoxPanel";
+            searchBoxPanel.Padding = new Padding(15, 8, 15, 8);
+            searchBoxPanel.Size = new Size(551, 47);
+            searchBoxPanel.TabIndex = 4;
+            //
             // txtSearch
-            // 
-            txtSearch.BorderStyle = BorderStyle.FixedSingle;
+            //
+            txtSearch.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            txtSearch.BackColor = Color.FromArgb(249, 250, 251);
+            txtSearch.BorderStyle = BorderStyle.None;
             txtSearch.Font = new Font("Segoe UI", 11F);
-            txtSearch.Location = new Point(23, 27);
+            txtSearch.Location = new Point(42, 10);
             txtSearch.Margin = new Padding(3, 4, 3, 4);
             txtSearch.Name = "txtSearch";
-            txtSearch.PlaceholderText = "TÌm kiếm";
-            txtSearch.Size = new Size(285, 32);
+            txtSearch.PlaceholderText = "Tìm kiếm cuộc hẹn (chuyên khoa, bệnh nhân, bác sĩ...)";
+            txtSearch.Size = new Size(496, 25);
             txtSearch.TabIndex = 0;
-            // 
+            //
+            // lblSearchIcon
+            //
+            lblSearchIcon.AutoSize = true;
+            lblSearchIcon.Font = new Font("Segoe UI", 11F);
+            lblSearchIcon.ForeColor = Color.FromArgb(107, 114, 128);
+            lblSearchIcon.Location = new Point(5, 9);
+            lblSearchIcon.Name = "lblSearchIcon";
+            lblSearchIcon.Size = new Size(23, 25);
+            lblSearchIcon.TabIndex = 4;
+            lblSearchIcon.Text = "🔍";
+            //
+            // btnFilter
+            //
+            btnFilter.BackColor = Color.FromArgb(229, 231, 235);
+            btnFilter.FlatStyle = FlatStyle.Flat;
+            btnFilter.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            btnFilter.Location = new Point(1299, 26);
+            btnFilter.Margin = new Padding(3, 4, 3, 4);
+            btnFilter.Name = "btnFilter";
+            btnFilter.Size = new Size(141, 40);
+            btnFilter.TabIndex = 3;
+            btnFilter.Text = "Bộ lọc";
+            btnFilter.UseVisualStyleBackColor = false;
+            btnFilter.Click += btnFilter_Click;
+            //
+            // dtTo
+            //
+            dtTo.Format = DateTimePickerFormat.Short;
+            dtTo.Location = new Point(1134, 28);
+            dtTo.Margin = new Padding(3, 4, 3, 4);
+            dtTo.Name = "dtTo";
+            dtTo.Size = new Size(145, 27);
+            dtTo.TabIndex = 2;
+            //
+            // dtFrom
+            //
+            dtFrom.Format = DateTimePickerFormat.Short;
+            dtFrom.Location = new Point(985, 28);
+            dtFrom.Margin = new Padding(3, 4, 3, 4);
+            dtFrom.Name = "dtFrom";
+            dtFrom.Size = new Size(145, 27);
+            dtFrom.TabIndex = 1;
+            //
             // AppointmentEditorForm
-            // 
+            //
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.FromArgb(243, 244, 246);
@@ -326,11 +410,14 @@
             headerPanel.PerformLayout();
             contentPanel.ResumeLayout(false);
             whitePanel.ResumeLayout(false);
+            listContainer.ResumeLayout(false);
+            emptyStatePanel.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)appointmentGrid).EndInit();
             filterContainerPanel.ResumeLayout(false);
             filterPanel.ResumeLayout(false);
             searchPanel.ResumeLayout(false);
-            searchPanel.PerformLayout();
+            searchBoxPanel.ResumeLayout(false);
+            searchBoxPanel.PerformLayout();
             ResumeLayout(false);
         }
 
@@ -343,7 +430,6 @@
         private System.Windows.Forms.Panel contentPanel;
         private System.Windows.Forms.Panel whitePanel;
         private System.Windows.Forms.Panel searchPanel;
-        private System.Windows.Forms.TextBox txtSearch;
         private System.Windows.Forms.DateTimePicker dtFrom;
         private System.Windows.Forms.DateTimePicker dtTo;
         private System.Windows.Forms.Button btnFilter;
@@ -354,5 +440,12 @@
         private System.Windows.Forms.Button btnCustomerFilter;
         private System.Windows.Forms.Button btnEmployeeFilter;
         private System.Windows.Forms.Button btnStatusFilter;
+        private System.Windows.Forms.Panel listContainer;
+        private System.Windows.Forms.Panel emptyStatePanel;
+        private System.Windows.Forms.Label lblEmptyMessage;
+        private System.Windows.Forms.Label lblEmptySubtitle;
+        private System.Windows.Forms.Panel searchBoxPanel;
+        private System.Windows.Forms.TextBox txtSearch;
+        private System.Windows.Forms.Label lblSearchIcon;
     }
 }
