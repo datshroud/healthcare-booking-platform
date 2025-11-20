@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using BookingCareManagement.WinForms.Areas.Admin.Models;
-using BookingCareManagement.WinForms.Services;
+using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Forms
@@ -15,10 +15,15 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private List<DoctorDto> doctors = new();
         private List<DoctorDto> filteredDoctors = new();
         private List<SpecialtyDto> specialties = new();
-        private readonly ApiService _apiService = ApiService.Instance;
 
-        public Doctor()
+        private readonly AdminDoctorApiClient _doctorApiClient;
+        private readonly AdminSpecialtyApiClient _specialtyApiClient;
+
+        public Doctor(AdminDoctorApiClient doctorApiClient, AdminSpecialtyApiClient specialtyApiClient)
         {
+            _doctorApiClient = doctorApiClient;
+            _specialtyApiClient = specialtyApiClient;
+
             InitializeComponent();
 
             this.Load += Doctor_Load;
@@ -36,7 +41,6 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         {
             buttonEdit.Enabled = false;
             buttonDelete.Enabled = false;
-            
             await LoadDataAsync();
         }
 
@@ -44,18 +48,16 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         {
             try
             {
-                // Hiển thị loading
                 this.Cursor = Cursors.WaitCursor;
-                
-                // Load danh sách bác sĩ và chuyên khoa từ API
-                var doctorsTask = _apiService.GetAsync<List<DoctorDto>>("/api/doctor");
-                var specialtiesTask = _apiService.GetAsync<List<SpecialtyDto>>("/api/specialty");
-                
+
+                var doctorsTask = _doctorApiClient.GetAllAsync();
+                var specialtiesTask = _specialtyApiClient.GetAllAsync();
+
                 await Task.WhenAll(doctorsTask, specialtiesTask);
-                
-                doctors = doctorsTask.Result ?? new List<DoctorDto>();
-                specialties = specialtiesTask.Result ?? new List<SpecialtyDto>();
-                
+
+                doctors = doctorsTask.Result?.ToList() ?? new List<DoctorDto>();
+                specialties = specialtiesTask.Result?.ToList() ?? new List<SpecialtyDto>();
+
                 filteredDoctors = new List<DoctorDto>(doctors);
                 LoadDoctors();
             }
@@ -77,27 +79,23 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 int rowIndex = dataGridViewDoctors.Rows.Add();
                 DataGridViewRow row = dataGridViewDoctors.Rows[rowIndex];
 
-                // Load ảnh từ URL hoặc file local
                 if (!string.IsNullOrEmpty(doc.AvatarUrl))
                 {
                     try
                     {
-                        // Nếu là đường dẫn file local
                         if (System.IO.File.Exists(doc.AvatarUrl))
                         {
                             using (var img = Image.FromFile(doc.AvatarUrl))
                             {
-                                // Clone image để tránh file lock
                                 row.Cells[0].Value = new Bitmap(img, new Size(60, 60));
                             }
                         }
-                        // Nếu là URL (http/https)
                         else if (Uri.IsWellFormedUriString(doc.AvatarUrl, UriKind.Absolute))
                         {
                             var uri = new Uri(doc.AvatarUrl);
                             if (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
                             {
-                                // TODO: Download image từ URL (tạm thời dùng placeholder)
+                                // TODO: download image async if desired; use placeholder for now
                                 row.Cells[0].Value = CreatePlaceholderWithColor(doc.FullName);
                             }
                             else
@@ -107,7 +105,6 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                         }
                         else
                         {
-                            // Không phải URL hợp lệ, dùng placeholder
                             row.Cells[0].Value = CreatePlaceholder(doc.FullName);
                         }
                     }
@@ -213,16 +210,16 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
         private async void ButtonAdd_Click(object sender, EventArgs e)
         {
-            var editorForm = new DoctorEditorForm(specialties);
+            var editorForm = new DoctorEditorForm(specialties, _doctorApiClient);
             if (editorForm.ShowDialog() == DialogResult.OK)
             {
                 try
                 {
                     this.Cursor = Cursors.WaitCursor;
-                    
+
                     var request = editorForm.BuildRequest();
-                    var createdDoctor = await _apiService.PostAsync<DoctorDto, DoctorUpsertRequest>("/api/doctor", request);
-                    
+                    var createdDoctor = await _doctorApiClient.CreateAsync(request);
+
                     if (createdDoctor != null)
                     {
                         MessageBox.Show("Thêm bác sĩ thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -247,31 +244,23 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private async void ButtonEdit_Click(object sender, EventArgs e)
         {
             if (dataGridViewDoctors.SelectedRows.Count == 0) return;
-            
+
             Guid id = (Guid)dataGridViewDoctors.SelectedRows[0].Tag;
             var doc = doctors.FirstOrDefault(d => d.Id == id);
-            
+
             if (doc != null)
             {
-                var editorForm = new DoctorEditorForm(specialties, doc);
+                var editorForm = new DoctorEditorForm(specialties, _doctorApiClient, doc);
                 if (editorForm.ShowDialog() == DialogResult.OK)
                 {
                     try
                     {
                         this.Cursor = Cursors.WaitCursor;
-                        
-                        var request = editorForm.BuildRequest();
-                        
-                        // 1. Cập nhật thông tin bác sĩ cơ bản (FirstName, LastName, Email, Phone, Specialties)
-                        bool success = await _apiService.PutAsync($"/api/doctor/{id}", request);
-                        
-                        if (!success)
-                        {
-                            MessageBox.Show("Không thể cập nhật thông tin bác sĩ. Vui lòng thử lại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                            return;
-                        }
 
-                        // 2. Cập nhật profile (bao gồm AvatarUrl)
+                        var request = editorForm.BuildRequest();
+
+                        await _doctorApiClient.UpdateAsync(id, request);
+
                         var profileRequest = new
                         {
                             FirstName = request.FirstName,
@@ -281,10 +270,9 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                             Description = (string?)null,
                             AvatarUrl = request.AvatarUrl
                         };
-                        
-                        await _apiService.PutAsync($"/api/doctor/{id}/profile", profileRequest);
 
-                        // 3. Lưu lịch làm việc (nếu có thay đổi) - Bây giờ bao gồm cả thời gian nghỉ
+                        await _doctorApiClient.UpdateProfileAsync(id, profileRequest);
+
                         var workingHours = editorForm.GetWorkingHours();
                         if (workingHours.Any())
                         {
@@ -302,30 +290,17 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                                 }).ToList()
                             };
 
-                            await _apiService.PutAsync($"/api/doctor/{id}/hours", hoursRequest);
+                            await _doctorApiClient.UpdateWorkingHoursAsync(id, hoursRequest);
                         }
 
-                        // 4. Lưu ngày nghỉ (nếu có)
                         var daysOff = editorForm.GetDaysOff();
                         if (daysOff.Any())
                         {
-                            // TODO: Cần API endpoint để lưu ngày nghỉ
-                            // Tạm thời comment lại vì chưa có API
-                            /*
-                            var daysOffRequest = daysOff.Select(d => new
-                            {
-                                Reason = d.Reason,
-                                StartDate = d.StartDate.ToString("yyyy-MM-dd"),
-                                EndDate = d.EndDate.ToString("yyyy-MM-dd")
-                            }).ToList();
-
-                            await _apiService.PutAsync($"/api/doctor/{id}/daysoff", daysOffRequest);
-                            */
+                            // Day off already saved via editor (calls API directly). Nothing else here.
                         }
 
                         MessageBox.Show("Cập nhật bác sĩ thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        
-                        // ✅ QUAN TRỌNG: Reload data để cập nhật ảnh và thông tin mới
+
                         await LoadDataAsync();
                     }
                     catch (Exception ex)
@@ -343,10 +318,10 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private async void ButtonDelete_Click(object sender, EventArgs e)
         {
             if (dataGridViewDoctors.SelectedRows.Count == 0) return;
-            
+
             Guid id = (Guid)dataGridViewDoctors.SelectedRows[0].Tag;
             var doc = doctors.FirstOrDefault(d => d.Id == id);
-            
+
             if (doc != null)
             {
                 DialogResult result = MessageBox.Show(
@@ -354,24 +329,17 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     "Xác nhận xóa",
                     MessageBoxButtons.YesNo,
                     MessageBoxIcon.Question);
-                
+
                 if (result == DialogResult.Yes)
                 {
                     try
                     {
                         this.Cursor = Cursors.WaitCursor;
-                        
-                        bool success = await _apiService.DeleteAsync($"/api/doctor/{id}");
-                        
-                        if (success)
-                        {
-                            MessageBox.Show("Xóa bác sĩ thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            await LoadDataAsync();
-                        }
-                        else
-                        {
-                            MessageBox.Show("Không thể xóa bác sĩ. Vui lòng thử lại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
+
+                        await _doctorApiClient.DeleteAsync(id);
+
+                        MessageBox.Show("Xóa bác sĩ thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        await LoadDataAsync();
                     }
                     catch (Exception ex)
                     {

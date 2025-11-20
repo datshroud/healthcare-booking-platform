@@ -7,7 +7,7 @@ using System.Net;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using BookingCareManagement.WinForms.Areas.Admin.Models;
-using BookingCareManagement.WinForms.Services;
+using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Forms
@@ -17,10 +17,15 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private List<SpecialtyDto> specialties = new();
         private List<SpecialtyDto> filteredSpecialties = new();
         private List<DoctorDto> doctors = new();
-        private readonly ApiService _apiService = ApiService.Instance;
 
-        public Specialty()
+        private readonly AdminSpecialtyApiClient _specialtyApiClient;
+        private readonly AdminDoctorApiClient _doctorApiClient;
+
+        public Specialty(AdminSpecialtyApiClient specialtyApiClient, AdminDoctorApiClient doctorApiClient)
         {
+            _specialtyApiClient = specialtyApiClient;
+            _doctorApiClient = doctorApiClient;
+
             InitializeComponent();
 
             // Thiết lập sự kiện
@@ -54,13 +59,13 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 this.Cursor = Cursors.WaitCursor;
                 
                 // Load danh sách chuyên khoa và bác sĩ từ API
-                var specialtiesTask = _apiService.GetAsync<List<SpecialtyDto>>("/api/specialty");
-                var doctorsTask = _apiService.GetAsync<List<DoctorDto>>("/api/doctor");
+                var specialtiesTask = _specialtyApiClient.GetAllAsync();
+                var doctorsTask = _doctorApiClient.GetAllAsync();
                 
                 await Task.WhenAll(specialtiesTask, doctorsTask);
                 
-                specialties = specialtiesTask.Result ?? new List<SpecialtyDto>();
-                doctors = doctorsTask.Result ?? new List<DoctorDto>();
+                specialties = specialtiesTask.Result?.ToList() ?? new List<SpecialtyDto>();
+                doctors = doctorsTask.Result?.ToList() ?? new List<DoctorDto>();
                 
                 filteredSpecialties = new List<SpecialtyDto>(specialties);
                 LoadSpecialties();
@@ -274,7 +279,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     this.Cursor = Cursors.WaitCursor;
                     
                     var request = editorForm.BuildRequest();
-                    var createdSpecialty = await _apiService.PostAsync<SpecialtyDto, SpecialtyUpsertRequest>("/api/specialty", request);
+                    var createdSpecialty = await _specialtyApiClient.CreateAsync(request);
                     
                     if (createdSpecialty != null)
                     {
@@ -314,17 +319,10 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                         this.Cursor = Cursors.WaitCursor;
                         
                         var request = editorForm.BuildRequest();
-                        bool success = await _apiService.PutAsync($"/api/specialty/{selectedId}", request);
+                        await _specialtyApiClient.UpdateAsync(selectedId, request);
                         
-                        if (success)
-                        {
-                            MessageBox.Show("Cập nhật chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            await LoadDataAsync();
-                        }
-                        else
-                        {
-                            MessageBox.Show("Không thể cập nhật chuyên khoa. Vui lòng thử lại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
+                        MessageBox.Show("Cập nhật chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        await LoadDataAsync();
                     }
                     catch (Exception ex)
                     {
@@ -357,17 +355,10 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     {
                         this.Cursor = Cursors.WaitCursor;
                         
-                        bool success = await _apiService.DeleteAsync($"/api/specialty/{selectedId}");
+                        await _specialtyApiClient.DeleteAsync(selectedId);
                         
-                        if (success)
-                        {
-                            MessageBox.Show("Xóa chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                            await LoadDataAsync();
-                        }
-                        else
-                        {
-                            MessageBox.Show("Không thể xóa chuyên khoa. Vui lòng thử lại.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                        }
+                        MessageBox.Show("Xóa chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        await LoadDataAsync();
                     }
                     catch (Exception ex)
                     {

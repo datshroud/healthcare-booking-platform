@@ -29,18 +29,18 @@ namespace BookingCareManagement.WinForms
         private Panel dragIndicator;
         private int dragInsertIndex = -1;
 
-        // Thêm IServiceProvider để resolve dependencies
         private readonly IServiceProvider _serviceProvider;
 
         public MainForm(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            
+
             InitializeComponent();
             InitializeCustomComponents();
             CreateSidebar();    
             this.Load += (s, e) =>
             {
+                // open calendar by default
                 OpenChildForm(new Calendar());
             };
         }
@@ -391,12 +391,19 @@ namespace BookingCareManagement.WinForms
                     if (btn.Text.Contains("Bác sĩ"))
                     {
                         if (!(activeChildForm is Doctor))
-                            OpenChildForm(new Doctor());
+                        {
+                            // Resolve Doctor form from DI
+                            var doctorForm = _serviceProvider.GetRequiredService<Doctor>();
+                            OpenChildForm(doctorForm);
+                        }
                     }
                     if (btn.Text.Contains("Chuyên khoa"))
                     {
                         if (!(activeChildForm is Specialty))
-                            OpenChildForm(new Specialty());
+                        {
+                            var specialtyForm = _serviceProvider.GetRequiredService<Specialty>();
+                            OpenChildForm(specialtyForm);
+                        }
                     }
                 };
 

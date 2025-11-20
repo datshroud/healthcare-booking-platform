@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using BookingCareManagement.WinForms.Areas.Admin.Models;
-using BookingCareManagement.WinForms.Services;
+using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Forms;
@@ -128,12 +128,13 @@ public sealed class DoctorEditorForm : Form
     private readonly DoctorDto? _existing;
     private readonly Button _btnSave = null!;
     private readonly Button _btnCancel = null!;
-    private readonly ApiService _apiService = ApiService.Instance;
+    private readonly AdminDoctorApiClient _doctorApiClient;
 
-    public DoctorEditorForm(IReadOnlyList<SpecialtyDto> specialtyOptions, DoctorDto? existing = null)
+    public DoctorEditorForm(IReadOnlyList<SpecialtyDto> specialtyOptions, AdminDoctorApiClient doctorApiClient, DoctorDto? existing = null)
     {
         _specialtyOptions = specialtyOptions;
         _existing = existing;
+        _doctorApiClient = doctorApiClient;
 
         Text = existing is null ? "Thêm Bác Sĩ Mới" : "Cập Nhật Thông Tin Bác Sĩ";
         StartPosition = FormStartPosition.CenterParent;
@@ -734,9 +735,7 @@ public sealed class DoctorEditorForm : Form
                 RepeatYearly = _chkRepeatYearly.Checked
             };
 
-            var result = await _apiService.PostAsync<DoctorDayOffDto, object>(
-                $"/api/doctor/{_existing.Id}/dayoffs", 
-                request);
+            var result = await _doctorApiClient.CreateDayOffAsync(_existing.Id, request);
 
             if (result != null)
             {
@@ -799,17 +798,12 @@ public sealed class DoctorEditorForm : Form
                 RepeatYearly = _chkRepeatYearly.Checked
             };
 
-            var success = await _apiService.PutAsync(
-                $"/api/doctor/{_existing!.Id}/dayoffs/{_editingDayOffId.Value}", 
-                request);
+            await _doctorApiClient.UpdateDayOffAsync(_existing!.Id, _editingDayOffId.Value, request);
 
-            if (success)
-            {
-                await LoadDaysOffAsync(_existing.Id);
-                ClearDayOffInputs();
-                ResetAddButton();
-                MessageBox.Show("Cập nhật ngày nghỉ thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
+            await LoadDaysOffAsync(_existing.Id);
+            ClearDayOffInputs();
+            ResetAddButton();
+            MessageBox.Show("Cập nhật ngày nghỉ thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
@@ -834,15 +828,12 @@ public sealed class DoctorEditorForm : Form
 
         try
         {
-            var success = await _apiService.DeleteAsync($"/api/doctor/{_existing!.Id}/dayoffs/{dayOff.Id}");
+            await _doctorApiClient.DeleteDayOffAsync(_existing!.Id, dayOff.Id);
 
-            if (success)
-            {
-                _daysOffList.RemoveAt(selectedIndex);
-                RefreshDaysOffGrid();
-                ClearDayOffInputs();
-                MessageBox.Show("Xóa ngày nghỉ thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-            }
+            _daysOffList.RemoveAt(selectedIndex);
+            RefreshDaysOffGrid();
+            ClearDayOffInputs();
+            MessageBox.Show("Xóa ngày nghỉ thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
         catch (Exception ex)
         {
@@ -850,167 +841,11 @@ public sealed class DoctorEditorForm : Form
         }
     }
 
-    private void ClearDayOffInputs()
-    {
-        _txtDayOffReason.Clear();
-        _dtpDayOffStart.Value = DateTime.Today;
-        _dtpDayOffEnd.Value = DateTime.Today;
-        _chkRepeatYearly.Checked = false;
-        _editingDayOffId = null;
-    }
-
-    private void ResetAddButton()
-    {
-        _btnAddDayOff.Text = "➕ Thêm";
-        _btnAddDayOff.BackColor = Color.FromArgb(34, 197, 94);
-        _btnAddDayOff.Click -= BtnUpdateDayOff_Click;
-        _btnAddDayOff.Click += BtnAddDayOff_Click;
-    }
-
-    private void RefreshDaysOffGrid()
-    {
-        _dgvDaysOff.Rows.Clear();
-        foreach (var dayOff in _daysOffList.OrderBy(d => d.StartDate))
-        {
-            _dgvDaysOff.Rows.Add(
-                dayOff.Name,
-                dayOff.StartDate.ToString("dd/MM/yyyy"),
-                dayOff.EndDate.ToString("dd/MM/yyyy"),
-                dayOff.RepeatYearly ? "Có" : "Không"
-            );
-        }
-    }
-
-    private void AddLabeledControl(TableLayoutPanel layout, string labelText, Control control, int row)
-    {
-        while (layout.RowStyles.Count <= row)
-        {
-            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-        }
-
-        var label = new Label
-        {
-            Text = labelText,
-            Dock = DockStyle.Fill,
-            TextAlign = ContentAlignment.MiddleLeft,
-            Padding = new Padding(0, 8, 12, 8),
-            AutoSize = false,
-            Height = 40,
-            Font = new Font("Segoe UI", 9, FontStyle.Bold)
-        };
-
-        layout.Controls.Add(label, 0, row);
-        layout.Controls.Add(control, 1, row);
-    }
-
-    private Panel BuildFooterPanel()
-    {
-        var footer = new Panel
-        {
-            Dock = DockStyle.Bottom,
-            Height = 70,
-            BackColor = Color.FromArgb(246, 248, 252)
-        };
-
-        var buttonContainer = new Panel
-        {
-            AutoSize = false,
-            Width = 180,
-            Height = 40,
-            Location = new Point(footer.Width - 200, 15)
-        };
-
-        _btnSave.Location = new Point(0, 0);
-        _btnCancel.Location = new Point(90, 0);
-
-        buttonContainer.Controls.Add(_btnSave);
-        buttonContainer.Controls.Add(_btnCancel);
-        
-        footer.Controls.Add(buttonContainer);
-        
-        footer.Resize += (s, e) =>
-        {
-            buttonContainer.Location = new Point(footer.Width - 200, 15);
-        };
-        
-        return footer;
-    }
-
-    private (Button Save, Button Cancel) BuildFooterButtons()
-    {
-        var btnSave = new Button
-        {
-            Text = "💾 Lưu",
-            Width = 80,
-            Height = 35,
-            BackColor = Color.FromArgb(23, 162, 184),
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat,
-            Font = new Font("Segoe UI", 10, FontStyle.Bold),
-            Cursor = Cursors.Hand
-        };
-        btnSave.FlatAppearance.BorderSize = 0;
-        btnSave.Click += (_, _) => HandleSave();
-
-        var btnCancel = new Button
-        {
-            Text = "❌ Hủy",
-            Width = 80,
-            Height = 35,
-            BackColor = Color.Gray,
-            ForeColor = Color.White,
-            FlatStyle = FlatStyle.Flat,
-            Font = new Font("Segoe UI", 10),
-            DialogResult = DialogResult.Cancel,
-            Cursor = Cursors.Hand
-        };
-        btnCancel.FlatAppearance.BorderSize = 0;
-
-        return (btnSave, btnCancel);
-    }
-
-    private void PopulateSpecialties()
-    {
-        _cboSpecialty.Items.Clear();
-        _cboSpecialty.Items.Add(new SpecialtyItem(Guid.Empty, "-- Không chọn --"));
-
-        foreach (var specialty in _specialtyOptions.OrderBy(s => s.Name, StringComparer.CurrentCultureIgnoreCase))
-        {
-            _cboSpecialty.Items.Add(new SpecialtyItem(specialty.Id, specialty.Name));
-        }
-
-        _cboSpecialty.SelectedIndex = 0;
-    }
-
-    private async void BindExisting(DoctorDto doctor)
-    {
-        _txtLastName.Text = doctor.LastName;
-        _txtFirstName.Text = doctor.FirstName;
-        _txtEmail.Text = doctor.Email;
-        _txtPhone.Text = doctor.PhoneNumber;
-        _txtAvatarUrl.Text = doctor.AvatarUrl;
-
-        if (doctor.Specialties.Any())
-        {
-            var specialtyName = doctor.Specialties.First();
-            var specialtyItem = _cboSpecialty.Items.OfType<SpecialtyItem>()
-                .FirstOrDefault(item => item.Name.Equals(specialtyName, StringComparison.OrdinalIgnoreCase));
-
-            if (specialtyItem != null)
-            {
-                _cboSpecialty.SelectedItem = specialtyItem;
-            }
-        }
-
-        await LoadWorkingHoursAsync(doctor.Id);
-        await LoadDaysOffAsync(doctor.Id);
-    }
-
     private async Task LoadWorkingHoursAsync(Guid doctorId)
     {
         try
         {
-            var hours = await _apiService.GetAsync<DoctorWorkingHoursDto>($"/api/doctor/{doctorId}/hours");
+            var hours = await _doctorApiClient.GetWorkingHoursAsync(doctorId);
             
             if (hours?.Hours != null && hours.Hours.Any())
             {
@@ -1059,7 +894,7 @@ public sealed class DoctorEditorForm : Form
     {
         try
         {
-            var daysOff = await _apiService.GetAsync<List<DoctorDayOffDto>>($"/api/doctor/{doctorId}/dayoffs");
+            var daysOff = await _doctorApiClient.GetDayOffsAsync(doctorId);
             
             _daysOffList.Clear();
             if (daysOff != null && daysOff.Any())
@@ -1169,5 +1004,162 @@ public sealed class DoctorEditorForm : Form
     private sealed record SpecialtyItem(Guid Id, string Name)
     {
         public override string ToString() => Name;
+    }
+
+    private (Button Save, Button Cancel) BuildFooterButtons()
+    {
+        var btnSave = new Button
+        {
+            Text = "💾 Lưu",
+            Width = 80,
+            Height = 35,
+            BackColor = Color.FromArgb(23, 162, 184),
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 10, FontStyle.Bold),
+            Cursor = Cursors.Hand
+        };
+        btnSave.FlatAppearance.BorderSize = 0;
+        btnSave.Click += (_, _) => HandleSave();
+
+        var btnCancel = new Button
+        {
+            Text = "❌ Hủy",
+            Width = 80,
+            Height = 35,
+            BackColor = Color.Gray,
+            ForeColor = Color.White,
+            FlatStyle = FlatStyle.Flat,
+            Font = new Font("Segoe UI", 10),
+            DialogResult = DialogResult.Cancel,
+            Cursor = Cursors.Hand
+        };
+        btnCancel.FlatAppearance.BorderSize = 0;
+
+        return (btnSave, btnCancel);
+    }
+
+    private Panel BuildFooterPanel()
+    {
+        var footer = new Panel
+        {
+            Dock = DockStyle.Bottom,
+            Height = 70,
+            BackColor = Color.FromArgb(246, 248, 252)
+        };
+
+        var buttonContainer = new Panel
+        {
+            AutoSize = false,
+            Width = 180,
+            Height = 40,
+            Location = new Point(footer.Width - 200, 15)
+        };
+
+        _btnSave.Location = new Point(0, 0);
+        _btnCancel.Location = new Point(90, 0);
+
+        buttonContainer.Controls.Add(_btnSave);
+        buttonContainer.Controls.Add(_btnCancel);
+        
+        footer.Controls.Add(buttonContainer);
+        
+        footer.Resize += (s, e) =>
+        {
+            buttonContainer.Location = new Point(footer.Width - 200, 15);
+        };
+        
+        return footer;
+    }
+
+    private void AddLabeledControl(TableLayoutPanel layout, string labelText, Control control, int row)
+    {
+        while (layout.RowStyles.Count <= row)
+        {
+            layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+        }
+
+        var label = new Label
+        {
+            Text = labelText,
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleLeft,
+            Padding = new Padding(0, 8, 12, 8),
+            AutoSize = false,
+            Height = 40,
+            Font = new Font("Segoe UI", 9, FontStyle.Bold)
+        };
+
+        layout.Controls.Add(label, 0, row);
+        layout.Controls.Add(control, 1, row);
+    }
+
+    private void PopulateSpecialties()
+    {
+        _cboSpecialty.Items.Clear();
+        _cboSpecialty.Items.Add(new SpecialtyItem(Guid.Empty, "-- Không chọn --"));
+
+        foreach (var specialty in _specialtyOptions.OrderBy(s => s.Name, StringComparer.CurrentCultureIgnoreCase))
+        {
+            _cboSpecialty.Items.Add(new SpecialtyItem(specialty.Id, specialty.Name));
+        }
+
+        _cboSpecialty.SelectedIndex = 0;
+    }
+
+    private async void BindExisting(DoctorDto doctor)
+    {
+        _txtLastName.Text = doctor.LastName;
+        _txtFirstName.Text = doctor.FirstName;
+        _txtEmail.Text = doctor.Email;
+        _txtPhone.Text = doctor.PhoneNumber;
+        _txtAvatarUrl.Text = doctor.AvatarUrl;
+
+        if (doctor.Specialties.Any())
+        {
+            var specialtyName = doctor.Specialties.First();
+            var specialtyItem = _cboSpecialty.Items.Cast<object>()
+                .OfType<SpecialtyItem>()
+                .FirstOrDefault(item => item.Name.Equals(specialtyName, StringComparison.OrdinalIgnoreCase));
+
+            if (specialtyItem != null)
+            {
+                _cboSpecialty.SelectedItem = specialtyItem;
+            }
+        }
+
+        await LoadWorkingHoursAsync(doctor.Id);
+        await LoadDaysOffAsync(doctor.Id);
+    }
+
+    private void RefreshDaysOffGrid()
+    {
+        _dgvDaysOff.Rows.Clear();
+        foreach (var dayOff in _daysOffList.OrderBy(d => d.StartDate))
+        {
+            _dgvDaysOff.Rows.Add(
+                dayOff.Name,
+                dayOff.StartDate.ToString("dd/MM/yyyy"),
+                dayOff.EndDate.ToString("dd/MM/yyyy"),
+                dayOff.RepeatYearly ? "Có" : "Không"
+            );
+        }
+    }
+
+    private void ClearDayOffInputs()
+    {
+        _txtDayOffReason.Clear();
+        _dtpDayOffStart.Value = DateTime.Today;
+        _dtpDayOffEnd.Value = DateTime.Today;
+        _chkRepeatYearly.Checked = false;
+        _editingDayOffId = null;
+    }
+
+    private void ResetAddButton()
+    {
+        _btnAddDayOff.Text = "➕ Thêm";
+        _btnAddDayOff.BackColor = Color.FromArgb(34, 197, 94);
+        _btnAddDayOff.Click -= BtnUpdateDayOff_Click;
+        _btnAddDayOff.Click += BtnAddDayOff_Click;
     }
 }
