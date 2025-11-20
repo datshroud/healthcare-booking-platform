@@ -2,8 +2,15 @@
 {
     partial class Bookings
     {
+        /// <summary>
+        /// Required designer variable.
+        /// </summary>
         private System.ComponentModel.IContainer components = null;
 
+        /// <summary>
+        /// Clean up any resources being used.
+        /// </summary>
+        /// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
         protected override void Dispose(bool disposing)
         {
             if (disposing && (components != null))
@@ -15,382 +22,772 @@
 
         #region Windows Form Designer generated code
 
+        /// <summary>
+        /// Required method for Designer support - do not modify
+        /// the contents of this method with the code editor.
+        /// </summary>
         private void InitializeComponent()
         {
-            this.panelTop = new System.Windows.Forms.Panel();
-            this.labelTitle = new System.Windows.Forms.Label();
-            this.panelBottom = new System.Windows.Forms.Panel();
-            this.labelSummary = new System.Windows.Forms.Label();
-            this.buttonBookAppointment = new System.Windows.Forms.Button();
-            this.panelMain = new System.Windows.Forms.Panel();
-            this.groupBoxStep4 = new System.Windows.Forms.GroupBox();
-            this.textBoxEmail = new System.Windows.Forms.TextBox();
-            this.labelEmail = new System.Windows.Forms.Label();
-            this.textBoxPhone = new System.Windows.Forms.TextBox();
-            this.labelPhone = new System.Windows.Forms.Label();
-            this.textBoxFullName = new System.Windows.Forms.TextBox();
-            this.labelFullName = new System.Windows.Forms.Label();
-            this.labelStep4 = new System.Windows.Forms.Label();
-            this.groupBoxStep3 = new System.Windows.Forms.GroupBox();
-            this.flowLayoutPanelTimeSlots = new System.Windows.Forms.FlowLayoutPanel();
-            this.dateTimePickerAppointment = new System.Windows.Forms.DateTimePicker();
-            this.labelSelectTime = new System.Windows.Forms.Label();
-            this.labelStep3 = new System.Windows.Forms.Label();
-            this.groupBoxStep2 = new System.Windows.Forms.GroupBox();
-            this.flowLayoutPanelDoctors = new System.Windows.Forms.FlowLayoutPanel();
-            this.labelStep2 = new System.Windows.Forms.Label();
-            this.groupBoxStep1 = new System.Windows.Forms.GroupBox();
-            this.flowLayoutPanelSpecialties = new System.Windows.Forms.FlowLayoutPanel();
-            this.labelStep1 = new System.Windows.Forms.Label();
-            this.panelTop.SuspendLayout();
-            this.panelBottom.SuspendLayout();
-            this.panelMain.SuspendLayout();
-            this.groupBoxStep4.SuspendLayout();
-            this.groupBoxStep3.SuspendLayout();
-            this.groupBoxStep2.SuspendLayout();
-            this.groupBoxStep1.SuspendLayout();
-            this.SuspendLayout();
+            panelHeader = new Panel();
+            labelHeader = new Label();
+            panelLeft = new Panel();
+            panelLeftContent = new Panel();
+            panelThankYou = new Panel();
+            labelThankYouMessage = new Label();
+            labelThankYouTitle = new Label();
+            panelPayment = new Panel();
+            buttonConfirmBooking = new Button();
+            textBoxPhone = new TextBox();
+            labelPhone = new Label();
+            textBoxName = new TextBox();
+            labelName = new Label();
+            buttonApplyPromo = new Button();
+            textBoxPromoCode = new TextBox();
+            labelPromoCode = new Label();
+            labelPaymentNote = new Label();
+            labelCheckoutTotal = new Label();
+            labelTotalPayment = new Label();
+            labelPaymentTitle = new Label();
+            panelDateTime = new Panel();
+            buttonConfirmDateTime = new Button();
+            comboBoxTimeSlot = new ComboBox();
+            labelTimeSlot = new Label();
+            dateTimePickerAppointment = new DateTimePicker();
+            labelDate = new Label();
+            panelEmployee = new Panel();
+            flowLayoutPanelEmployees = new FlowLayoutPanel();
+            panelSpecialty = new Panel();
+            flowLayoutPanelSpecialties = new FlowLayoutPanel();
+            textBoxSearch = new TextBox();
+            panelLeftHeader = new Panel();
+            labelLeftTitle = new Label();
+            buttonBack = new Button();
+            panelRight = new Panel();
+            panelRightContent = new Panel();
+            panelTotalSection = new Panel();
+            labelTotalPrice = new Label();
+            labelTotalLabel = new Label();
+            panelSelectedDateTime = new Panel();
+            labelSelectedDateTimeValue = new Label();
+            labelSelectedDateTimeLabel = new Label();
+            panelSelectedEmployee = new Panel();
+            labelSelectedEmployeeValue = new Label();
+            labelSelectedEmployeeLabel = new Label();
+            panelSelectedSpecialty = new Panel();
+            labelSelectedSpecialtyValue = new Label();
+            labelSelectedSpecialtyLabel = new Label();
+            labelRightTitle = new Label();
+            panelHeader.SuspendLayout();
+            panelLeft.SuspendLayout();
+            panelLeftContent.SuspendLayout();
+            panelThankYou.SuspendLayout();
+            panelPayment.SuspendLayout();
+            panelDateTime.SuspendLayout();
+            panelEmployee.SuspendLayout();
+            panelSpecialty.SuspendLayout();
+            panelLeftHeader.SuspendLayout();
+            panelRight.SuspendLayout();
+            panelRightContent.SuspendLayout();
+            panelTotalSection.SuspendLayout();
+            panelSelectedDateTime.SuspendLayout();
+            panelSelectedEmployee.SuspendLayout();
+            panelSelectedSpecialty.SuspendLayout();
+            SuspendLayout();
             // 
-            // panelTop
+            // panelHeader
             // 
-            this.panelTop.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(23)))), ((int)(((byte)(162)))), ((int)(((byte)(184)))));
-            this.panelTop.Controls.Add(this.labelTitle);
-            this.panelTop.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panelTop.Location = new System.Drawing.Point(0, 0);
-            this.panelTop.Name = "panelTop";
-            this.panelTop.Size = new System.Drawing.Size(1000, 70);
-            this.panelTop.TabIndex = 0;
+            panelHeader.BackColor = Color.FromArgb(23, 162, 184);
+            panelHeader.Controls.Add(labelHeader);
+            panelHeader.Dock = DockStyle.Top;
+            panelHeader.Location = new Point(0, 0);
+            panelHeader.Margin = new Padding(4, 5, 4, 5);
+            panelHeader.Name = "panelHeader";
+            panelHeader.Size = new Size(1653, 123);
+            panelHeader.TabIndex = 2;
             // 
-            // labelTitle
+            // labelHeader
             // 
-            this.labelTitle.AutoSize = true;
-            this.labelTitle.Font = new System.Drawing.Font("Segoe UI", 18F, System.Drawing.FontStyle.Bold);
-            this.labelTitle.ForeColor = System.Drawing.Color.White;
-            this.labelTitle.Location = new System.Drawing.Point(20, 18);
-            this.labelTitle.Name = "labelTitle";
-            this.labelTitle.Size = new System.Drawing.Size(186, 32);
-            this.labelTitle.TabIndex = 0;
-            this.labelTitle.Text = "ĐẶT LỊCH HẸN";
+            labelHeader.AutoSize = true;
+            labelHeader.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
+            labelHeader.ForeColor = Color.White;
+            labelHeader.Location = new Point(40, 38);
+            labelHeader.Margin = new Padding(4, 0, 4, 0);
+            labelHeader.Name = "labelHeader";
+            labelHeader.Size = new Size(141, 46);
+            labelHeader.TabIndex = 0;
+            labelHeader.Text = "Đặt lịch";
             // 
-            // panelBottom
+            // panelLeft
             // 
-            this.panelBottom.BackColor = System.Drawing.Color.WhiteSmoke;
-            this.panelBottom.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.panelBottom.Controls.Add(this.labelSummary);
-            this.panelBottom.Controls.Add(this.buttonBookAppointment);
-            this.panelBottom.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.panelBottom.Location = new System.Drawing.Point(0, 620);
-            this.panelBottom.Name = "panelBottom";
-            this.panelBottom.Size = new System.Drawing.Size(1000, 80);
-            this.panelBottom.TabIndex = 2;
+            panelLeft.Anchor = AnchorStyles.None;
+            panelLeft.BackColor = Color.FromArgb(100, 200, 210);
+            panelLeft.Controls.Add(panelLeftContent);
+            panelLeft.Controls.Add(textBoxSearch);
+            panelLeft.Controls.Add(panelLeftHeader);
+            panelLeft.Location = new Point(80, 169);
+            panelLeft.Margin = new Padding(4, 5, 4, 5);
+            panelLeft.Name = "panelLeft";
+            panelLeft.Size = new Size(867, 800);
+            panelLeft.TabIndex = 0;
             // 
-            // labelSummary
+            // panelLeftContent
             // 
-            this.labelSummary.AutoSize = true;
-            this.labelSummary.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Italic);
-            this.labelSummary.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(192)))), ((int)(((byte)(0)))), ((int)(((byte)(0)))));
-            this.labelSummary.Location = new System.Drawing.Point(20, 30);
-            this.labelSummary.MaximumSize = new System.Drawing.Size(700, 0);
-            this.labelSummary.Name = "labelSummary";
-            this.labelSummary.Size = new System.Drawing.Size(278, 20);
-            this.labelSummary.TabIndex = 1;
-            this.labelSummary.Text = "Vui lòng hoàn thành các bước để đặt lịch";
+            panelLeftContent.Controls.Add(panelThankYou);
+            panelLeftContent.Controls.Add(panelPayment);
+            panelLeftContent.Controls.Add(panelDateTime);
+            panelLeftContent.Controls.Add(panelEmployee);
+            panelLeftContent.Controls.Add(panelSpecialty);
+            panelLeftContent.Location = new Point(27, 200);
+            panelLeftContent.Margin = new Padding(4, 5, 4, 5);
+            panelLeftContent.Name = "panelLeftContent";
+            panelLeftContent.Size = new Size(813, 580);
+            panelLeftContent.TabIndex = 2;
             // 
-            // buttonBookAppointment
+            // panelThankYou
             // 
-            this.buttonBookAppointment.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
-            this.buttonBookAppointment.BackColor = System.Drawing.Color.Gray;
-            this.buttonBookAppointment.Enabled = false;
-            this.buttonBookAppointment.FlatAppearance.BorderSize = 0;
-            this.buttonBookAppointment.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.buttonBookAppointment.Font = new System.Drawing.Font("Segoe UI", 12F, System.Drawing.FontStyle.Bold);
-            this.buttonBookAppointment.ForeColor = System.Drawing.Color.White;
-            this.buttonBookAppointment.Location = new System.Drawing.Point(780, 15);
-            this.buttonBookAppointment.Name = "buttonBookAppointment";
-            this.buttonBookAppointment.Size = new System.Drawing.Size(200, 50);
-            this.buttonBookAppointment.TabIndex = 0;
-            this.buttonBookAppointment.Text = "XÁC NHẬN";
-            this.buttonBookAppointment.UseVisualStyleBackColor = false;
+            panelThankYou.Controls.Add(labelThankYouMessage);
+            panelThankYou.Controls.Add(labelThankYouTitle);
+            panelThankYou.Dock = DockStyle.Fill;
+            panelThankYou.Location = new Point(0, 1000);
+            panelThankYou.Margin = new Padding(4, 5, 4, 5);
+            panelThankYou.Name = "panelThankYou";
+            panelThankYou.Size = new Size(813, 0);
+            panelThankYou.TabIndex = 4;
+            panelThankYou.Visible = false;
             // 
-            // panelMain
+            // labelThankYouMessage
             // 
-            this.panelMain.AutoScroll = true;
-            this.panelMain.BackColor = System.Drawing.Color.White;
-            this.panelMain.Controls.Add(this.groupBoxStep4);
-            this.panelMain.Controls.Add(this.groupBoxStep3);
-            this.panelMain.Controls.Add(this.groupBoxStep2);
-            this.panelMain.Controls.Add(this.groupBoxStep1);
-            this.panelMain.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panelMain.Location = new System.Drawing.Point(0, 70);
-            this.panelMain.Name = "panelMain";
-            this.panelMain.Padding = new System.Windows.Forms.Padding(20);
-            this.panelMain.Size = new System.Drawing.Size(1000, 550);
-            this.panelMain.TabIndex = 1;
+            labelThankYouMessage.Font = new Font("Segoe UI", 13F);
+            labelThankYouMessage.ForeColor = Color.White;
+            labelThankYouMessage.Location = new Point(0, 220);
+            labelThankYouMessage.Margin = new Padding(4, 0, 4, 0);
+            labelThankYouMessage.Name = "labelThankYouMessage";
+            labelThankYouMessage.Size = new Size(813, 100);
+            labelThankYouMessage.TabIndex = 1;
+            labelThankYouMessage.Text = "Đặt lịch thành công!\nCảm ơn bạn đã tin tưởng, và chúng tôi mong được gặp lại bạn!";
+            labelThankYouMessage.TextAlign = ContentAlignment.TopCenter;
             // 
-            // groupBoxStep4
+            // labelThankYouTitle
             // 
-            this.groupBoxStep4.Controls.Add(this.textBoxEmail);
-            this.groupBoxStep4.Controls.Add(this.labelEmail);
-            this.groupBoxStep4.Controls.Add(this.textBoxPhone);
-            this.groupBoxStep4.Controls.Add(this.labelPhone);
-            this.groupBoxStep4.Controls.Add(this.textBoxFullName);
-            this.groupBoxStep4.Controls.Add(this.labelFullName);
-            this.groupBoxStep4.Controls.Add(this.labelStep4);
-            this.groupBoxStep4.Dock = System.Windows.Forms.DockStyle.Top;
-            this.groupBoxStep4.Enabled = false;
-            this.groupBoxStep4.Location = new System.Drawing.Point(20, 650);
-            this.groupBoxStep4.Name = "groupBoxStep4";
-            this.groupBoxStep4.Size = new System.Drawing.Size(943, 220);
-            this.groupBoxStep4.TabIndex = 3;
-            this.groupBoxStep4.TabStop = false;
+            labelThankYouTitle.Font = new Font("Segoe UI", 24F, FontStyle.Bold);
+            labelThankYouTitle.ForeColor = Color.White;
+            labelThankYouTitle.Location = new Point(0, 150);
+            labelThankYouTitle.Margin = new Padding(4, 0, 4, 0);
+            labelThankYouTitle.Name = "labelThankYouTitle";
+            labelThankYouTitle.Size = new Size(813, 60);
+            labelThankYouTitle.TabIndex = 0;
+            labelThankYouTitle.Text = "Cảm ơn!";
+            labelThankYouTitle.TextAlign = ContentAlignment.MiddleCenter;
             // 
-            // textBoxEmail
+            // panelPayment
             // 
-            this.textBoxEmail.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.textBoxEmail.Font = new System.Drawing.Font("Segoe UI", 11F);
-            this.textBoxEmail.Location = new System.Drawing.Point(160, 158);
-            this.textBoxEmail.Name = "textBoxEmail";
-            this.textBoxEmail.Size = new System.Drawing.Size(350, 27);
-            this.textBoxEmail.TabIndex = 6;
+            panelPayment.AutoScroll = true;
+            panelPayment.Controls.Add(buttonConfirmBooking);
+            panelPayment.Controls.Add(textBoxPhone);
+            panelPayment.Controls.Add(labelPhone);
+            panelPayment.Controls.Add(textBoxName);
+            panelPayment.Controls.Add(labelName);
+            panelPayment.Controls.Add(buttonApplyPromo);
+            panelPayment.Controls.Add(textBoxPromoCode);
+            panelPayment.Controls.Add(labelPromoCode);
+            panelPayment.Controls.Add(labelPaymentNote);
+            panelPayment.Controls.Add(labelCheckoutTotal);
+            panelPayment.Controls.Add(labelTotalPayment);
+            panelPayment.Controls.Add(labelPaymentTitle);
+            panelPayment.Dock = DockStyle.Fill;
+            panelPayment.Location = new Point(0, 1000);
+            panelPayment.Margin = new Padding(4, 5, 4, 5);
+            panelPayment.Name = "panelPayment";
+            panelPayment.Size = new Size(813, 0);
+            panelPayment.TabIndex = 3;
+            panelPayment.Visible = false;
             // 
-            // labelEmail
+            // buttonConfirmBooking
             // 
-            this.labelEmail.AutoSize = true;
-            this.labelEmail.Font = new System.Drawing.Font("Segoe UI", 11F);
-            this.labelEmail.Location = new System.Drawing.Point(40, 160);
-            this.labelEmail.Name = "labelEmail";
-            this.labelEmail.Size = new System.Drawing.Size(49, 20);
-            this.labelEmail.TabIndex = 5;
-            this.labelEmail.Text = "Email:";
+            buttonConfirmBooking.BackColor = Color.FromArgb(255, 165, 0);
+            buttonConfirmBooking.FlatAppearance.BorderSize = 0;
+            buttonConfirmBooking.FlatStyle = FlatStyle.Flat;
+            buttonConfirmBooking.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            buttonConfirmBooking.ForeColor = Color.White;
+            buttonConfirmBooking.Location = new Point(13, 662);
+            buttonConfirmBooking.Margin = new Padding(4, 5, 4, 5);
+            buttonConfirmBooking.Name = "buttonConfirmBooking";
+            buttonConfirmBooking.Size = new Size(773, 77);
+            buttonConfirmBooking.TabIndex = 11;
+            buttonConfirmBooking.Text = "Hoàn tất đặt lịch";
+            buttonConfirmBooking.UseVisualStyleBackColor = false;
             // 
             // textBoxPhone
             // 
-            this.textBoxPhone.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.textBoxPhone.Font = new System.Drawing.Font("Segoe UI", 11F);
-            this.textBoxPhone.Location = new System.Drawing.Point(160, 108);
-            this.textBoxPhone.Name = "textBoxPhone";
-            this.textBoxPhone.Size = new System.Drawing.Size(350, 27);
-            this.textBoxPhone.TabIndex = 4;
+            textBoxPhone.BackColor = Color.White;
+            textBoxPhone.BorderStyle = BorderStyle.FixedSingle;
+            textBoxPhone.Font = new Font("Segoe UI", 11F);
+            textBoxPhone.ForeColor = Color.Black;
+            textBoxPhone.Location = new Point(13, 569);
+            textBoxPhone.Margin = new Padding(4, 5, 4, 5);
+            textBoxPhone.Name = "textBoxPhone";
+            textBoxPhone.Size = new Size(773, 32);
+            textBoxPhone.TabIndex = 10;
             // 
             // labelPhone
             // 
-            this.labelPhone.AutoSize = true;
-            this.labelPhone.Font = new System.Drawing.Font("Segoe UI", 11F);
-            this.labelPhone.Location = new System.Drawing.Point(40, 110);
-            this.labelPhone.Name = "labelPhone";
-            this.labelPhone.Size = new System.Drawing.Size(100, 20);
-            this.labelPhone.TabIndex = 3;
-            this.labelPhone.Text = "Số điện thoại:";
+            labelPhone.AutoSize = true;
+            labelPhone.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            labelPhone.ForeColor = Color.White;
+            labelPhone.Location = new Point(13, 523);
+            labelPhone.Margin = new Padding(4, 0, 4, 0);
+            labelPhone.Name = "labelPhone";
+            labelPhone.Size = new Size(129, 25);
+            labelPhone.TabIndex = 9;
+            labelPhone.Text = "Số điện thoại";
             // 
-            // textBoxFullName
+            // textBoxName
             // 
-            this.textBoxFullName.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
-            this.textBoxFullName.Font = new System.Drawing.Font("Segoe UI", 11F);
-            this.textBoxFullName.Location = new System.Drawing.Point(160, 58);
-            this.textBoxFullName.Name = "textBoxFullName";
-            this.textBoxFullName.Size = new System.Drawing.Size(350, 27);
-            this.textBoxFullName.TabIndex = 2;
+            textBoxName.BackColor = Color.White;
+            textBoxName.BorderStyle = BorderStyle.FixedSingle;
+            textBoxName.Font = new Font("Segoe UI", 11F);
+            textBoxName.ForeColor = Color.Black;
+            textBoxName.Location = new Point(13, 446);
+            textBoxName.Margin = new Padding(4, 5, 4, 5);
+            textBoxName.Name = "textBoxName";
+            textBoxName.Size = new Size(773, 32);
+            textBoxName.TabIndex = 8;
             // 
-            // labelFullName
+            // labelName
             // 
-            this.labelFullName.AutoSize = true;
-            this.labelFullName.Font = new System.Drawing.Font("Segoe UI", 11F);
-            this.labelFullName.Location = new System.Drawing.Point(40, 60);
-            this.labelFullName.Name = "labelFullName";
-            this.labelFullName.Size = new System.Drawing.Size(76, 20);
-            this.labelFullName.TabIndex = 1;
-            this.labelFullName.Text = "Họ và tên:";
+            labelName.AutoSize = true;
+            labelName.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            labelName.ForeColor = Color.White;
+            labelName.Location = new Point(13, 400);
+            labelName.Margin = new Padding(4, 0, 4, 0);
+            labelName.Name = "labelName";
+            labelName.Size = new Size(98, 25);
+            labelName.TabIndex = 7;
+            labelName.Text = "Họ và tên";
             // 
-            // labelStep4
+            // buttonApplyPromo
             // 
-            this.labelStep4.AutoSize = true;
-            this.labelStep4.Font = new System.Drawing.Font("Segoe UI", 13F, System.Drawing.FontStyle.Bold);
-            this.labelStep4.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(23)))), ((int)(((byte)(162)))), ((int)(((byte)(184)))));
-            this.labelStep4.Location = new System.Drawing.Point(15, 15);
-            this.labelStep4.Name = "labelStep4";
-            this.labelStep4.Size = new System.Drawing.Size(250, 25);
-            this.labelStep4.TabIndex = 0;
-            this.labelStep4.Text = "Thông tin cá nhân";
+            buttonApplyPromo.BackColor = Color.FromArgb(255, 165, 0);
+            buttonApplyPromo.FlatAppearance.BorderSize = 0;
+            buttonApplyPromo.FlatStyle = FlatStyle.Flat;
+            buttonApplyPromo.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            buttonApplyPromo.ForeColor = Color.White;
+            buttonApplyPromo.Location = new Point(600, 289);
+            buttonApplyPromo.Margin = new Padding(4, 5, 4, 5);
+            buttonApplyPromo.Name = "buttonApplyPromo";
+            buttonApplyPromo.Size = new Size(187, 48);
+            buttonApplyPromo.TabIndex = 6;
+            buttonApplyPromo.Text = "Áp dụng";
+            buttonApplyPromo.UseVisualStyleBackColor = false;
             // 
-            // groupBoxStep3
+            // textBoxPromoCode
             // 
-            this.groupBoxStep3.Controls.Add(this.flowLayoutPanelTimeSlots);
-            this.groupBoxStep3.Controls.Add(this.dateTimePickerAppointment);
-            this.groupBoxStep3.Controls.Add(this.labelSelectTime);
-            this.groupBoxStep3.Controls.Add(this.labelStep3);
-            this.groupBoxStep3.Dock = System.Windows.Forms.DockStyle.Top;
-            this.groupBoxStep3.Enabled = false;
-            this.groupBoxStep3.Location = new System.Drawing.Point(20, 410);
-            this.groupBoxStep3.Name = "groupBoxStep3";
-            this.groupBoxStep3.Padding = new System.Windows.Forms.Padding(3, 80, 3, 3);
-            this.groupBoxStep3.Size = new System.Drawing.Size(943, 240);
-            this.groupBoxStep3.TabIndex = 2;
-            this.groupBoxStep3.TabStop = false;
+            textBoxPromoCode.BackColor = Color.White;
+            textBoxPromoCode.BorderStyle = BorderStyle.FixedSingle;
+            textBoxPromoCode.Font = new Font("Segoe UI", 11F);
+            textBoxPromoCode.ForeColor = Color.Black;
+            textBoxPromoCode.Location = new Point(13, 292);
+            textBoxPromoCode.Margin = new Padding(4, 5, 4, 5);
+            textBoxPromoCode.Name = "textBoxPromoCode";
+            textBoxPromoCode.Size = new Size(573, 32);
+            textBoxPromoCode.TabIndex = 5;
             // 
-            // flowLayoutPanelTimeSlots
+            // labelPromoCode
             // 
-            this.flowLayoutPanelTimeSlots.AutoScroll = true;
-            this.flowLayoutPanelTimeSlots.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanelTimeSlots.Location = new System.Drawing.Point(3, 93);
-            this.flowLayoutPanelTimeSlots.Name = "flowLayoutPanelTimeSlots";
-            this.flowLayoutPanelTimeSlots.Padding = new System.Windows.Forms.Padding(20, 0, 0, 0);
-            this.flowLayoutPanelTimeSlots.Size = new System.Drawing.Size(937, 144);
-            this.flowLayoutPanelTimeSlots.TabIndex = 3;
+            labelPromoCode.AutoSize = true;
+            labelPromoCode.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            labelPromoCode.ForeColor = Color.White;
+            labelPromoCode.Location = new Point(13, 246);
+            labelPromoCode.Margin = new Padding(4, 0, 4, 0);
+            labelPromoCode.Name = "labelPromoCode";
+            labelPromoCode.Size = new Size(193, 25);
+            labelPromoCode.TabIndex = 4;
+            labelPromoCode.Text = "Bạn có mã giảm giá?";
+            // 
+            // labelPaymentNote
+            // 
+            labelPaymentNote.Font = new Font("Segoe UI", 9F);
+            labelPaymentNote.ForeColor = Color.Gray;
+            labelPaymentNote.Location = new Point(13, 154);
+            labelPaymentNote.Margin = new Padding(4, 0, 4, 0);
+            labelPaymentNote.Name = "labelPaymentNote";
+            labelPaymentNote.Size = new Size(773, 62);
+            labelPaymentNote.TabIndex = 3;
+            labelPaymentNote.Text = "Thanh toán sẽ được thực hiện tại địa điểm đặt lịch.";
+            // 
+            // labelCheckoutTotal
+            // 
+            labelCheckoutTotal.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            labelCheckoutTotal.ForeColor = Color.FromArgb(255, 165, 0);
+            labelCheckoutTotal.Location = new Point(533, 85);
+            labelCheckoutTotal.Margin = new Padding(4, 0, 4, 0);
+            labelCheckoutTotal.Name = "labelCheckoutTotal";
+            labelCheckoutTotal.Size = new Size(253, 46);
+            labelCheckoutTotal.TabIndex = 2;
+            labelCheckoutTotal.Text = "0 VNĐ";
+            labelCheckoutTotal.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // labelTotalPayment
+            // 
+            labelTotalPayment.AutoSize = true;
+            labelTotalPayment.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            labelTotalPayment.ForeColor = Color.White;
+            labelTotalPayment.Location = new Point(13, 92);
+            labelTotalPayment.Margin = new Padding(4, 0, 4, 0);
+            labelTotalPayment.Name = "labelTotalPayment";
+            labelTotalPayment.Size = new Size(98, 25);
+            labelTotalPayment.TabIndex = 1;
+            labelTotalPayment.Text = "Tổng tiền";
+            // 
+            // labelPaymentTitle
+            // 
+            labelPaymentTitle.AutoSize = true;
+            labelPaymentTitle.Font = new Font("Segoe UI", 14F, FontStyle.Bold);
+            labelPaymentTitle.ForeColor = Color.White;
+            labelPaymentTitle.Location = new Point(13, 15);
+            labelPaymentTitle.Margin = new Padding(4, 0, 4, 0);
+            labelPaymentTitle.Name = "labelPaymentTitle";
+            labelPaymentTitle.Size = new Size(143, 32);
+            labelPaymentTitle.TabIndex = 0;
+            labelPaymentTitle.Text = "Thanh toán";
+            // 
+            // panelDateTime
+            // 
+            panelDateTime.Controls.Add(buttonConfirmDateTime);
+            panelDateTime.Controls.Add(comboBoxTimeSlot);
+            panelDateTime.Controls.Add(labelTimeSlot);
+            panelDateTime.Controls.Add(dateTimePickerAppointment);
+            panelDateTime.Controls.Add(labelDate);
+            panelDateTime.Dock = DockStyle.Top;
+            panelDateTime.Location = new Point(0, 615);
+            panelDateTime.Margin = new Padding(4, 5, 4, 5);
+            panelDateTime.Name = "panelDateTime";
+            panelDateTime.Size = new Size(813, 385);
+            panelDateTime.TabIndex = 2;
+            panelDateTime.Visible = false;
+            // 
+            // buttonConfirmDateTime
+            // 
+            buttonConfirmDateTime.BackColor = Color.FromArgb(255, 165, 0);
+            buttonConfirmDateTime.FlatAppearance.BorderSize = 0;
+            buttonConfirmDateTime.FlatStyle = FlatStyle.Flat;
+            buttonConfirmDateTime.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            buttonConfirmDateTime.ForeColor = Color.White;
+            buttonConfirmDateTime.Location = new Point(13, 285);
+            buttonConfirmDateTime.Margin = new Padding(4, 5, 4, 5);
+            buttonConfirmDateTime.Name = "buttonConfirmDateTime";
+            buttonConfirmDateTime.Size = new Size(773, 69);
+            buttonConfirmDateTime.TabIndex = 4;
+            buttonConfirmDateTime.Text = "Xác nhận";
+            buttonConfirmDateTime.UseVisualStyleBackColor = false;
+            // 
+            // comboBoxTimeSlot
+            // 
+            comboBoxTimeSlot.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboBoxTimeSlot.Enabled = false;
+            comboBoxTimeSlot.Font = new Font("Segoe UI", 11F);
+            comboBoxTimeSlot.FormattingEnabled = true;
+            comboBoxTimeSlot.Location = new Point(13, 200);
+            comboBoxTimeSlot.Margin = new Padding(4, 5, 4, 5);
+            comboBoxTimeSlot.Name = "comboBoxTimeSlot";
+            comboBoxTimeSlot.Size = new Size(772, 33);
+            comboBoxTimeSlot.TabIndex = 3;
+            // 
+            // labelTimeSlot
+            // 
+            labelTimeSlot.AutoSize = true;
+            labelTimeSlot.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            labelTimeSlot.ForeColor = Color.White;
+            labelTimeSlot.Location = new Point(13, 154);
+            labelTimeSlot.Margin = new Padding(4, 0, 4, 0);
+            labelTimeSlot.Name = "labelTimeSlot";
+            labelTimeSlot.Size = new Size(93, 25);
+            labelTimeSlot.TabIndex = 2;
+            labelTimeSlot.Text = "Chọn giờ";
             // 
             // dateTimePickerAppointment
             // 
-            this.dateTimePickerAppointment.CustomFormat = "dd/MM/yyyy";
-            this.dateTimePickerAppointment.Font = new System.Drawing.Font("Segoe UI", 11F);
-            this.dateTimePickerAppointment.Format = System.Windows.Forms.DateTimePickerFormat.Custom;
-            this.dateTimePickerAppointment.Location = new System.Drawing.Point(160, 48);
-            this.dateTimePickerAppointment.Name = "dateTimePickerAppointment";
-            this.dateTimePickerAppointment.Size = new System.Drawing.Size(200, 27);
-            this.dateTimePickerAppointment.TabIndex = 2;
+            dateTimePickerAppointment.Font = new Font("Segoe UI", 11F);
+            dateTimePickerAppointment.Format = DateTimePickerFormat.Short;
+            dateTimePickerAppointment.Location = new Point(13, 77);
+            dateTimePickerAppointment.Margin = new Padding(4, 5, 4, 5);
+            dateTimePickerAppointment.Name = "dateTimePickerAppointment";
+            dateTimePickerAppointment.Size = new Size(772, 32);
+            dateTimePickerAppointment.TabIndex = 1;
             // 
-            // labelSelectTime
+            // labelDate
             // 
-            this.labelSelectTime.AutoSize = true;
-            this.labelSelectTime.Font = new System.Drawing.Font("Segoe UI", 11F);
-            this.labelSelectTime.Location = new System.Drawing.Point(40, 50);
-            this.labelSelectTime.Name = "labelSelectTime";
-            this.labelSelectTime.Size = new System.Drawing.Size(84, 20);
-            this.labelSelectTime.TabIndex = 1;
-            this.labelSelectTime.Text = "Chọn ngày:";
+            labelDate.AutoSize = true;
+            labelDate.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            labelDate.ForeColor = Color.White;
+            labelDate.Location = new Point(13, 31);
+            labelDate.Margin = new Padding(4, 0, 4, 0);
+            labelDate.Name = "labelDate";
+            labelDate.Size = new Size(108, 25);
+            labelDate.TabIndex = 0;
+            labelDate.Text = "Chọn ngày";
             // 
-            // labelStep3
+            // panelEmployee
             // 
-            this.labelStep3.AutoSize = true;
-            this.labelStep3.Font = new System.Drawing.Font("Segoe UI", 13F, System.Drawing.FontStyle.Bold);
-            this.labelStep3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(23)))), ((int)(((byte)(162)))), ((int)(((byte)(184)))));
-            this.labelStep3.Location = new System.Drawing.Point(15, 15);
-            this.labelStep3.Name = "labelStep3";
-            this.labelStep3.Size = new System.Drawing.Size(238, 25);
-            this.labelStep3.TabIndex = 0;
-            this.labelStep3.Text = "Chọn ngày và giờ";
+            panelEmployee.Controls.Add(flowLayoutPanelEmployees);
+            panelEmployee.Dock = DockStyle.Top;
+            panelEmployee.Location = new Point(0, 0);
+            panelEmployee.Margin = new Padding(4, 5, 4, 5);
+            panelEmployee.Name = "panelEmployee";
+            panelEmployee.Size = new Size(813, 615);
+            panelEmployee.TabIndex = 1;
+            panelEmployee.Visible = false;
             // 
-            // groupBoxStep2
+            // flowLayoutPanelEmployees
             // 
-            this.groupBoxStep2.Controls.Add(this.flowLayoutPanelDoctors);
-            this.groupBoxStep2.Controls.Add(this.labelStep2);
-            this.groupBoxStep2.Dock = System.Windows.Forms.DockStyle.Top;
-            this.groupBoxStep2.Enabled = false;
-            this.groupBoxStep2.Location = new System.Drawing.Point(20, 200);
-            this.groupBoxStep2.Name = "groupBoxStep2";
-            this.groupBoxStep2.Padding = new System.Windows.Forms.Padding(3, 50, 3, 3);
-            this.groupBoxStep2.Size = new System.Drawing.Size(943, 210);
-            this.groupBoxStep2.TabIndex = 1;
-            this.groupBoxStep2.TabStop = false;
+            flowLayoutPanelEmployees.AutoScroll = true;
+            flowLayoutPanelEmployees.Dock = DockStyle.Fill;
+            flowLayoutPanelEmployees.Location = new Point(0, 0);
+            flowLayoutPanelEmployees.Margin = new Padding(4, 5, 4, 5);
+            flowLayoutPanelEmployees.Name = "flowLayoutPanelEmployees";
+            flowLayoutPanelEmployees.Size = new Size(813, 615);
+            flowLayoutPanelEmployees.TabIndex = 0;
             // 
-            // flowLayoutPanelDoctors
+            // panelSpecialty
             // 
-            this.flowLayoutPanelDoctors.AutoScroll = true;
-            this.flowLayoutPanelDoctors.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanelDoctors.Location = new System.Drawing.Point(3, 63);
-            this.flowLayoutPanelDoctors.Name = "flowLayoutPanelDoctors";
-            this.flowLayoutPanelDoctors.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
-            this.flowLayoutPanelDoctors.Size = new System.Drawing.Size(937, 144);
-            this.flowLayoutPanelDoctors.TabIndex = 1;
-            // 
-            // labelStep2
-            // 
-            this.labelStep2.AutoSize = true;
-            this.labelStep2.Font = new System.Drawing.Font("Segoe UI", 13F, System.Drawing.FontStyle.Bold);
-            this.labelStep2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(23)))), ((int)(((byte)(162)))), ((int)(((byte)(184)))));
-            this.labelStep2.Location = new System.Drawing.Point(15, 15);
-            this.labelStep2.Name = "labelStep2";
-            this.labelStep2.Size = new System.Drawing.Size(174, 25);
-            this.labelStep2.TabIndex = 0;
-            this.labelStep2.Text = "Chọn bác sĩ";
-            // 
-            // groupBoxStep1
-            // 
-            this.groupBoxStep1.Controls.Add(this.flowLayoutPanelSpecialties);
-            this.groupBoxStep1.Controls.Add(this.labelStep1);
-            this.groupBoxStep1.Dock = System.Windows.Forms.DockStyle.Top;
-            this.groupBoxStep1.Location = new System.Drawing.Point(20, 20);
-            this.groupBoxStep1.Name = "groupBoxStep1";
-            this.groupBoxStep1.Padding = new System.Windows.Forms.Padding(3, 50, 3, 3);
-            this.groupBoxStep1.Size = new System.Drawing.Size(943, 180);
-            this.groupBoxStep1.TabIndex = 0;
-            this.groupBoxStep1.TabStop = false;
+            panelSpecialty.Controls.Add(flowLayoutPanelSpecialties);
+            panelSpecialty.Dock = DockStyle.Fill;
+            panelSpecialty.Location = new Point(0, 0);
+            panelSpecialty.Margin = new Padding(4, 5, 4, 5);
+            panelSpecialty.Name = "panelSpecialty";
+            panelSpecialty.Size = new Size(813, 580);
+            panelSpecialty.TabIndex = 0;
             // 
             // flowLayoutPanelSpecialties
             // 
-            this.flowLayoutPanelSpecialties.AutoScroll = true;
-            this.flowLayoutPanelSpecialties.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.flowLayoutPanelSpecialties.Location = new System.Drawing.Point(3, 63);
-            this.flowLayoutPanelSpecialties.Name = "flowLayoutPanelSpecialties";
-            this.flowLayoutPanelSpecialties.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
-            this.flowLayoutPanelSpecialties.Size = new System.Drawing.Size(937, 114);
-            this.flowLayoutPanelSpecialties.TabIndex = 1;
+            flowLayoutPanelSpecialties.AutoScroll = true;
+            flowLayoutPanelSpecialties.Dock = DockStyle.Fill;
+            flowLayoutPanelSpecialties.Location = new Point(0, 0);
+            flowLayoutPanelSpecialties.Margin = new Padding(4, 5, 4, 5);
+            flowLayoutPanelSpecialties.Name = "flowLayoutPanelSpecialties";
+            flowLayoutPanelSpecialties.Size = new Size(813, 580);
+            flowLayoutPanelSpecialties.TabIndex = 0;
             // 
-            // labelStep1
+            // textBoxSearch
             // 
-            this.labelStep1.AutoSize = true;
-            this.labelStep1.Font = new System.Drawing.Font("Segoe UI", 13F, System.Drawing.FontStyle.Bold);
-            this.labelStep1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(23)))), ((int)(((byte)(162)))), ((int)(((byte)(184)))));
-            this.labelStep1.Location = new System.Drawing.Point(15, 15);
-            this.labelStep1.Name = "labelStep1";
-            this.labelStep1.Size = new System.Drawing.Size(231, 25);
-            this.labelStep1.TabIndex = 0;
-            this.labelStep1.Text = "Chọn chuyên khoa";
+            textBoxSearch.BackColor = Color.White;
+            textBoxSearch.BorderStyle = BorderStyle.FixedSingle;
+            textBoxSearch.Font = new Font("Segoe UI", 11F);
+            textBoxSearch.ForeColor = Color.Gray;
+            textBoxSearch.Location = new Point(27, 123);
+            textBoxSearch.Margin = new Padding(4, 5, 4, 5);
+            textBoxSearch.Name = "textBoxSearch";
+            textBoxSearch.Size = new Size(813, 32);
+            textBoxSearch.TabIndex = 1;
+            textBoxSearch.Text = "Tìm kiếm chuyên khoa";
+            // 
+            // panelLeftHeader
+            // 
+            panelLeftHeader.Controls.Add(labelLeftTitle);
+            panelLeftHeader.Controls.Add(buttonBack);
+            panelLeftHeader.Location = new Point(27, 31);
+            panelLeftHeader.Margin = new Padding(4, 5, 4, 5);
+            panelLeftHeader.Name = "panelLeftHeader";
+            panelLeftHeader.Size = new Size(813, 77);
+            panelLeftHeader.TabIndex = 0;
+            // 
+            // labelLeftTitle
+            // 
+            labelLeftTitle.AutoSize = true;
+            labelLeftTitle.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            labelLeftTitle.ForeColor = Color.White;
+            labelLeftTitle.Location = new Point(80, 18);
+            labelLeftTitle.Margin = new Padding(4, 0, 4, 0);
+            labelLeftTitle.Name = "labelLeftTitle";
+            labelLeftTitle.Size = new Size(251, 37);
+            labelLeftTitle.TabIndex = 1;
+            labelLeftTitle.Text = "Chọn chuyên khoa";
+            // 
+            // buttonBack
+            // 
+            buttonBack.BackColor = Color.Transparent;
+            buttonBack.FlatAppearance.BorderColor = Color.White;
+            buttonBack.FlatStyle = FlatStyle.Flat;
+            buttonBack.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            buttonBack.ForeColor = Color.White;
+            buttonBack.Location = new Point(7, 14);
+            buttonBack.Margin = new Padding(4, 5, 4, 5);
+            buttonBack.Name = "buttonBack";
+            buttonBack.Size = new Size(67, 54);
+            buttonBack.TabIndex = 0;
+            buttonBack.Text = "←";
+            buttonBack.UseVisualStyleBackColor = false;
+            buttonBack.Visible = false;
+            // 
+            // panelRight
+            // 
+            panelRight.Anchor = AnchorStyles.None;
+            panelRight.BackColor = Color.FromArgb(100, 200, 210);
+            panelRight.Controls.Add(panelRightContent);
+            panelRight.Controls.Add(labelRightTitle);
+            panelRight.Location = new Point(973, 169);
+            panelRight.Margin = new Padding(4, 5, 4, 5);
+            panelRight.Name = "panelRight";
+            panelRight.Size = new Size(600, 800);
+            panelRight.TabIndex = 1;
+            // 
+            // panelRightContent
+            // 
+            panelRightContent.Controls.Add(panelTotalSection);
+            panelRightContent.Controls.Add(panelSelectedDateTime);
+            panelRightContent.Controls.Add(panelSelectedEmployee);
+            panelRightContent.Controls.Add(panelSelectedSpecialty);
+            panelRightContent.Location = new Point(27, 108);
+            panelRightContent.Margin = new Padding(4, 5, 4, 5);
+            panelRightContent.Name = "panelRightContent";
+            panelRightContent.Size = new Size(547, 670);
+            panelRightContent.TabIndex = 1;
+            // 
+            // panelTotalSection
+            // 
+            panelTotalSection.BorderStyle = BorderStyle.FixedSingle;
+            panelTotalSection.Controls.Add(labelTotalPrice);
+            panelTotalSection.Controls.Add(labelTotalLabel);
+            panelTotalSection.Location = new Point(0, 415);
+            panelTotalSection.Margin = new Padding(4, 5, 4, 5);
+            panelTotalSection.Name = "panelTotalSection";
+            panelTotalSection.Padding = new Padding(20, 23, 20, 23);
+            panelTotalSection.Size = new Size(546, 91);
+            panelTotalSection.TabIndex = 3;
+            panelTotalSection.Visible = false;
+            // 
+            // labelTotalPrice
+            // 
+            labelTotalPrice.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            labelTotalPrice.ForeColor = Color.White;
+            labelTotalPrice.Location = new Point(333, 23);
+            labelTotalPrice.Margin = new Padding(4, 0, 4, 0);
+            labelTotalPrice.Name = "labelTotalPrice";
+            labelTotalPrice.Size = new Size(187, 38);
+            labelTotalPrice.TabIndex = 1;
+            labelTotalPrice.Text = "0 VNĐ";
+            labelTotalPrice.TextAlign = ContentAlignment.MiddleRight;
+            // 
+            // labelTotalLabel
+            // 
+            labelTotalLabel.AutoSize = true;
+            labelTotalLabel.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            labelTotalLabel.ForeColor = Color.White;
+            labelTotalLabel.Location = new Point(20, 28);
+            labelTotalLabel.Margin = new Padding(4, 0, 4, 0);
+            labelTotalLabel.Name = "labelTotalLabel";
+            labelTotalLabel.Size = new Size(98, 25);
+            labelTotalLabel.TabIndex = 0;
+            labelTotalLabel.Text = "Tổng tiền";
+            // 
+            // panelSelectedDateTime
+            // 
+            panelSelectedDateTime.BorderStyle = BorderStyle.FixedSingle;
+            panelSelectedDateTime.Controls.Add(labelSelectedDateTimeValue);
+            panelSelectedDateTime.Controls.Add(labelSelectedDateTimeLabel);
+            panelSelectedDateTime.Location = new Point(0, 277);
+            panelSelectedDateTime.Margin = new Padding(4, 5, 4, 5);
+            panelSelectedDateTime.Name = "panelSelectedDateTime";
+            panelSelectedDateTime.Padding = new Padding(20, 23, 20, 23);
+            panelSelectedDateTime.Size = new Size(546, 122);
+            panelSelectedDateTime.TabIndex = 2;
+            // 
+            // labelSelectedDateTimeValue
+            // 
+            labelSelectedDateTimeValue.Font = new Font("Segoe UI", 10F);
+            labelSelectedDateTimeValue.ForeColor = Color.LightGray;
+            labelSelectedDateTimeValue.Location = new Point(20, 62);
+            labelSelectedDateTimeValue.Margin = new Padding(4, 0, 4, 0);
+            labelSelectedDateTimeValue.Name = "labelSelectedDateTimeValue";
+            labelSelectedDateTimeValue.Size = new Size(493, 38);
+            labelSelectedDateTimeValue.TabIndex = 1;
+            labelSelectedDateTimeValue.Text = "Chưa chọn";
+            // 
+            // labelSelectedDateTimeLabel
+            // 
+            labelSelectedDateTimeLabel.AutoSize = true;
+            labelSelectedDateTimeLabel.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            labelSelectedDateTimeLabel.ForeColor = Color.White;
+            labelSelectedDateTimeLabel.Location = new Point(20, 15);
+            labelSelectedDateTimeLabel.Margin = new Padding(4, 0, 4, 0);
+            labelSelectedDateTimeLabel.Name = "labelSelectedDateTimeLabel";
+            labelSelectedDateTimeLabel.Size = new Size(127, 25);
+            labelSelectedDateTimeLabel.TabIndex = 0;
+            labelSelectedDateTimeLabel.Text = "📅 Ngày & Giờ";
+            // 
+            // panelSelectedEmployee
+            // 
+            panelSelectedEmployee.BorderStyle = BorderStyle.FixedSingle;
+            panelSelectedEmployee.Controls.Add(labelSelectedEmployeeValue);
+            panelSelectedEmployee.Controls.Add(labelSelectedEmployeeLabel);
+            panelSelectedEmployee.Location = new Point(0, 138);
+            panelSelectedEmployee.Margin = new Padding(4, 5, 4, 5);
+            panelSelectedEmployee.Name = "panelSelectedEmployee";
+            panelSelectedEmployee.Padding = new Padding(20, 23, 20, 23);
+            panelSelectedEmployee.Size = new Size(546, 122);
+            panelSelectedEmployee.TabIndex = 1;
+            // 
+            // labelSelectedEmployeeValue
+            // 
+            labelSelectedEmployeeValue.Font = new Font("Segoe UI", 10F);
+            labelSelectedEmployeeValue.ForeColor = Color.LightGray;
+            labelSelectedEmployeeValue.Location = new Point(20, 62);
+            labelSelectedEmployeeValue.Margin = new Padding(4, 0, 4, 0);
+            labelSelectedEmployeeValue.Name = "labelSelectedEmployeeValue";
+            labelSelectedEmployeeValue.Size = new Size(493, 38);
+            labelSelectedEmployeeValue.TabIndex = 1;
+            labelSelectedEmployeeValue.Text = "Chưa chọn";
+            // 
+            // labelSelectedEmployeeLabel
+            // 
+            labelSelectedEmployeeLabel.AutoSize = true;
+            labelSelectedEmployeeLabel.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            labelSelectedEmployeeLabel.ForeColor = Color.White;
+            labelSelectedEmployeeLabel.Location = new Point(20, 15);
+            labelSelectedEmployeeLabel.Margin = new Padding(4, 0, 4, 0);
+            labelSelectedEmployeeLabel.Name = "labelSelectedEmployeeLabel";
+            labelSelectedEmployeeLabel.Size = new Size(129, 25);
+            labelSelectedEmployeeLabel.TabIndex = 0;
+            labelSelectedEmployeeLabel.Text = "👤 Nhân viên";
+            // 
+            // panelSelectedSpecialty
+            // 
+            panelSelectedSpecialty.BorderStyle = BorderStyle.FixedSingle;
+            panelSelectedSpecialty.Controls.Add(labelSelectedSpecialtyValue);
+            panelSelectedSpecialty.Controls.Add(labelSelectedSpecialtyLabel);
+            panelSelectedSpecialty.Location = new Point(0, 0);
+            panelSelectedSpecialty.Margin = new Padding(4, 5, 4, 5);
+            panelSelectedSpecialty.Name = "panelSelectedSpecialty";
+            panelSelectedSpecialty.Padding = new Padding(20, 23, 20, 23);
+            panelSelectedSpecialty.Size = new Size(546, 122);
+            panelSelectedSpecialty.TabIndex = 0;
+            // 
+            // labelSelectedSpecialtyValue
+            // 
+            labelSelectedSpecialtyValue.Font = new Font("Segoe UI", 10F);
+            labelSelectedSpecialtyValue.ForeColor = Color.LightGray;
+            labelSelectedSpecialtyValue.Location = new Point(20, 62);
+            labelSelectedSpecialtyValue.Margin = new Padding(4, 0, 4, 0);
+            labelSelectedSpecialtyValue.Name = "labelSelectedSpecialtyValue";
+            labelSelectedSpecialtyValue.Size = new Size(493, 38);
+            labelSelectedSpecialtyValue.TabIndex = 1;
+            labelSelectedSpecialtyValue.Text = "Chưa chọn";
+            // 
+            // labelSelectedSpecialtyLabel
+            // 
+            labelSelectedSpecialtyLabel.AutoSize = true;
+            labelSelectedSpecialtyLabel.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            labelSelectedSpecialtyLabel.ForeColor = Color.White;
+            labelSelectedSpecialtyLabel.Location = new Point(20, 15);
+            labelSelectedSpecialtyLabel.Margin = new Padding(4, 0, 4, 0);
+            labelSelectedSpecialtyLabel.Name = "labelSelectedSpecialtyLabel";
+            labelSelectedSpecialtyLabel.Size = new Size(155, 25);
+            labelSelectedSpecialtyLabel.TabIndex = 0;
+            labelSelectedSpecialtyLabel.Text = "💼 Chuyên khoa";
+            // 
+            // labelRightTitle
+            // 
+            labelRightTitle.AutoSize = true;
+            labelRightTitle.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            labelRightTitle.ForeColor = Color.White;
+            labelRightTitle.Location = new Point(27, 31);
+            labelRightTitle.Margin = new Padding(4, 0, 4, 0);
+            labelRightTitle.Name = "labelRightTitle";
+            labelRightTitle.Size = new Size(212, 37);
+            labelRightTitle.TabIndex = 0;
+            labelRightTitle.Text = "Chi tiết đặt lịch";
             // 
             // Bookings
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(1000, 700);
-            this.Controls.Add(this.panelMain);
-            this.Controls.Add(this.panelBottom);
-            this.Controls.Add(this.panelTop);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.MaximizeBox = false;
-            this.Name = "Bookings";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Đặt lịch hẹn";
-            this.panelTop.ResumeLayout(false);
-            this.panelTop.PerformLayout();
-            this.panelBottom.ResumeLayout(false);
-            this.panelBottom.PerformLayout();
-            this.panelMain.ResumeLayout(false);
-            this.groupBoxStep4.ResumeLayout(false);
-            this.groupBoxStep4.PerformLayout();
-            this.groupBoxStep3.ResumeLayout(false);
-            this.groupBoxStep3.PerformLayout();
-            this.groupBoxStep2.ResumeLayout(false);
-            this.groupBoxStep2.PerformLayout();
-            this.groupBoxStep1.ResumeLayout(false);
-            this.groupBoxStep1.PerformLayout();
-            this.ResumeLayout(false);
+            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.White;
+            ClientSize = new Size(1653, 1055);
+            Controls.Add(panelRight);
+            Controls.Add(panelLeft);
+            Controls.Add(panelHeader);
+            Margin = new Padding(4, 5, 4, 5);
+            Name = "Bookings";
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "Đặt lịch hẹn";
+            panelHeader.ResumeLayout(false);
+            panelHeader.PerformLayout();
+            panelLeft.ResumeLayout(false);
+            panelLeft.PerformLayout();
+            panelLeftContent.ResumeLayout(false);
+            panelThankYou.ResumeLayout(false);
+            panelPayment.ResumeLayout(false);
+            panelPayment.PerformLayout();
+            panelDateTime.ResumeLayout(false);
+            panelDateTime.PerformLayout();
+            panelEmployee.ResumeLayout(false);
+            panelSpecialty.ResumeLayout(false);
+            panelLeftHeader.ResumeLayout(false);
+            panelLeftHeader.PerformLayout();
+            panelRight.ResumeLayout(false);
+            panelRight.PerformLayout();
+            panelRightContent.ResumeLayout(false);
+            panelTotalSection.ResumeLayout(false);
+            panelTotalSection.PerformLayout();
+            panelSelectedDateTime.ResumeLayout(false);
+            panelSelectedDateTime.PerformLayout();
+            panelSelectedEmployee.ResumeLayout(false);
+            panelSelectedEmployee.PerformLayout();
+            panelSelectedSpecialty.ResumeLayout(false);
+            panelSelectedSpecialty.PerformLayout();
+            ResumeLayout(false);
         }
 
         #endregion
 
-        private System.Windows.Forms.Panel panelTop;
-        private System.Windows.Forms.Label labelTitle;
-        private System.Windows.Forms.Panel panelBottom;
-        private System.Windows.Forms.Button buttonBookAppointment;
-        private System.Windows.Forms.Label labelSummary;
-        private System.Windows.Forms.Panel panelMain;
-        private System.Windows.Forms.GroupBox groupBoxStep4;
-        private System.Windows.Forms.TextBox textBoxEmail;
-        private System.Windows.Forms.Label labelEmail;
+        private System.Windows.Forms.Panel panelHeader;
+        private System.Windows.Forms.Label labelHeader;
+        private System.Windows.Forms.Panel panelLeft;
+        private System.Windows.Forms.Panel panelLeftContent;
+        private System.Windows.Forms.Panel panelThankYou;
+        private System.Windows.Forms.Label labelThankYouMessage;
+        private System.Windows.Forms.Label labelThankYouTitle;
+        private System.Windows.Forms.Panel panelPayment;
+        private System.Windows.Forms.Button buttonConfirmBooking;
         private System.Windows.Forms.TextBox textBoxPhone;
         private System.Windows.Forms.Label labelPhone;
-        private System.Windows.Forms.TextBox textBoxFullName;
-        private System.Windows.Forms.Label labelFullName;
-        private System.Windows.Forms.Label labelStep4;
-        private System.Windows.Forms.GroupBox groupBoxStep3;
-        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanelTimeSlots;
+        private System.Windows.Forms.TextBox textBoxName;
+        private System.Windows.Forms.Label labelName;
+        private System.Windows.Forms.Button buttonApplyPromo;
+        private System.Windows.Forms.TextBox textBoxPromoCode;
+        private System.Windows.Forms.Label labelPromoCode;
+        private System.Windows.Forms.Label labelPaymentNote;
+        private System.Windows.Forms.Label labelCheckoutTotal;
+        private System.Windows.Forms.Label labelTotalPayment;
+        private System.Windows.Forms.Label labelPaymentTitle;
+        private System.Windows.Forms.Panel panelDateTime;
+        private System.Windows.Forms.Button buttonConfirmDateTime;
+        private System.Windows.Forms.ComboBox comboBoxTimeSlot;
+        private System.Windows.Forms.Label labelTimeSlot;
         private System.Windows.Forms.DateTimePicker dateTimePickerAppointment;
-        private System.Windows.Forms.Label labelSelectTime;
-        private System.Windows.Forms.Label labelStep3;
-        private System.Windows.Forms.GroupBox groupBoxStep2;
-        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanelDoctors;
-        private System.Windows.Forms.Label labelStep2;
-        private System.Windows.Forms.GroupBox groupBoxStep1;
+        private System.Windows.Forms.Label labelDate;
+        private System.Windows.Forms.Panel panelEmployee;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanelEmployees;
+        private System.Windows.Forms.Panel panelSpecialty;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanelSpecialties;
-        private System.Windows.Forms.Label labelStep1;
+        private System.Windows.Forms.TextBox textBoxSearch;
+        private System.Windows.Forms.Panel panelLeftHeader;
+        private System.Windows.Forms.Label labelLeftTitle;
+        private System.Windows.Forms.Button buttonBack;
+        private System.Windows.Forms.Panel panelRight;
+        private System.Windows.Forms.Panel panelRightContent;
+        private System.Windows.Forms.Panel panelTotalSection;
+        private System.Windows.Forms.Label labelTotalPrice;
+        private System.Windows.Forms.Label labelTotalLabel;
+        private System.Windows.Forms.Panel panelSelectedDateTime;
+        private System.Windows.Forms.Label labelSelectedDateTimeValue;
+        private System.Windows.Forms.Label labelSelectedDateTimeLabel;
+        private System.Windows.Forms.Panel panelSelectedEmployee;
+        private System.Windows.Forms.Label labelSelectedEmployeeValue;
+        private System.Windows.Forms.Label labelSelectedEmployeeLabel;
+        private System.Windows.Forms.Panel panelSelectedSpecialty;
+        private System.Windows.Forms.Label labelSelectedSpecialtyValue;
+        private System.Windows.Forms.Label labelSelectedSpecialtyLabel;
+        private System.Windows.Forms.Label labelRightTitle;
     }
 }
