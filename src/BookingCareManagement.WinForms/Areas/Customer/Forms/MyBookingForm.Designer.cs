@@ -29,6 +29,7 @@
             this.colDate = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colTime = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colDoctor = new System.Windows.Forms.DataGridViewTextBoxColumn();
+            this.colSpecialty = new System.Windows.Forms.DataGridViewTextBoxColumn();
             this.colStatus = new System.Windows.Forms.DataGridViewTextBoxColumn(); // Đổi vị trí lên trên
             this.colPrice = new System.Windows.Forms.DataGridViewTextBoxColumn(); // Đổi vị trí xuống dưới
 
@@ -113,13 +114,14 @@
             this.dgvBookings.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dgvBookings.ColumnHeadersHeight = 50;
 
-            // [THAY ĐỔI QUAN TRỌNG] Sắp xếp lại thứ tự AddRange
+            // Add columns: Date, Time, Doctor, Specialty, Status, Price
             this.dgvBookings.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.colDate,
             this.colTime,
             this.colDoctor,
-            this.colStatus, // Status lên trước
-            this.colPrice}); // Price xuống sau
+            this.colSpecialty,
+            this.colStatus,
+            this.colPrice});
 
             // Style Default Cell
             dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
@@ -146,7 +148,7 @@
             // colDate
             // 
             this.colDate.FillWeight = 20F;
-            this.colDate.HeaderText = "NGÀY ĐẶT";
+            this.colDate.HeaderText = "NGÀY KHÁM";
             this.colDate.MinimumWidth = 6;
             this.colDate.Name = "colDate";
             // 
@@ -159,17 +161,24 @@
             // 
             // colDoctor
             // 
-            this.colDoctor.FillWeight = 30F;
-            this.colDoctor.HeaderText = "BÁC SĨ / CHUYÊN KHOA";
+            this.colDoctor.FillWeight = 25F;
+            this.colDoctor.HeaderText = "BÁC SĨ";
             this.colDoctor.MinimumWidth = 6;
             this.colDoctor.Name = "colDoctor";
+            // 
+            // colSpecialty
+            // 
+            this.colSpecialty.FillWeight = 20F;
+            this.colSpecialty.HeaderText = "CHUYÊN KHOA";
+            this.colSpecialty.MinimumWidth = 6;
+            this.colSpecialty.Name = "colSpecialty";
             // 
             // colStatus
             // 
             dataGridViewCellStyle3.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             dataGridViewCellStyle3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(193)))), ((int)(((byte)(7)))));
             this.colStatus.DefaultCellStyle = dataGridViewCellStyle3;
-            this.colStatus.FillWeight = 20F;
+            this.colStatus.FillWeight = 15F;
             this.colStatus.HeaderText = "TRẠNG THÁI";
             this.colStatus.MinimumWidth = 6;
             this.colStatus.Name = "colStatus";
@@ -215,6 +224,7 @@
         private System.Windows.Forms.DataGridViewTextBoxColumn colDate;
         private System.Windows.Forms.DataGridViewTextBoxColumn colTime;
         private System.Windows.Forms.DataGridViewTextBoxColumn colDoctor;
+        private System.Windows.Forms.DataGridViewTextBoxColumn colSpecialty;
         private System.Windows.Forms.DataGridViewTextBoxColumn colStatus; // Status
         private System.Windows.Forms.DataGridViewTextBoxColumn colPrice; // Price
     }
