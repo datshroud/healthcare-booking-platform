@@ -276,18 +276,18 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                         var workingHours = editorForm.GetWorkingHours();
                         if (workingHours.Any())
                         {
+                            var hoursList = workingHours.SelectMany(kvp => kvp.Value.Select(slot => new
+                            {
+                                DayOfWeek = (int)kvp.Key,
+                                StartTime = slot.Start.ToString(@"hh\:mm"),
+                                EndTime = slot.End.ToString(@"hh\:mm"),
+                                Location = (string?)null
+                            })).ToList();
+
                             var hoursRequest = new
                             {
                                 LimitAppointments = true,
-                                Hours = workingHours.Select(kvp => new
-                                {
-                                    DayOfWeek = (int)kvp.Key,
-                                    StartTime = kvp.Value.Start.ToString(@"hh\:mm"),
-                                    EndTime = kvp.Value.End.ToString(@"hh\:mm"),
-                                    BreakStartTime = kvp.Value.BreakStart?.ToString(@"hh\:mm"),
-                                    BreakEndTime = kvp.Value.BreakEnd?.ToString(@"hh\:mm"),
-                                    Location = (string?)null
-                                }).ToList()
+                                Hours = hoursList
                             };
 
                             await _doctorApiClient.UpdateWorkingHoursAsync(id, hoursRequest);
