@@ -18,4 +18,5 @@ public sealed record SessionSnapshot(
     string[]? Roles = null,
     bool IsAdmin = false,
     bool IsDoctor = false,
-    bool CookieAuthenticated = false);
+    bool CookieAuthenticated = false,
+    string? Redirect = null);

@@ -2,6 +2,7 @@
 using BookingCareManagement.WinForms.Areas.Admin.Forms;
 using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms.Areas.Doctor.Forms;
+using BookingCareManagement.WinForms.Areas.Customer.Forms;
 using BookingCareManagement.WinForms.Shared.State;
 using Microsoft.Extensions.DependencyInjection;
 using System;
@@ -36,16 +37,41 @@ namespace BookingCareManagement.WinForms
 
         public MainForm(IServiceProvider serviceProvider)
         {
+            try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] MainForm: constructor start\n"); } catch {}
             _serviceProvider = serviceProvider;
             _sessionState = serviceProvider.GetRequiredService<SessionState>();
             
             InitializeComponent();
             InitializeCustomComponents();
             CreateSidebar();    
+            try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] MainForm: after CreateSidebar\n"); } catch {}
+            // Rebuild sidebar when session/profile changes (e.g. after login)
+            _sessionState.StateChanged += (s, e) =>
+            {
+                if (this.IsHandleCreated && this.InvokeRequired)
+                    this.BeginInvoke(new Action(RebuildSidebar));
+                else
+                    RebuildSidebar();
+            };
+
             this.Load += (s, e) =>
             {
+                try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] MainForm: Load event\n"); } catch {}
                 OpenRoleDashboard();
             };
+        }
+
+        private void RebuildSidebar()
+        {
+            // Remove existing SidebarButton controls only, preserve other controls like dragIndicator
+            var toRemove = sidebarPanel.Controls.OfType<SidebarButton>().ToList();
+            foreach (var c in toRemove)
+            {
+                sidebarPanel.Controls.Remove(c);
+                c.Dispose();
+            }
+
+            CreateSidebar();
         }
 
         private void InitializeCustomComponents()
@@ -82,16 +108,15 @@ namespace BookingCareManagement.WinForms
 
         private void OpenRoleDashboard()
         {
-            if (_sessionState.IsDoctor && !_sessionState.IsAdmin)
+            if (HasDoctorAccess() && !HasAdminAccess())
             {
                 var doctorForm = _serviceProvider.GetRequiredService<DoctorAppointmentsForm>();
                 OpenChildForm(doctorForm);
+                return;
             }
-            else
-            {
-                var dashboard = _serviceProvider.GetRequiredService<DashboardForm>();
-                OpenChildForm(dashboard);
-            }
+
+            var dashboard = _serviceProvider.GetRequiredService<DashboardForm>();
+            OpenChildForm(dashboard);
         }
 
         private void CloseAccountMenu()
@@ -353,101 +378,282 @@ namespace BookingCareManagement.WinForms
 
         private void CreateSidebar()
         {
-            string[] menuItems = {
-                "📅 Lịch",
-                "📊 Bảng điều khiển",
-                "✅ Cuộc hẹn",
-                "👥 Bác sĩ",
-                "👤 Khách hàng",
-                "🎯 Chuyên khoa",
-                "💰 Hóa đơn",
-                "⚙️ Cài đặt"
-            };
+            // Role-aware sidebar
+            // If the current session is Admin -> show an admin placeholder image/label
+            // If Doctor (and not Admin) -> show a doctor placeholder
+            // Otherwise (customer) -> show three main buttons: Dịch vụ, Đặt lịch, Lịch của tôi
 
             int yPos = 20;
+            var isAdmin = HasAdminAccess();
+            var isDoctor = HasDoctorAccess() && !isAdmin;
 
-            foreach (string item in menuItems)
+            if (isAdmin)
             {
-                SidebarButton btn = new SidebarButton
-                {
-                    Text = item,
-                    Location = new Point(10, yPos),
-                    Size = new Size(230, item.Contains("\n") ? 55 : 45),
-                    BackColor = Color.Transparent,
-                    ForeColor = Color.White,
-                    Font = new Font("Segoe UI", 10),
-                    TextAlign = ContentAlignment.MiddleLeft,
-                    FlatStyle = FlatStyle.Flat,
-                    Cursor = Cursors.Hand,
-                    Padding = new Padding(15, 0, 0, 0),
-                    AllowDrop = true
+                // Admin: show the full admin menu
+                string[] adminItems = {
+                    "📅 Lịch",
+                    "📊 Bảng điều khiển",
+                    "✅ Cuộc hẹn",
+                    "👥 Bác sĩ",
+                    "👤 Khách hàng",
+                    "🎯 Chuyên khoa",
+                    "💰 Hóa đơn",
+                    "⚙️ Cài đặt"
                 };
 
-                btn.FlatAppearance.BorderSize = 0;
-                btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, 41, 59);
-
-                // Sự kiện click
-                btn.Click += (s, e) =>
+                int ay = yPos;
+                foreach (var item in adminItems)
                 {
-                    SetActiveButton(btn);
-                    if (btn.Text.Contains("Bảng") || btn.Text.Contains("Bang"))
+                    SidebarButton btn = new SidebarButton
                     {
-                        OpenRoleDashboard();
+                        Text = item,
+                        Location = new Point(10, ay),
+                        Size = new Size(230, item.Contains("\n") ? 55 : 45),
+                        BackColor = Color.Transparent,
+                        ForeColor = Color.White,
+                        Font = new Font("Segoe UI", 10),
+                        TextAlign = ContentAlignment.MiddleLeft,
+                        FlatStyle = FlatStyle.Flat,
+                        Cursor = Cursors.Hand,
+                        Padding = new Padding(15, 0, 0, 0),
+                        AllowDrop = true
+                    };
+
+                    btn.FlatAppearance.BorderSize = 0;
+                    btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, 41, 59);
+
+                    btn.Click += (s, e) =>
+                    {
+                        SetActiveButton(btn);
+                        if (btn.Text.Contains("Bảng") || btn.Text.Contains("Bang"))
+                        {
+                            OpenRoleDashboard();
+                        }
+                        if (btn.Text.Contains("Khách hàng"))
+                        {
+                            var customerForm = _serviceProvider.GetRequiredService<Customer>();
+                            OpenChildForm(customerForm);
+                        }
+                        if (btn.Text.Contains("Lịch"))
+                        {
+                            if (!(activeChildForm is Calendar))
+                            {
+                                var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
+                                OpenChildForm(new Calendar(appointmentsApiClient));
+                            }
+                        }
+                        if (btn.Text.Contains("Hóa đơn"))
+                        {
+                            var invoiceForm = _serviceProvider.GetRequiredService<InvoiceEditorForm>();
+                            OpenChildForm(invoiceForm);
+                        }
+                        if (btn.Text.Contains("Bác sĩ"))
+                        {
+                            if (!(activeChildForm is Doctor))
+                            {
+                                var doctorForm = _serviceProvider.GetRequiredService<Doctor>();
+                                OpenChildForm(doctorForm);
+                            }
+                        }
+                        if (btn.Text.Contains("Chuyên khoa"))
+                        {
+                            if (!(activeChildForm is Specialty))
+                            {
+                                var specialtyForm = _serviceProvider.GetRequiredService<Specialty>();
+                                OpenChildForm(specialtyForm);
+                            }
+                        }
+                    };
+
+                    btn.MouseDown += Button_MouseDown;
+                    btn.MouseMove += Button_MouseMove;
+                    btn.DragOver += Button_DragOver;
+                    btn.DragDrop += Button_DragDrop;
+                    btn.QueryContinueDrag += Button_QueryContinueDrag;
+
+                    sidebarPanel.Controls.Add(btn);
+                    ay += item.Contains("\n") ? 60 : 50;
+
+                    if (item.Contains("Bảng") || item.Contains("Bang"))
+                    {
+                        SetActiveButton(btn);
                     }
-                    if (btn.Text.Contains("Khách hàng"))
+                }
+                return;
+            }
+
+            if (isDoctor)
+            {
+                // Doctor: simplified menu
+                string[] doctorItems = {
+                    "📅 Lịch",
+                    "✅ Cuộc hẹn",
+                    "👥 Bác sĩ",
+                    "📊 Thống kê"
+                };
+
+                int dy = yPos;
+                foreach (var item in doctorItems)
+                {
+                    SidebarButton btn = new SidebarButton
                     {
-                        var customerForm = _serviceProvider.GetRequiredService<Customer>();
-                        OpenChildForm(customerForm);
-                    }
-                    if (btn.Text.Contains("Lịch"))
+                        Text = item,
+                        Location = new Point(10, dy),
+                        Size = new Size(230, 45),
+                        BackColor = Color.Transparent,
+                        ForeColor = Color.White,
+                        Font = new Font("Segoe UI", 10),
+                        TextAlign = ContentAlignment.MiddleLeft,
+                        FlatStyle = FlatStyle.Flat,
+                        Cursor = Cursors.Hand,
+                        Padding = new Padding(15, 0, 0, 0),
+                        AllowDrop = true
+                    };
+
+                    btn.FlatAppearance.BorderSize = 0;
+                    btn.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, 41, 59);
+
+                    btn.Click += (s, e) =>
                     {
-                        if (!(activeChildForm is Calendar))
+                        SetActiveButton(btn);
+                        if (item.Contains("Lịch"))
                         {
                             var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
                             OpenChildForm(new Calendar(appointmentsApiClient));
                         }
-                    }
-                    if (btn.Text.Contains("Hóa đơn"))
-                    {
-                        // Resolve InvoiceEditorForm từ DI container
-                        var invoiceForm = _serviceProvider.GetRequiredService<InvoiceEditorForm>();
-                        OpenChildForm(invoiceForm);
-                    }
-                    if (btn.Text.Contains("Bác sĩ"))
-                    {
-                        if (!(activeChildForm is Doctor))
+                        if (item.Contains("Cuộc hẹn"))
                         {
-                            // Resolve Doctor form from DI
-                            var doctorForm = _serviceProvider.GetRequiredService<Doctor>();
-                            OpenChildForm(doctorForm);
+                            var doctorAppointments = _serviceProvider.GetRequiredService<DoctorAppointmentsForm>();
+                            OpenChildForm(doctorAppointments);
                         }
-                    }
-                    if (btn.Text.Contains("Chuyên khoa"))
-                    {
-                        if (!(activeChildForm is Specialty))
-                        {
-                            var specialtyForm = _serviceProvider.GetRequiredService<Specialty>();
-                            OpenChildForm(specialtyForm);
-                        }
-                    }
-                };
+                    };
 
-                // Sự kiện kéo thả
-                btn.MouseDown += Button_MouseDown;
-                btn.MouseMove += Button_MouseMove;
-                btn.DragOver += Button_DragOver;
-                btn.DragDrop += Button_DragDrop;
-                btn.QueryContinueDrag += Button_QueryContinueDrag;
+                    btn.MouseDown += Button_MouseDown;
+                    btn.MouseMove += Button_MouseMove;
+                    btn.DragOver += Button_DragOver;
+                    btn.DragDrop += Button_DragDrop;
+                    btn.QueryContinueDrag += Button_QueryContinueDrag;
 
-                sidebarPanel.Controls.Add(btn);
-
-                yPos += item.Contains("\n") ? 60 : 50;
-
-                if (item.Contains("Bảng") || item.Contains("Bang"))
-                {
-                    SetActiveButton(btn);
+                    sidebarPanel.Controls.Add(btn);
+                    dy += 50;
                 }
+
+                return;
             }
+
+            // Default: Customer view — three primary buttons
+            SidebarButton btnServices = new SidebarButton
+            {
+                Text = "🩺  Dịch vụ",
+                Location = new Point(10, yPos),
+                Size = new Size(230, 45),
+                BackColor = Color.Transparent,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10),
+                TextAlign = ContentAlignment.MiddleLeft,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Padding = new Padding(15, 0, 0, 0)
+            };
+            yPos += 50;
+
+            SidebarButton btnBook = new SidebarButton
+            {
+                Text = "📆  Đặt lịch",
+                Location = new Point(10, yPos),
+                Size = new Size(230, 45),
+                BackColor = Color.Transparent,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10),
+                TextAlign = ContentAlignment.MiddleLeft,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Padding = new Padding(15, 0, 0, 0)
+            };
+            yPos += 50;
+
+            SidebarButton btnMyBookings = new SidebarButton
+            {
+                Text = "📋  Lịch của tôi",
+                Location = new Point(10, yPos),
+                Size = new Size(230, 45),
+                BackColor = Color.Transparent,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 10),
+                TextAlign = ContentAlignment.MiddleLeft,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand,
+                Padding = new Padding(15, 0, 0, 0)
+            };
+
+            foreach (var b in new[] { btnServices, btnBook, btnMyBookings })
+            {
+                b.FlatAppearance.BorderSize = 0;
+                b.FlatAppearance.MouseOverBackColor = Color.FromArgb(30, 41, 59);
+                b.MouseDown += Button_MouseDown;
+                b.MouseMove += Button_MouseMove;
+                b.DragOver += Button_DragOver;
+                b.DragDrop += Button_DragDrop;
+                b.QueryContinueDrag += Button_QueryContinueDrag;
+                sidebarPanel.Controls.Add(b);
+            }
+
+            // Handlers
+            btnServices.Click += (s, e) =>
+            {
+                SetActiveButton(btnServices);
+                if (!(activeChildForm is Service))
+                {
+                    var serviceForm = _serviceProvider.GetRequiredService<Service>();
+                    OpenChildForm(serviceForm);
+                }
+            };
+
+            btnBook.Click += (s, e) =>
+            {
+                SetActiveButton(btnBook);
+                if (!(activeChildForm is Bookings))
+                {
+                    var bookingsForm = _serviceProvider.GetRequiredService<Bookings>();
+                    OpenChildForm(bookingsForm);
+                }
+            };
+
+            btnMyBookings.Click += (s, e) =>
+            {
+                SetActiveButton(btnMyBookings);
+                if (!(activeChildForm is MyBookingForm))
+                {
+                    var myBookings = _serviceProvider.GetRequiredService<MyBookingForm>();
+                    OpenChildForm(myBookings);
+                }
+            };
+
+            // Default active for customer
+            SetActiveButton(btnServices);
+        }
+
+        private bool HasDoctorAccess()
+        {
+            if (_sessionState.IsDoctor)
+            {
+                return true;
+            }
+
+            var redirect = _sessionState.LastRedirect;
+            return redirect.IndexOf("doctor", StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private bool HasAdminAccess()
+        {
+            if (_sessionState.IsAdmin)
+            {
+                return true;
+            }
+
+            var redirect = _sessionState.LastRedirect;
+            return redirect.IndexOf("/doctor", StringComparison.OrdinalIgnoreCase) < 0 &&
+                   redirect.IndexOf("/dashboard", StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         // Sự kiện kéo thả cho sidebar buttons

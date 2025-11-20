@@ -128,6 +128,10 @@ public sealed class AuthService
             }
 
             var auth = NormalizeAuthResponse(respText, JsonSerializer.Deserialize<AuthResponseDto>(respText, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
+            if (!string.IsNullOrWhiteSpace(auth.Redirect))
+            {
+                _session.ApplyRoleHint(auth.Redirect);
+            }
             if (!string.IsNullOrWhiteSpace(auth.AccessToken))
             {
                 _session.AccessToken = auth.AccessToken;
@@ -149,7 +153,8 @@ public sealed class AuthService
                 _session.Roles.ToArray(),
                 _session.IsAdmin,
                 _session.IsDoctor,
-                _session.HasCookieSession));
+                _session.HasCookieSession,
+                string.IsNullOrWhiteSpace(auth.Redirect) ? _session.LastRedirect : auth.Redirect));
             return true;
         }
         catch (Exception ex)
@@ -180,6 +185,10 @@ public sealed class AuthService
             }
 
             var auth = NormalizeAuthResponse(respText, JsonSerializer.Deserialize<AuthResponseDto>(respText, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
+            if (!string.IsNullOrWhiteSpace(auth.Redirect))
+            {
+                _session.ApplyRoleHint(auth.Redirect);
+            }
 
             if (auth == null || string.IsNullOrWhiteSpace(auth.AccessToken))
             {
@@ -201,7 +210,8 @@ public sealed class AuthService
                 _session.Roles.ToArray(),
                 _session.IsAdmin,
                 _session.IsDoctor,
-                _session.HasCookieSession));
+                _session.HasCookieSession,
+                string.IsNullOrWhiteSpace(auth.Redirect) ? _session.LastRedirect : auth.Redirect));
             return true;
         }
         catch (Exception ex)

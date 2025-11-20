@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using BookingCareManagement.WinForms.Shared.Models;
 
 namespace BookingCareManagement.WinForms.Shared.State;
@@ -20,6 +21,7 @@ public sealed class SessionState
     private bool _isAdmin;
     private bool _isDoctor;
     private bool _cookieAuthenticated;
+    private string? _lastRedirect;
 
     public event EventHandler? StateChanged;
 
@@ -94,6 +96,7 @@ public sealed class SessionState
     public IReadOnlyList<string> Roles => _roles;
     public bool IsAdmin => _isAdmin;
     public bool IsDoctor => _isDoctor;
+    public string LastRedirect => _lastRedirect ?? string.Empty;
 
     public void ApplyProfile(UserProfileDto profile)
     {
@@ -110,6 +113,7 @@ public sealed class SessionState
             _roles = profile.Roles ?? Array.Empty<string>();
             _isAdmin = profile.IsAdmin;
             _isDoctor = profile.IsDoctor;
+            ApplyRoleHintInternal(_lastRedirect);
             OnStateChanged();
         }
     }
@@ -127,6 +131,7 @@ public sealed class SessionState
             _isAdmin = false;
             _isDoctor = false;
             _cookieAuthenticated = false;
+            _lastRedirect = null;
             OnStateChanged();
         }
     }
@@ -138,6 +143,54 @@ public sealed class SessionState
             _cookieAuthenticated = true;
             OnStateChanged();
         }
+    }
+
+    public void ApplyRoleHint(string? redirect)
+    {
+        lock (_syncRoot)
+        {
+            if (ApplyRoleHintInternal(redirect))
+            {
+                OnStateChanged();
+            }
+        }
+    }
+
+    private bool ApplyRoleHintInternal(string? redirect)
+    {
+        if (string.IsNullOrWhiteSpace(redirect))
+        {
+            return false;
+        }
+
+        var changed = false;
+        _lastRedirect = redirect;
+        var normalized = redirect.Trim().ToLowerInvariant();
+
+        var doctorHint = normalized.Contains("doctor");
+        var adminHint = normalized.Contains("/dashboard") && !doctorHint;
+
+        if (doctorHint && !_isDoctor)
+        {
+            _isDoctor = true;
+            if (!_roles.Contains("Doctor", StringComparer.OrdinalIgnoreCase))
+            {
+                _roles = _roles.Append("Doctor").ToArray();
+            }
+            changed = true;
+        }
+
+        if (adminHint && !_isAdmin)
+        {
+            _isAdmin = true;
+            if (!_roles.Contains("Admin", StringComparer.OrdinalIgnoreCase))
+            {
+                _roles = _roles.Append("Admin").ToArray();
+            }
+            changed = true;
+        }
+
+        return changed;
     }
 
     private void OnStateChanged()

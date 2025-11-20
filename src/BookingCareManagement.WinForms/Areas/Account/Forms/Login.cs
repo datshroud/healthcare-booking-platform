@@ -38,6 +38,7 @@ namespace BookingCareManagement.WinForms.Areas.Account.Forms
             // Wire login button to call AuthService
             buttonLogin.Click += async (_, _) =>
             {
+                try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] Login: button clicked\n"); } catch {}
                 var dialogs = _services.GetRequiredService<BookingCareManagement.WinForms.Shared.Services.DialogService>();
                 var auth = _services.GetRequiredService<BookingCareManagement.WinForms.Shared.Services.AuthService>();
                 try
@@ -52,6 +53,8 @@ namespace BookingCareManagement.WinForms.Areas.Account.Forms
                     var ok = await auth.LoginAsync(req);
                     if (ok)
                     {
+                        try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] Login: succeeded\n"); } catch {}
+                        Console.WriteLine("[Login] Login succeeded, closing dialog.");
                         this.DialogResult = DialogResult.OK;
                         this.Close();
                     }

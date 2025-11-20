@@ -60,7 +60,11 @@ public static class AreaRegistration
         services
             .AddSingleton<CustomerQueueViewModel>()
             .AddTransient<CustomerQueueController>()
-            .AddTransient<CustomerQueueForm>();
+            .AddTransient<CustomerQueueForm>()
+            // Register customer-facing forms
+            .AddTransient<Service>()
+            .AddTransient<Bookings>()
+            .AddTransient<MyBookingForm>();
         return services;
     }
 
