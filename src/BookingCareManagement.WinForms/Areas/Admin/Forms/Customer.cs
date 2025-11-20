@@ -7,6 +7,7 @@ using System.Data;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Linq;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
@@ -20,24 +21,24 @@ namespace BookingCareManagement.WinForms
         private List<CustomerDto> originalCustomers;
         private CustomerService _customerService;
 
-        public Customer()
+        // Parameterless ctor fallback for places that still use 'new Customer()'
+        public Customer() : this(new CustomerService(new SimpleHttpClientFactory())) { }
+
+        // Accept CustomerService via DI
+        public Customer(CustomerService customerService)
         {
             InitializeComponent();
-            InitializeServices();
+            _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
             InitializeCustomComponents();
             SetupDataGridView();
             _ = LoadCustomersAsync();
             AttachEvents();
+            originalCustomers = new List<CustomerDto>();
         }
 
         #region Initialization Methods
         private void InitializeServices()
         {
-            // Sửa: CustomerService giờ cần IHttpClientFactory
-            // Tạm thời tạo HttpClientFactory đơn giản
-            var httpClientFactory = new SimpleHttpClientFactory();
-            _customerService = new CustomerService(httpClientFactory);
-            originalCustomers = new List<CustomerDto>();
         }
 
         private void InitializeCustomComponents()
@@ -57,6 +58,17 @@ namespace BookingCareManagement.WinForms
             AddTextColumn("# Cuộc hẹn cuối cùng", "LastAppointment");
             AddTextColumn("# Ngày tạo tài khoản", "Created");
             AddActionColumn();
+            // Riêng cột checkbox vẫn cho phép click
+            if (customersDataGridView.Columns["Select"] != null)
+            {
+                customersDataGridView.Columns["Select"].ReadOnly = false;
+            }
+
+            // Riêng cột Actions vẫn cho phép click
+            if (customersDataGridView.Columns["Actions"] != null)
+            {
+                customersDataGridView.Columns["Actions"].ReadOnly = false;
+            }
         }
         #endregion
 
@@ -67,7 +79,7 @@ namespace BookingCareManagement.WinForms
             {
                 Name = "Select",
                 HeaderText = "",
-                FillWeight = 5
+                FillWeight =5
             };
             customersDataGridView.Columns.Add(checkCol);
         }
@@ -78,7 +90,7 @@ namespace BookingCareManagement.WinForms
             {
                 Name = "Customer",
                 HeaderText = "Khách hàng",
-                FillWeight = 30,
+                FillWeight =30,
             };
             customersDataGridView.Columns.Add(customerCol);
         }
@@ -89,7 +101,7 @@ namespace BookingCareManagement.WinForms
             {
                 Name = name,
                 HeaderText = headerText,
-                FillWeight = 15
+                FillWeight =15
             };
             customersDataGridView.Columns.Add(col);
         }
@@ -104,7 +116,7 @@ namespace BookingCareManagement.WinForms
                 HeaderText = "",
                 UseColumnTextForButtonValue = true,
                 Text = horizontalEllipsis,
-                FillWeight = 8,
+                FillWeight =8,
             };
             customersDataGridView.Columns.Add(actionCol);
         }
@@ -153,19 +165,25 @@ namespace BookingCareManagement.WinForms
             try
             {
                 SetLoadingState(true);
-                // Sửa: Sử dụng SearchAsync() thay vì SearchCustomersAsync()
-                var searchResults = await _customerService.SearchAsync(searchText);
-                DisplaySearchResults(searchResults.ToList());
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Lỗi khi tìm kiếm: {ex.Message}", "Lỗi",
-                    MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            finally
-            {
-                SetLoadingState(false);
-            }
+                // Backend may not provide a search endpoint; fetch all and filter locally
+                var customers = await _customerService.GetAllAsync();
+                var filtered = customers.Where(c =>
+ (!string.IsNullOrWhiteSpace(c.FullName) && c.FullName.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+ (!string.IsNullOrWhiteSpace(c.Email) && c.Email.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+ (c.PhoneNumber != null && c.PhoneNumber.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+ ).ToList();
+
+ DisplaySearchResults(filtered);
+ }
+ catch (Exception ex)
+ {
+ MessageBox.Show($"Lỗi khi tìm kiếm: {ex.Message}", "Lỗi",
+ MessageBoxButtons.OK, MessageBoxIcon.Error);
+ }
+ finally
+ {
+ SetLoadingState(false);
+ }
         }
 
         private void DisplaySearchResults(List<CustomerDto> searchResults)
@@ -192,7 +210,7 @@ namespace BookingCareManagement.WinForms
 
         private void UpdateCustomerCount()
         {
-            int count = originalCustomers?.Count ?? 0;
+            int count = originalCustomers?.Count ??0;
             title.Text = $"Khách hàng ({count})";
         }
 
@@ -215,7 +233,7 @@ namespace BookingCareManagement.WinForms
         {
             exportBtn.Click += (s, e) => MessageBox.Show("Export Data", "Info");
             importBtn.Click += (s, e) => MessageBox.Show("Import Data", "Info");
-            addBtn.Click += addBtn_Click;
+            // addBtn.Click += addBtn_Click; // addBtn.Click is wired in the designer; do not attach again to avoid duplicate handling
 
             var refreshBtn = this.Controls.Find("refreshBtn", true).FirstOrDefault() as Button;
             if (refreshBtn != null)
@@ -279,14 +297,15 @@ namespace BookingCareManagement.WinForms
         private void Form_Resize(object sender, EventArgs e)
         {
             int formWidth = this.ClientSize.Width;
-            addBtn.Location = new Point(formWidth - 190, 18);
-            importBtn.Location = new Point(formWidth - 340, 18);
-            exportBtn.Location = new Point(formWidth - 490, 18);
+            addBtn.Location = new Point(formWidth -190,18);
+            importBtn.Location = new Point(formWidth -340,18);
+            exportBtn.Location = new Point(formWidth -490,18);
         }
 
         private void addBtn_Click(object sender, EventArgs e)
         {
-            AddCustomerForm addCustomerForm = new AddCustomerForm();
+            // Use DI service when opening AddCustomerForm
+            using var addCustomerForm = new AddCustomerForm(_customerService);
             if (addCustomerForm.ShowDialog() == DialogResult.OK)
             {
                 _ = LoadCustomersAsync(); // Refresh data after adding
@@ -295,7 +314,7 @@ namespace BookingCareManagement.WinForms
 
         private void customersDataGridView_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.ColumnIndex == customersDataGridView.Columns["Actions"].Index && e.RowIndex >= 0)
+            if (e.ColumnIndex == customersDataGridView.Columns["Actions"].Index && e.RowIndex >=0)
             {
                 selectedRowIndex = e.RowIndex;
                 Rectangle cellRect = customersDataGridView.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, false);
@@ -310,7 +329,7 @@ namespace BookingCareManagement.WinForms
         #region Context Menu Actions
         private void EditMenuItem_Click(object sender, EventArgs e)
         {
-            if (selectedRowIndex >= 0 && selectedRowIndex < originalCustomers.Count)
+            if (selectedRowIndex >=0 && selectedRowIndex < originalCustomers.Count)
             {
                 var customerToEdit = originalCustomers[selectedRowIndex];
                 using (EditCustomerForm editForm = new EditCustomerForm(customerToEdit, _customerService))
@@ -327,7 +346,7 @@ namespace BookingCareManagement.WinForms
 
         private async void DeleteMenuItem_Click(object sender, EventArgs e)
         {
-            if (selectedRowIndex >= 0 && selectedRowIndex < originalCustomers.Count)
+            if (selectedRowIndex >=0 && selectedRowIndex < originalCustomers.Count)
             {
                 var customerToDelete = originalCustomers[selectedRowIndex];
                 var result = MessageBox.Show($"Bạn có chắc chắn muốn xóa khách hàng {customerToDelete.FullName}?",
@@ -356,24 +375,25 @@ namespace BookingCareManagement.WinForms
         #region Custom Painting
         private void customersDataGridView_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
-            if (e.ColumnIndex == 1 && e.RowIndex >= 0) // Customer column
+            if (e.ColumnIndex ==1 && e.RowIndex >=0) // Customer column
             {
                 e.PaintBackground(e.CellBounds, true);
 
                 if (e.RowIndex < originalCustomers.Count)
                 {
                     var customer = originalCustomers[e.RowIndex];
-                    DrawCustomerCell(e, customer);
+                    bool isSelected = (customersDataGridView.Rows[e.RowIndex].Selected) || (e.State & DataGridViewElementStates.Selected) !=0;
+                    DrawCustomerCell(e, customer, isSelected);
                 }
 
                 e.Handled = true;
             }
         }
 
-        private void DrawCustomerCell(DataGridViewCellPaintingEventArgs e, CustomerDto customer)
+        private void DrawCustomerCell(DataGridViewCellPaintingEventArgs e, CustomerDto customer, bool isSelected)
         {
             DrawAvatar(e, customer);
-            DrawCustomerInfo(e, customer);
+            DrawCustomerInfo(e, customer, isSelected);
         }
 
         private void DrawAvatar(DataGridViewCellPaintingEventArgs e, CustomerDto customer)
@@ -392,14 +412,14 @@ namespace BookingCareManagement.WinForms
         private void DrawDefaultAvatar(DataGridViewCellPaintingEventArgs e, string fullName)
         {
             // Draw circle background
-            using (var brush = new SolidBrush(Color.FromArgb(147, 197, 253)))
+            using (var brush = new SolidBrush(Color.FromArgb(147,197,253)))
             {
                 e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                e.Graphics.FillEllipse(brush, e.CellBounds.X + 15, e.CellBounds.Y + 10, 50, 50);
+                e.Graphics.FillEllipse(brush, e.CellBounds.X +15, e.CellBounds.Y +10,50,50);
             }
 
             // Draw initials
-            using (var font = new Font("Segoe UI", 12, FontStyle.Bold))
+            using (var font = new Font("Segoe UI",12, FontStyle.Bold))
             using (var textBrush = new SolidBrush(Color.White))
             {
                 var sf = new StringFormat
@@ -407,23 +427,27 @@ namespace BookingCareManagement.WinForms
                     Alignment = StringAlignment.Center,
                     LineAlignment = StringAlignment.Center
                 };
-                var avatarRect = new Rectangle(e.CellBounds.X + 15, e.CellBounds.Y + 10, 50, 50);
+                var avatarRect = new Rectangle(e.CellBounds.X +15, e.CellBounds.Y +10,50,50);
                 string initials = GetInitials(fullName);
                 e.Graphics.DrawString(initials, font, textBrush, avatarRect, sf);
             }
         }
 
-        private void DrawCustomerInfo(DataGridViewCellPaintingEventArgs e, CustomerDto customer)
+        private void DrawCustomerInfo(DataGridViewCellPaintingEventArgs e, CustomerDto customer, bool isSelected)
         {
-            using (var nameFont = new Font("Segoe UI", 11, FontStyle.Bold))
-            using (var emailFont = new Font("Segoe UI", 9))
-            using (var nameBrush = new SolidBrush(Color.FromArgb(37, 99, 235)))
-            using (var emailBrush = new SolidBrush(Color.FromArgb(107, 114, 128)))
+            // Name uses accent blue normally, but gray when selected so it remains readable on gray selection background
+            var nameColor = isSelected ? Color.FromArgb(107,114,128) : Color.FromArgb(37,99,235);
+            var emailColor = isSelected ? Color.FromArgb(156,163,175) : Color.FromArgb(107,114,128);
+
+            using (var nameFont = new Font("Segoe UI",11, FontStyle.Bold))
+            using (var emailFont = new Font("Segoe UI",9))
+            using (var nameBrush = new SolidBrush(nameColor))
+            using (var emailBrush = new SolidBrush(emailColor))
             {
                 e.Graphics.DrawString(customer.FullName, nameFont, nameBrush,
-                    e.CellBounds.X + 75, e.CellBounds.Y + 18);
+                    e.CellBounds.X +75, e.CellBounds.Y +18);
                 e.Graphics.DrawString(customer.Email, emailFont, emailBrush,
-                    e.CellBounds.X + 75, e.CellBounds.Y + 40);
+                    e.CellBounds.X +75, e.CellBounds.Y +40);
             }
         }
 
@@ -433,10 +457,10 @@ namespace BookingCareManagement.WinForms
                 return "JD";
 
             string[] names = fullName.Split(' ');
-            if (names.Length >= 2)
+            if (names.Length >=2)
                 return $"{names[0][0]}{names[1][0]}".ToUpper();
-            else if (names.Length == 1 && names[0].Length >= 2)
-                return names[0].Substring(0, 2).ToUpper();
+            else if (names.Length ==1 && names[0].Length >=2)
+                return names[0].Substring(0,2).ToUpper();
             else
                 return "JD";
         }
@@ -445,19 +469,6 @@ namespace BookingCareManagement.WinForms
         #region Unused Methods
         private void importBtn_Click(object sender, EventArgs e) { }
         #endregion
-    }
-
-    // Simple HttpClientFactory implementation for temporary use
-    public class SimpleHttpClientFactory : IHttpClientFactory
-    {
-        public HttpClient CreateClient(string name)
-        {
-            var client = new HttpClient();
-            client.BaseAddress = new Uri("https://healthcare-booking-dzhba4dmdjagcdbq.southeastasia-01.azurewebsites.net");
-            client.DefaultRequestHeaders.Add("Accept", "application/json");
-            client.Timeout = TimeSpan.FromSeconds(30);
-            return client;
-        }
     }
 
     public class AddCustomerForm : Form
@@ -474,10 +485,13 @@ namespace BookingCareManagement.WinForms
 
         internal CustomerDto NewCustomer { get; private set; }
 
-        public AddCustomerForm()
+        // Default ctor fallback
+        public AddCustomerForm() : this(new CustomerService(new SimpleHttpClientFactory())) { }
+
+        // Accept CustomerService via DI
+        public AddCustomerForm(CustomerService customerService)
         {
-            var httpClientFactory = new SimpleHttpClientFactory();
-            _customerService = new CustomerService(httpClientFactory);
+            _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
             InitializeForm();
             InitializeControls();
             SetupEventHandlers();
@@ -487,7 +501,7 @@ namespace BookingCareManagement.WinForms
         private void InitializeForm()
         {
             this.Text = "Thêm khách hàng";
-            this.Size = new Size(560, 580);
+            this.Size = new Size(560,580);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -518,10 +532,10 @@ namespace BookingCareManagement.WinForms
             lblTitle = new Label
             {
                 Text = "Thêm khách hàng",
-                Location = new Point(20, 20),
-                Size = new Size(250, 30),
-                Font = new Font("Segoe UI", 14, FontStyle.Bold),
-                ForeColor = Color.FromArgb(31, 41, 55)
+                Location = new Point(20,20),
+                Size = new Size(250,30),
+                Font = new Font("Segoe UI",14, FontStyle.Bold),
+                ForeColor = Color.FromArgb(31,41,55)
             };
             this.Controls.Add(lblTitle);
         }
@@ -529,59 +543,75 @@ namespace BookingCareManagement.WinForms
         private void CreateNameFields()
         {
             // First Name
-            lblFirstName = CreateLabel("Họ *", 25, 70);
-            txtFirstName = CreateTextBox("Nhập họ", 25, 95);
+            lblFirstName = CreateLabel("Họ *",25,70);
+            txtFirstName = CreateTextBox("Nhập họ",25,95);
 
             // Last Name
-            lblLastName = CreateLabel("Tên *", 25, 140);
-            txtLastName = CreateTextBox("Nhập tên", 25, 165);
+            lblLastName = CreateLabel("Tên *",25,140);
+            txtLastName = CreateTextBox("Nhập tên",25,165);
 
             this.Controls.AddRange(new Control[] { lblFirstName, txtFirstName, lblLastName, txtLastName });
         }
 
         private void CreateEmailField()
         {
-            lblEmail = CreateLabel("Email *", 25, 210);
-            txtEmail = CreateTextBox("example@yourcompany.com", 25, 235);
+            lblEmail = CreateLabel("Email *",25,210);
+            txtEmail = CreateTextBox("example@yourcompany.com",25,235);
 
             this.Controls.AddRange(new Control[] { lblEmail, txtEmail });
         }
 
         private void CreatePhoneField()
         {
-            lblPhone = CreateLabel("Điện thoại", 25, 280);
+            // Put country code and phone input into a small panel so label appears above both, matching other fields
+            var phoneRow = new Panel
+            {
+                Location = new Point(25,305),
+                Size = new Size(490,34)
+            };
 
             cboCountryCode = new ComboBox
             {
-                Location = new Point(25, 305),
-                Size = new Size(100, 30),
-                Font = new Font("Segoe UI", 10),
+                Location = new Point(0,0),
+                Size = new Size(100,30),
+                Font = new Font("Segoe UI",10),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            cboCountryCode.Items.AddRange(new object[] { "+1 🇺🇸", "+44 🇬🇧", "+84 🇻🇳", "+86 🇨🇳", "+91 🇮🇳" });
-            cboCountryCode.SelectedIndex = 0;
+            cboCountryCode.Items.AddRange(new object[] { "+84 🇻🇳" });
+            cboCountryCode.SelectedIndex =0;
 
-            txtPhone = CreateTextBox("Số điện thoại", 135, 305);
+            txtPhone = new TextBox
+            {
+                Location = new Point(110,0),
+                Size = new Size(370,30),
+                Font = new Font("Segoe UI",10),
+                BorderStyle = BorderStyle.FixedSingle,
+                Text = string.Empty,
+                ForeColor = Color.Black
+            };
 
-            this.Controls.AddRange(new Control[] { lblPhone, cboCountryCode, txtPhone });
+            phoneRow.Controls.Add(cboCountryCode);
+            phoneRow.Controls.Add(txtPhone);
+
+            this.Controls.AddRange(new Control[] { lblPhone, phoneRow });
         }
 
         private void CreateCheckbox()
         {
             chkSendEmail = new CheckBox
             {
-                Location = new Point(25, 355),
-                Size = new Size(20, 20),
+                Location = new Point(25,355),
+                Size = new Size(20,20),
                 BackColor = Color.White
             };
 
             lblEmailOption = new Label
             {
                 Text = "Gửi email có thông tin đăng nhập của khách hàng\nTùy chọn này yêu cầu địa chỉ email.",
-                Location = new Point(50, 353),
-                Size = new Size(450, 40),
-                Font = new Font("Segoe UI", 9),
-                ForeColor = Color.FromArgb(75, 85, 99)
+                Location = new Point(50,353),
+                Size = new Size(450,40),
+                Font = new Font("Segoe UI",9),
+                ForeColor = Color.FromArgb(75,85,99)
             };
 
             this.Controls.AddRange(new Control[] { chkSendEmail, lblEmailOption });
@@ -589,33 +619,33 @@ namespace BookingCareManagement.WinForms
 
         private void CreateButtons()
         {
-            btnCancel = CreateButton("Hủy", 310, 480, Color.White, Color.FromArgb(55, 65, 81));
-            btnAddCustomer = CreateButton("Thêm", 415, 480, Color.FromArgb(37, 99, 235), Color.White);
+            btnCancel = CreateButton("Hủy",310,480, Color.White, Color.FromArgb(55,65,81));
+            btnAddCustomer = CreateButton("Thêm",415,480, Color.FromArgb(37,99,235), Color.White);
 
             this.Controls.AddRange(new Control[] { btnCancel, btnAddCustomer });
         }
         #endregion
 
         #region Helper Methods
-        private Label CreateLabel(string text, int x, int y)
+        private Label CreateLabel(String text, int x, int y)
         {
             return new Label
             {
                 Text = text,
                 Location = new Point(x, y),
-                Size = new Size(100, 20),
-                Font = new Font("Segoe UI", 9),
-                ForeColor = Color.FromArgb(31, 41, 55)
+                Size = new Size(100,20),
+                Font = new Font("Segoe UI",9),
+                ForeColor = Color.FromArgb(31,41,55)
             };
         }
 
-        private TextBox CreateTextBox(string placeholder, int x, int y)
+        private TextBox CreateTextBox(String placeholder, int x, int y)
         {
             var textBox = new TextBox
             {
                 Location = new Point(x, y),
-                Size = new Size(490, 30),
-                Font = new Font("Segoe UI", 10),
+                Size = new Size(490,30),
+                Font = new Font("Segoe UI",10),
                 BorderStyle = BorderStyle.FixedSingle
             };
 
@@ -623,14 +653,14 @@ namespace BookingCareManagement.WinForms
             return textBox;
         }
 
-        private Button CreateButton(string text, int x, int y, Color backColor, Color foreColor)
+        private Button CreateButton(String text, int x, int y, Color backColor, Color foreColor)
         {
             var button = new Button
             {
                 Text = text,
                 Location = new Point(x, y),
-                Size = new Size(text == "Thêm" ? 120 : 100, 40),
-                Font = new Font("Segoe UI", 10),
+                Size = new Size(text == "Thêm" ?120 :100,40),
+                Font = new Font("Segoe UI",10),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = backColor,
                 ForeColor = foreColor,
@@ -639,11 +669,11 @@ namespace BookingCareManagement.WinForms
 
             if (backColor == Color.White)
             {
-                button.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+                button.FlatAppearance.BorderColor = Color.FromArgb(209,213,219);
             }
             else
             {
-                button.FlatAppearance.BorderSize = 0;
+                button.FlatAppearance.BorderSize =0;
             }
 
             return button;
@@ -686,7 +716,9 @@ namespace BookingCareManagement.WinForms
                    textBox == txtEmail ? "example@yourcompany.com" :
                    textBox == txtPhone ? "Số điện thoại" : "";
         }
+        #endregion
 
+        #region Event Handlers
         private async void BtnAddCustomer_Click(object sender, EventArgs e)
         {
             if (!ValidateInputs()) return;
@@ -776,7 +808,14 @@ namespace BookingCareManagement.WinForms
 
         private string GetPhoneNumber()
         {
-            return txtPhone.ForeColor == Color.LightGray ? "" : txtPhone.Text.Trim();
+            if (txtPhone.ForeColor == Color.LightGray || string.IsNullOrWhiteSpace(txtPhone.Text))
+                return string.Empty;
+
+            var countryCode = cboCountryCode?.Text?.Split(' ')[0] ?? string.Empty;
+            if (string.IsNullOrWhiteSpace(countryCode))
+                return txtPhone.Text.Trim();
+
+            return $"{countryCode} {txtPhone.Text.Trim()}";
         }
         #endregion
     }
@@ -870,21 +909,39 @@ namespace BookingCareManagement.WinForms
 
         private void CreatePhoneField()
         {
-            lblPhone = CreateLabel("Điện thoại", 25, 280);
+            // Make label match other fields
+            lblPhone = CreateLabel("Điện thoại",25,280);
+
+            var phoneRow = new Panel
+            {
+                Location = new Point(25,305),
+                Size = new Size(490,34)
+            };
 
             cboCountryCode = new ComboBox
             {
-                Location = new Point(25, 305),
-                Size = new Size(100, 30),
-                Font = new Font("Segoe UI", 10),
+                Location = new Point(0,0),
+                Size = new Size(100,30),
+                Font = new Font("Segoe UI",10),
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            cboCountryCode.Items.AddRange(new object[] { "+1 🇺🇸", "+44 🇬🇧", "+84 🇻🇳", "+86 🇨🇳", "+91 🇮🇳" });
+            cboCountryCode.Items.AddRange(new object[] { "+84 🇻🇳"});
             cboCountryCode.SelectedIndex = 0;
 
-            txtPhone = CreateTextBox(135, 305);
+            txtPhone = new TextBox
+            {
+                Location = new Point(110,0),
+                Size = new Size(370,30),
+                Font = new Font("Segoe UI",10),
+                BorderStyle = BorderStyle.FixedSingle,
+                Text = string.Empty,
+                ForeColor = Color.Black
+            };
 
-            this.Controls.AddRange(new Control[] { lblPhone, cboCountryCode, txtPhone });
+            phoneRow.Controls.Add(cboCountryCode);
+            phoneRow.Controls.Add(txtPhone);
+
+            this.Controls.AddRange(new Control[] { lblPhone, phoneRow });
         }
 
         private void CreateButtons()
@@ -904,6 +961,17 @@ namespace BookingCareManagement.WinForms
                 Text = text,
                 Location = new Point(x, y),
                 Size = new Size(100, 20),
+                Font = new Font("Segoe UI", 9),
+                ForeColor = Color.FromArgb(31, 41, 55)
+            };
+        }
+        private Label CreateLabelPhone(string text, int x, int y)
+        {
+            return new Label
+            {
+                Text = text,
+                Location = new Point(x, y),
+                Size = new Size(50, 20),
                 Font = new Font("Segoe UI", 9),
                 ForeColor = Color.FromArgb(31, 41, 55)
             };
@@ -954,30 +1022,40 @@ namespace BookingCareManagement.WinForms
             {
                 // Tách họ và tên từ FullName
                 string[] nameParts = _customer.FullName?.Split(' ') ?? new string[] { "", "" };
-                txtFirstName.Text = nameParts.Length > 0 ? nameParts[0] : "";
-                txtLastName.Text = nameParts.Length > 1 ? string.Join(" ", nameParts.Skip(1)) : "";
+                txtFirstName.Text = nameParts.Length >0 ? nameParts[0] : "";
+                txtLastName.Text = nameParts.Length >1 ? string.Join(" ", nameParts.Skip(1)) : "";
 
                 txtEmail.Text = _customer.Email ?? "";
 
                 // Xử lý số điện thoại
                 if (!string.IsNullOrEmpty(_customer.PhoneNumber))
                 {
-                    string[] phoneParts = _customer.PhoneNumber.Split(' ');
-                    if (phoneParts.Length > 1)
+                    string phone = _customer.PhoneNumber.Trim();
+                    // Có thể phone được lưu kèm hoặc không kèm country code. Xử lý linh hoạt.
+                    string[] phoneParts = phone.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+                    if (phoneParts.Length >1 && phoneParts[0].StartsWith("+"))
                     {
                         string countryCode = phoneParts[0];
                         string phoneNumber = string.Join(" ", phoneParts.Skip(1));
 
-                        // Tìm country code trong combobox
-                        for (int i = 0; i < cboCountryCode.Items.Count; i++)
+                        // Tìm country code trong combobox (so sánh startswith để hỗ trợ định dạng như "+84 🇻🇳")
+                        for (int i =0; i < cboCountryCode.Items.Count; i++)
                         {
-                            if (cboCountryCode.Items[i].ToString().StartsWith(countryCode))
+                            var item = cboCountryCode.Items[i].ToString();
+                            if (!string.IsNullOrEmpty(item) && item.StartsWith(countryCode))
                             {
                                 cboCountryCode.SelectedIndex = i;
                                 break;
                             }
                         }
+
                         txtPhone.Text = phoneNumber;
+                    }
+                    else
+                    {
+                        // Không có country code, đặt vào ô số điện thoại và giữ country code mặc định
+                        txtPhone.Text = phone;
                     }
                 }
             }
@@ -1042,7 +1120,7 @@ namespace BookingCareManagement.WinForms
                 // Cập nhật local object
                 _customer.FirstName = txtFirstName.Text.Trim();
                 _customer.LastName = txtLastName.Text.Trim();
-                _customer.FullName = $"{txtFirstName.Text.Trim()} {txtLastName.Text.Trim()}";
+                _customer.FullName = $"{txtFirstName.Text.Trim()} {_customer.LastName.Trim()}";
                 _customer.Email = txtEmail.Text.Trim();
                 _customer.PhoneNumber = GetFormattedPhoneNumber();
 
@@ -1079,6 +1157,18 @@ namespace BookingCareManagement.WinForms
             return $"{countryCode} {txtPhone.Text.Trim()}";
         }
         #endregion
+    }
+
+    public class SimpleHttpClientFactory : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name)
+        {
+            var client = new HttpClient();
+            client.BaseAddress = new Uri("https://healthcare-booking-dzhba4dmdjagcdbq.southeastasia-01.azurewebsites.net");
+            client.DefaultRequestHeaders.Add("Accept", "application/json");
+            client.Timeout = TimeSpan.FromSeconds(30);
+            return client;
+        }
     }
 
     public class RoundedButton : Button

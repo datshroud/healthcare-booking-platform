@@ -40,7 +40,21 @@ public sealed class CustomerService
     public async Task<IReadOnlyList<CustomerDto>> SearchAsync(string keyword, CancellationToken cancellationToken = default)
     {
         var client = CreateClient();
-        using var response = await client.GetAsync($"/api/customer/search?keyword={Uri.EscapeDataString(keyword)}", cancellationToken);
+
+        // Some server implementations expect POST for search; prefer POST to avoid405.
+        var payload = new { keyword };
+        using var response = await client.PostAsJsonAsync("/api/customer/search", payload, cancellationToken);
+
+        // If server rejects POST with405, try GET as fallback.
+        if (response.StatusCode == System.Net.HttpStatusCode.MethodNotAllowed)
+        {
+            response.Dispose();
+            using var getResp = await client.GetAsync($"/api/customer/search?keyword={System.Uri.EscapeDataString(keyword)}", cancellationToken);
+            await EnsureSuccessAsync(getResp);
+            var dtosGet = await getResp.Content.ReadFromJsonAsync<List<CustomerDto>>(cancellationToken: cancellationToken);
+            return dtosGet ?? new List<CustomerDto>();
+        }
+
         await EnsureSuccessAsync(response);
         var dtos = await response.Content.ReadFromJsonAsync<List<CustomerDto>>(cancellationToken: cancellationToken);
         return dtos ?? new List<CustomerDto>();

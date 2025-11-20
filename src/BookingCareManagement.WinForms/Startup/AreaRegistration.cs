@@ -35,7 +35,9 @@ public static class AreaRegistration
             .AddTransient<InvoiceEditorForm>()
             .AddTransient<DashboardForm>()
             .AddTransient<AdminNavigationController>()
-            .AddTransient<AdminShellForm>();
+            .AddTransient<AdminShellForm>()
+            .AddTransient<CustomerService>()
+            .AddTransient<Customer>();
         return services;
     }
 
