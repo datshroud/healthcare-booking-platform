@@ -59,6 +59,10 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             {
                 backToStart.Click += ButtonBackToStart_Click;
             }
+
+            // Ensure cards resize when container changes
+            flowLayoutPanelSpecialties.SizeChanged += (s, e) => AdjustCardWidths();
+            flowLayoutPanelEmployees.SizeChanged += (s, e) => AdjustCardWidths();
         }
 
         private async void Bookings_Load(object sender, EventArgs e)
@@ -67,6 +71,8 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             await InitializeDataAsync();
 
             LoadSpecialties();
+            // Make sure card widths match container
+            AdjustCardWidths();
             // Server requires min lead of2 days
             dateTimePickerAppointment.MinDate = DateTime.Now.AddDays(2);
             dateTimePickerAppointment.MaxDate = DateTime.Now.AddMonths(3);
@@ -78,22 +84,8 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             // Default time slots (fallback)
             timeSlots = new List<string>
             {
-                //"08:00", "08:30", "09:00", "09:30", "10:00", "10:30",
-                //"11:00", "11:30", "14:00", "14:30", "15:00", "15:30",
-                //"16:00", "16:30", "17:00", "17:30"
+                
             };
-
-            //if (_apiClient is null)
-            //{
-            //    // fallback to local sample specialties
-            //    specialties = new List<SpecialtyData>
-            //    {
-            //        new SpecialtyData { Id = Guid.NewGuid(), Name = "Nha Khoa", Price =200000 },
-            //        new SpecialtyData { Id = Guid.NewGuid(), Name = "Tim Mạch", Price =500000 },
-            //        new SpecialtyData { Id = Guid.NewGuid(), Name = "Nội Khoa", Price =300000 }
-            //    };
-            //    return;
-            //}
 
             try
             {
@@ -107,13 +99,7 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             }
             catch
             {
-                // ignore and fallback to sample data
-                //specialties = new List<SpecialtyData>
-                //{
-                //    new SpecialtyData { Id = Guid.NewGuid(), Name = "Nha Khoa", Price =200000 },
-                //    new SpecialtyData { Id = Guid.NewGuid(), Name = "Tim Mạch", Price =500000 },
-                //    new SpecialtyData { Id = Guid.NewGuid(), Name = "Nội Khoa", Price =300000 }
-                //};
+                
             }
         }
 
@@ -126,13 +112,20 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 Panel card = CreateSpecialtyCard(specialty);
                 flowLayoutPanelSpecialties.Controls.Add(card);
             }
+            AdjustCardWidths();
         }
 
         private Panel CreateSpecialtyCard(SpecialtyData specialty)
         {
+            var cardWidth =570;
+            if (flowLayoutPanelSpecialties != null && flowLayoutPanelSpecialties.ClientSize.Width >200)
+            {
+                cardWidth = Math.Max(200, flowLayoutPanelSpecialties.ClientSize.Width -30);
+            }
+            
             Panel panel = new Panel
             {
-                Size = new Size(570,80),
+                Size = new Size(cardWidth,80),
                 BackColor = Color.White,
                 Margin = new Padding(10),
                 Cursor = Cursors.Hand,
@@ -227,9 +220,15 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
         private Panel CreateEmployeeCard(EmployeeData employee)
         {
+            var cardWidth =570;
+            if (flowLayoutPanelEmployees != null && flowLayoutPanelEmployees.ClientSize.Width >200)
+            {
+                cardWidth = Math.Max(200, flowLayoutPanelEmployees.ClientSize.Width -30);
+            }
+            
             Panel panel = new Panel
             {
-                Size = new Size(570,80),
+                Size = new Size(cardWidth,80),
                 BackColor = Color.White,
                 Margin = new Padding(10),
                 Cursor = Cursors.Hand,
@@ -615,6 +614,34 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             {
                 Panel card = CreateSpecialtyCard(specialty);
                 flowLayoutPanelSpecialties.Controls.Add(card);
+            }
+        }
+
+        private void AdjustCardWidths()
+        {
+            try
+            {
+                if (flowLayoutPanelSpecialties != null)
+                {
+                    var w = Math.Max(200, flowLayoutPanelSpecialties.ClientSize.Width -30);
+                    foreach (Panel p in flowLayoutPanelSpecialties.Controls.OfType<Panel>())
+                    {
+                        p.Width = w;
+                    }
+                }
+
+                if (flowLayoutPanelEmployees != null)
+                {
+                    var w = Math.Max(200, flowLayoutPanelEmployees.ClientSize.Width -30);
+                    foreach (Panel p in flowLayoutPanelEmployees.Controls.OfType<Panel>())
+                    {
+                        p.Width = w;
+                    }
+                }
+            }
+            catch
+            {
+                // ignore layout exceptions
             }
         }
     }

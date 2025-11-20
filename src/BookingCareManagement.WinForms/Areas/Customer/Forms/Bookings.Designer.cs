@@ -103,7 +103,7 @@
             panelHeader.Location = new Point(0, 0);
             panelHeader.Margin = new Padding(4, 5, 4, 5);
             panelHeader.Name = "panelHeader";
-            panelHeader.Size = new Size(1653, 123);
+            panelHeader.Size = new Size(1653, 110);
             panelHeader.TabIndex = 2;
             // 
             // labelHeader
@@ -121,11 +121,12 @@
             // panelLeft
             // 
             panelLeft.Anchor = AnchorStyles.None;
+            panelLeft.AutoScroll = true;
             panelLeft.BackColor = Color.FromArgb(52, 58, 64);
             panelLeft.Controls.Add(panelLeftContent);
             panelLeft.Controls.Add(textBoxSearch);
             panelLeft.Controls.Add(panelLeftHeader);
-            panelLeft.Location = new Point(80, 169);
+            panelLeft.Location = new Point(80, 240);
             panelLeft.Margin = new Padding(4, 5, 4, 5);
             panelLeft.Name = "panelLeft";
             panelLeft.Size = new Size(867, 800);
@@ -133,6 +134,7 @@
             // 
             // panelLeftContent
             // 
+            panelLeftContent.AutoScroll = true;
             panelLeftContent.Controls.Add(panelThankYou);
             panelLeftContent.Controls.Add(panelPayment);
             panelLeftContent.Controls.Add(panelDateTime);
@@ -150,10 +152,10 @@
             panelThankYou.Controls.Add(labelThankYouTitle);
             panelThankYou.Controls.Add(buttonBackToStart);
             panelThankYou.Dock = DockStyle.Fill;
-            panelThankYou.Location = new Point(0, 1000);
+            panelThankYou.Location = new Point(0, 0);
             panelThankYou.Margin = new Padding(4, 5, 4, 5);
             panelThankYou.Name = "panelThankYou";
-            panelThankYou.Size = new Size(813, 0);
+            panelThankYou.Size = new Size(813, 580);
             panelThankYou.TabIndex = 4;
             panelThankYou.Visible = false;
             // 
@@ -211,10 +213,10 @@
             panelPayment.Controls.Add(labelTotalPayment);
             panelPayment.Controls.Add(labelPaymentTitle);
             panelPayment.Dock = DockStyle.Fill;
-            panelPayment.Location = new Point(0, 1000);
+            panelPayment.Location = new Point(0, 0);
             panelPayment.Margin = new Padding(4, 5, 4, 5);
             panelPayment.Name = "panelPayment";
-            panelPayment.Size = new Size(813, 0);
+            panelPayment.Size = new Size(813, 580);
             panelPayment.TabIndex = 3;
             panelPayment.Visible = false;
             // 
@@ -374,11 +376,11 @@
             panelDateTime.Controls.Add(labelTimeSlot);
             panelDateTime.Controls.Add(dateTimePickerAppointment);
             panelDateTime.Controls.Add(labelDate);
-            panelDateTime.Dock = DockStyle.Top;
-            panelDateTime.Location = new Point(0, 615);
+            panelDateTime.Dock = DockStyle.Fill;
+            panelDateTime.Location = new Point(0, 0);
             panelDateTime.Margin = new Padding(4, 5, 4, 5);
             panelDateTime.Name = "panelDateTime";
-            panelDateTime.Size = new Size(813, 385);
+            panelDateTime.Size = new Size(813, 580);
             panelDateTime.TabIndex = 2;
             panelDateTime.Visible = false;
             // 
@@ -446,11 +448,11 @@
             // panelEmployee
             // 
             panelEmployee.Controls.Add(flowLayoutPanelEmployees);
-            panelEmployee.Dock = DockStyle.Top;
+            panelEmployee.Dock = DockStyle.Fill;
             panelEmployee.Location = new Point(0, 0);
             panelEmployee.Margin = new Padding(4, 5, 4, 5);
             panelEmployee.Name = "panelEmployee";
-            panelEmployee.Size = new Size(813, 615);
+            panelEmployee.Size = new Size(813, 580);
             panelEmployee.TabIndex = 1;
             panelEmployee.Visible = false;
             // 
@@ -461,7 +463,7 @@
             flowLayoutPanelEmployees.Location = new Point(0, 0);
             flowLayoutPanelEmployees.Margin = new Padding(4, 5, 4, 5);
             flowLayoutPanelEmployees.Name = "flowLayoutPanelEmployees";
-            flowLayoutPanelEmployees.Size = new Size(813, 615);
+            flowLayoutPanelEmployees.Size = new Size(813, 580);
             flowLayoutPanelEmployees.TabIndex = 0;
             // 
             // panelSpecialty
@@ -541,7 +543,7 @@
             panelRight.BackColor = Color.FromArgb(52, 58, 64);
             panelRight.Controls.Add(panelRightContent);
             panelRight.Controls.Add(labelRightTitle);
-            panelRight.Location = new Point(973, 169);
+            panelRight.Location = new Point(973, 240);
             panelRight.Margin = new Padding(4, 5, 4, 5);
             panelRight.Name = "panelRight";
             panelRight.Size = new Size(600, 800);
@@ -718,7 +720,7 @@
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.White;
-            ClientSize = new Size(1653, 1055);
+            ClientSize = new Size(1653, 1150);
             Controls.Add(panelRight);
             Controls.Add(panelLeft);
             Controls.Add(panelHeader);
