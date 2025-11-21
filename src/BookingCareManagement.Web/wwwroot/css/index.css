@@ -142,13 +142,11 @@
 .hero-main-image {
     width: 100%;
     height: 500px;
-    background: var(--primary-color);
+    background: linear-gradient(135deg, rgba(83, 165, 117, 0.35), rgba(63, 130, 192, 0.35));
     border-radius: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 180px;
-    color: white;
     box-shadow: 0 20px 60px rgba(72, 187, 120, 0.3);
     overflow: hidden;
     position: relative;
@@ -163,14 +161,18 @@
     justify-content: center;
     opacity: 0;
     transition: opacity 1s ease-in-out;
+    top: 0;
+    left: 0;
 }
 
     .image-slide.active {
         opacity: 1;
     }
 
-    .image-slide i {
-        font-size: 180px;
+    .image-slide img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
     }
 
 .floating-card {
