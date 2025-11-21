@@ -1,4 +1,7 @@
-﻿let fpStart = null;
+const MIN_APPOINTMENT_LEAD_DAYS = 2;
+const DEFAULT_APPOINTMENT_DURATION = 30;
+
+let fpStart = null;
 let fpEnd = null;
 let newAppointmentAlertBox = null;
 let tomService = null;
@@ -11,14 +14,12 @@ let manualPhoneInput = null;
 let adminModalEventsBound = false;
 let appointmentModalMode = 'create';
 let editingAppointmentId = null;
-let editingAppointmentMeta = { durationMinutes: 30, clinicRoomId: null };
+let editingAppointmentMeta = { durationMinutes: DEFAULT_APPOINTMENT_DURATION, clinicRoomId: null };
 let modalStatusSelect = null;
 let modalStatusFieldEl = null;
 let modalTitleEl = null;
 let newAppointmentModalEl = null;
 let saveAppointmentButtonEl = null;
-
-const MIN_APPOINTMENT_LEAD_DAYS = 2;
 
 const appointmentModes = {
     doctor: {
@@ -409,7 +410,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         newAppointmentTrigger.addEventListener('click', () => {
             appointmentModalMode = 'create';
             editingAppointmentId = null;
-            editingAppointmentMeta = { durationMinutes: 30, clinicRoomId: null };
+            editingAppointmentMeta = { durationMinutes: DEFAULT_APPOINTMENT_DURATION, clinicRoomId: null };
             if (modalTitleEl) {
                 modalTitleEl.textContent = 'Thêm cuộc hẹn';
             }
@@ -449,7 +450,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             resetManualPhoneCapture();
             appointmentModalMode = 'create';
             editingAppointmentId = null;
-            editingAppointmentMeta = { durationMinutes: 30, clinicRoomId: null };
+            editingAppointmentMeta = { durationMinutes: DEFAULT_APPOINTMENT_DURATION, clinicRoomId: null };
             if (modalStatusFieldEl) {
                 modalStatusFieldEl.classList.add('d-none');
             }
@@ -532,9 +533,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
                     slotStartIso,
                     manualPhone,
                     statusCode,
-                    durationMinutes: appointmentModalMode === 'edit'
-                        ? editingAppointmentMeta?.durationMinutes || 30
-                        : 30,
+                    durationMinutes: DEFAULT_APPOINTMENT_DURATION,
                     clinicRoomId: appointmentModalMode === 'edit'
                         ? editingAppointmentMeta?.clinicRoomId || null
                         : null,
@@ -1499,7 +1498,7 @@ function buildAdminAppointmentRequest({
     slotStartIso,
     manualPhone,
     statusCode,
-    durationMinutes = 30,
+    durationMinutes = DEFAULT_APPOINTMENT_DURATION,
     clinicRoomId = null,
     appointmentId = null
 }) {
@@ -1512,7 +1511,7 @@ function buildAdminAppointmentRequest({
     }
 
     const endpoints = resolveAppointmentEndpoints();
-    const normalizedDuration = durationMinutes > 0 ? durationMinutes : 30;
+    const normalizedDuration = durationMinutes > 0 ? durationMinutes : DEFAULT_APPOINTMENT_DURATION;
     const normalizedStatus = statusCode || 'pending';
     const isEdit = !!appointmentId;
 
@@ -1600,15 +1599,29 @@ function bindAdminModalEvents() {
     if (tomService) {
         tomService.on('change', (value) => {
             const normalizedValue = normalizeTomSelectValue(value);
-            if (tomEmployee) {
-                tomEmployee.clear(true);
-            }
-            updateAdminDoctorSelect(normalizedValue);
+            const currentDoctorId = tomEmployee?.getValue();
+            updateAdminDoctorSelect(normalizedValue, { preserveDoctorId: currentDoctorId });
         });
     }
 
     if (tomEmployee) {
-        tomEmployee.on('change', () => {
+        tomEmployee.on('change', (value) => {
+            const normalizedDoctorId = normalizeTomSelectValue(value);
+            const currentSpecialtyId = normalizeTomSelectValue(tomService?.getValue());
+
+            if (!currentSpecialtyId && normalizedDoctorId) {
+                const doctorOption = findDoctorOptionById(normalizedDoctorId);
+                const doctorSpecialtyId = doctorOption?.specialtyIds?.[0];
+                if (doctorSpecialtyId) {
+                    const specialty = findSpecialtyById(doctorSpecialtyId);
+                    ensureTomSelectOption(tomService, doctorSpecialtyId, specialty?.name || 'Chuyên khoa');
+                    tomService?.setValue(String(doctorSpecialtyId), true);
+                    updateAdminDoctorSelect(doctorSpecialtyId, { preserveDoctorId: normalizedDoctorId });
+                }
+            } else if (currentSpecialtyId) {
+                updateAdminDoctorSelect(currentSpecialtyId, { preserveDoctorId: normalizedDoctorId });
+            }
+
             if (fpModalDate?.selectedDates?.length) {
                 loadAvailableTimeSlots();
             } else {
@@ -1633,7 +1646,7 @@ function bindAdminModalEvents() {
     adminModalEventsBound = true;
 }
 
-function updateAdminDoctorSelect(selectedSpecialtyId) {
+function updateAdminDoctorSelect(selectedSpecialtyId, { preserveDoctorId } = {}) {
     if (appointmentState.mode !== 'admin') {
         return;
     }
@@ -1648,6 +1661,25 @@ function updateAdminDoctorSelect(selectedSpecialtyId) {
             : 'Chưa có bác sĩ khả dụng';
 
     refreshTomSelectOptions(tomEmployee, buildDoctorSelectOptions(doctors), placeholder);
+
+    const preferredDoctorId = normalizeTomSelectValue(preserveDoctorId ?? tomEmployee?.getValue());
+    const doctorStillValid = !!preferredDoctorId
+        && doctors.some(doc => String(doc.id) === String(preferredDoctorId));
+
+    if (doctorStillValid) {
+        const doctorOption = findDoctorOptionById(preferredDoctorId);
+        ensureTomSelectOption(tomEmployee, preferredDoctorId, doctorOption?.name || 'Bác sĩ');
+        tomEmployee.setValue(preferredDoctorId, true);
+        if (fpModalDate?.selectedDates?.length) {
+            loadAvailableTimeSlots();
+        }
+        return;
+    }
+
+    if (tomEmployee) {
+        tomEmployee.clear(true);
+    }
+    resetModalTimeSelect(tomTime);
 }
 
 function getDoctorsForSpecialtyId(specialtyId) {
@@ -1672,6 +1704,28 @@ function buildDoctorSelectOptions(doctors) {
             value: String(doc.id),
             text: doc.name || 'Bác sĩ'
         }));
+}
+
+function findDoctorOptionById(doctorId) {
+    const normalizedId = normalizeTomSelectValue(doctorId);
+    if (!normalizedId || !appointmentState.metadata?.doctors) {
+        return null;
+    }
+
+    return appointmentState.metadata.doctors
+        .find(doc => String(doc.id) === String(normalizedId))
+        || null;
+}
+
+function findSpecialtyById(specialtyId) {
+    const normalizedId = normalizeTomSelectValue(specialtyId);
+    if (!normalizedId || !appointmentState.metadata?.specialties) {
+        return null;
+    }
+
+    return appointmentState.metadata.specialties
+        .find(specialty => String(specialty.id) === String(normalizedId))
+        || null;
 }
 
 function normalizeTomSelectValue(value) {
@@ -1841,7 +1895,7 @@ function openEditAppointmentModal(appointmentId) {
     appointmentModalMode = 'edit';
     editingAppointmentId = appointment.id;
     editingAppointmentMeta = {
-        durationMinutes: appointment.durationMinutes || 30,
+        durationMinutes: DEFAULT_APPOINTMENT_DURATION,
         clinicRoomId: appointment.clinicRoomId || null
     };
 
