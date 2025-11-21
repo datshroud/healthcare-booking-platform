@@ -10,6 +10,9 @@ using System.Windows.Forms;
 using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
 using BookingCareManagement.WinForms.Shared.Services;
+using System.IO;
+using System.Text.Json;
+using System.Diagnostics;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 {
@@ -28,12 +31,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             InitializeComponent();
             InitializeGridColumns();
             ApplyGridStyling();
-            InitializeFilterDropdowns();
-        }
-
-        private void InvoicesEditorForm_Load(object sender, EventArgs e)
-        {
-
+            // InitializeFilterDropdowns() will be called after invoices are loaded
         }
 
         private async void InvoiceEditorForm_Load(object sender, EventArgs e)
@@ -45,13 +43,43 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         {
             try
             {
+                // Show loading state in UI while fetching
+                lblTitle.Text = "Hóa đơn (Đang tải...)";
+
                 _invoiceCache = (await _invoiceApiClient.GetAllAsync()).ToList();
+
+                // Display and initialize filters
                 DisplayInvoices(_invoiceCache);
+                InitializeFilterDropdowns();
             }
             catch (Exception ex)
             {
-                _dialogService.ShowError($"Không thể tải danh sách hóa đơn: {ex.Message}");
+                Debug.WriteLine($"LoadInvoiceDataAsync error: {ex}");
+                _dialogService.ShowError($"Không thể tải danh sách hóa đơn: {ex.Message}\n{ex.StackTrace}");
                 UpdateInvoiceCount(0, true);
+            }
+        }
+
+        private string TryReadApiBaseUrl()
+        {
+            try
+            {
+                var cfgPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
+                if (!File.Exists(cfgPath)) return "(appsettings.json not found)";
+
+                var text = File.ReadAllText(cfgPath);
+                using var doc = JsonDocument.Parse(text);
+                if (doc.RootElement.TryGetProperty("Api", out var apiElem) && apiElem.TryGetProperty("BaseUrl", out var url))
+                {
+                    return url.GetString() ?? "(empty)";
+                }
+
+                return "(Api:BaseUrl not found)";
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"TryReadApiBaseUrl error: {ex}");
+                return "(error reading appsettings)";
             }
         }
 
@@ -289,20 +317,24 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
         private void InitializeFilterDropdowns()
         {
+            // Clear any previously created dropdowns/panels
+            foreach (var dd in _filterDropdowns.ToArray())
+            {
+                dd.Parent?.Dispose();
+            }
+            _filterDropdowns.Clear();
+
             // Tạo dropdown cho Customer
             var customerDropdown = CreateFilterDropdown(btnCustomerFilter, GetUniqueCustomers());
-            _filterDropdowns.Add(customerDropdown);
 
             // Tạo dropdown cho Service
             var serviceDropdown = CreateFilterDropdown(btnServiceFilter, GetUniqueServices());
-            _filterDropdowns.Add(serviceDropdown);
 
             // Tạo dropdown cho Status
             var statusDropdown = CreateFilterDropdown(btnStatusFilter, new[]
             {
                 "Đang chờ", "Đã thanh toán"
             });
-            _filterDropdowns.Add(statusDropdown);
 
             // Reset tất cả buttons về màu trắng ban đầu
             ResetFilterButtonStyle(btnCustomerFilter);
@@ -471,6 +503,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             this.Controls.Add(dropdownPanel);
             dropdownPanel.BringToFront();
 
+            // Lưu dropdown để quản lý (không thêm 2 lần)
             _filterDropdowns.Add(dropdown);
             return dropdown;
         }
