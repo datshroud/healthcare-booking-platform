@@ -217,6 +217,7 @@
             // 
             // textBoxPassword
             // 
+            textBoxPassword.BackColor = SystemColors.ButtonFace;
             textBoxPassword.BorderStyle = BorderStyle.None;
             textBoxPassword.Dock = DockStyle.Fill;
             textBoxPassword.Font = new Font("Segoe UI", 11F);
@@ -251,6 +252,7 @@
             // 
             // textBoxUsername
             // 
+            textBoxUsername.BackColor = SystemColors.ButtonFace;
             textBoxUsername.BorderStyle = BorderStyle.None;
             textBoxUsername.Dock = DockStyle.Fill;
             textBoxUsername.Font = new Font("Segoe UI", 11F);
