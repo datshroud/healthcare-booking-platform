@@ -99,3 +99,8 @@
 [2025-11-21T15:11:57.4905031+07:00] MainForm: constructor start
 [2025-11-21T15:11:57.5008338+07:00] MainForm: after CreateSidebar
 [2025-11-21T15:11:57.5913492+07:00] MainForm: Load event
+[2025-11-21T16:06:55.0251272+07:00] Login: button clicked
+[2025-11-21T16:06:56.3361215+07:00] Login: succeeded
+[2025-11-21T16:06:56.4451306+07:00] MainForm: constructor start
+[2025-11-21T16:06:56.4580769+07:00] MainForm: after CreateSidebar
+[2025-11-21T16:06:56.5397029+07:00] MainForm: Load event

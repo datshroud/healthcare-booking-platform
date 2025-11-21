@@ -133,10 +133,14 @@ function setBusy(button, busy = true) {
 // login
 const loginForm = document.getElementById('login-form');
 if (loginForm){
+    const loginEmailEl = loginForm.querySelector("[name=email]");
+    const loginPasswordEl = loginForm.querySelector("[name=password]");
+    [loginEmailEl, loginPasswordEl].forEach(preventNewlines);
+
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const email = loginForm.querySelector("[name=email]").value.trim();
-        const password = loginForm.querySelector("[name=password]").value;
+        const email = loginEmailEl?.value.trim() || '';
+        const password = loginPasswordEl?.value || '';
         const returnUrl = getReturnUrl();
         try {
             const resp = await postJson(`/api/account/auth/login?returnUrl=${encodeURIComponent(returnUrl)}`, { email, password });
@@ -161,8 +165,8 @@ if (loginForm){
         btnDbLogin.addEventListener('click', async (e) => {
             e.preventDefault();
 
-            const emailEl = loginForm.querySelector("[name=email]");
-            const passwordEl = loginForm.querySelector("[name=password]");
+            const emailEl = loginEmailEl;
+            const passwordEl = loginPasswordEl;
 
             [emailEl, passwordEl].forEach(el => clearFieldError(el));
 
@@ -210,19 +214,42 @@ function passwordLooksOk(pw) {
 }
 
 
+function preventNewlines(field) {
+    if (!field) return;
+
+    const stripNewlines = () => {
+        const cleaned = field.value.replace(/[\r\n]+/g, '');
+        if (cleaned !== field.value) {
+            field.value = cleaned;
+        }
+    };
+
+    field.addEventListener('input', stripNewlines);
+    field.addEventListener('paste', () => setTimeout(stripNewlines));
+}
+
+
 
 
 
 const signupForm = document.getElementById('signup-form');
 if (signupForm){
+    const firstEl = signupForm.querySelector("[name=firstname]");
+    const lastEl = signupForm.querySelector("[name=lastname]");
+    const emailEl = signupForm.querySelector("[name=email]");
+    const passwordEl = signupForm.querySelector("[name=password]");
+    const dobEl = signupForm.querySelector("[name=dateOfBirth]");
+    const phoneNumberEl = signupForm.querySelector("[name=phoneNumber]");
+    [firstEl, lastEl, emailEl, passwordEl, phoneNumberEl].forEach(preventNewlines);
+
     signupForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const first = signupForm.querySelector("[name=firstname]").value.trim();
-        const last = signupForm.querySelector("[name=lastname]").value.trim();
-        const email = signupForm.querySelector("[name=email]").value.trim();
-        const password = signupForm.querySelector("[name=password]").value;
-        const phone = (signupForm.querySelector("[name=phoneNumber]")?.value || '').trim();
-        const dob = signupForm.querySelector("[name=dateOfBirth]")?.value || null;
+        const first = firstEl?.value.trim() || '';
+        const last = lastEl?.value.trim() || '';
+        const email = emailEl?.value.trim() || '';
+        const password = passwordEl?.value || '';
+        const phone = (phoneNumberEl?.value || '').trim();
+        const dob = dobEl?.value || null;
         const returnUrl = getReturnUrl();
         try {
             const resp = await postJson(`/api/account/auth/register?returnUrl=${encodeURIComponent(returnUrl)}`, {
@@ -250,12 +277,6 @@ if (signupForm){
     if (btnDbSignup){
         btnDbSignup.addEventListener('click', async (e) => {
             e.preventDefault();
-            const firstEl = signupForm.querySelector("[name=firstname]");
-            const lastEl = signupForm.querySelector("[name=lastname]");
-            const emailEl = signupForm.querySelector("[name=email]");
-            const passwordEl = signupForm.querySelector("[name=password]");
-            const dobEl = signupForm.querySelector("[name=dateOfBirth]");
-            const phoneNumberEl = signupForm.querySelector("[name=phoneNumber]");
 
             [firstEl, lastEl, emailEl, passwordEl, dobEl, phoneNumberEl].forEach(el => clearFieldError(el));
 

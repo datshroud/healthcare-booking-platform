@@ -222,7 +222,6 @@
             textBoxPassword.Font = new Font("Segoe UI", 11F);
             textBoxPassword.Location = new Point(2, 2);
             textBoxPassword.Margin = new Padding(3, 4, 3, 4);
-            textBoxPassword.Multiline = true;
             textBoxPassword.Name = "textBoxPassword";
             textBoxPassword.PasswordChar = '●';
             textBoxPassword.Size = new Size(409, 44);
@@ -257,7 +256,6 @@
             textBoxUsername.Font = new Font("Segoe UI", 11F);
             textBoxUsername.Location = new Point(2, 2);
             textBoxUsername.Margin = new Padding(3, 4, 3, 4);
-            textBoxUsername.Multiline = true;
             textBoxUsername.Name = "textBoxUsername";
             textBoxUsername.Size = new Size(409, 46);
             textBoxUsername.TabIndex = 0;

@@ -14,6 +14,35 @@ namespace BookingCareManagement.WinForms.Areas.Account.Forms
             _services = services;
             InitializeComponent();
 
+            void PreventNewLines(TextBox textBox)
+            {
+                textBox.Multiline = false;
+                textBox.AcceptsReturn = false;
+                textBox.AcceptsTab = false;
+                textBox.TextChanged += (_, _) =>
+                {
+                    var current = textBox.Text;
+                    if (string.IsNullOrEmpty(current))
+                    {
+                        return;
+                    }
+
+                    var sanitized = current
+                        .Replace("\r", string.Empty)
+                        .Replace("\n", string.Empty);
+
+                    if (sanitized != current)
+                    {
+                        var caret = textBox.SelectionStart;
+                        textBox.Text = sanitized;
+                        textBox.SelectionStart = Math.Min(caret, textBox.Text.Length);
+                    }
+                };
+            }
+
+            PreventNewLines(textBoxUsername);
+            PreventNewLines(textBoxPassword);
+
             // Open register form when user clicks the link. Hide this login form
             // while register dialog is shown, then show it again when register closes.
             linkLabelRegister.LinkClicked += (_, _) =>
