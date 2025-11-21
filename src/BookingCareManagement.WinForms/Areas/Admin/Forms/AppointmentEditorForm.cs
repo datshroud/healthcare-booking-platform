@@ -927,7 +927,6 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 _datePicker.MinDate = DateTime.Today.AddDays(MinAppointmentLeadDays);
                 _datePicker.Checked = false;
                 _datePicker.ValueChanged += async (_, _) => await HandleDateChangedAsync();
-                _datePicker.CheckedChanged += async (_, _) => await HandleDateChangedAsync();
 
                 _doctorBox.DisplayMember = nameof(AdminAppointmentDoctorOptionDto.Name);
                 _doctorBox.ValueMember = nameof(AdminAppointmentDoctorOptionDto.Id);
