@@ -684,9 +684,8 @@ namespace BookingCareManagement.WinForms
             {
                 // Doctor: simplified menu
                 string[] doctorItems = {
-                    "📅 Lịch",
-                    "✅ Cuộc hẹn",
-                    "👥 Bác sĩ",
+                    "📅 Lịch hẹn",
+                    "✅ Quản lý lịch hẹn",
                     "📊 Thống kê"
                 };
 
@@ -714,12 +713,12 @@ namespace BookingCareManagement.WinForms
                     btn.Click += (s, e) =>
                     {
                         SetActiveButton(btn);
-                        if (item.Contains("Lịch"))
+                        if (item.StartsWith("📅"))
                         {
                             var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
                             OpenChildForm(new Calendar(appointmentsApiClient));
                         }
-                        if (item.Contains("Cuộc hẹn"))
+                        if (item.Contains("Quản lý"))
                         {
                             var doctorAppointments = _serviceProvider.GetRequiredService<DoctorAppointmentsForm>();
                             OpenChildForm(doctorAppointments);
