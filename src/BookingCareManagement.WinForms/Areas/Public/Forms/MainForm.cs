@@ -320,43 +320,54 @@ namespace BookingCareManagement.WinForms
             logoutBtn.FlatAppearance.BorderSize = 0;
             logoutBtn.FlatAppearance.MouseOverBackColor = Color.FromArgb(254, 242, 242);
 
-            logoutBtn.Click += (s, e) =>
+            logoutBtn.Click += async (s, e) =>
             {
                 var result = MessageBox.Show("Bạn có chắc chắn muốn đăng xuất?", "Xác nhận",
                     MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
                 if (result == DialogResult.Yes)
                 {
-                    // Perform logout via AuthService then prompt for re-login
                     var auth = _serviceProvider.GetService<Shared.Services.AuthService>();
-                    _ = Task.Run(async () =>
+                    try
                     {
-                        try
+                        if (auth != null)
                         {
-                            if (auth != null)
+                            await auth.LogoutAsync();
+                        }
+                    }
+                    catch
+                    {
+                        // ignore logout failures; continue to login prompt
+                    }
+
+                    var loginSuccessful = false;
+                    try
+                    {
+                        this.Hide();
+                        using var login = _serviceProvider.GetService<Login>();
+                        if (login != null)
+                        {
+                            var r = login.ShowDialog(this);
+                            if (r == DialogResult.OK)
                             {
-                                await auth.LogoutAsync();
+                                loginSuccessful = true;
+                                RebuildSidebar();
+                                UpdateAccountDisplay();
+                                OpenRoleDashboard();
                             }
                         }
-                        catch { }
-                        // show login dialog on UI thread
-                        this.BeginInvoke(new Action(() =>
+                    }
+                    finally
+                    {
+                        if (loginSuccessful)
                         {
-                            var login = _serviceProvider.GetService<Login>();
-                            if (login != null)
-                            {
-                                var r = login.ShowDialog(this);
-                                if (r != DialogResult.OK)
-                                {
-                                    this.Close();
-                                }
-                            }
-                            else
-                            {
-                                this.Close();
-                            }
-                        }));
-                    });
+                            this.Show();
+                        }
+                        else
+                        {
+                            this.Close();
+                        }
+                    }
                 }
             };
 
