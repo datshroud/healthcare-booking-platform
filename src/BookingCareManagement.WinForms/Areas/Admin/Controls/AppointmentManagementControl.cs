@@ -407,6 +407,7 @@ public sealed class AppointmentManagementControl : UserControl
             time,
             dto.SpecialtyName,
             dto.PatientName,
+            dto.PatientId,
             duration,
             dto.StatusLabel,
             dto.DoctorName,
@@ -424,7 +425,11 @@ public sealed class AppointmentManagementControl : UserControl
             return;
         }
 
-        var payload = dialog.BuildRequest();
+        var payload = dialog.BuiltRequest;
+        if (payload == null)
+        {
+            return;
+        }
 
         try
         {
@@ -601,6 +606,7 @@ public sealed class AppointmentManagementControl : UserControl
         string Time,
         string Service,
         string Customer,
+        string? PatientId,
         string Duration,
         string Status,
         string Employee,
@@ -610,15 +616,19 @@ public sealed class AppointmentManagementControl : UserControl
 
     private sealed class AppointmentUpsertDialog : Form
     {
+        private const int MinAppointmentLeadDays = 2;
+
         private readonly ComboBox _doctorBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
         private readonly ComboBox _specialtyBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+        private readonly ComboBox _patientBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
         private readonly DateTimePicker _startPicker = new() { Format = DateTimePickerFormat.Custom, CustomFormat = "dd/MM/yyyy HH:mm" };
         private readonly NumericUpDown _durationBox = new() { Minimum = 15, Maximum = 240, Increment = 5, Value = 30 };
-        private readonly TextBox _patientName = new();
-        private readonly TextBox _phone = new();
+        private readonly TextBox _manualPhone = new() { PlaceholderText = "Nhập SĐT nếu hồ sơ thiếu" };
         private readonly ComboBox _statusBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
         private readonly AppointmentRow? _existing;
         private readonly AdminAppointmentMetadataDto _metadata;
+
+        public AdminAppointmentUpsertRequest? BuiltRequest { get; private set; }
 
         public AppointmentUpsertDialog(AdminAppointmentMetadataDto metadata, AppointmentRow? existing)
         {
@@ -626,8 +636,8 @@ public sealed class AppointmentManagementControl : UserControl
             _existing = existing;
 
             Text = existing == null ? "Thêm cuộc hẹn" : "Cập nhật cuộc hẹn";
-            Width = 420;
-            Height = 360;
+            Width = 480;
+            Height = 420;
             StartPosition = FormStartPosition.CenterParent;
             FormBorderStyle = FormBorderStyle.FixedDialog;
             MaximizeBox = false;
@@ -638,18 +648,57 @@ public sealed class AppointmentManagementControl : UserControl
             BindExisting();
         }
 
-        public AdminAppointmentUpsertRequest BuildRequest()
+        private AdminAppointmentUpsertRequest BuildRequest()
         {
-            return new AdminAppointmentUpsertRequest
+            if (_doctorBox.SelectedValue is not Guid doctorId)
             {
-                DoctorId = (Guid)_doctorBox.SelectedValue!,
-                SpecialtyId = (Guid)_specialtyBox.SelectedValue!,
-                SlotStartUtc = DateTime.SpecifyKind(_startPicker.Value, DateTimeKind.Local).ToUniversalTime(),
-                DurationMinutes = (int)_durationBox.Value,
-                PatientName = _patientName.Text.Trim(),
-                CustomerPhone = _phone.Text.Trim(),
+                throw new InvalidOperationException("Vui lòng chọn bác sĩ phụ trách.");
+            }
+
+            if (_specialtyBox.SelectedValue is not Guid specialtyId)
+            {
+                throw new InvalidOperationException("Vui lòng chọn chuyên khoa.");
+            }
+
+            var patient = GetSelectedPatient();
+            if (patient == null)
+            {
+                throw new InvalidOperationException("Vui lòng chọn bệnh nhân.");
+            }
+
+            var manualPhone = _manualPhone.Text.Trim();
+            var resolvedPhone = string.IsNullOrWhiteSpace(patient.PhoneNumber) ? manualPhone : patient.PhoneNumber;
+            if (string.IsNullOrWhiteSpace(resolvedPhone))
+            {
+                throw new InvalidOperationException("Bệnh nhân chưa có số điện thoại, vui lòng nhập để tiếp tục.");
+            }
+
+            var startLocal = _startPicker.Value;
+            var minDate = DateTime.Today.AddDays(MinAppointmentLeadDays);
+            if (startLocal.Date < minDate)
+            {
+                throw new InvalidOperationException($"Ngày khám phải cách hiện tại ít nhất {MinAppointmentLeadDays} ngày.");
+            }
+
+            var duration = (int)_durationBox.Value;
+            if (duration <= 0)
+            {
+                throw new InvalidOperationException("Thời lượng khám phải lớn hơn 0.");
+            }
+
+            BuiltRequest = new AdminAppointmentUpsertRequest
+            {
+                DoctorId = doctorId,
+                SpecialtyId = specialtyId,
+                SlotStartUtc = DateTime.SpecifyKind(startLocal, DateTimeKind.Local).ToUniversalTime(),
+                DurationMinutes = duration,
+                PatientName = patient.Name,
+                CustomerPhone = resolvedPhone,
+                PatientId = patient.Id,
                 Status = _statusBox.SelectedValue?.ToString() ?? "pending"
             };
+
+            return BuiltRequest;
         }
 
         private void BuildLayout()
@@ -658,7 +707,7 @@ public sealed class AppointmentManagementControl : UserControl
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 2,
-                RowCount = 6,
+                RowCount = 7,
                 Padding = new Padding(12),
                 AutoSize = true
             };
@@ -668,16 +717,16 @@ public sealed class AppointmentManagementControl : UserControl
 
             AddRow(layout, 0, "Bác sĩ", _doctorBox);
             AddRow(layout, 1, "Chuyên khoa", _specialtyBox);
-            AddRow(layout, 2, "Bắt đầu", _startPicker);
-            AddRow(layout, 3, "Thời lượng (phút)", _durationBox);
-            AddRow(layout, 4, "Bệnh nhân", _patientName);
-            AddRow(layout, 5, "SĐT", _phone);
+            AddRow(layout, 2, "Bệnh nhân", _patientBox);
+            AddRow(layout, 3, "SĐT", _manualPhone);
+            AddRow(layout, 4, "Bắt đầu", _startPicker);
+            AddRow(layout, 5, "Thời lượng (phút)", _durationBox);
 
+            var nextRow = 6;
             if (_metadata.Statuses.Any())
             {
-                layout.RowCount += 1;
-                layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-                AddRow(layout, 6, "Trạng thái", _statusBox);
+                AddRow(layout, nextRow, "Trạng thái", _statusBox);
+                nextRow++;
             }
 
             var buttonPanel = new FlowLayoutPanel
@@ -687,8 +736,23 @@ public sealed class AppointmentManagementControl : UserControl
                 Padding = new Padding(12)
             };
 
-            var saveButton = new Button { Text = "Lưu", DialogResult = DialogResult.OK, AutoSize = true };
+            var saveButton = new Button { Text = "Lưu", AutoSize = true };
             var cancelButton = new Button { Text = "Hủy", DialogResult = DialogResult.Cancel, AutoSize = true };
+            saveButton.Click += (_, _) =>
+            {
+                try
+                {
+                    BuiltRequest = BuildRequest();
+                    DialogResult = DialogResult.OK;
+                    Close();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(this, ex.Message, "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    DialogResult = DialogResult.None;
+                }
+            };
+
             buttonPanel.Controls.Add(saveButton);
             buttonPanel.Controls.Add(cancelButton);
 
@@ -728,6 +792,11 @@ public sealed class AppointmentManagementControl : UserControl
             _specialtyBox.DisplayMember = nameof(AdminAppointmentSpecialtyOptionDto.Name);
             _specialtyBox.ValueMember = nameof(AdminAppointmentSpecialtyOptionDto.Id);
 
+            _patientBox.DataSource = _metadata.Patients.ToList();
+            _patientBox.DisplayMember = nameof(AdminAppointmentPatientOptionDto.Name);
+            _patientBox.ValueMember = nameof(AdminAppointmentPatientOptionDto.Id);
+            _patientBox.SelectedIndexChanged += (_, _) => UpdatePhoneForSelectedPatient();
+
             _statusBox.DataSource = _metadata.Statuses.ToList();
             _statusBox.DisplayMember = nameof(AdminAppointmentStatusOptionDto.Label);
             _statusBox.ValueMember = nameof(AdminAppointmentStatusOptionDto.Code);
@@ -744,12 +813,52 @@ public sealed class AppointmentManagementControl : UserControl
             _specialtyBox.SelectedValue = _existing.SpecialtyId;
             _startPicker.Value = _existing.Start;
             _durationBox.Value = _existing.DurationMinutes;
-            _patientName.Text = _existing.Customer;
-            _phone.Text = _existing.Phone;
+
+            var patientId = _existing.PatientId;
+            if (string.IsNullOrWhiteSpace(patientId))
+            {
+                var matched = _metadata.Patients.FirstOrDefault(p => string.Equals(p.Name, _existing.Customer, StringComparison.OrdinalIgnoreCase));
+                patientId = matched?.Id;
+            }
+
+            if (!string.IsNullOrWhiteSpace(patientId))
+            {
+                _patientBox.SelectedValue = patientId;
+            }
+
+            _manualPhone.Text = _existing.Phone;
             if (!string.IsNullOrWhiteSpace(_existing.StatusCode))
             {
                 _statusBox.SelectedValue = _existing.StatusCode;
             }
+        }
+
+        private void UpdatePhoneForSelectedPatient()
+        {
+            var patient = GetSelectedPatient();
+            if (patient == null)
+            {
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(patient.PhoneNumber))
+            {
+                _manualPhone.Text = patient.PhoneNumber;
+            }
+            else if (string.IsNullOrWhiteSpace(_manualPhone.Text))
+            {
+                _manualPhone.PlaceholderText = "Bệnh nhân chưa có SĐT, vui lòng nhập.";
+            }
+        }
+
+        private AdminAppointmentPatientOptionDto? GetSelectedPatient()
+        {
+            if (_patientBox.SelectedItem is AdminAppointmentPatientOptionDto option)
+            {
+                return option;
+            }
+
+            return null;
         }
     }
 }

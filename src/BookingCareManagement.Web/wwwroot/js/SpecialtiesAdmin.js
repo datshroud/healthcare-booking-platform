@@ -470,7 +470,7 @@ function wireSaveSpecialty() {
             // 1. Lấy file
             const file = specialtyInput?.files?.[0];
 
-            // 2. Upload NẾU CÓ CHỌN file (cho cả Thêm và Sửa)
+            // 2. Upload NỀU CÓ CHỌN file (cho cả Thêm và Sửa)
             if (file) {
                 console.log("Đang upload ảnh chuyên khoa...");
                 const formData = new FormData();
@@ -698,7 +698,10 @@ function parsePriceInput(value) {
     if (value === undefined || value === null) {
         return 0;
     }
-    const normalized = Number(String(value).replace(/[^0-9.,-]/g, "").replace(",", "."));
+    // Remove all non-numeric characters except dot and comma and minus
+    // Then remove dot as thousand separator, convert comma to dot for decimals
+    const cleaned = String(value).replace(/[^0-9.,-]/g, "").replace(/\./g, "").replace(/,/g, ".");
+    const normalized = Number(cleaned);
     if (!Number.isFinite(normalized) || normalized < 0) {
         return 0;
     }

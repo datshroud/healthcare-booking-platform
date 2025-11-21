@@ -56,7 +56,9 @@ public static class AreaRegistration
             .AddSingleton<DoctorAppointmentsViewModel>()
             .AddTransient<DoctorAppointmentsApiClient>()
             .AddTransient<DoctorAppointmentsController>()
-            .AddTransient<DoctorAppointmentsForm>();
+            .AddTransient<CustomerService>()
+            .AddTransient<DoctorAppointmentsForm>()
+            .AddTransient<DoctorCustomerForm>();
         return services;
     }
 

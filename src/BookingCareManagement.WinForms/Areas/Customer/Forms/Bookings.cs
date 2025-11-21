@@ -614,7 +614,7 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 flowLayoutPanelSpecialties.Controls.Add(card);
             }
         }
-
+        // lay cai tren
         private void AdjustCardWidths()
         {
             try
@@ -641,6 +641,25 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             {
                 // ignore layout exceptions
             }
+        }
+        public async Task OpenForSpecialtyAsync(Guid specialtyId, string specialtyName, decimal price)
+        {
+            // Ensure initial data loaded
+            await InitializeDataAsync();
+
+            // Set selection
+            selectedSpecialtyId = specialtyId;
+            selectedSpecialty = specialtyName ?? string.Empty;
+            totalPrice = price;
+
+            labelSelectedSpecialtyValue.Text = selectedSpecialty;
+            labelTotalPrice.Text = $"{totalPrice:N0} VNĐ";
+            labelCheckoutTotal.Text = $"{totalPrice:N0} VNĐ";
+            panelTotalSection.Visible = true;
+
+            // Switch to employee selection and load employees for the specialty
+            ShowStep(BookingStep.Employee);
+            await LoadEmployeesAsync(specialtyId);
         }
     }
 

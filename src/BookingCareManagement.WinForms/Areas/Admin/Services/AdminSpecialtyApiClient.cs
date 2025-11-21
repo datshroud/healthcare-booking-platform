@@ -27,6 +27,15 @@ public sealed class AdminSpecialtyApiClient
         return dtos ?? new List<SpecialtyDto>();
     }
 
+    public async Task<IReadOnlyList<CustomerSpecialtyDto>> GetCustomerAllAsync(CancellationToken cancellationToken = default)
+    {
+        var client = CreateClient();
+        using var response = await client.GetAsync("/api/customer-booking/specialties", cancellationToken);
+        await EnsureSuccessAsync(response);
+        var dtos = await response.Content.ReadFromJsonAsync<List<CustomerSpecialtyDto>>(cancellationToken: cancellationToken);
+        return dtos ?? new List<CustomerSpecialtyDto>();
+    }
+
     public async Task<SpecialtyDto> CreateAsync(SpecialtyUpsertRequest request, CancellationToken cancellationToken = default)
     {
         request.Normalize();
@@ -37,6 +46,7 @@ public sealed class AdminSpecialtyApiClient
             request.Description,
             request.ImageUrl,
             Color = request.Color,
+            Price = request.Price,
             DoctorIds = request.DoctorIds
         };
 
@@ -56,6 +66,7 @@ public sealed class AdminSpecialtyApiClient
             request.Description,
             request.ImageUrl,
             Color = request.Color,
+            Price = request.Price,
             DoctorIds = request.DoctorIds
         };
 
