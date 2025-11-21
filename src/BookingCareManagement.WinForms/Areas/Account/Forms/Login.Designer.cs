@@ -28,288 +28,297 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.panelLeft = new System.Windows.Forms.Panel();
-            this.labelWelcome = new System.Windows.Forms.Label();
-            this.labelWelcomeSubtitle = new System.Windows.Forms.Label();
-            this.pictureBoxLogo = new System.Windows.Forms.PictureBox();
-            this.panelRight = new System.Windows.Forms.Panel();
-            this.panelForm = new System.Windows.Forms.Panel();
-            this.linkLabelRegister = new System.Windows.Forms.LinkLabel();
-            this.labelOr = new System.Windows.Forms.Label();
-            this.linkLabelForgotPassword = new System.Windows.Forms.LinkLabel();
-            this.buttonLogin = new System.Windows.Forms.Button();
-            this.checkBoxRemember = new System.Windows.Forms.CheckBox();
-            this.panelPasswordBorder = new System.Windows.Forms.Panel();
-            this.textBoxPassword = new System.Windows.Forms.TextBox();
-            this.labelPassword = new System.Windows.Forms.Label();
-            this.panelUsernameBorder = new System.Windows.Forms.Panel();
-            this.textBoxUsername = new System.Windows.Forms.TextBox();
-            this.labelUsername = new System.Windows.Forms.Label();
-            this.labelSubtitle = new System.Windows.Forms.Label();
-            this.labelTitle = new System.Windows.Forms.Label();
-            this.panelLeft.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxLogo)).BeginInit();
-            this.panelRight.SuspendLayout();
-            this.panelForm.SuspendLayout();
-            this.panelPasswordBorder.SuspendLayout();
-            this.panelUsernameBorder.SuspendLayout();
-            this.SuspendLayout();
+            panelLeft = new Panel();
+            labelWelcome = new Label();
+            labelWelcomeSubtitle = new Label();
+            pictureBoxLogo = new PictureBox();
+            panelRight = new Panel();
+            panelForm = new Panel();
+            linkLabelRegister = new LinkLabel();
+            labelOr = new Label();
+            linkLabelForgotPassword = new LinkLabel();
+            buttonLogin = new Button();
+            checkBoxRemember = new CheckBox();
+            panelPasswordBorder = new Panel();
+            textBoxPassword = new TextBox();
+            labelPassword = new Label();
+            panelUsernameBorder = new Panel();
+            textBoxUsername = new TextBox();
+            labelUsername = new Label();
+            labelSubtitle = new Label();
+            labelTitle = new Label();
+            panelLeft.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)pictureBoxLogo).BeginInit();
+            panelRight.SuspendLayout();
+            panelForm.SuspendLayout();
+            panelPasswordBorder.SuspendLayout();
+            panelUsernameBorder.SuspendLayout();
+            SuspendLayout();
             // 
             // panelLeft
             // 
-            this.panelLeft.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(23)))), ((int)(((byte)(162)))), ((int)(((byte)(184)))));
-            this.panelLeft.Controls.Add(this.labelWelcome);
-            this.panelLeft.Controls.Add(this.labelWelcomeSubtitle);
-            this.panelLeft.Controls.Add(this.pictureBoxLogo);
-            this.panelLeft.Dock = System.Windows.Forms.DockStyle.Left;
-            this.panelLeft.Location = new System.Drawing.Point(0, 0);
-            this.panelLeft.Name = "panelLeft";
-            this.panelLeft.Size = new System.Drawing.Size(420, 615);
-            this.panelLeft.TabIndex = 0;
+            panelLeft.BackColor = Color.FromArgb(23, 162, 184);
+            panelLeft.Controls.Add(labelWelcome);
+            panelLeft.Controls.Add(labelWelcomeSubtitle);
+            panelLeft.Controls.Add(pictureBoxLogo);
+            panelLeft.Dock = DockStyle.Left;
+            panelLeft.Location = new Point(0, 0);
+            panelLeft.Margin = new Padding(3, 4, 3, 4);
+            panelLeft.Name = "panelLeft";
+            panelLeft.Size = new Size(420, 769);
+            panelLeft.TabIndex = 0;
             // 
             // labelWelcome
             // 
-            this.labelWelcome.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.labelWelcome.Font = new System.Drawing.Font("Segoe UI", 16F, System.Drawing.FontStyle.Bold);
-            this.labelWelcome.ForeColor = System.Drawing.Color.White;
-            this.labelWelcome.Location = new System.Drawing.Point(0, 485);
-            this.labelWelcome.Name = "labelWelcome";
-            this.labelWelcome.Size = new System.Drawing.Size(420, 40);
-            this.labelWelcome.TabIndex = 2;
-            this.labelWelcome.Text = "Chào mừng trở lại!";
-            this.labelWelcome.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            labelWelcome.Dock = DockStyle.Bottom;
+            labelWelcome.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            labelWelcome.ForeColor = Color.White;
+            labelWelcome.Location = new Point(0, 607);
+            labelWelcome.Name = "labelWelcome";
+            labelWelcome.Size = new Size(420, 50);
+            labelWelcome.TabIndex = 2;
+            labelWelcome.Text = "Chào mừng trở lại!";
+            labelWelcome.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // labelWelcomeSubtitle
             // 
-            this.labelWelcomeSubtitle.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.labelWelcomeSubtitle.Font = new System.Drawing.Font("Segoe UI", 10F);
-            this.labelWelcomeSubtitle.ForeColor = System.Drawing.Color.White;
-            this.labelWelcomeSubtitle.Location = new System.Drawing.Point(0, 525);
-            this.labelWelcomeSubtitle.Name = "labelWelcomeSubtitle";
-            this.labelWelcomeSubtitle.Padding = new System.Windows.Forms.Padding(20, 0, 20, 30);
-            this.labelWelcomeSubtitle.Size = new System.Drawing.Size(420, 90);
-            this.labelWelcomeSubtitle.TabIndex = 1;
-            this.labelWelcomeSubtitle.Text = "Đăng nhập để tiếp tục sử dụng\r\nHệ thống quản lý đặt khám BookingCare";
-            this.labelWelcomeSubtitle.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            labelWelcomeSubtitle.Dock = DockStyle.Bottom;
+            labelWelcomeSubtitle.Font = new Font("Segoe UI", 10F);
+            labelWelcomeSubtitle.ForeColor = Color.White;
+            labelWelcomeSubtitle.Location = new Point(0, 657);
+            labelWelcomeSubtitle.Name = "labelWelcomeSubtitle";
+            labelWelcomeSubtitle.Padding = new Padding(20, 0, 20, 38);
+            labelWelcomeSubtitle.Size = new Size(420, 112);
+            labelWelcomeSubtitle.TabIndex = 1;
+            labelWelcomeSubtitle.Text = "Đăng nhập để tiếp tục sử dụng\r\nHệ thống quản lý đặt khám BookingCare";
+            labelWelcomeSubtitle.TextAlign = ContentAlignment.TopCenter;
             // 
             // pictureBoxLogo
             // 
-            this.pictureBoxLogo.Anchor = System.Windows.Forms.AnchorStyles.None;
-            this.pictureBoxLogo.Location = new System.Drawing.Point(85, 150);
-            this.pictureBoxLogo.Name = "pictureBoxLogo";
-            this.pictureBoxLogo.Size = new System.Drawing.Size(250, 250);
-            this.pictureBoxLogo.SizeMode = System.Windows.Forms.PictureBoxSizeMode.Zoom;
-            this.pictureBoxLogo.TabIndex = 0;
-            this.pictureBoxLogo.TabStop = false;
+            pictureBoxLogo.Anchor = AnchorStyles.None;
+            pictureBoxLogo.Location = new Point(85, 188);
+            pictureBoxLogo.Margin = new Padding(3, 4, 3, 4);
+            pictureBoxLogo.Name = "pictureBoxLogo";
+            pictureBoxLogo.Size = new Size(250, 312);
+            pictureBoxLogo.SizeMode = PictureBoxSizeMode.Zoom;
+            pictureBoxLogo.TabIndex = 0;
+            pictureBoxLogo.TabStop = false;
             // 
             // panelRight
             // 
-            this.panelRight.BackColor = System.Drawing.Color.White;
-            this.panelRight.Controls.Add(this.panelForm);
-            this.panelRight.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panelRight.Location = new System.Drawing.Point(420, 0);
-            this.panelRight.Name = "panelRight";
-            this.panelRight.Padding = new System.Windows.Forms.Padding(50, 80, 50, 40);
-            this.panelRight.Size = new System.Drawing.Size(513, 615);
-            this.panelRight.TabIndex = 1;
+            panelRight.BackColor = Color.White;
+            panelRight.Controls.Add(panelForm);
+            panelRight.Dock = DockStyle.Fill;
+            panelRight.Location = new Point(420, 0);
+            panelRight.Margin = new Padding(3, 4, 3, 4);
+            panelRight.Name = "panelRight";
+            panelRight.Padding = new Padding(50, 100, 50, 50);
+            panelRight.Size = new Size(513, 769);
+            panelRight.TabIndex = 1;
             // 
             // panelForm
             // 
-            this.panelForm.Controls.Add(this.linkLabelRegister);
-            this.panelForm.Controls.Add(this.labelOr);
-            this.panelForm.Controls.Add(this.linkLabelForgotPassword);
-            this.panelForm.Controls.Add(this.buttonLogin);
-            this.panelForm.Controls.Add(this.checkBoxRemember);
-            this.panelForm.Controls.Add(this.panelPasswordBorder);
-            this.panelForm.Controls.Add(this.labelPassword);
-            this.panelForm.Controls.Add(this.panelUsernameBorder);
-            this.panelForm.Controls.Add(this.labelUsername);
-            this.panelForm.Controls.Add(this.labelSubtitle);
-            this.panelForm.Controls.Add(this.labelTitle);
-            this.panelForm.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panelForm.Location = new System.Drawing.Point(50, 80);
-            this.panelForm.Name = "panelForm";
-            this.panelForm.Size = new System.Drawing.Size(413, 495);
-            this.panelForm.TabIndex = 0;
+            panelForm.Controls.Add(linkLabelRegister);
+            panelForm.Controls.Add(labelOr);
+            panelForm.Controls.Add(linkLabelForgotPassword);
+            panelForm.Controls.Add(buttonLogin);
+            panelForm.Controls.Add(checkBoxRemember);
+            panelForm.Controls.Add(panelPasswordBorder);
+            panelForm.Controls.Add(labelPassword);
+            panelForm.Controls.Add(panelUsernameBorder);
+            panelForm.Controls.Add(labelUsername);
+            panelForm.Controls.Add(labelSubtitle);
+            panelForm.Controls.Add(labelTitle);
+            panelForm.Dock = DockStyle.Fill;
+            panelForm.Location = new Point(50, 100);
+            panelForm.Margin = new Padding(3, 4, 3, 4);
+            panelForm.Name = "panelForm";
+            panelForm.Size = new Size(413, 619);
+            panelForm.TabIndex = 0;
             // 
             // linkLabelRegister
             // 
-            this.linkLabelRegister.ActiveLinkColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(140)))), ((int)(((byte)(160)))));
-            this.linkLabelRegister.AutoSize = true;
-            this.linkLabelRegister.Font = new System.Drawing.Font("Segoe UI", 9.5F);
-            this.linkLabelRegister.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.linkLabelRegister.LinkColor = System.Drawing.Color.FromArgb(((int)(((byte)(23)))), ((int)(((byte)(162)))), ((int)(((byte)(184)))));
-            this.linkLabelRegister.Location = new System.Drawing.Point(95, 465);
-            this.linkLabelRegister.Name = "linkLabelRegister";
-            this.linkLabelRegister.Size = new System.Drawing.Size(225, 21);
-            this.linkLabelRegister.TabIndex = 10;
-            this.linkLabelRegister.TabStop = true;
-            this.linkLabelRegister.Text = "Chưa có tài khoản? Đăng ký ngay";
+            linkLabelRegister.ActiveLinkColor = Color.FromArgb(20, 140, 160);
+            linkLabelRegister.AutoSize = true;
+            linkLabelRegister.Font = new Font("Segoe UI", 9.5F);
+            linkLabelRegister.LinkBehavior = LinkBehavior.HoverUnderline;
+            linkLabelRegister.LinkColor = Color.FromArgb(23, 162, 184);
+            linkLabelRegister.Location = new Point(95, 581);
+            linkLabelRegister.Name = "linkLabelRegister";
+            linkLabelRegister.Size = new Size(240, 21);
+            linkLabelRegister.TabIndex = 10;
+            linkLabelRegister.TabStop = true;
+            linkLabelRegister.Text = "Chưa có tài khoản? Đăng ký ngay";
             // 
             // labelOr
             // 
-            this.labelOr.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.labelOr.ForeColor = System.Drawing.Color.Gray;
-            this.labelOr.Location = new System.Drawing.Point(0, 435);
-            this.labelOr.Name = "labelOr";
-            this.labelOr.Size = new System.Drawing.Size(413, 20);
-            this.labelOr.TabIndex = 9;
-            this.labelOr.Text = "────────────  hoặc  ────────────";
-            this.labelOr.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            labelOr.Font = new Font("Segoe UI", 9F);
+            labelOr.ForeColor = Color.Gray;
+            labelOr.Location = new Point(0, 544);
+            labelOr.Name = "labelOr";
+            labelOr.Size = new Size(413, 25);
+            labelOr.TabIndex = 9;
+            labelOr.Text = "────────────  hoặc  ────────────";
+            labelOr.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // linkLabelForgotPassword
             // 
-            this.linkLabelForgotPassword.ActiveLinkColor = System.Drawing.Color.FromArgb(((int)(((byte)(20)))), ((int)(((byte)(140)))), ((int)(((byte)(160)))));
-            this.linkLabelForgotPassword.AutoSize = true;
-            this.linkLabelForgotPassword.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.linkLabelForgotPassword.LinkBehavior = System.Windows.Forms.LinkBehavior.HoverUnderline;
-            this.linkLabelForgotPassword.LinkColor = System.Drawing.Color.FromArgb(((int)(((byte)(23)))), ((int)(((byte)(162)))), ((int)(((byte)(184)))));
-            this.linkLabelForgotPassword.Location = new System.Drawing.Point(280, 255);
-            this.linkLabelForgotPassword.Name = "linkLabelForgotPassword";
-            this.linkLabelForgotPassword.Size = new System.Drawing.Size(115, 20);
-            this.linkLabelForgotPassword.TabIndex = 8;
-            this.linkLabelForgotPassword.TabStop = true;
-            this.linkLabelForgotPassword.Text = "Quên mật khẩu?";
+            linkLabelForgotPassword.ActiveLinkColor = Color.FromArgb(20, 140, 160);
+            linkLabelForgotPassword.AutoSize = true;
+            linkLabelForgotPassword.Font = new Font("Segoe UI", 9F);
+            linkLabelForgotPassword.LinkBehavior = LinkBehavior.HoverUnderline;
+            linkLabelForgotPassword.LinkColor = Color.FromArgb(23, 162, 184);
+            linkLabelForgotPassword.Location = new Point(280, 319);
+            linkLabelForgotPassword.Name = "linkLabelForgotPassword";
+            linkLabelForgotPassword.Size = new Size(116, 20);
+            linkLabelForgotPassword.TabIndex = 8;
+            linkLabelForgotPassword.TabStop = true;
+            linkLabelForgotPassword.Text = "Quên mật khẩu?";
             // 
             // buttonLogin
             // 
-            this.buttonLogin.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(23)))), ((int)(((byte)(162)))), ((int)(((byte)(184)))));
-            this.buttonLogin.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.buttonLogin.FlatAppearance.BorderSize = 0;
-            this.buttonLogin.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.buttonLogin.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
-            this.buttonLogin.ForeColor = System.Drawing.Color.White;
-            this.buttonLogin.Location = new System.Drawing.Point(0, 355);
-            this.buttonLogin.Name = "buttonLogin";
-            this.buttonLogin.Size = new System.Drawing.Size(413, 50);
-            this.buttonLogin.TabIndex = 7;
-            this.buttonLogin.Text = "ĐĂNG NHẬP";
-            this.buttonLogin.UseVisualStyleBackColor = false;
+            buttonLogin.BackColor = Color.FromArgb(23, 162, 184);
+            buttonLogin.Cursor = Cursors.Hand;
+            buttonLogin.FlatAppearance.BorderSize = 0;
+            buttonLogin.FlatStyle = FlatStyle.Flat;
+            buttonLogin.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            buttonLogin.ForeColor = Color.White;
+            buttonLogin.Location = new Point(0, 444);
+            buttonLogin.Margin = new Padding(3, 4, 3, 4);
+            buttonLogin.Name = "buttonLogin";
+            buttonLogin.Size = new Size(413, 62);
+            buttonLogin.TabIndex = 7;
+            buttonLogin.Text = "ĐĂNG NHẬP";
+            buttonLogin.UseVisualStyleBackColor = false;
             // 
             // checkBoxRemember
             // 
-            this.checkBoxRemember.AutoSize = true;
-            this.checkBoxRemember.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.checkBoxRemember.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.checkBoxRemember.Location = new System.Drawing.Point(3, 255);
-            this.checkBoxRemember.Name = "checkBoxRemember";
-            this.checkBoxRemember.Size = new System.Drawing.Size(139, 24);
-            this.checkBoxRemember.TabIndex = 6;
-            this.checkBoxRemember.Text = "Nhớ đăng nhập";
-            this.checkBoxRemember.UseVisualStyleBackColor = true;
+            checkBoxRemember.AutoSize = true;
+            checkBoxRemember.Font = new Font("Segoe UI", 9F);
+            checkBoxRemember.ForeColor = Color.FromArgb(64, 64, 64);
+            checkBoxRemember.Location = new Point(3, 319);
+            checkBoxRemember.Margin = new Padding(3, 4, 3, 4);
+            checkBoxRemember.Name = "checkBoxRemember";
+            checkBoxRemember.Size = new Size(134, 24);
+            checkBoxRemember.TabIndex = 6;
+            checkBoxRemember.Text = "Nhớ đăng nhập";
+            checkBoxRemember.UseVisualStyleBackColor = true;
             // 
             // panelPasswordBorder
             // 
-            this.panelPasswordBorder.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
-            this.panelPasswordBorder.Controls.Add(this.textBoxPassword);
-            this.panelPasswordBorder.Location = new System.Drawing.Point(0, 210);
-            this.panelPasswordBorder.Name = "panelPasswordBorder";
-            this.panelPasswordBorder.Padding = new System.Windows.Forms.Padding(2);
-            this.panelPasswordBorder.Size = new System.Drawing.Size(413, 38);
-            this.panelPasswordBorder.TabIndex = 5;
+            panelPasswordBorder.BackColor = Color.FromArgb(240, 240, 240);
+            panelPasswordBorder.Controls.Add(textBoxPassword);
+            panelPasswordBorder.Location = new Point(0, 262);
+            panelPasswordBorder.Margin = new Padding(3, 4, 3, 4);
+            panelPasswordBorder.Name = "panelPasswordBorder";
+            panelPasswordBorder.Padding = new Padding(2);
+            panelPasswordBorder.Size = new Size(413, 48);
+            panelPasswordBorder.TabIndex = 5;
             // 
             // textBoxPassword
             // 
-            this.textBoxPassword.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.textBoxPassword.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.textBoxPassword.Font = new System.Drawing.Font("Segoe UI", 11F);
-            this.textBoxPassword.Location = new System.Drawing.Point(2, 2);
-            this.textBoxPassword.Multiline = true;
-            this.textBoxPassword.Name = "textBoxPassword";
-            this.textBoxPassword.Padding = new System.Windows.Forms.Padding(10, 6, 10, 6);
-            this.textBoxPassword.PasswordChar = '●';
-            this.textBoxPassword.Size = new System.Drawing.Size(409, 34);
-            this.textBoxPassword.TabIndex = 0;
+            textBoxPassword.BorderStyle = BorderStyle.None;
+            textBoxPassword.Dock = DockStyle.Fill;
+            textBoxPassword.Font = new Font("Segoe UI", 11F);
+            textBoxPassword.Location = new Point(2, 2);
+            textBoxPassword.Margin = new Padding(3, 4, 3, 4);
+            textBoxPassword.Multiline = true;
+            textBoxPassword.Name = "textBoxPassword";
+            textBoxPassword.PasswordChar = '●';
+            textBoxPassword.Size = new Size(409, 44);
+            textBoxPassword.TabIndex = 0;
             // 
             // labelPassword
             // 
-            this.labelPassword.AutoSize = true;
-            this.labelPassword.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.labelPassword.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.labelPassword.Location = new System.Drawing.Point(0, 185);
-            this.labelPassword.Name = "labelPassword";
-            this.labelPassword.Size = new System.Drawing.Size(82, 23);
-            this.labelPassword.TabIndex = 4;
-            this.labelPassword.Text = "Mật khẩu";
+            labelPassword.AutoSize = true;
+            labelPassword.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            labelPassword.ForeColor = Color.FromArgb(64, 64, 64);
+            labelPassword.Location = new Point(0, 231);
+            labelPassword.Name = "labelPassword";
+            labelPassword.Size = new Size(82, 23);
+            labelPassword.TabIndex = 4;
+            labelPassword.Text = "Mật khẩu";
             // 
             // panelUsernameBorder
             // 
-            this.panelUsernameBorder.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
-            this.panelUsernameBorder.Controls.Add(this.textBoxUsername);
-            this.panelUsernameBorder.Location = new System.Drawing.Point(0, 135);
-            this.panelUsernameBorder.Name = "panelUsernameBorder";
-            this.panelUsernameBorder.Padding = new System.Windows.Forms.Padding(2);
-            this.panelUsernameBorder.Size = new System.Drawing.Size(413, 38);
-            this.panelUsernameBorder.TabIndex = 3;
+            panelUsernameBorder.BackColor = Color.FromArgb(240, 240, 240);
+            panelUsernameBorder.Controls.Add(textBoxUsername);
+            panelUsernameBorder.Location = new Point(0, 169);
+            panelUsernameBorder.Margin = new Padding(3, 4, 3, 4);
+            panelUsernameBorder.Name = "panelUsernameBorder";
+            panelUsernameBorder.Padding = new Padding(2);
+            panelUsernameBorder.Size = new Size(413, 50);
+            panelUsernameBorder.TabIndex = 3;
             // 
             // textBoxUsername
             // 
-            this.textBoxUsername.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.textBoxUsername.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.textBoxUsername.Font = new System.Drawing.Font("Segoe UI", 11F);
-            this.textBoxUsername.Location = new System.Drawing.Point(2, 2);
-            this.textBoxUsername.Multiline = true;
-            this.textBoxUsername.Name = "textBoxUsername";
-            this.textBoxUsername.Padding = new System.Windows.Forms.Padding(10, 6, 10, 6);
-            this.textBoxUsername.Size = new System.Drawing.Size(409, 34);
-            this.textBoxUsername.TabIndex = 0;
+            textBoxUsername.BorderStyle = BorderStyle.None;
+            textBoxUsername.Dock = DockStyle.Fill;
+            textBoxUsername.Font = new Font("Segoe UI", 11F);
+            textBoxUsername.Location = new Point(2, 2);
+            textBoxUsername.Margin = new Padding(3, 4, 3, 4);
+            textBoxUsername.Multiline = true;
+            textBoxUsername.Name = "textBoxUsername";
+            textBoxUsername.Size = new Size(409, 46);
+            textBoxUsername.TabIndex = 0;
             // 
             // labelUsername
             // 
-            this.labelUsername.AutoSize = true;
-            this.labelUsername.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.labelUsername.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.labelUsername.Location = new System.Drawing.Point(0, 110);
-            this.labelUsername.Name = "labelUsername";
-            this.labelUsername.Size = new System.Drawing.Size(124, 23);
-            this.labelUsername.TabIndex = 2;
-            this.labelUsername.Text = "Tên đăng nhập";
+            labelUsername.AutoSize = true;
+            labelUsername.Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            labelUsername.ForeColor = Color.FromArgb(64, 64, 64);
+            labelUsername.Location = new Point(0, 138);
+            labelUsername.Name = "labelUsername";
+            labelUsername.Size = new Size(124, 23);
+            labelUsername.TabIndex = 2;
+            labelUsername.Text = "Tên đăng nhập";
             // 
             // labelSubtitle
             // 
-            this.labelSubtitle.Font = new System.Drawing.Font("Segoe UI", 9.5F);
-            this.labelSubtitle.ForeColor = System.Drawing.Color.Gray;
-            this.labelSubtitle.Location = new System.Drawing.Point(0, 50);
-            this.labelSubtitle.Name = "labelSubtitle";
-            this.labelSubtitle.Size = new System.Drawing.Size(413, 45);
-            this.labelSubtitle.TabIndex = 1;
-            this.labelSubtitle.Text = "Vui lòng đăng nhập để sử dụng hệ thống quản lý đặt khám";
-            this.labelSubtitle.TextAlign = System.Drawing.ContentAlignment.TopCenter;
+            labelSubtitle.Font = new Font("Segoe UI", 9.5F);
+            labelSubtitle.ForeColor = Color.Gray;
+            labelSubtitle.Location = new Point(0, 62);
+            labelSubtitle.Name = "labelSubtitle";
+            labelSubtitle.Size = new Size(413, 56);
+            labelSubtitle.TabIndex = 1;
+            labelSubtitle.Text = "Vui lòng đăng nhập để sử dụng hệ thống quản lý đặt khám";
+            labelSubtitle.TextAlign = ContentAlignment.TopCenter;
             // 
             // labelTitle
             // 
-            this.labelTitle.Font = new System.Drawing.Font("Segoe UI", 22F, System.Drawing.FontStyle.Bold);
-            this.labelTitle.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(23)))), ((int)(((byte)(162)))), ((int)(((byte)(184)))));
-            this.labelTitle.Location = new System.Drawing.Point(0, 0);
-            this.labelTitle.Name = "labelTitle";
-            this.labelTitle.Size = new System.Drawing.Size(413, 50);
-            this.labelTitle.TabIndex = 0;
-            this.labelTitle.Text = "ĐĂNG NHẬP";
-            this.labelTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
+            labelTitle.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
+            labelTitle.ForeColor = Color.FromArgb(23, 162, 184);
+            labelTitle.Location = new Point(0, 0);
+            labelTitle.Name = "labelTitle";
+            labelTitle.Size = new Size(413, 62);
+            labelTitle.TabIndex = 0;
+            labelTitle.Text = "ĐĂNG NHẬP";
+            labelTitle.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // Login
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(933, 615);
-            this.Controls.Add(this.panelRight);
-            this.Controls.Add(this.panelLeft);
-            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-            this.MaximizeBox = false;
-            this.Name = "Login";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Đăng nhập hệ thống";
-            this.panelLeft.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.pictureBoxLogo)).EndInit();
-            this.panelRight.ResumeLayout(false);
-            this.panelForm.ResumeLayout(false);
-            this.panelForm.PerformLayout();
-            this.panelPasswordBorder.ResumeLayout(false);
-            this.panelPasswordBorder.PerformLayout();
-            this.panelUsernameBorder.ResumeLayout(false);
-            this.panelUsernameBorder.PerformLayout();
-            this.ResumeLayout(false);
+            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.White;
+            ClientSize = new Size(933, 769);
+            Controls.Add(panelRight);
+            Controls.Add(panelLeft);
+            FormBorderStyle = FormBorderStyle.FixedSingle;
+            Margin = new Padding(3, 4, 3, 4);
+            MaximizeBox = false;
+            Name = "Login";
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "Đăng nhập hệ thống";
+            panelLeft.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)pictureBoxLogo).EndInit();
+            panelRight.ResumeLayout(false);
+            panelForm.ResumeLayout(false);
+            panelForm.PerformLayout();
+            panelPasswordBorder.ResumeLayout(false);
+            panelPasswordBorder.PerformLayout();
+            panelUsernameBorder.ResumeLayout(false);
+            panelUsernameBorder.PerformLayout();
+            ResumeLayout(false);
 
         }
 

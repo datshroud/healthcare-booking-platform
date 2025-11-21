@@ -14,203 +14,194 @@
 
         private void InitializeComponent()
         {
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle3 = new System.Windows.Forms.DataGridViewCellStyle();
-            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle4 = new System.Windows.Forms.DataGridViewCellStyle();
-            this.panelHeader = new System.Windows.Forms.Panel();
-            this.lblTitle = new System.Windows.Forms.Label();
-            this.panelActions = new System.Windows.Forms.Panel();
-            this.btnCancel = new System.Windows.Forms.Button();
-            this.panelBody = new System.Windows.Forms.Panel();
-            this.dgvBookings = new System.Windows.Forms.DataGridView();
-
-            // Khai báo các cột
-            this.colDate = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colTime = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colDoctor = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colSpecialty = new System.Windows.Forms.DataGridViewTextBoxColumn();
-            this.colStatus = new System.Windows.Forms.DataGridViewTextBoxColumn(); // Đổi vị trí lên trên
-            this.colPrice = new System.Windows.Forms.DataGridViewTextBoxColumn(); // Đổi vị trí xuống dưới
-
-            this.panelHeader.SuspendLayout();
-            this.panelActions.SuspendLayout();
-            this.panelBody.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvBookings)).BeginInit();
-            this.SuspendLayout();
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
+            panelHeader = new Panel();
+            lblTitle = new Label();
+            panelActions = new Panel();
+            btnCancel = new Button();
+            panelBody = new Panel();
+            dgvBookings = new DataGridView();
+            colDate = new DataGridViewTextBoxColumn();
+            colTime = new DataGridViewTextBoxColumn();
+            colDoctor = new DataGridViewTextBoxColumn();
+            colSpecialty = new DataGridViewTextBoxColumn();
+            colStatus = new DataGridViewTextBoxColumn();
+            colPrice = new DataGridViewTextBoxColumn();
+            panelHeader.SuspendLayout();
+            panelActions.SuspendLayout();
+            panelBody.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dgvBookings).BeginInit();
+            SuspendLayout();
             // 
             // panelHeader
             // 
-            this.panelHeader.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(23)))), ((int)(((byte)(162)))), ((int)(((byte)(184)))));
-            this.panelHeader.Controls.Add(this.lblTitle);
-            this.panelHeader.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panelHeader.Location = new System.Drawing.Point(0, 0);
-            this.panelHeader.Name = "panelHeader";
-            this.panelHeader.Padding = new System.Windows.Forms.Padding(30, 0, 30, 0);
-            this.panelHeader.Size = new System.Drawing.Size(1000, 80);
-            this.panelHeader.TabIndex = 2;
+            panelHeader.BackColor = Color.FromArgb(23, 162, 184);
+            panelHeader.Controls.Add(lblTitle);
+            panelHeader.Dock = DockStyle.Top;
+            panelHeader.Location = new Point(0, 0);
+            panelHeader.Margin = new Padding(3, 4, 3, 4);
+            panelHeader.Name = "panelHeader";
+            panelHeader.Padding = new Padding(30, 0, 30, 0);
+            panelHeader.Size = new Size(1000, 100);
+            panelHeader.TabIndex = 2;
             // 
             // lblTitle
             // 
-            this.lblTitle.AutoSize = true;
-            this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 20F, System.Drawing.FontStyle.Bold);
-            this.lblTitle.ForeColor = System.Drawing.Color.White;
-            this.lblTitle.Location = new System.Drawing.Point(25, 20);
-            this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(230, 46);
-            this.lblTitle.TabIndex = 0;
-            this.lblTitle.Text = "My Bookings";
+            lblTitle.AutoSize = true;
+            lblTitle.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
+            lblTitle.ForeColor = Color.White;
+            lblTitle.Location = new Point(25, 25);
+            lblTitle.Name = "lblTitle";
+            lblTitle.Size = new Size(200, 46);
+            lblTitle.TabIndex = 0;
+            lblTitle.Text = "Lịch của tôi";
             // 
             // panelActions
             // 
-            this.panelActions.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(249)))), ((int)(((byte)(250)))));
-            this.panelActions.Controls.Add(this.btnCancel);
-            this.panelActions.Dock = System.Windows.Forms.DockStyle.Top;
-            this.panelActions.Location = new System.Drawing.Point(0, 80);
-            this.panelActions.Name = "panelActions";
-            this.panelActions.Size = new System.Drawing.Size(1000, 60);
-            this.panelActions.TabIndex = 1;
+            panelActions.BackColor = Color.FromArgb(248, 249, 250);
+            panelActions.Controls.Add(btnCancel);
+            panelActions.Dock = DockStyle.Top;
+            panelActions.Location = new Point(0, 100);
+            panelActions.Margin = new Padding(3, 4, 3, 4);
+            panelActions.Name = "panelActions";
+            panelActions.Size = new Size(1000, 75);
+            panelActions.TabIndex = 1;
             // 
             // btnCancel
             // 
-            this.btnCancel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(220)))), ((int)(((byte)(53)))), ((int)(((byte)(69)))));
-            this.btnCancel.Cursor = System.Windows.Forms.Cursors.Hand;
-            this.btnCancel.FlatAppearance.BorderSize = 0;
-            this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnCancel.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            this.btnCancel.ForeColor = System.Drawing.Color.White;
-            this.btnCancel.Location = new System.Drawing.Point(30, 10);
-            this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(150, 40);
-            this.btnCancel.TabIndex = 0;
-            this.btnCancel.Text = "Hủy Lịch Hẹn";
-            this.btnCancel.UseVisualStyleBackColor = false;
+            btnCancel.BackColor = Color.FromArgb(220, 53, 69);
+            btnCancel.Cursor = Cursors.Hand;
+            btnCancel.FlatAppearance.BorderSize = 0;
+            btnCancel.FlatStyle = FlatStyle.Flat;
+            btnCancel.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            btnCancel.ForeColor = Color.White;
+            btnCancel.Location = new Point(30, 12);
+            btnCancel.Margin = new Padding(3, 4, 3, 4);
+            btnCancel.Name = "btnCancel";
+            btnCancel.Size = new Size(150, 50);
+            btnCancel.TabIndex = 0;
+            btnCancel.Text = "Hủy Lịch Hẹn";
+            btnCancel.UseVisualStyleBackColor = false;
             // 
             // panelBody
             // 
-            this.panelBody.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(248)))), ((int)(((byte)(249)))), ((int)(((byte)(250)))));
-            this.panelBody.Controls.Add(this.dgvBookings);
-            this.panelBody.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panelBody.Location = new System.Drawing.Point(0, 140);
-            this.panelBody.Name = "panelBody";
-            this.panelBody.Padding = new System.Windows.Forms.Padding(30, 0, 30, 20);
-            this.panelBody.Size = new System.Drawing.Size(1000, 510);
-            this.panelBody.TabIndex = 0;
+            panelBody.BackColor = Color.FromArgb(248, 249, 250);
+            panelBody.Controls.Add(dgvBookings);
+            panelBody.Dock = DockStyle.Fill;
+            panelBody.Location = new Point(0, 175);
+            panelBody.Margin = new Padding(3, 4, 3, 4);
+            panelBody.Name = "panelBody";
+            panelBody.Padding = new Padding(30, 0, 30, 25);
+            panelBody.Size = new Size(1000, 637);
+            panelBody.TabIndex = 0;
             // 
             // dgvBookings
             // 
-            this.dgvBookings.AllowUserToAddRows = false;
-            this.dgvBookings.AutoSizeColumnsMode = System.Windows.Forms.DataGridViewAutoSizeColumnsMode.Fill;
-            this.dgvBookings.BackgroundColor = System.Drawing.Color.White;
-            this.dgvBookings.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.dgvBookings.CellBorderStyle = System.Windows.Forms.DataGridViewCellBorderStyle.SingleHorizontal;
-            this.dgvBookings.ColumnHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.None;
-
-            // Style Header
-            dataGridViewCellStyle1.BackColor = System.Drawing.Color.White;
-            dataGridViewCellStyle1.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            dataGridViewCellStyle1.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(160)))), ((int)(((byte)(160)))), ((int)(((byte)(160)))));
-            dataGridViewCellStyle1.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
-            this.dgvBookings.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
-            this.dgvBookings.ColumnHeadersHeight = 50;
-
-            // Add columns: Date, Time, Doctor, Specialty, Status, Price
-            this.dgvBookings.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
-            this.colDate,
-            this.colTime,
-            this.colDoctor,
-            this.colSpecialty,
-            this.colStatus,
-            this.colPrice});
-
-            // Style Default Cell
-            dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle2.BackColor = System.Drawing.Color.White;
-            dataGridViewCellStyle2.Font = new System.Drawing.Font("Segoe UI", 11F);
-            dataGridViewCellStyle2.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(50)))), ((int)(((byte)(50)))), ((int)(((byte)(50)))));
-            dataGridViewCellStyle2.Padding = new System.Windows.Forms.Padding(10, 0, 0, 0);
-            dataGridViewCellStyle2.SelectionBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(235)))), ((int)(((byte)(245)))), ((int)(((byte)(255)))));
-            dataGridViewCellStyle2.SelectionForeColor = System.Drawing.Color.Black;
-            dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
-            this.dgvBookings.DefaultCellStyle = dataGridViewCellStyle2;
-            this.dgvBookings.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.dgvBookings.EnableHeadersVisualStyles = false;
-            this.dgvBookings.GridColor = System.Drawing.Color.FromArgb(((int)(((byte)(240)))), ((int)(((byte)(240)))), ((int)(((byte)(240)))));
-            this.dgvBookings.Location = new System.Drawing.Point(30, 0);
-            this.dgvBookings.Name = "dgvBookings";
-            this.dgvBookings.RowHeadersVisible = false;
-            this.dgvBookings.RowHeadersWidth = 51;
-            this.dgvBookings.RowTemplate.Height = 60;
-            this.dgvBookings.SelectionMode = System.Windows.Forms.DataGridViewSelectionMode.FullRowSelect;
-            this.dgvBookings.Size = new System.Drawing.Size(940, 490);
-            this.dgvBookings.TabIndex = 0;
+            dgvBookings.AllowUserToAddRows = false;
+            dgvBookings.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvBookings.BackgroundColor = Color.White;
+            dgvBookings.BorderStyle = BorderStyle.None;
+            dgvBookings.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
+            dgvBookings.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
+            dataGridViewCellStyle1.BackColor = Color.White;
+            dataGridViewCellStyle1.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            dataGridViewCellStyle1.ForeColor = Color.FromArgb(160, 160, 160);
+            dataGridViewCellStyle1.Padding = new Padding(10, 0, 0, 0);
+            dgvBookings.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            dgvBookings.ColumnHeadersHeight = 50;
+            dgvBookings.Columns.AddRange(new DataGridViewColumn[] { colDate, colTime, colDoctor, colSpecialty, colStatus, colPrice });
+            dataGridViewCellStyle4.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle4.BackColor = Color.White;
+            dataGridViewCellStyle4.Font = new Font("Segoe UI", 11F);
+            dataGridViewCellStyle4.ForeColor = Color.FromArgb(50, 50, 50);
+            dataGridViewCellStyle4.Padding = new Padding(10, 0, 0, 0);
+            dataGridViewCellStyle4.SelectionBackColor = Color.FromArgb(235, 245, 255);
+            dataGridViewCellStyle4.SelectionForeColor = Color.Black;
+            dataGridViewCellStyle4.WrapMode = DataGridViewTriState.False;
+            dgvBookings.DefaultCellStyle = dataGridViewCellStyle4;
+            dgvBookings.Dock = DockStyle.Fill;
+            dgvBookings.EnableHeadersVisualStyles = false;
+            dgvBookings.GridColor = Color.FromArgb(240, 240, 240);
+            dgvBookings.Location = new Point(30, 0);
+            dgvBookings.Margin = new Padding(3, 4, 3, 4);
+            dgvBookings.Name = "dgvBookings";
+            dgvBookings.RowHeadersVisible = false;
+            dgvBookings.RowHeadersWidth = 51;
+            dgvBookings.RowTemplate.Height = 60;
+            dgvBookings.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvBookings.Size = new Size(940, 612);
+            dgvBookings.TabIndex = 0;
             // 
             // colDate
             // 
-            this.colDate.FillWeight = 20F;
-            this.colDate.HeaderText = "NGÀY KHÁM";
-            this.colDate.MinimumWidth = 6;
-            this.colDate.Name = "colDate";
+            colDate.FillWeight = 20F;
+            colDate.HeaderText = "NGÀY KHÁM";
+            colDate.MinimumWidth = 6;
+            colDate.Name = "colDate";
             // 
             // colTime
             // 
-            this.colTime.FillWeight = 15F;
-            this.colTime.HeaderText = "GIỜ";
-            this.colTime.MinimumWidth = 6;
-            this.colTime.Name = "colTime";
+            colTime.FillWeight = 15F;
+            colTime.HeaderText = "GIỜ";
+            colTime.MinimumWidth = 6;
+            colTime.Name = "colTime";
             // 
             // colDoctor
             // 
-            this.colDoctor.FillWeight = 25F;
-            this.colDoctor.HeaderText = "BÁC SĨ";
-            this.colDoctor.MinimumWidth = 6;
-            this.colDoctor.Name = "colDoctor";
+            colDoctor.FillWeight = 25F;
+            colDoctor.HeaderText = "BÁC SĨ";
+            colDoctor.MinimumWidth = 6;
+            colDoctor.Name = "colDoctor";
             // 
             // colSpecialty
             // 
-            this.colSpecialty.FillWeight = 20F;
-            this.colSpecialty.HeaderText = "CHUYÊN KHOA";
-            this.colSpecialty.MinimumWidth = 6;
-            this.colSpecialty.Name = "colSpecialty";
+            colSpecialty.FillWeight = 20F;
+            colSpecialty.HeaderText = "CHUYÊN KHOA";
+            colSpecialty.MinimumWidth = 6;
+            colSpecialty.Name = "colSpecialty";
             // 
             // colStatus
             // 
-            dataGridViewCellStyle3.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
-            dataGridViewCellStyle3.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(255)))), ((int)(((byte)(193)))), ((int)(((byte)(7)))));
-            this.colStatus.DefaultCellStyle = dataGridViewCellStyle3;
-            this.colStatus.FillWeight = 15F;
-            this.colStatus.HeaderText = "TRẠNG THÁI";
-            this.colStatus.MinimumWidth = 6;
-            this.colStatus.Name = "colStatus";
+            dataGridViewCellStyle2.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            dataGridViewCellStyle2.ForeColor = Color.FromArgb(255, 193, 7);
+            colStatus.DefaultCellStyle = dataGridViewCellStyle2;
+            colStatus.FillWeight = 15F;
+            colStatus.HeaderText = "TRẠNG THÁI";
+            colStatus.MinimumWidth = 6;
+            colStatus.Name = "colStatus";
             // 
             // colPrice
             // 
-            dataGridViewCellStyle4.Font = new System.Drawing.Font("Segoe UI", 11F, System.Drawing.FontStyle.Bold);
-            dataGridViewCellStyle4.ForeColor = System.Drawing.Color.SeaGreen;
-            dataGridViewCellStyle4.Format = "C0";
-            this.colPrice.DefaultCellStyle = dataGridViewCellStyle4;
-            this.colPrice.FillWeight = 15F;
-            this.colPrice.HeaderText = "THANH TOÁN";
-            this.colPrice.MinimumWidth = 6;
-            this.colPrice.Name = "colPrice";
+            dataGridViewCellStyle3.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            dataGridViewCellStyle3.ForeColor = Color.SeaGreen;
+            dataGridViewCellStyle3.Format = "C0";
+            colPrice.DefaultCellStyle = dataGridViewCellStyle3;
+            colPrice.FillWeight = 15F;
+            colPrice.HeaderText = "THANH TOÁN";
+            colPrice.MinimumWidth = 6;
+            colPrice.Name = "colPrice";
             // 
             // MyBookingForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1000, 650);
-            this.Controls.Add(this.panelBody);
-            this.Controls.Add(this.panelActions);
-            this.Controls.Add(this.panelHeader);
-            this.Name = "MyBookingForm";
-            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Lịch Hẹn Của Tôi";
-            this.panelHeader.ResumeLayout(false);
-            this.panelHeader.PerformLayout();
-            this.panelActions.ResumeLayout(false);
-            this.panelBody.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.dgvBookings)).EndInit();
-            this.ResumeLayout(false);
+            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleMode = AutoScaleMode.Font;
+            ClientSize = new Size(1000, 812);
+            Controls.Add(panelBody);
+            Controls.Add(panelActions);
+            Controls.Add(panelHeader);
+            Margin = new Padding(3, 4, 3, 4);
+            Name = "MyBookingForm";
+            StartPosition = FormStartPosition.CenterScreen;
+            Text = "Lịch Hẹn Của Tôi";
+            panelHeader.ResumeLayout(false);
+            panelHeader.PerformLayout();
+            panelActions.ResumeLayout(false);
+            panelBody.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)dgvBookings).EndInit();
+            ResumeLayout(false);
         }
 
         #endregion
