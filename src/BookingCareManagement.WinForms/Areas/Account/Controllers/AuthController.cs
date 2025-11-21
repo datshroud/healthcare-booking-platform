@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using BookingCareManagement.WinForms.Areas.Account.ViewModels;
+using BookingCareManagement.WinForms.Shared.Models;
 using BookingCareManagement.WinForms.Shared.Services;
 using BookingCareManagement.WinForms.Shared.State;
 
@@ -54,13 +55,53 @@ public sealed class AuthController
 
             _sessionState.AccessToken = payload.AccessToken;
             _sessionState.RefreshToken = payload.RefreshToken;
+            _sessionState.ApplyRoleHint(payload.Redirect);
+
+            await LoadProfileAsync(client, cancellationToken);
+
             // Persist snapshot
-            _storage.Save(new SessionSnapshot(payload.AccessToken, payload.RefreshToken, null));
+            _storage.Save(new SessionSnapshot(
+                _sessionState.AccessToken,
+                _sessionState.RefreshToken,
+                _sessionState.CurrentUserId,
+                _sessionState.DisplayName,
+                _sessionState.Email,
+                _sessionState.FirstName,
+                _sessionState.LastName,
+                _sessionState.AvatarUrl,
+                _sessionState.DateOfBirth,
+                _sessionState.Roles.ToArray(),
+                _sessionState.IsAdmin,
+                _sessionState.IsDoctor,
+                _sessionState.HasCookieSession,
+                _sessionState.LastRedirect));
             return true;
         }
         finally
         {
             _viewModel.IsBusy = false;
+        }
+    }
+
+    private async Task LoadProfileAsync(HttpClient client, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await client.GetAsync("api/account/auth/profile", cancellationToken);
+            if (!response.IsSuccessStatusCode)
+            {
+                return;
+            }
+
+            var profile = await response.Content.ReadFromJsonAsync<UserProfileDto>(cancellationToken: cancellationToken);
+            if (profile is not null)
+            {
+                _sessionState.ApplyProfile(profile);
+            }
+        }
+        catch
+        {
+            // ignore profile errors to avoid breaking login
         }
     }
 

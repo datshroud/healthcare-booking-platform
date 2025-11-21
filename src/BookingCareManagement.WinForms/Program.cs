@@ -69,6 +69,10 @@ static class Program
                         UserId = persisted.UserId ?? string.Empty,
                         FullName = persisted.DisplayName ?? string.Empty,
                         Email = persisted.Email ?? string.Empty,
+                        FirstName = persisted.FirstName ?? string.Empty,
+                        LastName = persisted.LastName ?? string.Empty,
+                        AvatarUrl = persisted.AvatarUrl ?? string.Empty,
+                        DateOfBirth = persisted.DateOfBirth,
                         IsAdmin = persisted.IsAdmin,
                         IsDoctor = persisted.IsDoctor,
                         Roles = persisted.Roles ?? Array.Empty<string>()

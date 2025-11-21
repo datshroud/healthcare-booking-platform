@@ -47,7 +47,8 @@ namespace BookingCareManagement.WinForms
             
             InitializeComponent();
             InitializeCustomComponents();
-            CreateSidebar();    
+            CreateSidebar();
+            UpdateAccountDisplay();
             try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] MainForm: after CreateSidebar\n"); } catch {}
             // Rebuild sidebar when session/profile changes (e.g. after login)
             _sessionState.StateChanged += (s, e) =>
@@ -410,6 +411,7 @@ namespace BookingCareManagement.WinForms
 
             if (accountMenu != null)
             {
+                UpdateAccountDisplay();
                 accountMenu.Visible = !accountMenu.Visible;
                 if (accountMenu.Visible)
                 {
@@ -470,9 +472,9 @@ namespace BookingCareManagement.WinForms
                 Panel accountMenu = this.Controls["accountMenu"] as Panel
                                     ?? navbarPanel.Controls["accountMenu"] as Panel;
 
-                var userName = accountMenu?.Controls["account_userName"] as Label;
-                var userEmail = accountMenu?.Controls["account_userEmail"] as Label;
-                var accountAvatarText = accountMenu?.Controls["account_avatarText"] as Label;
+                var userName = accountMenu?.Controls.Find("account_userName", true).FirstOrDefault() as Label;
+                var userEmail = accountMenu?.Controls.Find("account_userEmail", true).FirstOrDefault() as Label;
+                var accountAvatarText = accountMenu?.Controls.Find("account_avatarText", true).FirstOrDefault() as Label;
 
                 var name = _sessionState.DisplayName;
                 var email = _sessionState.Email;

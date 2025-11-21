@@ -1,21 +1,23 @@
+using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Security.Cryptography;
+using BookingCareManagement.Application.Common.Exceptions;
 using BookingCareManagement.Application.Features.Auth.Commands;
 using BookingCareManagement.Application.Features.Auth.Dtos;
 using BookingCareManagement.Domain.Aggregates.User;
 using BookingCareManagement.Infrastructure.Identity;
 using BookingCareManagement.Utils;
 using Google.Apis.Auth;
-using System.Linq;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using BookingCareManagement.Application.Common.Exceptions;
-using Microsoft.AspNetCore.Authorization;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
 
 namespace BookingCareManagement.Web.Areas.Account.Controllers
 {
@@ -120,7 +122,7 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
 
         [Authorize]
         [HttpGet("profile")]
-        public async Task<ActionResult<UserProfileResponse>> GetProfileAsync()
+        public async Task<ActionResult<UserProfileDto>> GetProfileAsync()
         {
             var user = await _userManager.GetUserAsync(User);
             if (user is null)
@@ -129,17 +131,74 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
             }
 
             var roles = await _userManager.GetRolesAsync(user);
-            var response = new UserProfileResponse
-            {
-                UserId = user.Id,
-                Email = user.Email ?? string.Empty,
-                FullName = user.GetFullName() ?? user.Email ?? user.UserName ?? string.Empty,
-                Roles = roles.ToArray(),
-                IsAdmin = roles.Any(r => string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase)),
-                IsDoctor = roles.Any(r => string.Equals(r, "Doctor", StringComparison.OrdinalIgnoreCase))
-            };
+            return Ok(MapUserToProfile(user, roles));
+        }
 
-            return Ok(response);
+        [Authorize]
+        [HttpPut("profile")]
+        public async Task<ActionResult<UserProfileDto>> UpdateProfileAsync([FromBody] UserProfileDto dto)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            user.FirstName = dto.FirstName?.Trim();
+            user.LastName = dto.LastName?.Trim();
+            user.FullName = string.IsNullOrWhiteSpace(dto.FullName)
+                ? $"{user.FirstName} {user.LastName}".Trim()
+                : dto.FullName.Trim();
+            user.Email = string.IsNullOrWhiteSpace(dto.Email) ? user.Email : dto.Email.Trim();
+            user.UserName = user.Email;
+            user.AvatarUrl = dto.AvatarUrl;
+            user.DateOfBirth = dto.DateOfBirth;
+
+            var update = await _userManager.UpdateAsync(user);
+            if (!update.Succeeded)
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Cập nhật hồ sơ không thành công",
+                    Detail = string.Join("; ", update.Errors.Select(e => e.Description))
+                });
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            return Ok(MapUserToProfile(user, roles));
+        }
+
+        [Authorize]
+        [HttpPost("change-password")]
+        public async Task<ActionResult> ChangePasswordAsync([FromBody] ChangePasswordRequest request)
+        {
+            if (string.IsNullOrWhiteSpace(request.CurrentPassword))
+            {
+                return BadRequest(new ProblemDetails { Title = "Mật khẩu hiện tại không được để trống" });
+            }
+
+            if (string.IsNullOrWhiteSpace(request.NewPassword))
+            {
+                return BadRequest(new ProblemDetails { Title = "Mật khẩu mới không được để trống" });
+            }
+
+            var user = await _userManager.GetUserAsync(User);
+            if (user is null)
+            {
+                return Unauthorized();
+            }
+
+            var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+            if (!result.Succeeded)
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Đổi mật khẩu thất bại",
+                    Detail = string.Join("; ", result.Errors.Select(e => e.Description))
+                });
+            }
+
+            return NoContent();
         }
 
         private readonly UserManager<AppUser> _userManager;
@@ -173,6 +232,24 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
             }
 
             return "/";
+        }
+
+        private static UserProfileDto MapUserToProfile(AppUser user, IList<string> roles)
+        {
+            var normalizedRoles = roles ?? Array.Empty<string>();
+            return new UserProfileDto
+            {
+                UserId = user.Id,
+                FirstName = user.FirstName ?? string.Empty,
+                LastName = user.LastName ?? string.Empty,
+                FullName = user.GetFullName() ?? user.Email ?? user.UserName ?? string.Empty,
+                Email = user.Email ?? string.Empty,
+                AvatarUrl = user.AvatarUrl,
+                DateOfBirth = user.DateOfBirth,
+                Roles = normalizedRoles.ToArray(),
+                IsAdmin = normalizedRoles.Any(r => string.Equals(r, "Admin", StringComparison.OrdinalIgnoreCase)),
+                IsDoctor = normalizedRoles.Any(r => string.Equals(r, "Doctor", StringComparison.OrdinalIgnoreCase))
+            };
         }
 
         [HttpGet("google/start")]
@@ -387,14 +464,6 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
             return (parts[0].Trim(), parts[^1].Trim());
         }
 
-        public sealed class UserProfileResponse
-        {
-            public string UserId { get; init; } = string.Empty;
-            public string Email { get; init; } = string.Empty;
-            public string FullName { get; init; } = string.Empty;
-            public bool IsAdmin { get; init; }
-            public bool IsDoctor { get; init; }
-            public string[] Roles { get; init; } = Array.Empty<string>();
-        }
     }
+
 }
