@@ -3,17 +3,25 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
+using BookingCareManagement.WinForms.Areas.Admin.Services;
+using BookingCareManagement.WinForms.Shared.Models.Dtos;
+using BookingCareManagement.WinForms.Shared.Services;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 {
     public sealed partial class AppointmentEditorForm : Form
     {
+        private readonly AdminAppointmentsApiClient _appointmentsApiClient;
+        private readonly DialogService _dialogService;
+
         private readonly List<CheckedListBox> _filterDropdowns = new();
         private readonly Dictionary<CheckedListBox, List<string>> _filterOptions = new();
         private readonly Dictionary<CheckedListBox, Button> _dropdownButtons = new();
         private readonly Dictionary<CheckedListBox, Func<AppointmentRow, string>> _filterSelectors = new();
 
         private readonly List<AppointmentRow> _appointments = new();
+        private AdminAppointmentMetadataDto? _metadata;
         private readonly Dictionary<string, (Color Background, Color Foreground)> _statusStyles =
             new(StringComparer.OrdinalIgnoreCase)
             {
@@ -30,6 +38,9 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private CheckedListBox? _statusDropdown;
 
         private sealed record AppointmentRow(
+            Guid Id,
+            Guid DoctorId,
+            Guid SpecialtyId,
             DateTime Start,
             string Specialty,
             string Patient,
@@ -37,16 +48,20 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             string StatusCode,
             string StatusLabel,
             string Doctor,
-            string Note);
+            string Note,
+            string Phone);
 
-        public AppointmentEditorForm()
+        public AppointmentEditorForm(DialogService dialogService, AdminAppointmentsApiClient appointmentsApiClient)
         {
+            _dialogService = dialogService;
+            _appointmentsApiClient = appointmentsApiClient;
             InitializeComponent();
             InitializeGridColumns();
             ApplyGridStyling();
             ConfigureInputs();
             InitializeFilterDropdowns();
-            LoadSampleData();
+            ConfigureActions();
+            Shown += async (_, _) => await LoadAppointmentsAsync();
         }
 
         private void InitializeGridColumns()
@@ -271,23 +286,29 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             return parts[0].Trim();
         }
 
-        private void LoadSampleData()
+        private void ConfigureActions()
         {
-            _appointments.Clear();
-
-            var baseDate = DateTime.Today.AddDays(3);
-            _appointments.AddRange(new[]
+            btnNew.Click += async (_, _) => await ShowUpsertDialogAsync();
+            btnExport.Click += (_, _) => _dialogService.ShowInfo("Chức năng xuất dữ liệu sẽ sớm có mặt.");
+            appointmentGrid.CellDoubleClick += async (_, args) =>
             {
-                new AppointmentRow(baseDate.AddHours(9), "Khám tim mạch", "Nguyễn Văn A", 30, "pending", "Chờ xác nhận", "BS. Lê Ngọc Bảo Chân", "Mang theo kết quả xét nghiệm mới nhất"),
-                new AppointmentRow(baseDate.AddHours(11), "Khám tổng quát", "Trần Thị B", 45, "approved", "Đã xác nhận", "BS. Cấn Văn Thắng", ""),
-                new AppointmentRow(baseDate.AddDays(1).AddHours(14), "Nha khoa", "Phạm Minh C", 60, "approved", "Đã xác nhận", "BS. Lê Ngọc Bảo Chân", "Khám và tư vấn phục hình"),
-                new AppointmentRow(baseDate.AddDays(1).AddHours(16), "Khám da liễu", "Lê Ngọc Bảo Chân", 30, "canceled", "Đã hủy", "BS. Lê Ngọc Bảo Chân", "Khách hàng báo bận"),
-                new AppointmentRow(baseDate.AddDays(2).AddHours(10), "Tai mũi họng", "Đỗ Khánh D", 30, "rejected", "Bị từ chối", "BS. Cấn Văn Thắng", "Lịch trùng bác sĩ"),
-                new AppointmentRow(baseDate.AddDays(2).AddHours(15), "Nội tổng quát", "Phạm Quỳnh E", 30, "noshow", "Vắng mặt", "BS. Lê Ngọc Bảo Chân", "Không liên lạc được"),
-            });
+                if (args.RowIndex >= 0 && args.RowIndex < appointmentGrid.Rows.Count)
+                {
+                    await ShowUpsertDialogAsync(GetRowAtIndex(args.RowIndex));
+                }
+            };
 
-            UpdateFilterOptionsFromData();
-            RefreshGrid();
+            var contextMenu = new ContextMenuStrip();
+            contextMenu.Items.Add("Sửa", null, async (_, _) => await ShowUpsertDialogAsync(GetSelectedRow()));
+            contextMenu.Items.Add("Xóa", null, async (_, _) => await DeleteSelectedAsync());
+            appointmentGrid.ContextMenuStrip = contextMenu;
+            appointmentGrid.CellContentClick += async (_, args) =>
+            {
+                if (args.ColumnIndex == appointmentGrid.Columns["Action"].Index && args.RowIndex >= 0)
+                {
+                    await ShowUpsertDialogAsync(GetRowAtIndex(args.RowIndex));
+                }
+            };
         }
 
         private void ConfigureInputs()
@@ -301,8 +322,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             dtFrom.Checked = false;
             dtTo.Checked = false;
 
-            dtFrom.ValueChanged += (_, _) => RefreshGrid();
-            dtTo.ValueChanged += (_, _) => RefreshGrid();
+            dtFrom.ValueChanged += async (_, _) => await LoadAppointmentsAsync();
+            dtTo.ValueChanged += async (_, _) => await LoadAppointmentsAsync();
         }
 
         private void btnFilter_Click(object sender, EventArgs e)
@@ -371,6 +392,148 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             emptyStatePanel.Visible = rows.Count == 0;
         }
 
+        private async Task LoadAppointmentsAsync()
+        {
+            try
+            {
+                ToggleLoadingState(true);
+                _metadata ??= await _appointmentsApiClient.GetMetadataAsync();
+
+                var from = dtFrom.Checked ? DateOnly.FromDateTime(dtFrom.Value.Date) : (DateOnly?)null;
+                var to = dtTo.Checked ? DateOnly.FromDateTime(dtTo.Value.Date) : (DateOnly?)null;
+                var appointments = await _appointmentsApiClient.GetAppointmentsAsync(from, to);
+
+                _appointments.Clear();
+                _appointments.AddRange(appointments.Select(ToRow).OrderBy(a => a.Start));
+
+                UpdateFilterOptionsFromData();
+                RefreshGrid();
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"Không tải được dữ liệu cuộc hẹn: {ex.Message}");
+                _appointments.Clear();
+                RefreshGrid();
+            }
+            finally
+            {
+                ToggleLoadingState(false);
+            }
+        }
+
+        private void ToggleLoadingState(bool isLoading)
+        {
+            appointmentGrid.Enabled = !isLoading;
+            btnNew.Enabled = !isLoading;
+            btnFilter.Enabled = !isLoading;
+            btnServiceFilter.Enabled = !isLoading;
+            btnCustomerFilter.Enabled = !isLoading;
+            btnEmployeeFilter.Enabled = !isLoading;
+            btnStatusFilter.Enabled = !isLoading;
+            lblTitle.Text = isLoading ? "Đang tải dữ liệu cuộc hẹn..." : lblTitle.Text;
+        }
+
+        private AppointmentRow ToRow(DoctorAppointmentListItemDto dto)
+        {
+            var startLocal = DateTime.SpecifyKind(dto.StartUtc, DateTimeKind.Utc).ToLocalTime();
+            var duration = dto.DurationMinutes;
+            return new AppointmentRow(
+                dto.Id,
+                dto.DoctorId,
+                dto.SpecialtyId,
+                startLocal,
+                dto.SpecialtyName,
+                dto.PatientName,
+                duration,
+                dto.Status,
+                dto.StatusLabel,
+                dto.DoctorName,
+                dto.ClinicRoom ?? string.Empty,
+                dto.CustomerPhone);
+        }
+
+        private AppointmentRow? GetSelectedRow()
+        {
+            if (appointmentGrid.CurrentRow?.Index is { } idx && idx >= 0)
+            {
+                return GetRowAtIndex(idx);
+            }
+
+            return null;
+        }
+
+        private AppointmentRow? GetRowAtIndex(int index)
+        {
+            if (index < 0 || index >= appointmentGrid.Rows.Count)
+            {
+                return null;
+            }
+
+            var row = appointmentGrid.Rows[index];
+            if (row.Cells["Action"].Tag is AppointmentRow appointment)
+            {
+                return appointment;
+            }
+
+            return null;
+        }
+
+        private async Task ShowUpsertDialogAsync(AppointmentRow? existing = null)
+        {
+            try
+            {
+                _metadata ??= await _appointmentsApiClient.GetMetadataAsync();
+                using var dialog = new AppointmentUpsertDialog(_metadata, existing);
+                if (dialog.ShowDialog() != DialogResult.OK)
+                {
+                    return;
+                }
+
+                var payload = dialog.BuildRequest();
+
+                if (existing == null)
+                {
+                    await _appointmentsApiClient.CreateAsync(payload);
+                }
+                else
+                {
+                    await _appointmentsApiClient.UpdateAsync(existing.Id, payload);
+                }
+
+                await LoadAppointmentsAsync();
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"Lưu cuộc hẹn thất bại: {ex.Message}");
+            }
+        }
+
+        private async Task DeleteSelectedAsync()
+        {
+            var row = GetSelectedRow();
+            if (row == null)
+            {
+                _dialogService.ShowInfo("Vui lòng chọn cuộc hẹn để xóa.");
+                return;
+            }
+
+            if (!_dialogService.Confirm("Bạn có chắc chắn muốn xóa cuộc hẹn này?"))
+            {
+                return;
+            }
+
+            try
+            {
+                var request = new AdminAppointmentStatusRequest { Status = "canceled" };
+                await _appointmentsApiClient.UpdateStatusAsync(row.Id, request);
+                await LoadAppointmentsAsync();
+            }
+            catch (Exception ex)
+            {
+                _dialogService.ShowError($"Xóa cuộc hẹn thất bại: {ex.Message}");
+            }
+        }
+
         private IEnumerable<AppointmentRow> ApplyDropdownFilter(CheckedListBox? dropdown, IEnumerable<AppointmentRow> source)
         {
             if (dropdown == null || !_filterSelectors.TryGetValue(dropdown, out var selector))
@@ -400,6 +563,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
             var index = appointmentGrid.Rows.Add(false, formattedTime, row.Specialty, row.Patient, durationText, row.StatusLabel, row.Doctor, row.Note, "•••");
             var statusCell = appointmentGrid.Rows[index].Cells["Status"];
+
+            appointmentGrid.Rows[index].Cells["Action"].Tag = row;
 
             if (_statusStyles.TryGetValue(row.StatusCode, out var style))
             {
@@ -455,6 +620,151 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             if (_dropdownButtons.TryGetValue(dropdown, out var button))
             {
                 UpdateFilterButtonVisual(button, dropdown.CheckedItems.Count);
+            }
+        }
+
+        private sealed class AppointmentUpsertDialog : Form
+        {
+            private readonly ComboBox _doctorBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+            private readonly ComboBox _specialtyBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+            private readonly DateTimePicker _startPicker = new() { Format = DateTimePickerFormat.Custom, CustomFormat = "dd/MM/yyyy HH:mm" };
+            private readonly NumericUpDown _durationBox = new() { Minimum = 15, Maximum = 240, Increment = 5, Value = 30 };
+            private readonly TextBox _patientName = new();
+            private readonly TextBox _phone = new();
+            private readonly ComboBox _statusBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+            private readonly AppointmentRow? _existing;
+            private readonly AdminAppointmentMetadataDto _metadata;
+
+            public AppointmentUpsertDialog(AdminAppointmentMetadataDto metadata, AppointmentRow? existing)
+            {
+                _metadata = metadata;
+                _existing = existing;
+
+                Text = existing == null ? "Thêm cuộc hẹn" : "Cập nhật cuộc hẹn";
+                Width = 420;
+                Height = 360;
+                StartPosition = FormStartPosition.CenterParent;
+                FormBorderStyle = FormBorderStyle.FixedDialog;
+                MaximizeBox = false;
+                MinimizeBox = false;
+
+                BuildLayout();
+                PopulateOptions();
+                BindExisting();
+            }
+
+            public AdminAppointmentUpsertRequest BuildRequest()
+            {
+                return new AdminAppointmentUpsertRequest
+                {
+                    DoctorId = (Guid)_doctorBox.SelectedValue!,
+                    SpecialtyId = (Guid)_specialtyBox.SelectedValue!,
+                    SlotStartUtc = DateTime.SpecifyKind(_startPicker.Value, DateTimeKind.Local).ToUniversalTime(),
+                    DurationMinutes = (int)_durationBox.Value,
+                    PatientName = _patientName.Text.Trim(),
+                    CustomerPhone = _phone.Text.Trim(),
+                    Status = _statusBox.SelectedValue?.ToString() ?? "pending"
+                };
+            }
+
+            private void BuildLayout()
+            {
+                var layout = new TableLayoutPanel
+                {
+                    Dock = DockStyle.Fill,
+                    ColumnCount = 2,
+                    RowCount = 6,
+                    Padding = new Padding(12),
+                    AutoSize = true
+                };
+
+                layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 35));
+                layout.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 65));
+
+                AddRow(layout, 0, "Bác sĩ", _doctorBox);
+                AddRow(layout, 1, "Chuyên khoa", _specialtyBox);
+                AddRow(layout, 2, "Bắt đầu", _startPicker);
+                AddRow(layout, 3, "Thời lượng (phút)", _durationBox);
+                AddRow(layout, 4, "Bệnh nhân", _patientName);
+                AddRow(layout, 5, "SĐT", _phone);
+
+                if (_metadata.Statuses.Any())
+                {
+                    layout.RowCount += 1;
+                    layout.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                    AddRow(layout, 6, "Trạng thái", _statusBox);
+                }
+
+                var buttonPanel = new FlowLayoutPanel
+                {
+                    FlowDirection = FlowDirection.RightToLeft,
+                    Dock = DockStyle.Bottom,
+                    Padding = new Padding(12)
+                };
+
+                var saveButton = new Button { Text = "Lưu", DialogResult = DialogResult.OK, AutoSize = true };
+                var cancelButton = new Button { Text = "Hủy", DialogResult = DialogResult.Cancel, AutoSize = true };
+                buttonPanel.Controls.Add(saveButton);
+                buttonPanel.Controls.Add(cancelButton);
+
+                Controls.Add(layout);
+                Controls.Add(buttonPanel);
+                AcceptButton = saveButton;
+                CancelButton = cancelButton;
+            }
+
+            private static void AddRow(TableLayoutPanel panel, int rowIndex, string label, Control control)
+            {
+                while (panel.RowStyles.Count <= rowIndex)
+                {
+                    panel.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                }
+
+                var lbl = new Label
+                {
+                    Text = label,
+                    Dock = DockStyle.Fill,
+                    TextAlign = ContentAlignment.MiddleLeft,
+                    AutoSize = true
+                };
+
+                control.Dock = DockStyle.Fill;
+                panel.Controls.Add(lbl, 0, rowIndex);
+                panel.Controls.Add(control, 1, rowIndex);
+            }
+
+            private void PopulateOptions()
+            {
+                _doctorBox.DataSource = _metadata.Doctors.ToList();
+                _doctorBox.DisplayMember = nameof(AdminAppointmentDoctorOptionDto.Name);
+                _doctorBox.ValueMember = nameof(AdminAppointmentDoctorOptionDto.Id);
+
+                _specialtyBox.DataSource = _metadata.Specialties.ToList();
+                _specialtyBox.DisplayMember = nameof(AdminAppointmentSpecialtyOptionDto.Name);
+                _specialtyBox.ValueMember = nameof(AdminAppointmentSpecialtyOptionDto.Id);
+
+                _statusBox.DataSource = _metadata.Statuses.ToList();
+                _statusBox.DisplayMember = nameof(AdminAppointmentStatusOptionDto.Label);
+                _statusBox.ValueMember = nameof(AdminAppointmentStatusOptionDto.Code);
+            }
+
+            private void BindExisting()
+            {
+                if (_existing == null)
+                {
+                    return;
+                }
+
+                _doctorBox.SelectedValue = _existing.DoctorId;
+                _specialtyBox.SelectedValue = _existing.SpecialtyId;
+                _startPicker.Value = _existing.Start;
+                _durationBox.Value = _existing.DurationMinutes;
+                _patientName.Text = _existing.Patient;
+                _phone.Text = _existing.Phone;
+                if (!string.IsNullOrWhiteSpace(_existing.StatusCode))
+                {
+                    _statusBox.SelectedValue = _existing.StatusCode;
+                }
             }
         }
     }
