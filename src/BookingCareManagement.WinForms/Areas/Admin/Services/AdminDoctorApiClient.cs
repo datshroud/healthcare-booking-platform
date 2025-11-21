@@ -6,6 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using BookingCareManagement.WinForms.Areas.Admin.Models;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
+using System.IO;
+using System.Text.Json;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Services;
 
@@ -23,8 +25,14 @@ public sealed class AdminDoctorApiClient
         var client = CreateClient();
         using var response = await client.GetAsync("/api/Doctor", cancellationToken);
         await EnsureSuccessAsync(response);
-        var dtos = await response.Content.ReadFromJsonAsync<List<DoctorDto>>(cancellationToken: cancellationToken);
-        return dtos ?? new List<DoctorDto>();
+        var dtos = await response.Content.ReadFromJsonAsync<List<DoctorDto>>(cancellationToken: cancellationToken) ?? new List<DoctorDto>();
+
+        foreach (var d in dtos)
+        {
+            d.AvatarUrl = ToAbsoluteUrl(client, d.AvatarUrl);
+        }
+
+        return dtos;
     }
 
     public async Task<DoctorDto> GetByIdAsync(Guid doctorId, CancellationToken cancellationToken = default)
@@ -32,7 +40,12 @@ public sealed class AdminDoctorApiClient
         var client = CreateClient();
         using var response = await client.GetAsync($"/api/Doctor/{doctorId}", cancellationToken);
         await EnsureSuccessAsync(response);
-        return (await response.Content.ReadFromJsonAsync<DoctorDto>(cancellationToken: cancellationToken))!;
+        var dto = (await response.Content.ReadFromJsonAsync<DoctorDto>(cancellationToken: cancellationToken))!;
+        if (dto != null)
+        {
+            dto.AvatarUrl = ToAbsoluteUrl(client, dto.AvatarUrl);
+        }
+        return dto;
     }
 
     public async Task<DoctorWorkingHoursDto> GetWorkingHoursAsync(Guid doctorId, CancellationToken cancellationToken = default)
@@ -87,13 +100,19 @@ public sealed class AdminDoctorApiClient
             request.LastName,
             request.Email,
             request.PhoneNumber,
-            SpecialtyIds = request.SpecialtyIds
+            SpecialtyIds = request.SpecialtyIds,
+            AvatarUrl = request.AvatarUrl
         };
 
         var client = CreateClient();
         using var response = await client.PostAsJsonAsync("/api/Doctor", payload, cancellationToken);
         await EnsureSuccessAsync(response);
-        return (await response.Content.ReadFromJsonAsync<DoctorDto>(cancellationToken: cancellationToken))!;
+        var dto = (await response.Content.ReadFromJsonAsync<DoctorDto>(cancellationToken: cancellationToken))!;
+        if (dto != null)
+        {
+            dto.AvatarUrl = ToAbsoluteUrl(client, dto.AvatarUrl);
+        }
+        return dto;
     }
 
     public async Task UpdateAsync(Guid doctorId, DoctorUpsertRequest request, CancellationToken cancellationToken = default)
@@ -105,7 +124,8 @@ public sealed class AdminDoctorApiClient
             request.LastName,
             request.Email,
             request.PhoneNumber,
-            SpecialtyIds = request.SpecialtyIds
+            SpecialtyIds = request.SpecialtyIds,
+            AvatarUrl = request.AvatarUrl
         };
 
         var client = CreateClient();
@@ -135,6 +155,39 @@ public sealed class AdminDoctorApiClient
         await EnsureSuccessAsync(response);
     }
 
+    public async Task<string?> UploadFileAsync(string localFilePath, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(localFilePath) || !File.Exists(localFilePath)) return null;
+        var client = CreateClient();
+
+        using var content = new MultipartFormDataContent();
+        await using var stream = File.OpenRead(localFilePath);
+        var fileContent = new StreamContent(stream);
+        fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/octet-stream");
+        content.Add(fileContent, "file", Path.GetFileName(localFilePath));
+
+        using var response = await client.PostAsync("/api/Upload", content, cancellationToken);
+        await EnsureSuccessAsync(response);
+
+        // try parse JSON object { avatarUrl: "/uploads/.." }
+        var txt = await response.Content.ReadAsStringAsync(cancellationToken);
+        if (string.IsNullOrWhiteSpace(txt)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(txt);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object && doc.RootElement.TryGetProperty("avatarUrl", out var prop) && prop.ValueKind == JsonValueKind.String)
+            {
+                return prop.GetString();
+            }
+        }
+        catch
+        {
+            // ignore parse error
+        }
+
+        return txt;
+    }
+
     private HttpClient CreateClient() => _httpClientFactory.CreateClient("BookingCareApi");
 
     private static async Task EnsureSuccessAsync(HttpResponseMessage response)
@@ -146,5 +199,22 @@ public sealed class AdminDoctorApiClient
 
         var detail = await response.Content.ReadAsStringAsync();
         throw new InvalidOperationException($"API lỗi {(int)response.StatusCode}: {detail}");
+    }
+
+    private static string ToAbsoluteUrl(HttpClient client, string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return string.Empty;
+        if (Uri.IsWellFormedUriString(url, UriKind.Absolute)) return url!;
+
+        try
+        {
+            var baseAddress = client.BaseAddress ?? new Uri("/");
+            var absolute = new Uri(baseAddress, url).ToString();
+            return absolute;
+        }
+        catch
+        {
+            return url!;
+        }
     }
 }

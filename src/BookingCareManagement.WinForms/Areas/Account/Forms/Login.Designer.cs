@@ -224,7 +224,7 @@
             textBoxPassword.Margin = new Padding(3, 4, 3, 4);
             textBoxPassword.Name = "textBoxPassword";
             textBoxPassword.PasswordChar = '●';
-            textBoxPassword.Size = new Size(409, 44);
+            textBoxPassword.Size = new Size(409, 25);
             textBoxPassword.TabIndex = 0;
             // 
             // labelPassword
@@ -257,7 +257,7 @@
             textBoxUsername.Location = new Point(2, 2);
             textBoxUsername.Margin = new Padding(3, 4, 3, 4);
             textBoxUsername.Name = "textBoxUsername";
-            textBoxUsername.Size = new Size(409, 46);
+            textBoxUsername.Size = new Size(409, 25);
             textBoxUsername.TabIndex = 0;
             // 
             // labelUsername

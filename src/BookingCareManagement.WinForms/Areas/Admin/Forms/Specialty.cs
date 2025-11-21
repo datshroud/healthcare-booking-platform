@@ -279,6 +279,25 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     this.Cursor = Cursors.WaitCursor;
                     
                     var request = editorForm.BuildRequest();
+
+                    // If image is a local file, upload it first
+                    if (!string.IsNullOrWhiteSpace(request.ImageUrl) && File.Exists(request.ImageUrl))
+                    {
+                        try
+                        {
+                            var uploaded = await _specialtyApiClient.UploadFileAsync(request.ImageUrl);
+                            if (!string.IsNullOrWhiteSpace(uploaded))
+                            {
+                                request.ImageUrl = uploaded;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Không thể upload ảnh: {ex.Message}", "Lỗi upload", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            request.ImageUrl = null;
+                        }
+                    }
+
                     var createdSpecialty = await _specialtyApiClient.CreateAsync(request);
                     
                     if (createdSpecialty != null)
@@ -319,6 +338,25 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                         this.Cursor = Cursors.WaitCursor;
                         
                         var request = editorForm.BuildRequest();
+
+                        // If image is a local file, upload it first
+                        if (!string.IsNullOrWhiteSpace(request.ImageUrl) && File.Exists(request.ImageUrl))
+                        {
+                            try
+                            {
+                                var uploaded = await _specialtyApiClient.UploadFileAsync(request.ImageUrl);
+                                if (!string.IsNullOrWhiteSpace(uploaded))
+                                {
+                                    request.ImageUrl = uploaded;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show($"Không thể upload ảnh: {ex.Message}", "Lỗi upload", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                request.ImageUrl = null;
+                            }
+                        }
+
                         await _specialtyApiClient.UpdateAsync(selectedId, request);
                         
                         MessageBox.Show("Cập nhật chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
