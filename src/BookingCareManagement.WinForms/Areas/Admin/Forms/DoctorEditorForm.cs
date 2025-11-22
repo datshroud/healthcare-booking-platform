@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using BookingCareManagement.WinForms.Areas.Admin.Models;
 using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
+using System.Text.RegularExpressions;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Forms;
 
@@ -190,10 +191,14 @@ public sealed class DoctorEditorForm : Form
         
         _btnTabWorkingHours = CreateTabButton("🕐 Giờ làm việc", 1);
         _btnTabWorkingHours.Location = new Point(220, 10);
+        // Hide working hours tab when adding new doctor
+        _btnTabWorkingHours.Visible = _existing is not null;
         _btnTabWorkingHours.Enabled = _existing is not null;
 
         _btnTabDaysOff = CreateTabButton("🏖️ Ngày nghỉ", 2);
         _btnTabDaysOff.Location = new Point(420, 10);
+        // Hide days off tab when adding new doctor
+        _btnTabDaysOff.Visible = _existing is not null;
         _btnTabDaysOff.Enabled = _existing is not null;
 
         _tabHeaderPanel.Controls.AddRange(new Control[] { _btnTabInfo, _btnTabWorkingHours, _btnTabDaysOff });
@@ -234,21 +239,27 @@ public sealed class DoctorEditorForm : Form
         _btnTabInfo.BackColor = tabIndex == 0 ? Color.FromArgb(23, 162, 184) : Color.FromArgb(226, 232, 240);
         _btnTabInfo.ForeColor = tabIndex == 0 ? Color.White : Color.FromArgb(51, 65, 85);
         
-        _btnTabWorkingHours.BackColor = tabIndex == 1 ? Color.FromArgb(23, 162, 184) : Color.FromArgb(226, 232, 240);
-        _btnTabWorkingHours.ForeColor = tabIndex == 1 ? Color.White : Color.FromArgb(51, 65, 85);
+        if (_btnTabWorkingHours.Visible)
+        {
+            _btnTabWorkingHours.BackColor = tabIndex == 1 ? Color.FromArgb(23, 162, 184) : Color.FromArgb(226, 232, 240);
+            _btnTabWorkingHours.ForeColor = tabIndex == 1 ? Color.White : Color.FromArgb(51, 65, 85);
+        }
 
-        _btnTabDaysOff.BackColor = tabIndex == 2 ? Color.FromArgb(23, 162, 184) : Color.FromArgb(226, 232, 240);
-        _btnTabDaysOff.ForeColor = tabIndex == 2 ? Color.White : Color.FromArgb(51, 65, 85);
+        if (_btnTabDaysOff.Visible)
+        {
+            _btnTabDaysOff.BackColor = tabIndex == 2 ? Color.FromArgb(23, 162, 184) : Color.FromArgb(226, 232, 240);
+            _btnTabDaysOff.ForeColor = tabIndex == 2 ? Color.White : Color.FromArgb(51, 65, 85);
+        }
 
         // Show/hide tab content
         if (_pnlInfoTab != null)
             _pnlInfoTab.Visible = tabIndex == 0;
         
         if (_pnlWorkingHoursTab != null)
-            _pnlWorkingHoursTab.Visible = tabIndex == 1;
+            _pnlWorkingHoursTab.Visible = tabIndex == 1 && _btnTabWorkingHours.Visible;
 
         if (_pnlDaysOffTab != null)
-            _pnlDaysOffTab.Visible = tabIndex == 2;
+            _pnlDaysOffTab.Visible = tabIndex == 2 && _btnTabDaysOff.Visible;
     }
 
     private void BuildInfoTab()
@@ -980,9 +991,20 @@ public sealed class DoctorEditorForm : Form
 
     private void HandleSave()
     {
+        // Validation: required fields
         if (string.IsNullOrWhiteSpace(_txtLastName.Text))
         {
             MessageBox.Show(this, "Vui lòng nhập họ bác sĩ!", "Thiếu thông tin",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            ShowTab(0);
+            _txtLastName.Focus();
+            return;
+        }
+
+        // Last name must not contain digits
+        if (_txtLastName.Text.Any(char.IsDigit))
+        {
+            MessageBox.Show(this, "Họ không được chứa chữ số.", "Dữ liệu không hợp lệ",
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
             ShowTab(0);
             _txtLastName.Focus();
@@ -998,6 +1020,16 @@ public sealed class DoctorEditorForm : Form
             return;
         }
 
+        // First name must not contain digits
+        if (_txtFirstName.Text.Any(char.IsDigit))
+        {
+            MessageBox.Show(this, "Tên không được chứa chữ số.", "Dữ liệu không hợp lệ",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            ShowTab(0);
+            _txtFirstName.Focus();
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(_txtEmail.Text))
         {
             MessageBox.Show(this, "Vui lòng nhập email bác sĩ!", "Thiếu thông tin",
@@ -1005,6 +1037,33 @@ public sealed class DoctorEditorForm : Form
             ShowTab(0);
             _txtEmail.Focus();
             return;
+        }
+
+        // Email format check
+        var email = _txtEmail.Text.Trim();
+        if (!Regex.IsMatch(email, @"^[^\s@]+@[^\s@]+\.[^\s@]+$"))
+        {
+            MessageBox.Show(this, "Vui lòng nhập địa chỉ email hợp lệ.", "Dữ liệu không hợp lệ",
+                MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            ShowTab(0);
+            _txtEmail.Focus();
+            return;
+        }
+
+        // Phone optional but if provided, must be 10 digits and start with 0
+        var phone = _txtPhone.Text?.Trim() ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(phone))
+        {
+            var digits = new string(phone.Where(char.IsDigit).ToArray());
+            // Require exactly 10 digits and start with '0'
+            if (digits.Length != 10 || !digits.StartsWith("0"))
+            {
+                MessageBox.Show(this, "Vui lòng nhập số điện thoại hợp lệ: 10 chữ số và bắt đầu bằng số 0.", "Dữ liệu không hợp lệ",
+                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                ShowTab(0);
+                _txtPhone.Focus();
+                return;
+            }
         }
 
         DialogResult = DialogResult.OK;
