@@ -17,6 +17,8 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
         private readonly AdminSpecialtyApiClient? _specialtyApiClient;
         private readonly IServiceProvider? _serviceProvider;
 
+        private const string SearchPlaceholder = "Tìm kiếm chuyên khoa";
+
         // Parameterless constructor (used by designer)
         public Service()
         {
@@ -62,17 +64,21 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 if (this.textBoxSearch != null)
                 {
                     // Ensure no duplicate handlers
+                    this.textBoxSearch.TextChanged -= TextBoxSearch_TextChanged;
                     this.textBoxSearch.Enter -= TextBoxSearch_Enter;
                     this.textBoxSearch.Leave -= TextBoxSearch_Leave;
-                    this.textBoxSearch.TextChanged -= TextBoxSearch_TextChanged;
 
+                    // Set placeholder text before attaching handlers so initial state is correct
+                    this.textBoxSearch.Text = SearchPlaceholder;
+                    this.textBoxSearch.ForeColor = Color.Gray;
+
+                    // Only listen to TextChanged and Enter/Leave for placeholder behavior
+                    this.textBoxSearch.TextChanged += TextBoxSearch_TextChanged;
                     this.textBoxSearch.Enter += TextBoxSearch_Enter;
                     this.textBoxSearch.Leave += TextBoxSearch_Leave;
-                    this.textBoxSearch.TextChanged += TextBoxSearch_TextChanged;
 
-                    // Set Vietnamese placeholder
-                    this.textBoxSearch.Text = "Tìm kiếm dịch vụ...";
-                    this.textBoxSearch.ForeColor = Color.Gray;
+                    // Try to set PlaceholderText property to empty to avoid designer interference
+                    try { this.textBoxSearch.PlaceholderText = string.Empty; } catch { }
                 }
 
                 // Hiển thị tất cả dịch vụ
@@ -187,6 +193,9 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
             // Căn chỉnh lại sau khi render xong
             CenterServiceCards();
+
+            // Ensure action buttons reflect current search state (always enabled now)
+            SetActionButtonsEnabled(true);
         }
 
         private Panel CreateServiceCard(ServiceItem service)
@@ -303,6 +312,7 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
             Button buttonLearnMore = new Button
             {
+                Name = "btnLearnMore",
                 Text = "Chi tiết",
                 Font = new Font("Segoe UI", 9),
                 ForeColor = Color.FromArgb(66, 66, 66),
@@ -347,6 +357,7 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
             Button buttonBookNow = new Button
             {
+                Name = "btnBookNow",
                 Text = "Đặt ngay",
                 Font = new Font("Segoe UI", 9, FontStyle.Bold),
                 ForeColor = Color.White,
@@ -368,34 +379,29 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                         return;
                     }
 
-                    // If this Service form is hosted inside MainForm, ask MainForm to show Bookings in the content area
-                    // Prefer resolving MainForm from DI so we target the shell instance created by the host.
-                    // Prefer locating the already-displayed MainForm instance in Application.OpenForms (the actual shell).
-                    // Only fallback to DI if no shell instance is found (DI would create a new instance otherwise).
                     var main = System.Windows.Forms.Application.OpenForms
                         .OfType<global::BookingCareManagement.WinForms.MainForm>()
                         .FirstOrDefault()
                         ?? _serviceProvider?.GetService<global::BookingCareManagement.WinForms.MainForm>();
-                     if (main != null)
-                     {
-                         // Use BeginInvoke so we don't close the current child (Service) while still in its event handler
-                         main.BeginInvoke(new Action(() =>
-                         {
-                             try
-                             {
-                                // Fire-and-forget the async helper on the UI thread
+                    if (main != null)
+                    {
+                        main.BeginInvoke(new Action(() =>
+                        {
+                            try
+                            {
                                 _ = main.ShowBookingsForSpecialtyAsync(service.Id, service.Name, service.Price);
-                             }
-                             catch (Exception ex)
-                             {
-                                 try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] BeginInvoke ShowBookings exception: {ex}\n"); } catch {}
-                             }
-                         }));
+                            }
+                            catch (Exception ex)
+                            {
+                                try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] BeginInvoke ShowBookings exception: {ex}\n"); } catch {}
+                            }
+                        }
 
-                         return;
-                     }
+                        ));
 
-                    // Fallback: create and show modal Bookings if not hosted in shell
+                        return;
+                    }
+
                     var bookings = _serviceProvider.GetService<Bookings>();
                     if (bookings is null)
                     {
@@ -403,7 +409,6 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                         return;
                     }
 
-                    // Pre-initialize bookings (load data) BEFORE showing modal to avoid blank flicker
                     await bookings.OpenForSpecialtyAsync(service.Id, service.Name, service.Price);
                     bookings.ShowDialog(this);
                 }
@@ -413,7 +418,6 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                     MessageBox.Show($"Không thể mở form đặt lịch:\n{ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 }
             };
-
             // Add controls
             cardPanel.Controls.Add(pictureBox);
             cardPanel.Controls.Add(labelName);
@@ -442,43 +446,82 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
         private void TextBoxSearch_Enter(object sender, EventArgs e)
         {
-            if (textBoxSearch.Text == "Tìm kiếm dịch vụ...")
+            // If placeholder is shown, clear it for user typing
+            try
             {
-                textBoxSearch.Text = "";
-                textBoxSearch.ForeColor = Color.Black;
+                if (textBoxSearch.Text == SearchPlaceholder)
+                {
+                    textBoxSearch.Text = string.Empty;
+                    textBoxSearch.ForeColor = Color.Black;
+                }
             }
+            catch { }
         }
 
         private void TextBoxSearch_Leave(object sender, EventArgs e)
         {
-            if (string.IsNullOrWhiteSpace(textBoxSearch.Text))
+            // If user left the box empty, restore placeholder
+            try
             {
-                textBoxSearch.Text = "Tìm kiếm dịch vụ...";
-                textBoxSearch.ForeColor = Color.Gray;
+                if (string.IsNullOrWhiteSpace(textBoxSearch.Text))
+                {
+                    textBoxSearch.Text = SearchPlaceholder;
+                    textBoxSearch.ForeColor = Color.Gray;
+                }
             }
+            catch { }
         }
 
         private void TextBoxSearch_TextChanged(object sender, EventArgs e)
         {
+            // Ignore changes that are just the placeholder
+            var current = textBoxSearch.Text ?? string.Empty;
+            if (current == SearchPlaceholder) return;
+
             // if services not loaded yet, ignore
             if (services == null || services.Count == 0)
             {
-                // if placeholder text or empty, nothing to display
-                if (string.IsNullOrWhiteSpace(textBoxSearch?.Text) || textBoxSearch?.Text == "Tìm kiếm dịch vụ...")
+                // if empty, nothing to display
+                if (string.IsNullOrWhiteSpace(current))
                     return;
             }
 
-            if (textBoxSearch.Text == "Tìm kiếm dịch vụ..." || string.IsNullOrWhiteSpace(textBoxSearch.Text))
+            // If search box is empty, show all services and enable action buttons
+            if (string.IsNullOrWhiteSpace(current))
             {
                 DisplayServices(services);
+                SetActionButtonsEnabled(true);
                 return;
             }
 
-            string searchText = textBoxSearch.Text.ToLower();
+            // Otherwise perform filtering based on user input
+            string searchText = current.ToLower();
             List<ServiceItem> filteredServices = services.FindAll(s =>
                 s.Name.ToLower().Contains(searchText));
 
             DisplayServices(filteredServices);
+            // keep action buttons enabled during search (user requested)
+            SetActionButtonsEnabled(true);
+        }
+
+        private void SetActionButtonsEnabled(bool enabled)
+        {
+            if (flowLayoutPanelServices == null) return;
+            foreach (Control card in flowLayoutPanelServices.Controls)
+            {
+                var btnLearn = card.Controls.OfType<Button>().FirstOrDefault(b => b.Name == "btnLearnMore");
+                var btnBook = card.Controls.OfType<Button>().FirstOrDefault(b => b.Name == "btnBookNow");
+                if (btnLearn != null)
+                {
+                    btnLearn.Enabled = enabled;
+                    btnLearn.ForeColor = enabled ? Color.FromArgb(66,66,66) : Color.Gray;
+                }
+                if (btnBook != null)
+                {
+                    btnBook.Enabled = enabled;
+                    btnBook.BackColor = enabled ? Color.FromArgb(0, 123, 255) : Color.Gray;
+                }
+            }
         }
 
         private static string FormatDuration(int? minutes)
