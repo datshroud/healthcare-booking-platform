@@ -7,6 +7,8 @@ using System.Windows.Forms;
 using BookingCareManagement.WinForms.Areas.Admin.Models;
 using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
+using System.Net;
+using System.IO;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 {
@@ -95,8 +97,28 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                             var uri = new Uri(doc.AvatarUrl);
                             if (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
                             {
-                                // TODO: download image async if desired; use placeholder for now
-                                row.Cells[0].Value = CreatePlaceholderWithColor(doc.FullName);
+                                // Try to download the image synchronously (small images)
+                                try
+                                {
+                                    var req = WebRequest.Create(doc.AvatarUrl);
+                                    req.Timeout = 5000; // 5s timeout
+                                    using var resp = req.GetResponse();
+                                    using var stream = resp.GetResponseStream();
+                                    if (stream != null)
+                                    {
+                                        using var img = Image.FromStream(stream);
+                                        row.Cells[0].Value = new Bitmap(img, new Size(60, 60));
+                                    }
+                                    else
+                                    {
+                                        row.Cells[0].Value = CreatePlaceholderWithColor(doc.FullName);
+                                    }
+                                }
+                                catch
+                                {
+                                    // fallback to placeholder if download fails
+                                    row.Cells[0].Value = CreatePlaceholderWithColor(doc.FullName);
+                                }
                             }
                             else
                             {
@@ -218,6 +240,26 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     this.Cursor = Cursors.WaitCursor;
 
                     var request = editorForm.BuildRequest();
+
+                    // If avatar is a local file path, upload it first
+                    if (!string.IsNullOrWhiteSpace(request.AvatarUrl) && File.Exists(request.AvatarUrl))
+                    {
+                        try
+                        {
+                            var uploaded = await _doctorApiClient.UploadFileAsync(request.AvatarUrl);
+                            if (!string.IsNullOrWhiteSpace(uploaded))
+                            {
+                                request.AvatarUrl = uploaded; // server path (e.g. /uploads/avatars/..)
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show($"Không thể upload ảnh: {ex.Message}", "Lỗi upload", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                            // allow continue without avatar
+                            request.AvatarUrl = null;
+                        }
+                    }
+
                     var createdDoctor = await _doctorApiClient.CreateAsync(request);
 
                     if (createdDoctor != null)
@@ -258,6 +300,24 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                         this.Cursor = Cursors.WaitCursor;
 
                         var request = editorForm.BuildRequest();
+
+                        // If avatar is a local file path, upload it first
+                        if (!string.IsNullOrWhiteSpace(request.AvatarUrl) && File.Exists(request.AvatarUrl))
+                        {
+                            try
+                            {
+                                var uploaded = await _doctorApiClient.UploadFileAsync(request.AvatarUrl);
+                                if (!string.IsNullOrWhiteSpace(uploaded))
+                                {
+                                    request.AvatarUrl = uploaded; // server path
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show($"Không thể upload ảnh: {ex.Message}", "Lỗi upload", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                request.AvatarUrl = null;
+                            }
+                        }
 
                         await _doctorApiClient.UpdateAsync(id, request);
 
