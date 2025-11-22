@@ -67,13 +67,13 @@
             textBoxSearch.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             textBoxSearch.BorderStyle = BorderStyle.FixedSingle;
             textBoxSearch.Font = new Font("Segoe UI", 11F);
-            textBoxSearch.ForeColor = Color.Gray;
+            textBoxSearch.ForeColor = Color.Black;
             textBoxSearch.Location = new Point(1227, 34);
             textBoxSearch.Margin = new Padding(4, 5, 4, 5);
             textBoxSearch.Name = "textBoxSearch";
             textBoxSearch.Size = new Size(333, 32);
             textBoxSearch.TabIndex = 4;
-            textBoxSearch.Text = "Search services";
+            textBoxSearch.Text = "";
             // 
             // labelTitle
             // 

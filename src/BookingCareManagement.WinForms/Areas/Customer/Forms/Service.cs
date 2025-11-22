@@ -65,20 +65,20 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 {
                     // Ensure no duplicate handlers
                     this.textBoxSearch.TextChanged -= TextBoxSearch_TextChanged;
-                    this.textBoxSearch.Enter -= TextBoxSearch_Enter;
-                    this.textBoxSearch.Leave -= TextBoxSearch_Leave;
 
-                    // Set placeholder text before attaching handlers so initial state is correct
-                    this.textBoxSearch.Text = SearchPlaceholder;
-                    this.textBoxSearch.ForeColor = Color.Gray;
+                    // Use built-in PlaceholderText on WinForms/.NET 9 if available
+                    try
+                    {
+                        this.textBoxSearch.PlaceholderText = SearchPlaceholder;
+                    }
+                    catch
+                    {
+                        // Fallback: if PlaceholderText not supported, keep empty and rely on manual behavior (not used here)
+                        try { this.textBoxSearch.PlaceholderText = string.Empty; } catch { }
+                    }
 
-                    // Only listen to TextChanged and Enter/Leave for placeholder behavior
+                    // Only listen to TextChanged for filtering
                     this.textBoxSearch.TextChanged += TextBoxSearch_TextChanged;
-                    this.textBoxSearch.Enter += TextBoxSearch_Enter;
-                    this.textBoxSearch.Leave += TextBoxSearch_Leave;
-
-                    // Try to set PlaceholderText property to empty to avoid designer interference
-                    try { this.textBoxSearch.PlaceholderText = string.Empty; } catch { }
                 }
 
                 // Hiển thị tất cả dịch vụ
@@ -444,39 +444,9 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             MessageBox.Show($"Bạn chọn đặt: {service.Name}", "Xác nhận");
         }
 
-        private void TextBoxSearch_Enter(object sender, EventArgs e)
-        {
-            // If placeholder is shown, clear it for user typing
-            try
-            {
-                if (textBoxSearch.Text == SearchPlaceholder)
-                {
-                    textBoxSearch.Text = string.Empty;
-                    textBoxSearch.ForeColor = Color.Black;
-                }
-            }
-            catch { }
-        }
-
-        private void TextBoxSearch_Leave(object sender, EventArgs e)
-        {
-            // If user left the box empty, restore placeholder
-            try
-            {
-                if (string.IsNullOrWhiteSpace(textBoxSearch.Text))
-                {
-                    textBoxSearch.Text = SearchPlaceholder;
-                    textBoxSearch.ForeColor = Color.Gray;
-                }
-            }
-            catch { }
-        }
-
         private void TextBoxSearch_TextChanged(object sender, EventArgs e)
         {
-            // Ignore changes that are just the placeholder
             var current = textBoxSearch.Text ?? string.Empty;
-            if (current == SearchPlaceholder) return;
 
             // if services not loaded yet, ignore
             if (services == null || services.Count == 0)
