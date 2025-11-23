@@ -172,7 +172,6 @@ namespace BookingCareManagement.WinForms
             try
             {
                 SetLoadingState(true);
-                // Sửa: Sử dụng GetAllAsync() thay vì GetCustomersAsync()
                 var customers = await _customerService.GetAllAsync();
                 originalCustomers = customers.ToList();
                 _activeList = originalCustomers = customers.ToList();
@@ -202,9 +201,21 @@ namespace BookingCareManagement.WinForms
         private void RefreshGrid()
         {
             customersDataGridView.Rows.Clear();
+
+            // Determine paging
+            if (_pageSize <= 0) _pageSize = 7;
+            _totalItems = _activeList?.Count ?? 0;
+            int totalPagesNow = Math.Max(1, (int)Math.Ceiling(_totalItems / (double)_pageSize));
+            if (_currentPage > totalPagesNow) _currentPage = totalPagesNow;
+            if (_currentPage < 1) _currentPage = 1;
+
+            int startIndex = (_currentPage - 1) * _pageSize;
+            var pageItems = (_activeList ?? new List<CustomerDto>()).Skip(startIndex).Take(_pageSize).ToList();
+
             // track currently displayed customers (for painting and context actions)
-            displayedCustomers = originalCustomers.ToList();
-            foreach (var customer in originalCustomers)
+            displayedCustomers = pageItems;
+
+            foreach (var customer in pageItems)
             {
                 customersDataGridView.Rows.Add(
                     // Columns: Customer, Appointments, LastAppointment, Created
@@ -217,10 +228,12 @@ namespace BookingCareManagement.WinForms
 
             // update UI counts and pager
             UpdateCustomerCountWithFilter(_totalItems);
-            int totalPagesNow = _pageSize <= 0 ? 1 : Math.Max(1, (int)Math.Ceiling(_totalItems / (double)_pageSize));
             lblPageInfoPager.Text = $"Trang {_currentPage} / {totalPagesNow}";
             btnPrevPage.Enabled = _currentPage > 1;
             btnNextPage.Enabled = _currentPage < totalPagesNow;
+
+            // reset selected index for safety
+            selectedRowIndex = -1;
         }
 
         private string NormalizeString(string? input)
@@ -287,18 +300,11 @@ namespace BookingCareManagement.WinForms
 
         private void DisplaySearchResults(List<CustomerDto> searchResults)
         {
-            customersDataGridView.Rows.Clear();
-            displayedCustomers = searchResults.ToList();
-            foreach (var customer in searchResults)
-            {
-                customersDataGridView.Rows.Add(
-                    $"{customer.FullName}\n{customer.Email}",
-                    customer.AppointmentCount.ToString(),
-                    customer.LastAppointment?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa có",
-                    customer.CreatedAt.ToString("dd/MM/yyyy")
-                );
-            }
-            UpdateCustomerCountWithFilter(searchResults.Count);
+            // set active list to filtered results and reset paging, then refresh grid so paging is applied
+            _activeList = searchResults.ToList();
+            _totalItems = _activeList.Count;
+            _currentPage = 1;
+            RefreshGrid();
         }
 
         private void SetLoadingState(bool isLoading)
@@ -413,8 +419,8 @@ namespace BookingCareManagement.WinForms
         {
             if (e.ColumnIndex == customersDataGridView.Columns["Actions"].Index && e.RowIndex >= 0)
             {
-                // store selected index relative to the active list
-                selectedRowIndex = (_currentPage - 1) * _pageSize + e.RowIndex;
+                // store selected index relative to the current page (row index within displayedCustomers)
+                selectedRowIndex = e.RowIndex;
                 Rectangle cellRect = customersDataGridView.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, false);
 
                 actionMenu.Show(customersDataGridView,
@@ -879,7 +885,6 @@ namespace BookingCareManagement.WinForms
             try
             {
                 var request = CreateCustomerRequest();
-                // Sửa: Sử dụng CreateAsync() thay vì AddCustomerAsync()
                 NewCustomer = await _customerService.CreateAsync(request);
 
                 MessageBox.Show("Đã thêm khách hàng thành công!", "Thông báo",
@@ -911,7 +916,6 @@ namespace BookingCareManagement.WinForms
              PhoneNumber = GetPhoneNumber(),
              Gender = string.IsNullOrWhiteSpace(cboGender?.Text) ? null : cboGender.Text,
              DateOfBirth = dob,
-             // Simplified: do not send welcome email from Add dialog by default
              SendWelcomeEmail = false
              };
         }
@@ -1108,17 +1112,6 @@ namespace BookingCareManagement.WinForms
                 ForeColor = Color.FromArgb(31, 41, 55)
             };
         }
-        private Label CreateLabelPhone(string text, int x, int y)
-        {
-            return new Label
-            {
-                Text = text,
-                Location = new Point(x, y),
-                Size = new Size(50, 20),
-                Font = new Font("Segoe UI", 9),
-                ForeColor = Color.FromArgb(31, 41, 55)
-            };
-        }
 
         private TextBox CreateTextBox(int x, int y)
         {
@@ -1174,7 +1167,6 @@ namespace BookingCareManagement.WinForms
                 if (!string.IsNullOrEmpty(_customer.PhoneNumber))
                 {
                     string phone = _customer.PhoneNumber.Trim();
-                    // Có thể phone được lưu kèm hoặc không kèm country code. Xử lý linh hoạt.
                     string[] phoneParts = phone.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
                     if (phoneParts.Length >1 && phoneParts[0].StartsWith("+"))
@@ -1182,7 +1174,6 @@ namespace BookingCareManagement.WinForms
                         string countryCode = phoneParts[0];
                         string phoneNumber = string.Join(" ", phoneParts.Skip(1));
 
-                        // Tìm country code trong combobox (so sánh startswith để hỗ trợ định dạng như "+84 🇻🇳")
                         for (int i =0; i < cboCountryCode.Items.Count; i++)
                         {
                             var item = cboCountryCode.Items[i].ToString();
@@ -1197,7 +1188,6 @@ namespace BookingCareManagement.WinForms
                     }
                     else
                     {
-                        // Không có country code, đặt vào ô số điện thoại và giữ country code mặc định
                         txtPhone.Text = phone;
                     }
                 }
@@ -1274,7 +1264,6 @@ namespace BookingCareManagement.WinForms
             try
             {
                 var request = CreateUpdateRequest();
-                // Sửa: Sử dụng UpdateAsync() thay vì UpdateCustomerAsync()
                 await _customerService.UpdateAsync(_customer.Id, request);
 
                 // Cập nhật local object
