@@ -9,6 +9,8 @@ using System.Globalization;
 using BookingCareManagement.WinForms.Areas.Customer.Models;
 using BookingCareManagement.WinForms.Shared.State;
 using BookingCareManagement.WinForms.Areas.Customer.Services;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 {
@@ -30,6 +32,19 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 ["noshow"] = "Vắng mặt",
             };
 
+        // Pagination state
+        private List<CustomerBookingDto> _bookingCache = new();
+        private List<CustomerBookingDto> _filteredBookings = new();
+        private int _currentPage = 1;
+        private int _pageSize = 10;
+        private int _totalPages = 1;
+
+        // Pagination controls
+        private Button? _btnPrevPage;
+        private Button? _btnNextPage;
+        private Label? _lblPageInfo;
+        private ComboBox? _cbPageSize;
+
         public MyBookingForm(IHttpClientFactory httpFactory, SessionState session)
         {
             _httpFactory = httpFactory;
@@ -47,6 +62,9 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
             dgvBookings.CellFormatting += DgvBookings_CellFormatting;
             dgvBookings.CellPainting += DgvBookings_CellPainting;
+
+            // Initialize pagination controls
+            InitializePaginationControls();
         }
 
         private static string MapStatusToVietnamese(string? code, string? label)
@@ -160,31 +178,63 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
         private async Task LoadBookingsAsync()
         {
-            dgvBookings.Rows.Clear();
+            // Clear existing cache
+            _bookingCache.Clear();
 
             try
             {
                 var items = await _bookingService.GetMyBookingsAsync();
-                if (items == null || items.Length == 0) return;
-
-                foreach (var it in items)
+                if (items == null || items.Length == 0)
                 {
-                    var displayStatus = MapStatusToVietnamese(it.Status, it.StatusLabel);
-                    var priceDisplay = it.Price; // DataGridView formatting handles currency via CellFormatting
-
-                    // Add values in exact order of columns: Date, Time, Doctor, Specialty, Status, Price
-                    var rowIndex = dgvBookings.Rows.Add(it.DateText, it.TimeText, it.DoctorName, it.SpecialtyName, displayStatus, priceDisplay);
-                    var row = dgvBookings.Rows[rowIndex];
-                    row.Tag = it.Id; // store appointment id for operations
+                    dgvBookings.Rows.Clear();
+                    return;
                 }
 
-                if (dgvBookings.Rows.Count > 0) dgvBookings.Rows[0].Selected = true;
+                _bookingCache = items.ToList();
+
+                // Initialize filtered and paging
+                DisplayBookings(_bookingCache);
             }
             catch (Exception ex)
             {
                 Console.WriteLine("LoadBookingsAsync error: " + ex);
                 LoadDummyData();
             }
+        }
+
+        private void DisplayBookings(List<CustomerBookingDto> bookings)
+        {
+            _filteredBookings = bookings.OrderByDescending(b => b.DateText).ToList();
+            _currentPage = 1;
+            RenderPage();
+        }
+
+        private void RenderPage()
+        {
+            dgvBookings.Rows.Clear();
+
+            if (_filteredBookings == null) _filteredBookings = new List<CustomerBookingDto>();
+
+            var total = _filteredBookings.Count;
+            _totalPages = Math.Max(1, (int)Math.Ceiling(total / (double)_pageSize));
+            if (_currentPage < 1) _currentPage = 1;
+            if (_currentPage > _totalPages) _currentPage = _totalPages;
+
+            var pageItems = _filteredBookings.Skip((_currentPage - 1) * _pageSize).Take(_pageSize).ToList();
+
+            foreach (var it in pageItems)
+            {
+                var displayStatus = MapStatusToVietnamese(it.Status, it.StatusLabel);
+                var priceDisplay = it.Price; // DataGridView formatting handles currency via CellFormatting
+
+                var rowIndex = dgvBookings.Rows.Add(it.DateText, it.TimeText, it.DoctorName, it.SpecialtyName, displayStatus, priceDisplay);
+                var row = dgvBookings.Rows[rowIndex];
+                row.Tag = it.Id; // store appointment id for operations
+            }
+
+            if (dgvBookings.Rows.Count > 0) dgvBookings.Rows[0].Selected = true;
+
+            UpdatePaginationControls();
         }
 
         private async void BtnCancel_Click(object sender, EventArgs e)
@@ -241,13 +291,16 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
         private void LoadDummyData()
         {
-            dgvBookings.Rows.Clear();
-            dgvBookings.Rows.Add("Thứ Hai, 20/11/2023", "09:00 - 10:00", "BS. Nguyễn Văn A", "Nha Khoa", "Đã Duyệt", 200000);
-            dgvBookings.Rows.Add("Thứ Tư, 22/11/2023", "14:30 - 16:30", "BS. Le Wilson", "Phẫu thuật", "Chờ Duyệt", 1000000);
-            dgvBookings.Rows.Add("Chủ Nhật, 26/11/2023", "08:00 - 09:00", "BS. Trần B", "Niềng răng", "Đã Duyệt", 500000);
-            dgvBookings.Rows.Add("Thứ Ba, 28/11/2023", "10:00 - 11:00", "BS. Sarah", "Nhổ răng khôn", "Đã Duyệt", 400000);
+            // For dummy data, populate internal cache and render page
+            _bookingCache = new List<CustomerBookingDto>
+            {
+                new CustomerBookingDto { Id = Guid.NewGuid(), DateText = "Thứ Hai, 20/11/2023", TimeText = "09:00 - 10:00", DoctorName = "BS. Nguyễn Văn A", SpecialtyName = "Nha Khoa", Status = "approved", Price = 200000 },
+                new CustomerBookingDto { Id = Guid.NewGuid(), DateText = "Thứ Tư, 22/11/2023", TimeText = "14:30 - 16:30", DoctorName = "BS. Le Wilson", SpecialtyName = "Phẫu thuật", Status = "pending", Price = 1000000 },
+                new CustomerBookingDto { Id = Guid.NewGuid(), DateText = "Chủ Nhật, 26/11/2023", TimeText = "08:00 - 09:00", DoctorName = "BS. Trần B", SpecialtyName = "Niềng răng", Status = "approved", Price = 500000 },
+                new CustomerBookingDto { Id = Guid.NewGuid(), DateText = "Thứ Ba, 28/11/2023", TimeText = "10:00 - 11:00", DoctorName = "BS. Sarah", SpecialtyName = "Nhổ răng khôn", Status = "approved", Price = 400000 }
+            };
 
-            if (dgvBookings.Rows.Count > 0) dgvBookings.Rows[0].Selected = true;
+            DisplayBookings(_bookingCache);
         }
 
         private void DrawRoundedButton(Button btn, Graphics g, int radius, Color backColor)
@@ -269,6 +322,108 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                     g.FillPath(brush, path);
                 }
                 TextRenderer.DrawText(g, btn.Text, btn.Font, r, Color.White, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+            }
+        }
+
+        private void InitializePaginationControls()
+        {
+            // Create a small panel under dgvBookings to host pagination controls
+            var paginationPanel = new Panel
+            {
+                Height = 40,
+                Dock = DockStyle.Bottom,
+                BackColor = Color.Transparent
+            };
+
+            _btnPrevPage = new Button
+            {
+                Text = "Trước",
+                Width = 80,
+                Height = 30,
+                Left = 10,
+                Top = 5
+            };
+            _btnPrevPage.Click += (s, e) => ChangePage(-1);
+
+            _btnNextPage = new Button
+            {
+                Text = "Tiếp",
+                Width = 80,
+                Height = 30,
+                Left = 100,
+                Top = 5
+            };
+            _btnNextPage.Click += (s, e) => ChangePage(1);
+
+            _lblPageInfo = new Label
+            {
+                AutoSize = false,
+                Width = 240,
+                Height = 30,
+                Left = 200,
+                Top = 8,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            _cbPageSize = new ComboBox
+            {
+                Width = 80,
+                Height = 30,
+                Left = 460,
+                Top = 5,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            _cbPageSize.Items.AddRange(new object[] { "5", "10", "20", "50" });
+            _cbPageSize.SelectedItem = _pageSize.ToString();
+            _cbPageSize.SelectedIndexChanged += (s, e) =>
+            {
+                if (int.TryParse(_cbPageSize.SelectedItem?.ToString(), out var newSize) && newSize > 0)
+                {
+                    _pageSize = newSize;
+                    _currentPage = 1;
+                    RenderPage();
+                }
+            };
+
+            paginationPanel.Controls.Add(_btnPrevPage);
+            paginationPanel.Controls.Add(_btnNextPage);
+            paginationPanel.Controls.Add(_lblPageInfo);
+            paginationPanel.Controls.Add(_cbPageSize);
+
+            // Add panel to form (below grid). Ensure it's placed above other docked controls
+            this.Controls.Add(paginationPanel);
+            paginationPanel.BringToFront();
+        }
+
+        private void ChangePage(int delta)
+        {
+            _currentPage += delta;
+            if (_currentPage < 1) _currentPage = 1;
+            if (_currentPage > _totalPages) _currentPage = _totalPages;
+            RenderPage();
+        }
+
+        private void UpdatePaginationControls()
+        {
+            if (_lblPageInfo != null)
+            {
+                _lblPageInfo.Text = $"Trang {_currentPage} / {_totalPages}   (Tổng {_filteredBookings.Count})";
+            }
+
+            if (_btnPrevPage != null)
+            {
+                _btnPrevPage.Enabled = _currentPage > 1;
+            }
+
+            if (_btnNextPage != null)
+            {
+                _btnNextPage.Enabled = _currentPage < _totalPages;
+            }
+
+            if (_cbPageSize != null)
+            {
+                if (_cbPageSize.SelectedItem == null)
+                    _cbPageSize.SelectedItem = _pageSize.ToString();
             }
         }
     }
