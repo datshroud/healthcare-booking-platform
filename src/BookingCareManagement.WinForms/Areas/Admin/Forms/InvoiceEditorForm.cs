@@ -13,6 +13,8 @@ using BookingCareManagement.WinForms.Shared.Services;
 using System.IO;
 using System.Text.Json;
 using System.Diagnostics;
+using System.Net.Http;
+using System.Net.Http.Json;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 {
@@ -22,6 +24,15 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private readonly AdminInvoiceApiClient _invoiceApiClient;
         private readonly DialogService _dialogService;
         private List<InvoiceDto> _invoiceCache = new();
+
+        // Cache for doctors to populate employee filter
+        private List<BookingCareManagement.WinForms.Shared.Models.Dtos.DoctorDto> _doctorCache = new();
+
+        // Keep references to each filter dropdown so we can read checked items when applying filters
+        private CheckedListBox? _customerDropdown;
+        private CheckedListBox? _employeeDropdown;
+        private CheckedListBox? _serviceDropdown;
+        private CheckedListBox? _statusDropdown;
 
         public InvoiceEditorForm(AdminInvoiceApiClient invoiceApiClient, DialogService dialogService)
         {
@@ -46,7 +57,13 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 // Show loading state in UI while fetching
                 lblTitle.Text = "Hóa đơn (Đang tải...)";
 
-                _invoiceCache = (await _invoiceApiClient.GetAllAsync()).ToList();
+                // Fetch invoices and doctors in parallel
+                var invoicesTask = _invoiceApiClient.GetAllAsync();
+                var doctorsTask = FetchDoctorsFromApiAsync();
+
+                await Task.WhenAll(invoicesTask, doctorsTask);
+
+                _invoiceCache = (await invoicesTask).ToList();
 
                 // Display and initialize filters
                 DisplayInvoices(_invoiceCache);
@@ -57,6 +74,30 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 Debug.WriteLine($"LoadInvoiceDataAsync error: {ex}");
                 _dialogService.ShowError($"Không thể tải danh sách hóa đơn: {ex.Message}\n{ex.StackTrace}");
                 UpdateInvoiceCount(0, true);
+            }
+        }
+
+        private async Task FetchDoctorsFromApiAsync()
+        {
+            try
+            {
+                var baseUrl = TryReadApiBaseUrl();
+                if (string.IsNullOrWhiteSpace(baseUrl) || baseUrl.StartsWith("("))
+                {
+                    // cannot determine base url, skip
+                    _doctorCache = new List<BookingCareManagement.WinForms.Shared.Models.Dtos.DoctorDto>();
+                    return;
+                }
+
+                using var client = new HttpClient { BaseAddress = new Uri(baseUrl) };
+                // try to get doctors
+                var dtos = await client.GetFromJsonAsync<List<BookingCareManagement.WinForms.Shared.Models.Dtos.DoctorDto>>("/api/Doctor");
+                _doctorCache = dtos?.ToList() ?? new List<BookingCareManagement.WinForms.Shared.Models.Dtos.DoctorDto>();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"FetchDoctorsFromApiAsync error: {ex}");
+                _doctorCache = new List<BookingCareManagement.WinForms.Shared.Models.Dtos.DoctorDto>();
             }
         }
 
@@ -325,13 +366,16 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             _filterDropdowns.Clear();
 
             // Tạo dropdown cho Customer
-            var customerDropdown = CreateFilterDropdown(btnCustomerFilter, GetUniqueCustomers());
+            _customerDropdown = CreateFilterDropdown(btnCustomerFilter, GetUniqueCustomers());
+
+            // Tạo dropdown cho Employee (doctors)
+            _employeeDropdown = CreateFilterDropdown(btnEmployeeFilter, GetUniqueEmployees());
 
             // Tạo dropdown cho Service
-            var serviceDropdown = CreateFilterDropdown(btnServiceFilter, GetUniqueServices());
+            _serviceDropdown = CreateFilterDropdown(btnServiceFilter, GetUniqueServices());
 
             // Tạo dropdown cho Status
-            var statusDropdown = CreateFilterDropdown(btnStatusFilter, new[]
+            _statusDropdown = CreateFilterDropdown(btnStatusFilter, new[]
             {
                 "Đang chờ", "Đã thanh toán"
             });
@@ -344,6 +388,12 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
             // Wire search event
             txtSearch.TextChanged += (s, e) => ApplyFilters();
+
+            // Wire ApplyFilters when any filter changes
+            if (_customerDropdown != null) _customerDropdown.ItemCheck += (s, e) => this.BeginInvoke((MethodInvoker)ApplyFilters);
+            if (_employeeDropdown != null) _employeeDropdown.ItemCheck += (s, e) => this.BeginInvoke((MethodInvoker)ApplyFilters);
+            if (_serviceDropdown != null) _serviceDropdown.ItemCheck += (s, e) => this.BeginInvoke((MethodInvoker)ApplyFilters);
+            if (_statusDropdown != null) _statusDropdown.ItemCheck += (s, e) => this.BeginInvoke((MethodInvoker)ApplyFilters);
         }
 
         private string[] GetUniqueCustomers()
@@ -366,6 +416,16 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 .ToArray();
         }
 
+        private string[] GetUniqueEmployees()
+        {
+            return _doctorCache
+                .Select(d => string.IsNullOrWhiteSpace(d.FullName) ? (d.Email ?? d.PhoneNumber ?? "Bác sĩ") : d.FullName)
+                .Where(n => !string.IsNullOrWhiteSpace(n))
+                .Distinct()
+                .OrderBy(n => n)
+                .ToArray();
+        }
+
         private void ApplyFilters()
         {
             var searchTerm = txtSearch.Text.Trim().ToLower();
@@ -374,13 +434,69 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 filtered = filtered.Where(i =>
-                    i.CustomerName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                    i.ServiceName.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    (i.CustomerName ?? string.Empty).Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                    (i.ServiceName ?? string.Empty).Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
                     i.InvoiceNumber.ToString().Contains(searchTerm));
+            }
+
+            // Apply service filter (multi-select OR)
+            var selectedServices = GetCheckedItems(_serviceDropdown);
+            if (selectedServices.Length > 0)
+            {
+                filtered = filtered.Where(i => selectedServices.Any(s => string.Equals(s, i.ServiceName, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            // Apply customer filter (multi-select OR)
+            var selectedCustomers = GetCheckedItems(_customerDropdown);
+            if (selectedCustomers.Length > 0)
+            {
+                filtered = filtered.Where(i => selectedCustomers.Any(c => string.Equals(c, i.CustomerName, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            // Apply status filter (multi-select OR) - map display values to underlying Status
+            var selectedStatuses = GetCheckedItems(_statusDropdown);
+            if (selectedStatuses.Length > 0)
+            {
+                filtered = filtered.Where(i =>
+                {
+                    var isPaid = i.Status.Equals("Paid", StringComparison.OrdinalIgnoreCase);
+                    var display = isPaid ? "Đã thanh toán" : "Đang chờ";
+                    return selectedStatuses.Any(s => string.Equals(s, display, StringComparison.OrdinalIgnoreCase) ||
+                                                     string.Equals(s, i.Status, StringComparison.OrdinalIgnoreCase));
+                });
+            }
+
+            // Apply employee filter (approximate): include invoice when any selected doctor either has specialty matching invoice.ServiceName
+            var selectedEmployees = GetCheckedItems(_employeeDropdown);
+            if (selectedEmployees.Length > 0)
+            {
+                var selectedSet = new HashSet<string>(selectedEmployees, StringComparer.OrdinalIgnoreCase);
+                filtered = filtered.Where(i =>
+                {
+                    var anyDoctorWithSpecialty = _doctorCache.Any(d =>
+                        selectedSet.Contains(string.IsNullOrWhiteSpace(d.FullName) ? (d.Email ?? d.PhoneNumber ?? "Bác sĩ") : d.FullName)
+                        && d.Specialties != null
+                        && d.Specialties.Any(sp => string.Equals(sp, i.ServiceName, StringComparison.OrdinalIgnoreCase)));
+                    return anyDoctorWithSpecialty;
+                });
             }
 
             var filteredList = filtered.ToList();
             DisplayInvoices(filteredList);
+        }
+
+        private string[] GetCheckedItems(CheckedListBox? box)
+        {
+            if (box == null) return Array.Empty<string>();
+            var list = new List<string>();
+            foreach (var obj in box.CheckedItems)
+            {
+                if (obj != null)
+                {
+                    list.Add(obj.ToString() ?? string.Empty);
+                }
+            }
+            return list.ToArray();
         }
 
         private void ResetFilterButtonStyle(Button button)
@@ -496,6 +612,9 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                         parentButton.Text = baseText;
                         ResetFilterButtonStyle(parentButton);
                     }
+
+                    // apply filters when selection changes
+                    ApplyFilters();
                 });
             };
 
