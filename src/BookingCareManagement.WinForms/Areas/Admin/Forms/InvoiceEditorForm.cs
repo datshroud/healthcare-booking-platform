@@ -34,6 +34,18 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private CheckedListBox? _serviceDropdown;
         private CheckedListBox? _statusDropdown;
 
+        // Pagination state
+        private List<InvoiceDto> _filteredInvoices = new();
+        private int _currentPage = 1;
+        private int _pageSize = 10;
+        private int _totalPages = 1;
+
+        // Pagination controls (created at runtime)
+        private Button? _btnPrevPage;
+        private Button? _btnNextPage;
+        private Label? _lblPageInfo;
+        private ComboBox? _cbPageSize;
+
         public InvoiceEditorForm(AdminInvoiceApiClient invoiceApiClient, DialogService dialogService)
         {
             _invoiceApiClient = invoiceApiClient;
@@ -42,6 +54,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             InitializeComponent();
             InitializeGridColumns();
             ApplyGridStyling();
+            InitializePaginationControls();
             // InitializeFilterDropdowns() will be called after invoices are loaded
         }
 
@@ -124,15 +137,34 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             }
         }
 
+        // DisplayInvoices will now act as entry point for filtered results and set pagination
         private void DisplayInvoices(List<InvoiceDto> invoices)
         {
+            _filteredInvoices = invoices.OrderByDescending(i => i.InvoiceNumber).ToList();
+            _currentPage = 1;
+            RenderPage();
+            UpdateInvoiceCount(_filteredInvoices.Count);
+        }
+
+        private void RenderPage()
+        {
             invoiceGrid.Rows.Clear();
-            foreach (var invoice in invoices.OrderByDescending(i => i.InvoiceNumber))
+
+            if (_filteredInvoices == null) _filteredInvoices = new List<InvoiceDto>();
+
+            var total = _filteredInvoices.Count;
+            _totalPages = Math.Max(1, (int)Math.Ceiling(total / (double)_pageSize));
+            if (_currentPage < 1) _currentPage = 1;
+            if (_currentPage > _totalPages) _currentPage = _totalPages;
+
+            var pageItems = _filteredInvoices.Skip((_currentPage - 1) * _pageSize).Take(_pageSize).ToList();
+
+            foreach (var invoice in pageItems)
             {
-                var status = invoice.Status.Equals("Paid", StringComparison.OrdinalIgnoreCase) 
-                    ? "Đã thanh toán" 
+                var status = invoice.Status.Equals("Paid", StringComparison.OrdinalIgnoreCase)
+                    ? "Đã thanh toán"
                     : "Đang chờ";
-                
+
                 invoiceGrid.Rows.Add(
                     invoice.InvoiceNumber,
                     invoice.CustomerName,
@@ -141,12 +173,12 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     status,
                     $"{invoice.Total:N0} ₫"
                 );
-                
+
                 // Lưu Id vào Tag của row để sử dụng sau
                 invoiceGrid.Rows[invoiceGrid.Rows.Count - 1].Tag = invoice.Id;
             }
-            
-            UpdateInvoiceCount(invoices.Count);
+
+            UpdatePaginationControls();
         }
 
         private void UpdateInvoiceCount(int count, bool isError = false)
@@ -248,6 +280,109 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             // Style cho cột Status - tô màu nền
             invoiceGrid.CellFormatting += InvoiceGrid_CellFormatting;
             invoiceGrid.CellContentClick += InvoiceGrid_CellContentClick;
+        }
+
+        private void InitializePaginationControls()
+        {
+            // Create a small panel under invoiceGrid to host pagination controls
+            var paginationPanel = new Panel
+            {
+                Height = 40,
+                Dock = DockStyle.Bottom,
+                BackColor = Color.Transparent
+            };
+
+            _btnPrevPage = new Button
+            {
+                Text = "Trước",
+                Width = 80,
+                Height = 30,
+                Left = 10,
+                Top = 5
+            };
+            _btnPrevPage.Click += (s, e) => ChangePage(-1);
+
+            _btnNextPage = new Button
+            {
+                Text = "Tiếp",
+                Width = 80,
+                Height = 30,
+                Left = 100,
+                Top = 5
+            };
+            _btnNextPage.Click += (s, e) => ChangePage(1);
+
+            _lblPageInfo = new Label
+            {
+                AutoSize = false,
+                Width = 240,
+                Height = 30,
+                Left = 200,
+                Top = 8,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            _cbPageSize = new ComboBox
+            {
+                Width = 80,
+                Height = 30,
+                Left = 460,
+                Top = 5,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            _cbPageSize.Items.AddRange(new object[] { "5", "10", "20", "50" });
+            _cbPageSize.SelectedItem = _pageSize.ToString();
+            _cbPageSize.SelectedIndexChanged += (s, e) =>
+            {
+                if (int.TryParse(_cbPageSize.SelectedItem?.ToString(), out var newSize) && newSize > 0)
+                {
+                    _pageSize = newSize;
+                    _currentPage = 1;
+                    RenderPage();
+                }
+            };
+
+            // Add controls to panel
+            paginationPanel.Controls.Add(_btnPrevPage);
+            paginationPanel.Controls.Add(_btnNextPage);
+            paginationPanel.Controls.Add(_lblPageInfo);
+            paginationPanel.Controls.Add(_cbPageSize);
+
+            // Add panel to form (below grid). Ensure it's placed above other docked controls
+            this.Controls.Add(paginationPanel);
+            paginationPanel.BringToFront();
+        }
+
+        private void ChangePage(int delta)
+        {
+            _currentPage += delta;
+            if (_currentPage < 1) _currentPage = 1;
+            if (_currentPage > _totalPages) _currentPage = _totalPages;
+            RenderPage();
+        }
+
+        private void UpdatePaginationControls()
+        {
+            if (_lblPageInfo != null)
+            {
+                _lblPageInfo.Text = $"Trang {_currentPage} / {_totalPages}   (Tổng {_filteredInvoices.Count})";
+            }
+
+            if (_btnPrevPage != null)
+            {
+                _btnPrevPage.Enabled = _currentPage > 1;
+            }
+
+            if (_btnNextPage != null)
+            {
+                _btnNextPage.Enabled = _currentPage < _totalPages;
+            }
+
+            if (_cbPageSize != null)
+            {
+                if (_cbPageSize.SelectedItem == null)
+                    _cbPageSize.SelectedItem = _pageSize.ToString();
+            }
         }
 
         private async void InvoiceGrid_CellContentClick(object? sender, DataGridViewCellEventArgs e)
