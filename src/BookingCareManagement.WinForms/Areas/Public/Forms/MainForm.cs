@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Net.Http;
 using System.IO;
+using BookingCareManagement.WinForms.Areas.Doctor.Services; // added for DoctorAppointmentsApiClient
 
 namespace BookingCareManagement.WinForms
 {
@@ -737,8 +738,9 @@ namespace BookingCareManagement.WinForms
                         SetActiveButton(btn);
                         if (item.StartsWith("📅"))
                         {
-                            var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
-                            OpenChildForm(new Calendar(appointmentsApiClient));
+                            // Use doctor client when opening calendar for doctors
+                            var doctorApi = _serviceProvider.GetRequiredService<DoctorAppointmentsApiClient>();
+                            OpenChildForm(new Calendar(doctorApi));
                         }
                         if (item.Contains("Quản lý"))
                         {
@@ -1097,8 +1099,16 @@ namespace BookingCareManagement.WinForms
         {
             if (this.Visible)
             {
-                var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
-                OpenChildForm(new Calendar(appointmentsApiClient));
+                if (HasDoctorAccess() && !HasAdminAccess())
+                {
+                    var doctorApi = _serviceProvider.GetRequiredService<DoctorAppointmentsApiClient>();
+                    OpenChildForm(new Calendar(doctorApi));
+                }
+                else
+                {
+                    var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
+                    OpenChildForm(new Calendar(appointmentsApiClient));
+                }
             }
         }
 

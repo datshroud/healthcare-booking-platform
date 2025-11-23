@@ -13,6 +13,7 @@ using static BookingCareManagement.WinForms.Customer;
 using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
 using System.Globalization;
+using BookingCareManagement.WinForms.Areas.Doctor.Services;
 
 namespace BookingCareManagement.WinForms
 {
@@ -20,7 +21,9 @@ namespace BookingCareManagement.WinForms
     {
         private DateTime currentDate;
         private string currentView = "Month";
-        private readonly AdminAppointmentsApiClient _appointmentsApiClient;
+        // Allow either admin or doctor API client depending on caller
+        private readonly AdminAppointmentsApiClient? _adminAppointmentsApiClient;
+        private readonly DoctorAppointmentsApiClient? _doctorAppointmentsApiClient;
         private List<CalendarEventDto> _events = new();
         private CancellationTokenSource? _loadCts;
         private DateTime _lastLoadedMonth = DateTime.MinValue;
@@ -36,7 +39,16 @@ namespace BookingCareManagement.WinForms
         // Chỉ giữ lại constructor DI
         public Calendar(AdminAppointmentsApiClient appointmentsApiClient)
         {
-            _appointmentsApiClient = appointmentsApiClient;
+            _adminAppointmentsApiClient = appointmentsApiClient;
+            currentDate = DateTime.Now;
+            InitializeComponent();
+            InitializeCustomComponents();
+        }
+
+        // Overload for doctor client - uses doctor endpoints (avoids 403 when user is doctor)
+        public Calendar(DoctorAppointmentsApiClient appointmentsApiClient)
+        {
+            _doctorAppointmentsApiClient = appointmentsApiClient;
             currentDate = DateTime.Now;
             InitializeComponent();
             InitializeCustomComponents();
@@ -431,11 +443,28 @@ namespace BookingCareManagement.WinForms
                 return;
             try
             {
-                var events = await _appointmentsApiClient.GetCalendarEventsAsync(
-                    from: DateOnly.FromDateTime(firstDay),
-                    to: DateOnly.FromDateTime(lastDay),
-                    doctorIds: null,
-                    cancellationToken: token);
+                // Use doctor client when available to avoid calling admin endpoints (403)
+                IReadOnlyList<CalendarEventDto> events;
+                if (_doctorAppointmentsApiClient != null)
+                {
+                    events = await _doctorAppointmentsApiClient.GetCalendarEventsAsync(
+                        from: DateOnly.FromDateTime(firstDay),
+                        to: DateOnly.FromDateTime(lastDay),
+                        cancellationToken: token);
+                }
+                else if (_adminAppointmentsApiClient != null)
+                {
+                    events = await _adminAppointmentsApiClient.GetCalendarEventsAsync(
+                        from: DateOnly.FromDateTime(firstDay),
+                        to: DateOnly.FromDateTime(lastDay),
+                        doctorIds: null,
+                        cancellationToken: token);
+                }
+                else
+                {
+                    events = Array.Empty<CalendarEventDto>();
+                }
+
                 _events = events.ToList();
                 _lastLoadedMonth = firstDay;
             }
