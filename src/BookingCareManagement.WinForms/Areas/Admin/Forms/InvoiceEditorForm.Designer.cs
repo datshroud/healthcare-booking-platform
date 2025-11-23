@@ -37,7 +37,6 @@
             filterPanel = new Panel();
             btnStatusFilter = new Button();
             btnServiceFilter = new Button();
-            btnEmployeeFilter = new Button();
             btnCustomerFilter = new Button();
             searchPanel = new Panel();
             btnFilter = new Button();
@@ -70,7 +69,7 @@
             lblTitle.ForeColor = Color.FromArgb(17, 24, 39);
             lblTitle.Location = new Point(34, 27);
             lblTitle.Name = "lblTitle";
-            lblTitle.Size = new Size(172, 54);
+            lblTitle.Size = new Size(190, 54);
             lblTitle.TabIndex = 0;
             lblTitle.Text = "Hóa Đơn";
             // 
@@ -140,7 +139,6 @@
             filterPanel.BackColor = Color.FromArgb(249, 250, 251);
             filterPanel.Controls.Add(btnStatusFilter);
             filterPanel.Controls.Add(btnServiceFilter);
-            filterPanel.Controls.Add(btnEmployeeFilter);
             filterPanel.Controls.Add(btnCustomerFilter);
             filterPanel.Dock = DockStyle.Fill;
             filterPanel.Location = new Point(0, 0);
@@ -156,7 +154,7 @@
             btnStatusFilter.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
             btnStatusFilter.FlatStyle = FlatStyle.Flat;
             btnStatusFilter.Font = new Font("Segoe UI", 10F);
-            btnStatusFilter.Location = new Point(594, 20);
+            btnStatusFilter.Location = new Point(365, 20);
             btnStatusFilter.Margin = new Padding(3, 4, 3, 4);
             btnStatusFilter.Name = "btnStatusFilter";
             btnStatusFilter.Padding = new Padding(11, 0, 6, 0);
@@ -172,7 +170,7 @@
             btnServiceFilter.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
             btnServiceFilter.FlatStyle = FlatStyle.Flat;
             btnServiceFilter.Font = new Font("Segoe UI", 10F);
-            btnServiceFilter.Location = new Point(400, 20);
+            btnServiceFilter.Location = new Point(188, 20);
             btnServiceFilter.Margin = new Padding(3, 4, 3, 4);
             btnServiceFilter.Name = "btnServiceFilter";
             btnServiceFilter.Padding = new Padding(11, 0, 6, 0);
@@ -181,22 +179,6 @@
             btnServiceFilter.Text = "💼 Dịch vụ";
             btnServiceFilter.TextAlign = ContentAlignment.MiddleLeft;
             btnServiceFilter.UseVisualStyleBackColor = false;
-            // 
-            // btnEmployeeFilter
-            // 
-            btnEmployeeFilter.BackColor = Color.White;
-            btnEmployeeFilter.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
-            btnEmployeeFilter.FlatStyle = FlatStyle.Flat;
-            btnEmployeeFilter.Font = new Font("Segoe UI", 10F);
-            btnEmployeeFilter.Location = new Point(206, 20);
-            btnEmployeeFilter.Margin = new Padding(3, 4, 3, 4);
-            btnEmployeeFilter.Name = "btnEmployeeFilter";
-            btnEmployeeFilter.Padding = new Padding(11, 0, 6, 0);
-            btnEmployeeFilter.Size = new Size(171, 53);
-            btnEmployeeFilter.TabIndex = 1;
-            btnEmployeeFilter.Text = "✏️ Nhân viên";
-            btnEmployeeFilter.TextAlign = ContentAlignment.MiddleLeft;
-            btnEmployeeFilter.UseVisualStyleBackColor = false;
             // 
             // btnCustomerFilter
             // 
@@ -295,7 +277,6 @@
         private Panel filterContainerPanel;
         private Panel filterPanel;
         private Button btnCustomerFilter;
-        private Button btnEmployeeFilter;
         private Button btnServiceFilter;
         private Button btnStatusFilter;
     }

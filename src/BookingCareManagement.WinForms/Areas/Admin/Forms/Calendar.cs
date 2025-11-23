@@ -106,19 +106,7 @@ namespace BookingCareManagement.WinForms
             }
 
             // primary action (add) keep static blue, no hover/active
-            if (newAppointmentBtn != null)
-            {
-                newAppointmentBtn.FlatStyle = FlatStyle.Flat;
-                newAppointmentBtn.FlatAppearance.BorderSize = 1;
-                newAppointmentBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
-                newAppointmentBtn.BackColor = Color.FromArgb(37, 99, 235);
-                newAppointmentBtn.ForeColor = Color.White;
-                newAppointmentBtn.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
-                newAppointmentBtn.Cursor = Cursors.Hand;
-                // remove hover handlers if any
-                newAppointmentBtn.MouseEnter -= (s, e) => newAppointmentBtn.BackColor = Color.FromArgb(29, 78, 216);
-                newAppointmentBtn.MouseLeave -= (s, e) => newAppointmentBtn.BackColor = Color.FromArgb(37, 99, 235);
-            }
+           
 
             // wire view buttons to an explicit activator to ensure only one active
             Action<Button> activate = b =>
@@ -535,30 +523,46 @@ namespace BookingCareManagement.WinForms
             // center monthLabel between prev and next
             if (monthLabel != null)
             {
-                Size measure = TextRenderer.MeasureText(monthLabel.Text, monthLabel.Font);
-                monthLabel.Size = new Size(measure.Width, 40);
-
-                int midX = (prevBtn.Location.X + prevBtn.Width + nextBtn.Location.X) / 2;
-                monthLabel.Location = new Point(midX - monthLabel.Width / 2, monthLabel.Location.Y);
-
+                // First set the text based on the current view so measurement will be correct
                 if (currentView == "Month")
                 {
                     // Hiển thị dạng số ngắn: MM/yyyy (ví dụ 11/2025)
                     monthLabel.Text = currentDate.ToString("MM/yyyy", new CultureInfo("vi-VN"));
-                    await LoadMonthEventsAsync();
-                    CreateCalendar();
                 }
-                if (currentView == "Week")
+                else if (currentView == "Week")
                 {
                     var startOfWeek = currentDate.AddDays(-(int)currentDate.DayOfWeek + 1);
                     var endOfWeek = startOfWeek.AddDays(6);
                     monthLabel.Text = $"{startOfWeek:dd/MM} - {endOfWeek:dd/MM/yyyy}";
-                    CreateWeekView();
                 }
-                if (currentView == "Day")
+                else if (currentView == "Day")
                 {
                     // Hiển thị: Thứ, dd/MM/yyyy
                     monthLabel.Text = currentDate.ToString("dddd, dd/MM/yyyy", new CultureInfo("vi-VN"));
+                }
+
+                // Ensure label sizes to fit the new text, then center it between prev and next
+                monthLabel.AutoSize = true;
+                Size measure = TextRenderer.MeasureText(monthLabel.Text, monthLabel.Font);
+                // add a small horizontal padding so text isn't flush against bounds
+                monthLabel.Size = new Size(measure.Width + 8, 40);
+                monthLabel.TextAlign = ContentAlignment.MiddleCenter;
+
+                int midX = (prevBtn.Location.X + prevBtn.Width + nextBtn.Location.X) / 2;
+                monthLabel.Location = new Point(Math.Max(0, midX - monthLabel.Width / 2), monthLabel.Location.Y);
+
+                // Now create the selected view (after text is set and centered)
+                if (currentView == "Month")
+                {
+                    await LoadMonthEventsAsync();
+                    CreateCalendar();
+                }
+                else if (currentView == "Week")
+                {
+                    CreateWeekView();
+                }
+                else if (currentView == "Day")
+                {
                     CreateDayView();
                 }
             }

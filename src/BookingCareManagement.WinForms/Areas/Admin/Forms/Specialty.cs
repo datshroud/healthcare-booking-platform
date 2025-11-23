@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using BookingCareManagement.WinForms.Areas.Admin.Models;
 using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
+using System.Net.Http;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 {
@@ -20,6 +21,9 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
         private readonly AdminSpecialtyApiClient _specialtyApiClient;
         private readonly AdminDoctorApiClient _doctorApiClient;
+
+        // shared HttpClient for async downloads
+        private static readonly HttpClient _httpClient = new HttpClient();
 
         public Specialty(AdminSpecialtyApiClient specialtyApiClient, AdminDoctorApiClient doctorApiClient)
         {
@@ -89,8 +93,11 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 int rowIndex = dataGridViewSpecialties.Rows.Add();
                 DataGridViewRow row = dataGridViewSpecialties.Rows[rowIndex];
 
-                // Tải ảnh thật hoặc tạo placeholder
-                row.Cells[0].Value = LoadSpecialtyImage(specialty);
+                // Show placeholder immediately
+                row.Cells[0].Value = CreatePlaceholder(specialty.Name, specialty.Color);
+
+                // Start async load and update cell when ready
+                _ = LoadSpecialtyImageAsync(specialty, row);
 
                 row.Cells[1].Value = specialty.Name;
                 
@@ -108,54 +115,59 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             labelCount.Text = $"({filteredSpecialties.Count})";
         }
 
-        /// <summary>
-        /// Load ảnh từ file/URL hoặc tạo placeholder nếu không có ảnh
-        /// </summary>
-        private Image LoadSpecialtyImage(SpecialtyDto specialty)
+        private async Task LoadSpecialtyImageAsync(SpecialtyDto specialty, DataGridViewRow row)
         {
             if (string.IsNullOrEmpty(specialty.ImageUrl))
             {
-                return CreatePlaceholder(specialty.Name, specialty.Color);
+                return; // placeholder already set
             }
 
             try
             {
-                // Kiểm tra nếu là đường dẫn file local
+                // Local file
                 if (File.Exists(specialty.ImageUrl))
                 {
-                    // Load ảnh từ file
-                    using (var originalImage = Image.FromFile(specialty.ImageUrl))
+                    using var original = Image.FromFile(specialty.ImageUrl);
+                    var resized = ResizeImage(original, 60, 60);
+                    // update UI on UI thread
+                    if (row.DataGridView != null && !row.DataGridView.IsDisposed)
                     {
-                        // Resize ảnh về 60x60
-                        return ResizeImage(originalImage, 60, 60);
+                        dataGridViewSpecialties.InvokeIfRequired(() => row.Cells[0].Value = resized);
                     }
+                    return;
                 }
-                // Kiểm tra nếu là URL
-                else if (Uri.TryCreate(specialty.ImageUrl, UriKind.Absolute, out Uri? uriResult) 
+
+                // Remote URL
+                if (Uri.TryCreate(specialty.ImageUrl, UriKind.Absolute, out Uri? uriResult)
                     && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps))
                 {
-                    // Load ảnh từ URL
-                    using (var webClient = new WebClient())
+                    // download async
+                    using var resp = await _httpClient.GetAsync(specialty.ImageUrl);
+                    if (!resp.IsSuccessStatusCode) return;
+                    await using var stream = await resp.Content.ReadAsStreamAsync();
+                    using var original = Image.FromStream(stream);
+                    var resized = ResizeImage(original, 60, 60);
+                    if (row.DataGridView != null && !row.DataGridView.IsDisposed)
                     {
-                        byte[] imageBytes = webClient.DownloadData(specialty.ImageUrl);
-                        using (var ms = new MemoryStream(imageBytes))
-                        {
-                            var originalImage = Image.FromStream(ms);
-                            return ResizeImage(originalImage, 60, 60);
-                        }
+                        dataGridViewSpecialties.InvokeIfRequired(() => row.Cells[0].Value = resized);
                     }
-                }
-                else
-                {
-                    // Đường dẫn không hợp lệ, tạo placeholder
-                    return CreatePlaceholder(specialty.Name, specialty.Color);
+                    return;
                 }
             }
             catch
             {
-                // Nếu load ảnh thất bại, tạo placeholder
-                return CreatePlaceholder(specialty.Name, specialty.Color);
+                // ignore and keep placeholder
             }
+        }
+
+        /// <summary>
+        /// Load ảnh từ file/URL hoặc tạo placeholder nếu không có ảnh
+        /// (kept for compatibility but no longer used synchronously)
+        /// </summary>
+        private Image LoadSpecialtyImage(SpecialtyDto specialty)
+        {
+            // Return placeholder quickly; real image will be loaded async
+            return CreatePlaceholder(specialty.Name, specialty.Color);
         }
 
         /// <summary>
@@ -413,6 +425,22 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private void DataGridViewSpecialties_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0) ButtonEdit_Click(sender, e);
+        }
+    }
+
+    // helper for invoking actions on UI thread
+    internal static class ControlExtensions
+    {
+        public static void InvokeIfRequired(this Control c, Action action)
+        {
+            if (c.IsHandleCreated && c.InvokeRequired)
+            {
+                c.Invoke(action);
+            }
+            else
+            {
+                action();
+            }
         }
     }
 }

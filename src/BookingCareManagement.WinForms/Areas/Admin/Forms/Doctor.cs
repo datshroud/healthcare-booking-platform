@@ -9,6 +9,7 @@ using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
 using System.Net;
 using System.IO;
+using System.Net.Http;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 {
@@ -20,6 +21,9 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
         private readonly AdminDoctorApiClient _doctorApiClient;
         private readonly AdminSpecialtyApiClient _specialtyApiClient;
+
+        // shared HttpClient for async avatar downloads
+        private static readonly HttpClient _httpClient = new HttpClient();
 
         public Doctor(AdminDoctorApiClient doctorApiClient, AdminSpecialtyApiClient specialtyApiClient)
         {
@@ -81,64 +85,11 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 int rowIndex = dataGridViewDoctors.Rows.Add();
                 DataGridViewRow row = dataGridViewDoctors.Rows[rowIndex];
 
-                if (!string.IsNullOrEmpty(doc.AvatarUrl))
-                {
-                    try
-                    {
-                        if (System.IO.File.Exists(doc.AvatarUrl))
-                        {
-                            using (var img = Image.FromFile(doc.AvatarUrl))
-                            {
-                                row.Cells[0].Value = new Bitmap(img, new Size(60, 60));
-                            }
-                        }
-                        else if (Uri.IsWellFormedUriString(doc.AvatarUrl, UriKind.Absolute))
-                        {
-                            var uri = new Uri(doc.AvatarUrl);
-                            if (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps)
-                            {
-                                // Try to download the image synchronously (small images)
-                                try
-                                {
-                                    var req = WebRequest.Create(doc.AvatarUrl);
-                                    req.Timeout = 5000; // 5s timeout
-                                    using var resp = req.GetResponse();
-                                    using var stream = resp.GetResponseStream();
-                                    if (stream != null)
-                                    {
-                                        using var img = Image.FromStream(stream);
-                                        row.Cells[0].Value = new Bitmap(img, new Size(60, 60));
-                                    }
-                                    else
-                                    {
-                                        row.Cells[0].Value = CreatePlaceholderWithColor(doc.FullName);
-                                    }
-                                }
-                                catch
-                                {
-                                    // fallback to placeholder if download fails
-                                    row.Cells[0].Value = CreatePlaceholderWithColor(doc.FullName);
-                                }
-                            }
-                            else
-                            {
-                                row.Cells[0].Value = CreatePlaceholder(doc.FullName);
-                            }
-                        }
-                        else
-                        {
-                            row.Cells[0].Value = CreatePlaceholder(doc.FullName);
-                        }
-                    }
-                    catch
-                    {
-                        row.Cells[0].Value = CreatePlaceholder(doc.FullName);
-                    }
-                }
-                else
-                {
-                    row.Cells[0].Value = CreatePlaceholder(doc.FullName);
-                }
+                // set placeholder immediately
+                row.Cells[0].Value = CreatePlaceholder(doc.FullName);
+
+                // async load avatar and update cell when ready
+                _ = LoadDoctorAvatarAsync(doc, row);
 
                 row.Cells[1].Value = doc.FullName;
                 row.Cells[2].Value = doc.Email;
@@ -152,6 +103,45 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             labelCount.Text = $"({filteredDoctors.Count})";
         }
 
+        private async Task LoadDoctorAvatarAsync(DoctorDto doc, DataGridViewRow row)
+        {
+            if (string.IsNullOrWhiteSpace(doc.AvatarUrl)) return;
+
+            try
+            {
+                // local file
+                if (File.Exists(doc.AvatarUrl))
+                {
+                    using var img = Image.FromFile(doc.AvatarUrl);
+                    var bmp = new Bitmap(img, new Size(60, 60));
+                    if (row.DataGridView != null && !row.DataGridView.IsDisposed)
+                    {
+                        dataGridViewDoctors.InvokeIfRequired(() => row.Cells[0].Value = bmp);
+                    }
+                    return;
+                }
+
+                if (Uri.TryCreate(doc.AvatarUrl, UriKind.Absolute, out var uri) &&
+                    (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+                {
+                    using var resp = await _httpClient.GetAsync(doc.AvatarUrl);
+                    if (!resp.IsSuccessStatusCode) return;
+                    await using var stream = await resp.Content.ReadAsStreamAsync();
+                    using var img = Image.FromStream(stream);
+                    var bmp = new Bitmap(img, new Size(60, 60));
+                    if (row.DataGridView != null && !row.DataGridView.IsDisposed)
+                    {
+                        dataGridViewDoctors.InvokeIfRequired(() => row.Cells[0].Value = bmp);
+                    }
+                    return;
+                }
+            }
+            catch
+            {
+                // ignore and keep placeholder
+            }
+        }
+
         private Bitmap CreatePlaceholder(string name)
         {
             Bitmap placeholder = new Bitmap(60, 60);
@@ -160,25 +150,9 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 g.Clear(Color.FromArgb(220, 220, 220));
                 using (Font font = new Font("Segoe UI", 20, FontStyle.Bold))
                 {
-                    string initial = name.Length > 0 ? name.Substring(0, 1).ToUpper() : "?";
+                    string initial = string.IsNullOrEmpty(name) ? "?" : name.Substring(0, 1).ToUpper();
                     SizeF size = g.MeasureString(initial, font);
                     g.DrawString(initial, font, Brushes.Gray, (60 - size.Width) / 2, (60 - size.Height) / 2);
-                }
-            }
-            return placeholder;
-        }
-
-        private Bitmap CreatePlaceholderWithColor(string name)
-        {
-            Bitmap placeholder = new Bitmap(60, 60);
-            using (Graphics g = Graphics.FromImage(placeholder))
-            {
-                g.Clear(Color.FromArgb(33, 150, 243)); // Blue color
-                using (Font font = new Font("Segoe UI", 20, FontStyle.Bold))
-                {
-                    string initial = name.Length > 0 ? name.Substring(0, 1).ToUpper() : "?";
-                    SizeF size = g.MeasureString(initial, font);
-                    g.DrawString(initial, font, Brushes.White, (60 - size.Width) / 2, (60 - size.Height) / 2);
                 }
             }
             return placeholder;

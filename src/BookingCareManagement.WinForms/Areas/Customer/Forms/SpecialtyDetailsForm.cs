@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Drawing;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Web;
 using System.Windows.Forms;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
 
@@ -34,7 +36,6 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 Padding = new Padding(12)
             };
 
-            // Use Zoom so the image fits the box while preserving aspect ratio
             var picture = new PictureBox
             {
                 Size = new Size(260, 160),
@@ -64,7 +65,6 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
             var lblPrice = new Label
             {
-                // Use ASCII-friendly text to avoid encoding issues in some environments
                 Text = $"Gia: {service.Price:N0} VND",
                 Font = new Font("Segoe UI", 11F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(33,33,33),
@@ -98,34 +98,42 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 AutoSize = true
             };
 
-            var txtDesc = new TextBox
+            // Use a Label for description (plain text) instead of TextBox to avoid showing HTML tags and frame
+            var descBody = new Label
             {
-                Multiline = true,
-                ReadOnly = true,
-                ScrollBars = ScrollBars.Vertical,
-                BackColor = Color.White,
                 Font = new Font("Segoe UI", 9F),
                 Location = new Point(12, 215),
-                Size = new Size(this.ClientSize.Width - 36, 140),
+                AutoSize = false,
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(33,33,33),
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
             };
 
-            txtDesc.Text = dto?.Description ?? service?.Description ?? "Khong co mo ta";
+            // strip HTML tags and decode entities
+            string raw = dto?.Description ?? service?.Description ?? string.Empty;
+            string plain = StripHtml(raw).Trim();
+            if (string.IsNullOrWhiteSpace(plain)) plain = "Khong co mo ta";
+            descBody.Text = plain;
+
+            // calculate required height for description label
+            int descWidth = this.ClientSize.Width - 36;
+            var measured = TextRenderer.MeasureText(descBody.Text, descBody.Font, new Size(descWidth, int.MaxValue), TextFormatFlags.WordBreak);
+            int descHeight = Math.Min(measured.Height + 8, 220); // cap height
+            descBody.Size = new Size(descWidth, descHeight);
 
             var doctorsLabel = new Label
             {
                 Text = "Danh sach bac si:",
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
-                Location = new Point(12, 370),
+                Location = new Point(12, 215 + descHeight + 12),
                 AutoSize = true
             };
 
-            // Use a FlowLayoutPanel to present avatar + name rows
             var doctorsPanel = new FlowLayoutPanel
             {
-                Location = new Point(12, 395),
-                Size = new Size(this.ClientSize.Width - 36, 100),
-                Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right,
+                Location = new Point(12, doctorsLabel.Bottom + 6),
+                Size = new Size(this.ClientSize.Width - 36, this.ClientSize.Height - (doctorsLabel.Bottom + 80)),
+                Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Top,
                 AutoScroll = true,
                 FlowDirection = FlowDirection.LeftToRight
             };
@@ -134,7 +142,6 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             {
                 foreach (var d in dto.Doctors)
                 {
-                    // Access strongly-typed properties
                     string name = d?.FullName ?? "Bac si";
                     string avatarUrl = d?.AvatarUrl ?? string.Empty;
 
@@ -176,7 +183,6 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
                     if (!imageSet)
                     {
-                        // Generate a simple placeholder avatar with the initial
                         avatar.Image = CreatePlaceholderBitmap(name, avatar.Size);
                     }
 
@@ -200,7 +206,7 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 {
                     Text = "Khong co bac si",
                     AutoSize = true,
-                    Location = new Point(12, 400)
+                    Location = new Point(12, doctorsLabel.Bottom + 6)
                 };
                 doctorsPanel.Controls.Add(empty);
             }
@@ -224,13 +230,22 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             panelMain.Controls.Add(lblDuration);
             panelMain.Controls.Add(lblCapacity);
             panelMain.Controls.Add(descLabel);
-            panelMain.Controls.Add(txtDesc);
+            panelMain.Controls.Add(descBody);
             panelMain.Controls.Add(doctorsLabel);
             panelMain.Controls.Add(doctorsPanel);
             panelMain.Controls.Add(btnClose);
 
             this.Controls.Add(panelMain);
             this.Controls.Add(header);
+        }
+
+        private static string StripHtml(string html)
+        {
+            if (string.IsNullOrEmpty(html)) return string.Empty;
+            // remove tags
+            var noTags = Regex.Replace(html, "<.*?>", string.Empty);
+            // decode html entities
+            return HttpUtility.HtmlDecode(noTags);
         }
 
         private Bitmap CreatePlaceholderBitmap(string name, Size size)
@@ -240,7 +255,6 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             Bitmap bmp = new Bitmap(width, height);
             using (Graphics g = Graphics.FromImage(bmp))
             {
-                // pick a background color based on name hash
                 int hash = name?.GetHashCode() ?? 0;
                 Random rnd = new Random(hash);
                 Color bg = Color.FromArgb(255, 170 + rnd.Next(0, 60), 170 + rnd.Next(0, 60), 170 + rnd.Next(0, 60));
