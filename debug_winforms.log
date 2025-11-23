@@ -104,3 +104,77 @@
 [2025-11-21T16:06:56.4451306+07:00] MainForm: constructor start
 [2025-11-21T16:06:56.4580769+07:00] MainForm: after CreateSidebar
 [2025-11-21T16:06:56.5397029+07:00] MainForm: Load event
+[2025-11-24T02:02:39.0898127+07:00] Login: button clicked
+[2025-11-24T02:02:41.0847949+07:00] Login: succeeded
+[2025-11-24T02:02:41.1495858+07:00] MainForm: constructor start
+[2025-11-24T02:02:41.1650387+07:00] MainForm: after CreateSidebar
+[2025-11-24T02:02:41.2561331+07:00] MainForm: Load event
+[2025-11-24T02:21:40.3181510+07:00] Login: button clicked
+[2025-11-24T02:21:42.0521564+07:00] Login: succeeded
+[2025-11-24T02:21:42.1009323+07:00] MainForm: constructor start
+[2025-11-24T02:21:42.1157149+07:00] MainForm: after CreateSidebar
+[2025-11-24T02:21:42.2105952+07:00] MainForm: Load event
+[2025-11-24T02:42:48.1332769+07:00] Login: button clicked
+[2025-11-24T02:42:50.1946595+07:00] Login: succeeded
+[2025-11-24T02:42:50.2470862+07:00] MainForm: constructor start
+[2025-11-24T02:42:50.2555733+07:00] MainForm: after CreateSidebar
+[2025-11-24T02:42:50.3391588+07:00] MainForm: Load event
+[2025-11-24T02:54:54.8776813+07:00] Login: button clicked
+[2025-11-24T02:54:55.6139499+07:00] Login: succeeded
+[2025-11-24T02:54:55.6741238+07:00] MainForm: constructor start
+[2025-11-24T02:54:55.6814673+07:00] MainForm: after CreateSidebar
+[2025-11-24T02:54:55.7474995+07:00] MainForm: Load event
+[2025-11-24T03:10:24.4101205+07:00] Login: button clicked
+[2025-11-24T03:10:24.7259463+07:00] Login: succeeded
+[2025-11-24T03:10:32.8100838+07:00] Service_Load start. SpecialtyApiClient is present.
+[2025-11-24T03:10:33.1187419+07:00] Service card created: Nhi Khoa
+[2025-11-24T03:10:33.1951959+07:00] Service card created: Nhãn Khoa (Mắt)
+[2025-11-24T03:10:33.2534993+07:00] Service card created: Nội Tổng Quát
+[2025-11-24T03:10:33.3242964+07:00] Service card created: Thần Kinh
+[2025-11-24T03:10:33.4582581+07:00] Service card created: Khám Tổng Quát
+[2025-11-24T03:10:33.5192297+07:00] Service card created: Răng - Hàm - Mặt
+[2025-11-24T03:10:33.7757868+07:00] Service card created: Tai - Mũi - Họng
+[2025-11-24T03:10:33.8241242+07:00] Service card created: Sản - Phụ Khoa
+[2025-11-24T03:10:33.8990661+07:00] Service card created: Da Liễu
+[2025-11-24T03:10:33.9519397+07:00] Service card created: Cơ Xương Khớp
+[2025-11-24T03:10:33.9849526+07:00] Service_Load completed successfully. Services count: 10
+[2025-11-24T03:11:45.9393255+07:00] Service_Load start. SpecialtyApiClient is present.
+[2025-11-24T03:11:46.0460053+07:00] Service card created: Nhi Khoa
+[2025-11-24T03:11:46.1125333+07:00] Service card created: Nhãn Khoa (Mắt)
+[2025-11-24T03:11:46.1658893+07:00] Service card created: Nội Tổng Quát
+[2025-11-24T03:11:46.2321195+07:00] Service card created: Thần Kinh
+[2025-11-24T03:11:46.3076113+07:00] Service card created: Khám Tổng Quát
+[2025-11-24T03:11:46.3635964+07:00] Service card created: Răng - Hàm - Mặt
+[2025-11-24T03:11:46.5549390+07:00] Service card created: Tai - Mũi - Họng
+[2025-11-24T03:11:46.6072435+07:00] Service card created: Sản - Phụ Khoa
+[2025-11-24T03:11:46.6766924+07:00] Service card created: Da Liễu
+[2025-11-24T03:11:46.7412104+07:00] Service card created: Cơ Xương Khớp
+[2025-11-24T03:11:46.7746764+07:00] Service_Load completed successfully. Services count: 10
+[2025-11-24T03:13:23.8952514+07:00] Service_Load start. SpecialtyApiClient is present.
+[2025-11-24T03:13:25.2851515+07:00] Service card created: Nhi Khoa
+[2025-11-24T03:13:25.3455710+07:00] Service card created: Nhãn Khoa (Mắt)
+[2025-11-24T03:13:25.3912595+07:00] Service card created: Nội Tổng Quát
+[2025-11-24T03:13:25.4485900+07:00] Service card created: Thần Kinh
+[2025-11-24T03:13:25.5783888+07:00] Service card created: Khám Tổng Quát
+[2025-11-24T03:13:25.6284583+07:00] Service card created: Răng - Hàm - Mặt
+[2025-11-24T03:13:25.8893755+07:00] Service card created: Tai - Mũi - Họng
+[2025-11-24T03:13:25.9373876+07:00] Service card created: Sản - Phụ Khoa
+[2025-11-24T03:13:26.0026666+07:00] Service card created: Da Liễu
+[2025-11-24T03:13:26.0585721+07:00] Service card created: Cơ Xương Khớp
+[2025-11-24T03:13:26.1027020+07:00] Service_Load completed successfully. Services count: 10
+[2025-11-24T03:13:26.8219218+07:00] Service_Load start. SpecialtyApiClient is present.
+[2025-11-24T03:13:26.9146499+07:00] Service card created: Nhi Khoa
+[2025-11-24T03:13:26.9727831+07:00] Service card created: Nhãn Khoa (Mắt)
+[2025-11-24T03:13:27.0180868+07:00] Service card created: Nội Tổng Quát
+[2025-11-24T03:13:27.0728097+07:00] Service card created: Thần Kinh
+[2025-11-24T03:13:27.1426975+07:00] Service card created: Khám Tổng Quát
+[2025-11-24T03:13:27.1907107+07:00] Service card created: Răng - Hàm - Mặt
+[2025-11-24T03:13:27.3545910+07:00] Service card created: Tai - Mũi - Họng
+[2025-11-24T03:13:27.4002227+07:00] Service card created: Sản - Phụ Khoa
+[2025-11-24T03:13:27.4598406+07:00] Service card created: Da Liễu
+[2025-11-24T03:13:27.5075642+07:00] Service card created: Cơ Xương Khớp
+[2025-11-24T03:13:27.5394394+07:00] Service_Load completed successfully. Services count: 10
+[2025-11-24T03:15:06.2178412+07:00] Login: button clicked
+[2025-11-24T03:15:06.5328490+07:00] Login: succeeded
+[2025-11-24T03:20:18.0105129+07:00] Login: button clicked
+[2025-11-24T03:20:18.3240981+07:00] Login: succeeded

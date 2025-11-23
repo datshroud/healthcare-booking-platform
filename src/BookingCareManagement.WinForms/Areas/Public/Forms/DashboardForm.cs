@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Globalization;
@@ -6,15 +7,30 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
+using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms.Areas.Doctor.Services;
 using BookingCareManagement.WinForms.Areas.Doctor.Services.Models;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
+using BookingCareManagement.WinForms.Shared.State;
 namespace BookingCareManagement.WinForms;
 
 public sealed class DashboardForm : Form
 {
+    private readonly AdminAppointmentsApiClient? _adminAppointmentsApiClient;
     private readonly DoctorDashboardApiClient? _dashboardApiClient = null;
     private readonly DoctorAppointmentsApiClient? _appointmentsApiClient = null;
+    private readonly SessionState? _sessionState;
+    private readonly bool _useAdminDashboard;
+    private static readonly CultureInfo VietnamCulture = CultureInfo.GetCultureInfo("vi-VN");
+
+    private static readonly Dictionary<string, string> AppointmentStatusMap = new(StringComparer.OrdinalIgnoreCase)
+    {
+        { "Đã xác nhận", "Approved" },
+        { "Chờ xác nhận", "Pending" },
+        { "Đã hủy", "Canceled" },
+        { "Đã từ chối", "Rejected" },
+        { "Vắng mặt", "NoShow" }
+    };
 
     public DashboardForm()
     {
@@ -24,9 +40,15 @@ public sealed class DashboardForm : Form
         // Populate runtime-only data (guarded to avoid Designer errors)
         if (LicenseManager.UsageMode != LicenseUsageMode.Designtime)
         {
+            ApplyLocalization();
             PopulateTimeRangeComboBoxes();
             ConfigureDataGrids();
             ConfigureTrendChart();
+            ConfigureSparklineCharts();
+            RegisterEventHandlers();
+            flowLayoutPanel1.SizeChanged += (_, _) => AdjustTrendPanelWidth();
+            Resize += (_, _) => AdjustTrendPanelWidth();
+            AdjustTrendPanelWidth();
         }
 
         Text = "Dashboard";
@@ -34,25 +56,68 @@ public sealed class DashboardForm : Form
         MinimumSize = new Size(800, 600);
         Font = new Font("Segoe UI", 10);
         BackColor = Color.FromArgb(243, 244, 246);
+        _adminAppointmentsApiClient = null;
+        _sessionState = null;
+        _useAdminDashboard = false;
     }
 
-    public DashboardForm(DoctorDashboardApiClient dashboardApiClient, DoctorAppointmentsApiClient appointmentsApiClient) : this()
+    public DashboardForm(
+        DoctorDashboardApiClient dashboardApiClient,
+        DoctorAppointmentsApiClient appointmentsApiClient,
+        AdminAppointmentsApiClient adminAppointmentsApiClient,
+        SessionState sessionState) : this()
     {
         _dashboardApiClient = dashboardApiClient;
         _appointmentsApiClient = appointmentsApiClient;
+        _adminAppointmentsApiClient = adminAppointmentsApiClient;
+        _sessionState = sessionState;
+        _useAdminDashboard = sessionState?.IsAdmin == true && sessionState?.IsDoctor != true;
     }
 
     protected override async void OnLoad(EventArgs e)
     {
         base.OnLoad(e);
 
-        if (LicenseManager.UsageMode == LicenseUsageMode.Designtime || _dashboardApiClient is null || _appointmentsApiClient is null)
+        if (LicenseManager.UsageMode == LicenseUsageMode.Designtime)
         {
             return;
         }
 
-        await LoadAppointmentTrendAsync();
-        await LoadAppointmentsAsync();
+        if (_useAdminDashboard)
+        {
+            if (_adminAppointmentsApiClient is null)
+            {
+                return;
+            }
+
+            var adminTasks = new List<Task>
+            {
+                LoadNewCustomersAsync(),
+                LoadRevenueAsync(),
+                LoadOccupancyAsync(),
+                LoadAppointmentTrendAsync(),
+                LoadAppointmentsAsync()
+            };
+
+            await Task.WhenAll(adminTasks);
+            return;
+        }
+
+        if (_dashboardApiClient is null || _appointmentsApiClient is null)
+        {
+            return;
+        }
+
+        var loadTasks = new List<Task>
+        {
+            LoadNewCustomersAsync(),
+            LoadRevenueAsync(),
+            LoadOccupancyAsync(),
+            LoadAppointmentTrendAsync(),
+            LoadAppointmentsAsync()
+        };
+
+        await Task.WhenAll(loadTasks);
     }
 
     // Populate combo boxes at runtime only
@@ -121,6 +186,100 @@ public sealed class DashboardForm : Form
         series.IsVisibleInLegend = false;
     }
 
+    private void RegisterEventHandlers()
+    {
+        cobKhachHang.SelectedIndexChanged += async (_, _) => await LoadNewCustomersAsync();
+        cobDoanhThu.SelectedIndexChanged += async (_, _) => await LoadRevenueAsync();
+        cobLichHen.SelectedIndexChanged += async (_, _) => await LoadOccupancyAsync();
+        cobCuocHen.SelectedIndexChanged += async (_, _) => await LoadAppointmentsAsync();
+        cobHieuXuat.SelectedIndexChanged += async (_, _) => await LoadAppointmentsAsync();
+        cobTrangThai.SelectedIndexChanged += async (_, _) => await LoadAppointmentsAsync();
+        cobXuHuong.SelectedIndexChanged += cobXuHuong_SelectedIndexChanged;
+    }
+
+    private void ApplyLocalization()
+    {
+        label1.Text = "Khách hàng mới";
+        label3.Text = "Doanh thu";
+        label4.Text = "Tỷ lệ lấp đầy";
+        label5.Text = "Xu hướng lịch hẹn";
+        label7.Text = "Các cuộc hẹn";
+        label8.Text = "Hiệu suất";
+        labelConfirmedTitle.Text = "Đã đặt lịch hẹn";
+        labelCanceledTitle.Text = "Các cuộc hẹn đã hủy";
+        lbTrendRange.Text = "Tuần này";
+        label2.Text = "Xin chào,";
+    }
+
+    private void ConfigureSparklineCharts()
+    {
+        ConfigureSparklineChartControl(chartKhachHang, Color.FromArgb(34, 197, 94));
+        ConfigureSparklineChartControl(chart1, Color.FromArgb(107, 114, 128));
+        ConfigureSparklineChartControl(chart2, Color.FromArgb(234, 179, 8));
+        ConfigureSparklineChartControl(chartAppointmentTrend, Color.FromArgb(59, 130, 246));
+    }
+
+    private static void ConfigureSparklineChartControl(Chart chart, Color lineColor)
+    {
+        if (chart.ChartAreas.Count == 0 || chart.Series.Count == 0)
+        {
+            return;
+        }
+
+        var area = chart.ChartAreas[0];
+        area.AxisX.LabelStyle.Enabled = false;
+        area.AxisX.LineColor = Color.Transparent;
+        area.AxisX.MajorGrid.Enabled = false;
+        area.AxisX.MajorTickMark.Enabled = false;
+        area.AxisX.IsMarginVisible = false;
+        area.AxisY.MajorGrid.Enabled = false;
+        area.AxisY.MajorTickMark.Enabled = false;
+        area.AxisY.LineColor = Color.Transparent;
+        area.AxisY.Minimum = 0;
+        area.InnerPlotPosition = new ElementPosition(5, 5, 90, 90);
+        area.Position = new ElementPosition(1, 1, 98, 98);
+
+        var series = chart.Series[0];
+        series.ChartType = SeriesChartType.Spline;
+        series.BorderWidth = 3;
+        series.Color = lineColor;
+        series.IsVisibleInLegend = false;
+        series.IsXValueIndexed = true;
+        series.XValueType = ChartValueType.Int32;
+        series.MarkerStyle = MarkerStyle.Circle;
+        series.MarkerSize = 8;
+        series.MarkerColor = lineColor;
+        series.MarkerBorderColor = Color.White;
+        series.MarkerBorderWidth = 2;
+        series.ToolTip = "#VALY";
+    }
+
+    private void AdjustTrendPanelWidth()
+    {
+        if (panelXuHuong is null || flowLayoutPanel1 is null)
+        {
+            return;
+        }
+
+        var available = flowLayoutPanel1.ClientSize.Width - panelXuHuong.Margin.Left - panelXuHuong.Margin.Right;
+        if (available <= 0)
+        {
+            return;
+        }
+
+        panelXuHuong.Width = available;
+
+        if (chartAppointmentTrend is not null)
+        {
+            var width = panelXuHuong.Width - chartAppointmentTrend.Left - 20;
+            chartAppointmentTrend.Width = Math.Max(200, width);
+            var height = panelXuHuong.Height - chartAppointmentTrend.Top - 20;
+            chartAppointmentTrend.Height = Math.Max(150, height);
+        }
+
+        flowLayoutPanel1.AutoScrollMinSize = new Size(0, panelHieuXuat.Bottom + 60);
+    }
+
     private static string ResolveRangeToken(string? selection)
     {
         return selection switch
@@ -136,6 +295,87 @@ public sealed class DashboardForm : Form
         };
     }
 
+    private static (DateOnly From, DateOnly To) ResolveDateRange(string? selection)
+    {
+        var today = DateOnly.FromDateTime(DateTime.Now);
+        var offset = ((int)today.DayOfWeek + 6) % 7;
+        var startOfWeek = today.AddDays(-offset);
+        var startOfMonth = new DateOnly(today.Year, today.Month, 1);
+
+        return selection switch
+        {
+            "Tuần này" => (startOfWeek, startOfWeek.AddDays(7)),
+            "Tuần trước" => (startOfWeek.AddDays(-7), startOfWeek),
+            "Tháng này" => (startOfMonth, startOfMonth.AddMonths(1)),
+            "Tháng trước" => (startOfMonth.AddMonths(-1), startOfMonth),
+            "3 tháng qua" => (startOfMonth.AddMonths(-2), startOfMonth.AddMonths(1)),
+            "6 tháng qua" => (startOfMonth.AddMonths(-5), startOfMonth.AddMonths(1)),
+            "12 tháng qua" => (startOfMonth.AddMonths(-11), startOfMonth.AddMonths(1)),
+            _ => (today, today.AddDays(7))
+        };
+    }
+
+    private static string FormatCurrency(decimal value)
+    {
+        return value.ToString("C0", VietnamCulture);
+    }
+
+    private static string FormatNumber(decimal value)
+    {
+        return value.ToString("N0", VietnamCulture);
+    }
+
+    private static string FormatPercent(decimal value)
+    {
+        var clamped = Math.Clamp(value, 0, 100);
+        return $"{clamped:N1}%";
+    }
+
+    private static string FormatRangeLabel(DateOnly from, DateOnly toExclusive)
+    {
+        return $"{from:dd/MM} - {toExclusive.AddDays(-1):dd/MM}";
+    }
+
+    private static IReadOnlyList<DashboardMetricPointDto> BuildDailyPoints(
+        DateOnly start,
+        DateOnly endExclusive,
+        IReadOnlyDictionary<DateOnly, decimal> aggregated)
+    {
+        var points = new List<DashboardMetricPointDto>();
+        for (var date = start; date < endExclusive; date = date.AddDays(1))
+        {
+            var value = aggregated.TryGetValue(date, out var current) ? current : 0m;
+            points.Add(new DashboardMetricPointDto
+            {
+                Date = date,
+                Value = value
+            });
+        }
+
+        return points;
+    }
+
+    private static DateOnly ToLocalDate(DateTime utcDateTime)
+    {
+        var normalized = DateTime.SpecifyKind(utcDateTime, DateTimeKind.Utc);
+        return DateOnly.FromDateTime(normalized.ToLocalTime());
+    }
+
+    private static string BuildPatientKey(string? patientId, string? phone, string? name)
+    {
+        if (!string.IsNullOrWhiteSpace(patientId))
+        {
+            return patientId.Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(phone))
+        {
+            return phone.Trim();
+        }
+
+        return string.IsNullOrWhiteSpace(name) ? "unknown-patient" : name.Trim();
+    }
+
     private static bool IsConfirmed(string status)
     {
         return string.Equals(status, "Approved", StringComparison.OrdinalIgnoreCase)
@@ -148,8 +388,153 @@ public sealed class DashboardForm : Form
                || string.Equals(status, "Rejected", StringComparison.OrdinalIgnoreCase);
     }
 
+    private void RenderSparklineChart(Chart chart, IReadOnlyList<DashboardMetricPointDto> points, bool clampToHundred = false)
+    {
+        var ordered = points.OrderBy(p => p.Date).ToList();
+        var series = chart.Series[0];
+        var area = chart.ChartAreas[0];
+
+        series.Points.Clear();
+        series.XValueType = ChartValueType.Int32;
+        series.IsXValueIndexed = true;
+        area.AxisY.Minimum = 0;
+
+        // pad single-point series so the sparkline stretches horizontally
+        var paddedPoints = ordered.Count == 1
+            ? new List<DashboardMetricPointDto>
+            {
+                new DashboardMetricPointDto { Date = ordered[0].Date.AddDays(-1), Value = ordered[0].Value },
+                ordered[0],
+                new DashboardMetricPointDto { Date = ordered[0].Date.AddDays(1), Value = ordered[0].Value }
+            }
+            : ordered;
+
+        decimal maxValue = 1;
+        for (int i = 0; i < paddedPoints.Count; i++)
+        {
+            var point = paddedPoints[i];
+            var value = clampToHundred ? Math.Clamp(point.Value, 0, 100) : point.Value;
+            var index = series.Points.AddXY(i, (double)value);
+            if (index >= 0)
+            {
+                var dataPoint = series.Points[index];
+                dataPoint.AxisLabel = point.Date.ToString("dd/MM", VietnamCulture);
+                dataPoint.ToolTip = $"{point.Date:dd/MM}: {value:N0}";
+            }
+            maxValue = Math.Max(maxValue, value);
+        }
+
+        area.AxisY.Maximum = paddedPoints.Count == 0
+            ? 1
+            : Math.Ceiling((double)maxValue) + 1;
+        area.AxisX.Minimum = 0;
+        area.AxisX.Maximum = Math.Max(paddedPoints.Count - 1, 1);
+    }
+
+    private async Task LoadNewCustomersAsync(CancellationToken cancellationToken = default)
+    {
+        if (_useAdminDashboard)
+        {
+            await LoadAdminNewCustomersAsync(cancellationToken);
+            return;
+        }
+
+        try
+        {
+            cobKhachHang.Enabled = false;
+            lbKhachHang.Text = "--";
+            label1.Text = "Khách hàng mới";
+
+            var rangeToken = ResolveRangeToken(cobKhachHang.SelectedItem?.ToString());
+            var response = await _dashboardApiClient!.GetNewCustomersAsync(rangeToken, cancellationToken);
+
+            lbKhachHang.Text = FormatNumber(response.Total);
+            label1.Text = $"Khách hàng mới ({response.RangeLabel})";
+            RenderSparklineChart(chartKhachHang, response.Points);
+        }
+        catch (Exception ex)
+        {
+            lbKhachHang.Text = "--";
+            MessageBox.Show($"Không thể tải khách hàng mới: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            cobKhachHang.Enabled = true;
+        }
+    }
+
+    private async Task LoadRevenueAsync(CancellationToken cancellationToken = default)
+    {
+        if (_useAdminDashboard)
+        {
+            await LoadAdminRevenueAsync(cancellationToken);
+            return;
+        }
+
+        try
+        {
+            cobDoanhThu.Enabled = false;
+            lbDoanhThu.Text = "--";
+            label3.Text = "Doanh thu";
+
+            var rangeToken = ResolveRangeToken(cobDoanhThu.SelectedItem?.ToString());
+            var response = await _dashboardApiClient!.GetRevenueAsync(rangeToken, cancellationToken);
+
+            lbDoanhThu.Text = FormatCurrency(response.Total);
+            label3.Text = $"Doanh thu ({response.RangeLabel})";
+            RenderSparklineChart(chart1, response.Points);
+        }
+        catch (Exception ex)
+        {
+            lbDoanhThu.Text = "--";
+            MessageBox.Show($"Không thể tải doanh thu: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            cobDoanhThu.Enabled = true;
+        }
+    }
+
+    private async Task LoadOccupancyAsync(CancellationToken cancellationToken = default)
+    {
+        if (_useAdminDashboard)
+        {
+            await LoadAdminOccupancyAsync(cancellationToken);
+            return;
+        }
+
+        try
+        {
+            cobLichHen.Enabled = false;
+            lbLichHen.Text = "--";
+            label4.Text = "Tỷ lệ lấp đầy";
+
+            var rangeToken = ResolveRangeToken(cobLichHen.SelectedItem?.ToString());
+            var response = await _dashboardApiClient!.GetOccupancyAsync(rangeToken, cancellationToken);
+
+            lbLichHen.Text = FormatPercent(response.Total);
+            label4.Text = $"Tỷ lệ lấp đầy ({response.RangeLabel})";
+            RenderSparklineChart(chart2, response.Points, clampToHundred: true);
+        }
+        catch (Exception ex)
+        {
+            lbLichHen.Text = "--";
+            MessageBox.Show($"Không thể tải lấp đầy lịch hẹn: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            cobLichHen.Enabled = true;
+        }
+    }
+
     private async Task LoadAppointmentTrendAsync(CancellationToken cancellationToken = default)
     {
+        if (_useAdminDashboard)
+        {
+            await LoadAdminAppointmentTrendAsync(cancellationToken);
+            return;
+        }
+
         try
         {
             cobXuHuong.Enabled = false;
@@ -202,12 +587,20 @@ public sealed class DashboardForm : Form
 
     private async Task LoadAppointmentsAsync(CancellationToken cancellationToken = default)
     {
+        if (_useAdminDashboard)
+        {
+            await LoadAdminAppointmentsAsync(cancellationToken);
+            return;
+        }
+
         try
         {
-            var today = DateOnly.FromDateTime(DateTime.Now);
-            var until = today.AddDays(7);
-            var appointments = await _appointmentsApiClient!.GetAppointmentsAsync(today, until, cancellationToken);
-            BindAppointmentData(appointments);
+            var (from, to) = ResolveDateRange(cobCuocHen.SelectedItem?.ToString());
+            var appointments = await _appointmentsApiClient!.GetAppointmentsAsync(from, to, cancellationToken);
+            var filtered = FilterAppointmentsByStatus(appointments);
+
+            label7.Text = $"Cuộc hẹn ({from:dd/MM} - {to.AddDays(-1):dd/MM})";
+            BindAppointmentData(filtered);
         }
         catch (Exception ex)
         {
@@ -215,17 +608,221 @@ public sealed class DashboardForm : Form
         }
     }
 
+    private async Task LoadAdminNewCustomersAsync(CancellationToken cancellationToken)
+    {
+        if (_adminAppointmentsApiClient is null)
+        {
+            return;
+        }
+
+        try
+        {
+            cobKhachHang.Enabled = false;
+            lbKhachHang.Text = "--";
+            label1.Text = "Kh�ch h�ng";
+
+            var (from, to) = ResolveDateRange(cobKhachHang.SelectedItem?.ToString());
+            var appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+
+            var allCustomers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var dailyCustomers = new Dictionary<DateOnly, HashSet<string>>();
+            foreach (var appointment in appointments)
+            {
+                var date = ToLocalDate(appointment.StartUtc);
+                var key = BuildPatientKey(appointment.PatientId, appointment.CustomerPhone, appointment.PatientName);
+                allCustomers.Add(key);
+
+                if (!dailyCustomers.TryGetValue(date, out var set))
+                {
+                    set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                    dailyCustomers[date] = set;
+                }
+
+                set.Add(key);
+            }
+
+            var perDay = dailyCustomers.ToDictionary(pair => pair.Key, pair => (decimal)pair.Value.Count);
+            lbKhachHang.Text = FormatNumber(allCustomers.Count);
+            label1.Text = $"Kh�ch h�ng ({FormatRangeLabel(from, to)})";
+            RenderSparklineChart(chartKhachHang, BuildDailyPoints(from, to, perDay));
+        }
+        catch (Exception ex)
+        {
+            lbKhachHang.Text = "--";
+            MessageBox.Show($"Kh�ng th? t?i kh�ch h�ng (admin): {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            cobKhachHang.Enabled = true;
+        }
+    }
+
+    private async Task LoadAdminRevenueAsync(CancellationToken cancellationToken)
+    {
+        if (_adminAppointmentsApiClient is null)
+        {
+            return;
+        }
+
+        try
+        {
+            cobDoanhThu.Enabled = false;
+            lbDoanhThu.Text = "--";
+            label3.Text = "Doanh thu";
+
+            var (from, to) = ResolveDateRange(cobDoanhThu.SelectedItem?.ToString());
+            var appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+            var perDay = appointments
+                .GroupBy(a => ToLocalDate(a.StartUtc))
+                .ToDictionary(group => group.Key, group => group.Sum(x => x.Price));
+
+            var total = perDay.Values.Sum();
+            lbDoanhThu.Text = FormatCurrency(total);
+            label3.Text = $"Doanh thu ({FormatRangeLabel(from, to)})";
+            RenderSparklineChart(chart1, BuildDailyPoints(from, to, perDay));
+        }
+        catch (Exception ex)
+        {
+            lbDoanhThu.Text = "--";
+            MessageBox.Show($"Kh�ng th? t?i doanh thu (admin): {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            cobDoanhThu.Enabled = true;
+        }
+    }
+
+    private async Task LoadAdminOccupancyAsync(CancellationToken cancellationToken)
+    {
+        if (_adminAppointmentsApiClient is null)
+        {
+            return;
+        }
+
+        try
+        {
+            cobLichHen.Enabled = false;
+            lbLichHen.Text = "--";
+            label4.Text = "T? l? l?p d?y";
+
+            var (from, to) = ResolveDateRange(cobLichHen.SelectedItem?.ToString());
+            var appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+            var perDay = appointments
+                .GroupBy(a => ToLocalDate(a.StartUtc))
+                .ToDictionary(group => group.Key, group =>
+                {
+                    var total = group.Count();
+                    if (total == 0)
+                    {
+                        return 0m;
+                    }
+
+                    var confirmed = group.Count(a => IsConfirmed(a.Status));
+                    return Math.Round((decimal)confirmed / total * 100m, 2, MidpointRounding.AwayFromZero);
+                });
+
+            var average = perDay.Count == 0 ? 0m : perDay.Values.Average();
+            lbLichHen.Text = FormatPercent(average);
+            label4.Text = $"T? l? l?p d?y ({FormatRangeLabel(from, to)})";
+            RenderSparklineChart(chart2, BuildDailyPoints(from, to, perDay), clampToHundred: true);
+        }
+        catch (Exception ex)
+        {
+            lbLichHen.Text = "--";
+            MessageBox.Show($"Kh�ng th? t?i l?p d?y (admin): {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            cobLichHen.Enabled = true;
+        }
+    }
+
+    private async Task LoadAdminAppointmentTrendAsync(CancellationToken cancellationToken)
+    {
+        if (_adminAppointmentsApiClient is null)
+        {
+            return;
+        }
+
+        try
+        {
+            cobXuHuong.Enabled = false;
+            lbTrendRange.Text = "Dang t?i...";
+
+            var (from, to) = ResolveDateRange(cobXuHuong.SelectedItem?.ToString());
+            var appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+            var perDay = appointments
+                .GroupBy(a => ToLocalDate(a.StartUtc))
+                .ToDictionary(group => group.Key, group => (decimal)group.Count());
+
+            var response = new DashboardAppointmentTrendResponse
+            {
+                RangeLabel = FormatRangeLabel(from, to),
+                ConfirmedCount = appointments.Count(a => IsConfirmed(a.Status)),
+                CanceledCount = appointments.Count(a => IsCanceled(a.Status)),
+                Points = BuildDailyPoints(from, to, perDay)
+            };
+
+            lbTrendRange.Text = response.RangeLabel;
+            lbConfirmedTrend.Text = response.ConfirmedCount.ToString("N0", VietnamCulture);
+            lbCanceledTrend.Text = response.CanceledCount.ToString("N0", VietnamCulture);
+            RenderTrendChart(response);
+        }
+        catch (Exception ex)
+        {
+            lbTrendRange.Text = "Kh�ng th? t?i d? li?u";
+            MessageBox.Show($"Kh�ng th? t?i xu hu?ng (admin): {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            cobXuHuong.Enabled = true;
+        }
+    }
+
+    private async Task LoadAdminAppointmentsAsync(CancellationToken cancellationToken)
+    {
+        if (_adminAppointmentsApiClient is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var (from, to) = ResolveDateRange(cobCuocHen.SelectedItem?.ToString());
+            var appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+            var filtered = FilterAppointmentsByStatus(appointments);
+
+            label7.Text = $"Cu?c h?n ({FormatRangeLabel(from, to)})";
+            BindAppointmentData(filtered);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Kh�ng th? t?i danh s�ch cu?c h?n (admin): {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private IReadOnlyList<DoctorAppointmentListItemDto> FilterAppointmentsByStatus(IReadOnlyList<DoctorAppointmentListItemDto> appointments)
+    {
+        var selection = cobTrangThai.SelectedItem?.ToString();
+        if (string.IsNullOrWhiteSpace(selection) || !AppointmentStatusMap.TryGetValue(selection, out var statusCode))
+        {
+            return appointments;
+        }
+
+        return appointments
+            .Where(a => string.Equals(a.Status, statusCode, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+    }
+
     private void BindAppointmentData(IReadOnlyList<DoctorAppointmentListItemDto> appointments)
     {
-        var culture = CultureInfo.GetCultureInfo("vi-VN");
-
         var appointmentRows = appointments
             .OrderBy(a => a.StartUtc)
             .Select(a => new AppointmentGridRow(
                 a.PatientName,
                 a.DoctorName,
-                string.IsNullOrWhiteSpace(a.DateLabel) ? a.StartUtc.ToLocalTime().ToString("dd/MM/yyyy", culture) : a.DateLabel,
-                string.IsNullOrWhiteSpace(a.TimeLabel) ? a.StartUtc.ToLocalTime().ToString("HH:mm", culture) : a.TimeLabel,
+                string.IsNullOrWhiteSpace(a.DateLabel) ? a.StartUtc.ToLocalTime().ToString("dd/MM/yyyy", VietnamCulture) : a.DateLabel,
+                string.IsNullOrWhiteSpace(a.TimeLabel) ? a.StartUtc.ToLocalTime().ToString("HH:mm", VietnamCulture) : a.TimeLabel,
                 string.IsNullOrWhiteSpace(a.StatusLabel) ? a.Status : a.StatusLabel))
             .ToList();
 
@@ -236,7 +833,7 @@ public sealed class DashboardForm : Form
             .Select(group => new SpecialtyPerformanceRow(
                 string.IsNullOrWhiteSpace(group.Key) ? "Chưa xác định" : group.Key,
                 group.Count(),
-                group.Sum(x => x.Price).ToString("N0", culture)))
+                group.Sum(x => x.Price).ToString("N0", VietnamCulture)))
             .ToList();
 
         dgvChuyenKhoa.DataSource = specialtyRows;
@@ -254,7 +851,12 @@ public sealed class DashboardForm : Form
 
     private async void cobXuHuong_SelectedIndexChanged(object? sender, EventArgs e)
     {
-        if (LicenseManager.UsageMode == LicenseUsageMode.Designtime || _dashboardApiClient is null)
+        if (LicenseManager.UsageMode == LicenseUsageMode.Designtime)
+        {
+            return;
+        }
+
+        if (!_useAdminDashboard && _dashboardApiClient is null)
         {
             return;
         }
@@ -645,11 +1247,11 @@ public sealed class DashboardForm : Form
         label4.Name = "label4";
         label4.Size = new Size(170, 28);
         label4.TabIndex = 0;
-        label4.Text = "Lịch hẹn đang chờ";
+        label4.Text = "Tỷ lệ lấp đầy";
         //
         // panelXuHuong
         //
-        panelXuHuong.AutoSize = true;
+        panelXuHuong.AutoSize = false;
         panelXuHuong.BorderStyle = BorderStyle.FixedSingle;
         panelXuHuong.Controls.Add(chartAppointmentTrend);
         panelXuHuong.Controls.Add(labelCanceledTitle);
@@ -659,10 +1261,11 @@ public sealed class DashboardForm : Form
         panelXuHuong.Controls.Add(lbTrendRange);
         panelXuHuong.Controls.Add(cobXuHuong);
         panelXuHuong.Controls.Add(label5);
+        panelXuHuong.MinimumSize = new Size(960, 250);
         panelXuHuong.Location = new Point(80, 297);
         panelXuHuong.Margin = new Padding(80, 20, 20, 20);
         panelXuHuong.Name = "panelXuHuong";
-        panelXuHuong.Size = new Size(960, 250);
+        panelXuHuong.Size = new Size(1440, 260);
         panelXuHuong.TabIndex = 12;
         //
         // cobXuHuong
@@ -745,13 +1348,14 @@ public sealed class DashboardForm : Form
         legend4.Enabled = false;
         legend4.Name = "Legend1";
         chartAppointmentTrend.Legends.Add(legend4);
-        chartAppointmentTrend.Location = new Point(430, 61);
+        chartAppointmentTrend.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+        chartAppointmentTrend.Location = new Point(430, 75);
         chartAppointmentTrend.Name = "chartAppointmentTrend";
         series4.ChartArea = "ChartArea1";
         series4.Legend = "Legend1";
         series4.Name = "Series1";
         chartAppointmentTrend.Series.Add(series4);
-        chartAppointmentTrend.Size = new Size(511, 172);
+        chartAppointmentTrend.Size = new Size(980, 190);
         chartAppointmentTrend.TabIndex = 7;
         chartAppointmentTrend.Text = "chart3";
         // 

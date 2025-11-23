@@ -16,3 +16,17 @@ public sealed class DashboardAppointmentTrendResponse
     public IReadOnlyList<DashboardMetricPointDto> Points { get; init; } = Array.Empty<DashboardMetricPointDto>();
     public string RangeLabel { get; init; } = string.Empty;
 }
+
+public sealed class DashboardSparklineResponse
+{
+    public decimal Total { get; init; }
+    public string RangeLabel { get; init; } = string.Empty;
+    public IReadOnlyList<DashboardMetricPointDto> Points { get; init; } = Array.Empty<DashboardMetricPointDto>();
+}
+
+public sealed class DashboardCustomerMixResponse
+{
+    public int NewCustomers { get; init; }
+    public int ReturningCustomers { get; init; }
+    public string RangeLabel { get; init; } = string.Empty;
+}
