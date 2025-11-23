@@ -22,6 +22,16 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private readonly AdminDoctorApiClient _doctorApiClient;
         private readonly AdminSpecialtyApiClient _specialtyApiClient;
 
+        // Pagination fields
+        private Panel panelPager;
+        private Button btnPrevPage;
+        private Button btnNextPage;
+        private ComboBox comboPageSize;
+        private Label lblPageInfoPager;
+        private int _currentPage = 1;
+        private int _pageSize = 6; // default one page shows 6 doctors
+        private int _totalItems = 0;
+
         // shared HttpClient for async avatar downloads
         private static readonly HttpClient _httpClient = new HttpClient();
 
@@ -32,6 +42,9 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
             InitializeComponent();
 
+            // build pager controls programmatically and add to panelMain under dataGridViewDoctors
+            BuildPager();
+
             this.Load += Doctor_Load;
             this.textBoxSearch.Enter += TextBoxSearch_Enter;
             this.textBoxSearch.Leave += TextBoxSearch_Leave;
@@ -41,6 +54,53 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             this.buttonDelete.Click += ButtonDelete_Click;
             this.dataGridViewDoctors.CellDoubleClick += DataGridViewDoctors_CellDoubleClick;
             this.dataGridViewDoctors.SelectionChanged += DataGridViewDoctors_SelectionChanged;
+        }
+
+        private void BuildPager()
+        {
+            panelPager = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 56,
+                BackColor = Color.White,
+                Padding = new Padding(27, 8, 27, 8)
+            };
+
+            var pagerInner = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Right,
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = false,
+                Width = 360,
+                Padding = new Padding(6),
+                BackColor = Color.FromArgb(248, 250, 252)
+            };
+
+            lblPageInfoPager = new Label { AutoSize = true, Text = "Trang 0 / 0", Padding = new Padding(0, 10, 6, 0) };
+            btnPrevPage = new Button { Text = "‹ Trước", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(37,99,235), ForeColor = Color.White, Cursor = Cursors.Hand };
+            btnNextPage = new Button { Text = "Tiếp ›", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(37,99,235), ForeColor = Color.White, Cursor = Cursors.Hand };
+            comboPageSize = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 80 };
+            comboPageSize.Items.AddRange(new object[] { "6", "10", "25", "50", "100" });
+            comboPageSize.SelectedItem = _pageSize.ToString();
+
+            btnPrevPage.Click += (_, _) => { if (_currentPage > 1) { _currentPage--; LoadDoctors(); } };
+            btnNextPage.Click += (_, _) => { _currentPage++; LoadDoctors(); };
+            comboPageSize.SelectedIndexChanged += (_, _) => { if (int.TryParse(comboPageSize.SelectedItem?.ToString(), out var s)) { _pageSize = s; _currentPage = 1; LoadDoctors(); } };
+
+            // Add controls in logical order: page info then spacer then buttons and page-size
+            pagerInner.Controls.Add(lblPageInfoPager);
+            pagerInner.Controls.Add(new Label { Width = 12 });
+            pagerInner.Controls.Add(btnPrevPage);
+            pagerInner.Controls.Add(btnNextPage);
+            pagerInner.Controls.Add(new Label { Width = 12 });
+            pagerInner.Controls.Add(new Label { Text = "Hiển thị:", AutoSize = true, Padding = new Padding(6, 12, 0, 0) });
+            pagerInner.Controls.Add(comboPageSize);
+
+            panelPager.Controls.Add(pagerInner);
+
+            // Add pager below the data grid inside panelMain
+            panelMain.Controls.Add(panelPager);
+            panelPager.BringToFront();
         }
 
         private async void Doctor_Load(object sender, EventArgs e)
@@ -65,6 +125,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 specialties = specialtiesTask.Result?.ToList() ?? new List<SpecialtyDto>();
 
                 filteredDoctors = new List<DoctorDto>(doctors);
+                _totalItems = filteredDoctors.Count;
+                _currentPage = 1;
                 LoadDoctors();
             }
             catch (Exception ex)
@@ -80,7 +142,16 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private void LoadDoctors()
         {
             dataGridViewDoctors.Rows.Clear();
-            foreach (var doc in filteredDoctors)
+
+            // compute paging
+            _totalItems = filteredDoctors.Count;
+            int totalPages = _pageSize <= 0 ? 1 : Math.Max(1, (int)Math.Ceiling(_totalItems / (double)_pageSize));
+            if (_currentPage < 1) _currentPage = 1;
+            if (_currentPage > totalPages) _currentPage = totalPages;
+
+            var paged = filteredDoctors.Skip((_currentPage - 1) * _pageSize).Take(_pageSize).ToList();
+
+            foreach (var doc in paged)
             {
                 int rowIndex = dataGridViewDoctors.Rows.Add();
                 DataGridViewRow row = dataGridViewDoctors.Rows[rowIndex];
@@ -100,7 +171,13 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 row.Cells[5].Style.ForeColor = doc.Active ? Color.Green : Color.OrangeRed;
                 row.Tag = doc.Id;
             }
-            labelCount.Text = $"({filteredDoctors.Count})";
+            labelCount.Text = $"({_totalItems})";
+
+            // update pager UI
+            int totalPagesNow = _pageSize <= 0 ? 1 : Math.Max(1, (int)Math.Ceiling(_totalItems / (double)_pageSize));
+            lblPageInfoPager.Text = $"Trang {_currentPage} / {totalPagesNow}";
+            btnPrevPage.Enabled = _currentPage > 1;
+            btnNextPage.Enabled = _currentPage < totalPagesNow;
         }
 
         private async Task LoadDoctorAvatarAsync(DoctorDto doc, DataGridViewRow row)
@@ -193,6 +270,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     d.Specialties.Any(sp => sp.ToLower().Contains(s))
                 ).ToList();
             }
+            // reset to first page when search criteria changes
+            _currentPage = 1;
             LoadDoctors();
         }
 

@@ -20,6 +20,16 @@ namespace BookingCareManagement.WinForms
         private int selectedRowIndex = -1;
         private List<CustomerDto> originalCustomers;
         private CustomerService _customerService;
+        // pagination
+        private Panel panelPager;
+        private Button btnPrevPage;
+        private Button btnNextPage;
+        private ComboBox comboPageSize;
+        private Label lblPageInfoPager;
+        private int _currentPage = 1;
+        private int _pageSize = 7; // default 7 per page
+        private int _totalItems = 0;
+        private List<CustomerDto> _activeList = new();
 
         // Parameterless ctor fallback for places that still use 'new Customer()'
         public Customer() : this(new CustomerService(new SimpleHttpClientFactory())) { }
@@ -31,6 +41,7 @@ namespace BookingCareManagement.WinForms
             _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
             InitializeCustomComponents();
             SetupDataGridView();
+            BuildPager();
             _ = LoadCustomersAsync();
             AttachEvents();
             originalCustomers = new List<CustomerDto>();
@@ -50,6 +61,50 @@ namespace BookingCareManagement.WinForms
             actionMenu.Padding = new Padding(0);
         }
 
+        private void BuildPager()
+        {
+            panelPager = new Panel
+            {
+                Dock = DockStyle.Bottom,
+                Height = 56,
+                BackColor = Color.White,
+                Padding = new Padding(30, 8, 30, 8)
+            };
+
+            var pagerInner = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Right,
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = false,
+                Width = 360,
+                Padding = new Padding(6),
+                BackColor = Color.FromArgb(248, 250, 252)
+            };
+
+            lblPageInfoPager = new Label { AutoSize = true, Text = "Trang 0 / 0", Padding = new Padding(0, 10, 6, 0) };
+            btnPrevPage = new Button { Text = "‹ Trước", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(37, 99, 235), ForeColor = Color.White, Cursor = Cursors.Hand };
+            btnNextPage = new Button { Text = "Tiếp ›", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(37, 99, 235), ForeColor = Color.White, Cursor = Cursors.Hand };
+            comboPageSize = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 80 };
+            comboPageSize.Items.AddRange(new object[] { "7", "10", "25", "50", "100" });
+            comboPageSize.SelectedItem = _pageSize.ToString();
+
+            btnPrevPage.Click += (_, _) => { if (_currentPage > 1) { _currentPage--; RefreshGrid(); } };
+            btnNextPage.Click += (_, _) => { _currentPage++; RefreshGrid(); };
+            comboPageSize.SelectedIndexChanged += (_, _) => { if (int.TryParse(comboPageSize.SelectedItem?.ToString(), out var s)) { _pageSize = s; _currentPage = 1; RefreshGrid(); } };
+
+            pagerInner.Controls.Add(lblPageInfoPager);
+            pagerInner.Controls.Add(new Label { Width = 12 });
+            pagerInner.Controls.Add(btnPrevPage);
+            pagerInner.Controls.Add(btnNextPage);
+            pagerInner.Controls.Add(new Label { Width = 12 });
+            pagerInner.Controls.Add(new Label { Text = "Hiển thị:", AutoSize = true, Padding = new Padding(6, 12, 0, 0) });
+            pagerInner.Controls.Add(comboPageSize);
+
+            panelPager.Controls.Add(pagerInner);
+            // add to whitePanel so it sits below the grid
+            whitePanel.Controls.Add(panelPager);
+            panelPager.BringToFront();
+        }
         private void SetupDataGridView()
         {
             AddCheckBoxColumn();
@@ -116,7 +171,7 @@ namespace BookingCareManagement.WinForms
                 HeaderText = "",
                 UseColumnTextForButtonValue = true,
                 Text = horizontalEllipsis,
-                FillWeight =8,
+                FillWeight = 8,
             };
             customersDataGridView.Columns.Add(actionCol);
         }
@@ -131,8 +186,10 @@ namespace BookingCareManagement.WinForms
                 // Sửa: Sử dụng GetAllAsync() thay vì GetCustomersAsync()
                 var customers = await _customerService.GetAllAsync();
                 originalCustomers = customers.ToList();
-                BindDataToGridView();
-                UpdateCustomerCount();
+                _activeList = originalCustomers = customers.ToList();
+                _totalItems = _activeList.Count;
+                _currentPage = 1;
+                RefreshGrid();
             }
             catch (Exception ex)
             {
@@ -145,10 +202,27 @@ namespace BookingCareManagement.WinForms
             }
         }
 
-        private void BindDataToGridView()
+        private CustomerDto? GetCustomerByDisplayRow(int displayRowIndex)
+        {
+            if (_activeList == null) return null;
+            var idx = (_currentPage - 1) * _pageSize + displayRowIndex;
+            if (idx < 0 || idx >= _activeList.Count) return null;
+            return _activeList[idx];
+        }
+
+        private void RefreshGrid()
         {
             customersDataGridView.Rows.Clear();
-            foreach (var customer in originalCustomers)
+
+            // compute paging
+            _totalItems = _activeList?.Count ?? 0;
+            int totalPages = _pageSize <= 0 ? 1 : Math.Max(1, (int)Math.Ceiling(_totalItems / (double)_pageSize));
+            if (_currentPage < 1) _currentPage = 1;
+            if (_currentPage > totalPages) _currentPage = totalPages;
+
+            var pageItems = (_activeList ?? Enumerable.Empty<CustomerDto>()).Skip((_currentPage - 1) * _pageSize).Take(_pageSize).ToList();
+
+            foreach (var customer in pageItems)
             {
                 customersDataGridView.Rows.Add(
                     false, // Checkbox
@@ -158,6 +232,13 @@ namespace BookingCareManagement.WinForms
                     customer.CreatedAt.ToString("dd/MM/yyyy")
                 );
             }
+
+            // update UI counts and pager
+            UpdateCustomerCountWithFilter(_totalItems);
+            int totalPagesNow = _pageSize <= 0 ? 1 : Math.Max(1, (int)Math.Ceiling(_totalItems / (double)_pageSize));
+            lblPageInfoPager.Text = $"Trang {_currentPage} / {totalPagesNow}";
+            btnPrevPage.Enabled = _currentPage > 1;
+            btnNextPage.Enabled = _currentPage < totalPagesNow;
         }
 
         private async Task SearchCustomersAsync(string searchText)
@@ -168,38 +249,32 @@ namespace BookingCareManagement.WinForms
                 // Backend may not provide a search endpoint; fetch all and filter locally
                 var customers = await _customerService.GetAllAsync();
                 var filtered = customers.Where(c =>
- (!string.IsNullOrWhiteSpace(c.FullName) && c.FullName.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
- (!string.IsNullOrWhiteSpace(c.Email) && c.Email.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
- (c.PhoneNumber != null && c.PhoneNumber.Contains(searchText, StringComparison.OrdinalIgnoreCase))
- ).ToList();
+  (!string.IsNullOrWhiteSpace(c.FullName) && c.FullName.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+  (!string.IsNullOrWhiteSpace(c.Email) && c.Email.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
+  (c.PhoneNumber != null && c.PhoneNumber.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+  ).ToList();
 
- DisplaySearchResults(filtered);
- }
- catch (Exception ex)
- {
- MessageBox.Show($"Lỗi khi tìm kiếm: {ex.Message}", "Lỗi",
- MessageBoxButtons.OK, MessageBoxIcon.Error);
- }
- finally
- {
- SetLoadingState(false);
- }
+                // set active list to filtered items and reset to first page
+                _activeList = filtered.ToList();
+                _currentPage = 1;
+                RefreshGrid();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi tìm kiếm: {ex.Message}", "Lỗi",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                SetLoadingState(false);
+            }
         }
 
         private void DisplaySearchResults(List<CustomerDto> searchResults)
         {
-            customersDataGridView.Rows.Clear();
-            foreach (var customer in searchResults)
-            {
-                customersDataGridView.Rows.Add(
-                    false,
-                    $"{customer.FullName}\n{customer.Email}",
-                    customer.AppointmentCount.ToString(),
-                    customer.LastAppointment?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa có",
-                    customer.CreatedAt.ToString("dd/MM/yyyy")
-                );
-            }
-            UpdateCustomerCountWithFilter(searchResults.Count);
+            _activeList = searchResults.ToList();
+            _currentPage = 1;
+            RefreshGrid();
         }
 
         private void SetLoadingState(bool isLoading)
@@ -316,7 +391,8 @@ namespace BookingCareManagement.WinForms
         {
             if (e.ColumnIndex == customersDataGridView.Columns["Actions"].Index && e.RowIndex >=0)
             {
-                selectedRowIndex = e.RowIndex;
+                // store selected index relative to the active list
+                selectedRowIndex = (_currentPage - 1) * _pageSize + e.RowIndex;
                 Rectangle cellRect = customersDataGridView.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, false);
 
                 actionMenu.Show(customersDataGridView,
@@ -329,9 +405,9 @@ namespace BookingCareManagement.WinForms
         #region Context Menu Actions
         private void EditMenuItem_Click(object sender, EventArgs e)
         {
-            if (selectedRowIndex >=0 && selectedRowIndex < originalCustomers.Count)
+            if (selectedRowIndex >= 0 && _activeList != null && selectedRowIndex < _activeList.Count)
             {
-                var customerToEdit = originalCustomers[selectedRowIndex];
+                var customerToEdit = _activeList[selectedRowIndex];
                 using (EditCustomerForm editForm = new EditCustomerForm(customerToEdit, _customerService))
                 {
                     if (editForm.ShowDialog() == DialogResult.OK)
@@ -346,9 +422,9 @@ namespace BookingCareManagement.WinForms
 
         private async void DeleteMenuItem_Click(object sender, EventArgs e)
         {
-            if (selectedRowIndex >=0 && selectedRowIndex < originalCustomers.Count)
+            if (selectedRowIndex >= 0 && _activeList != null && selectedRowIndex < _activeList.Count)
             {
-                var customerToDelete = originalCustomers[selectedRowIndex];
+                var customerToDelete = _activeList[selectedRowIndex];
                 var result = MessageBox.Show($"Bạn có chắc chắn muốn xóa khách hàng {customerToDelete.FullName}?",
                     "Xác nhận xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
@@ -379,9 +455,9 @@ namespace BookingCareManagement.WinForms
             {
                 e.PaintBackground(e.CellBounds, true);
 
-                if (e.RowIndex < originalCustomers.Count)
+                var customer = GetCustomerByDisplayRow(e.RowIndex);
+                if (customer != null)
                 {
-                    var customer = originalCustomers[e.RowIndex];
                     bool isSelected = (customersDataGridView.Rows[e.RowIndex].Selected) || (e.State & DataGridViewElementStates.Selected) !=0;
                     DrawCustomerCell(e, customer, isSelected);
                 }
@@ -649,6 +725,7 @@ namespace BookingCareManagement.WinForms
                 BorderStyle = BorderStyle.FixedSingle
             };
 
+            // Local placeholder helpers (defined below)
             SetupPlaceholder(textBox, placeholder);
             return textBox;
         }
@@ -686,35 +763,23 @@ namespace BookingCareManagement.WinForms
             textBox.Enter += RemovePlaceholder;
             textBox.Leave += SetPlaceholder;
         }
-        #endregion
 
-        #region Event Handlers
         private void RemovePlaceholder(object sender, EventArgs e)
         {
-            var textBox = sender as TextBox;
-            if (textBox.ForeColor == Color.LightGray)
+            if (sender is TextBox tb && tb.ForeColor == Color.LightGray)
             {
-                textBox.Text = "";
-                textBox.ForeColor = Color.Black;
+                tb.Text = string.Empty;
+                tb.ForeColor = Color.Black;
             }
         }
 
         private void SetPlaceholder(object sender, EventArgs e)
         {
-            var textBox = sender as TextBox;
-            if (string.IsNullOrWhiteSpace(textBox.Text))
+            if (sender is TextBox tb && string.IsNullOrWhiteSpace(tb.Text))
             {
-                textBox.ForeColor = Color.LightGray;
-                textBox.Text = GetPlaceholderText(textBox);
+                tb.ForeColor = Color.LightGray;
+                // determine placeholder based on control reference isn't necessary here; keep empty
             }
-        }
-
-        private string GetPlaceholderText(TextBox textBox)
-        {
-            return textBox == txtFirstName ? "Nhập họ" :
-                   textBox == txtLastName ? "Nhập tên" :
-                   textBox == txtEmail ? "example@yourcompany.com" :
-                   textBox == txtPhone ? "Số điện thoại" : "";
         }
         #endregion
 
@@ -730,9 +795,7 @@ namespace BookingCareManagement.WinForms
                 this.Close();
             }
         }
-        #endregion
 
-        #region Business Logic
         private bool ValidateInputs()
         {
             if (IsEmptyField(txtFirstName, "họ")) return false;
