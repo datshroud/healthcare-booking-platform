@@ -1,13 +1,21 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using System.Drawing;
+using System.Globalization;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
-using BookingCareManagement.WinForms.Areas.Admin.Services;
-using System.Data;
 using System.Windows.Forms.DataVisualization.Charting;
+using BookingCareManagement.WinForms.Areas.Doctor.Services;
+using BookingCareManagement.WinForms.Areas.Doctor.Services.Models;
+using BookingCareManagement.WinForms.Shared.Models.Dtos;
 namespace BookingCareManagement.WinForms;
 
 public sealed class DashboardForm : Form
 {
+    private readonly DoctorDashboardApiClient? _dashboardApiClient = null;
+    private readonly DoctorAppointmentsApiClient? _appointmentsApiClient = null;
+
     public DashboardForm()
     {
         // Initialize designer controls
@@ -17,8 +25,8 @@ public sealed class DashboardForm : Form
         if (LicenseManager.UsageMode != LicenseUsageMode.Designtime)
         {
             PopulateTimeRangeComboBoxes();
-            PopulateDataGrids();
-            PopulateChartsWithMockData();
+            ConfigureDataGrids();
+            ConfigureTrendChart();
         }
 
         Text = "Dashboard";
@@ -28,16 +36,29 @@ public sealed class DashboardForm : Form
         BackColor = Color.FromArgb(243, 244, 246);
     }
 
-    // Preserve the API surface if other code constructs this form with the ApiClient
-    public DashboardForm(AdminDashboardApiClient apiClient) : this()
+    public DashboardForm(DoctorDashboardApiClient dashboardApiClient, DoctorAppointmentsApiClient appointmentsApiClient) : this()
     {
-        // intentionally empty - placeholder for compatibility
+        _dashboardApiClient = dashboardApiClient;
+        _appointmentsApiClient = appointmentsApiClient;
+    }
+
+    protected override async void OnLoad(EventArgs e)
+    {
+        base.OnLoad(e);
+
+        if (LicenseManager.UsageMode == LicenseUsageMode.Designtime || _dashboardApiClient is null || _appointmentsApiClient is null)
+        {
+            return;
+        }
+
+        await LoadAppointmentTrendAsync();
+        await LoadAppointmentsAsync();
     }
 
     // Populate combo boxes at runtime only
     private void PopulateTimeRangeComboBoxes()
     {
-        var timeRanges = new[] { "Tuần này", "Tuần trước", "Tuần sau", "Tháng này", "Tháng trước", "Tháng sau" };
+        var timeRanges = new[] { "Tuần này", "Tuần trước", "Tháng này", "Tháng trước", "3 tháng qua", "6 tháng qua", "12 tháng qua" };
 
         cobXuHuong.Items.AddRange(timeRanges);
         if (cobXuHuong.Items.Count > 0) cobXuHuong.SelectedIndex = 0;
@@ -51,20 +72,201 @@ public sealed class DashboardForm : Form
         cobLichHen.Items.AddRange(timeRanges);
         if (cobLichHen.Items.Count > 0) cobLichHen.SelectedIndex = 0;
 
-        cobCongXuat.Items.AddRange(timeRanges);
-        if (cobCongXuat.Items.Count > 0) cobCongXuat.SelectedIndex = 0;
-
         cobCuocHen.Items.AddRange(timeRanges);
         if (cobCuocHen.Items.Count > 0) cobCuocHen.SelectedIndex = 0;
-
-        cobHieuXuat.Items.AddRange(timeRanges);
-        if (cobHieuXuat.Items.Count > 0) cobHieuXuat.SelectedIndex = 0;
 
         // Populate status combobox for appointments
         var statuses = new[] { "Tất cả các trạng thái", "Đã xác nhận", "Chờ xác nhận", "Đã hủy", "Đã từ chối", "Vắng mặt" };
         cobTrangThai.Items.AddRange(statuses);
         if (cobTrangThai.Items.Count > 0) cobTrangThai.SelectedIndex = 0;
     }
+
+    private void ConfigureDataGrids()
+    {
+        dgvCuocHen.AutoGenerateColumns = false;
+        dgvCuocHen.Columns.Clear();
+        dgvCuocHen.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        dgvCuocHen.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Tên bệnh nhân", DataPropertyName = nameof(AppointmentGridRow.PatientName) });
+        dgvCuocHen.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Tên bác sĩ", DataPropertyName = nameof(AppointmentGridRow.DoctorName) });
+        dgvCuocHen.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Ngày", DataPropertyName = nameof(AppointmentGridRow.Date) });
+        dgvCuocHen.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Giờ", DataPropertyName = nameof(AppointmentGridRow.Time) });
+        dgvCuocHen.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Trạng thái", DataPropertyName = nameof(AppointmentGridRow.Status) });
+
+        dgvChuyenKhoa.AutoGenerateColumns = false;
+        dgvChuyenKhoa.Columns.Clear();
+        dgvChuyenKhoa.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        dgvChuyenKhoa.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Chuyên khoa", DataPropertyName = nameof(SpecialtyPerformanceRow.Specialty) });
+        dgvChuyenKhoa.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "SL Lịch hẹn", DataPropertyName = nameof(SpecialtyPerformanceRow.AppointmentCount) });
+        dgvChuyenKhoa.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Doanh thu (₫)", DataPropertyName = nameof(SpecialtyPerformanceRow.Revenue) });
+
+        dgvBacSi.AutoGenerateColumns = false;
+        dgvBacSi.Columns.Clear();
+        dgvBacSi.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+        dgvBacSi.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Tên bác sĩ", DataPropertyName = nameof(DoctorPerformanceRow.Doctor) });
+        dgvBacSi.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Lịch hẹn Đã xác nhận", DataPropertyName = nameof(DoctorPerformanceRow.Confirmed) });
+        dgvBacSi.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Lịch hẹn Đã hủy", DataPropertyName = nameof(DoctorPerformanceRow.Canceled) });
+    }
+
+    private void ConfigureTrendChart()
+    {
+        var area = chartAppointmentTrend.ChartAreas[0];
+        area.AxisX.MajorGrid.Enabled = false;
+        area.AxisY.MajorGrid.Enabled = false;
+        area.AxisY.Minimum = 0;
+
+        var series = chartAppointmentTrend.Series[0];
+        series.ChartType = SeriesChartType.Line;
+        series.BorderWidth = 3;
+        series.Color = Color.FromArgb(59, 130, 246);
+        series.IsVisibleInLegend = false;
+    }
+
+    private static string ResolveRangeToken(string? selection)
+    {
+        return selection switch
+        {
+            "Tuần này" => "this-week",
+            "Tuần trước" => "last-week",
+            "Tháng này" => "this-month",
+            "Tháng trước" => "last-month",
+            "3 tháng qua" => "three-months",
+            "6 tháng qua" => "six-months",
+            "12 tháng qua" => "twelve-months",
+            _ => "this-week"
+        };
+    }
+
+    private static bool IsConfirmed(string status)
+    {
+        return string.Equals(status, "Approved", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(status, "Pending", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsCanceled(string status)
+    {
+        return string.Equals(status, "Canceled", StringComparison.OrdinalIgnoreCase)
+               || string.Equals(status, "Rejected", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task LoadAppointmentTrendAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            cobXuHuong.Enabled = false;
+            lbTrendRange.Text = "Đang tải...";
+
+            var rangeToken = ResolveRangeToken(cobXuHuong.SelectedItem?.ToString());
+            var response = await _dashboardApiClient!.GetAppointmentTrendAsync(rangeToken, cancellationToken);
+
+            lbConfirmedTrend.Text = response.ConfirmedCount.ToString();
+            lbCanceledTrend.Text = response.CanceledCount.ToString();
+            lbTrendRange.Text = response.RangeLabel;
+
+            RenderTrendChart(response);
+        }
+        catch (Exception ex)
+        {
+            lbTrendRange.Text = "Không thể tải dữ liệu";
+            MessageBox.Show($"Không thể tải xu hướng lịch hẹn: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+        finally
+        {
+            cobXuHuong.Enabled = true;
+        }
+    }
+
+    private void RenderTrendChart(DashboardAppointmentTrendResponse response)
+    {
+        var series = chartAppointmentTrend.Series[0];
+        var area = chartAppointmentTrend.ChartAreas[0];
+
+        series.Points.Clear();
+        area.AxisX.CustomLabels.Clear();
+        area.AxisX.LabelStyle.Enabled = true;
+        area.AxisX.Interval = 1;
+
+        var culture = CultureInfo.GetCultureInfo("vi-VN");
+        decimal maxValue = 1;
+
+        for (int i = 0; i < response.Points.Count; i++)
+        {
+            var point = response.Points[i];
+            maxValue = Math.Max(maxValue, point.Value);
+            series.Points.AddXY(point.Date.ToString("yyyy-MM-dd"), point.Value);
+            var label = point.Date.ToString("ddd", culture);
+            area.AxisX.CustomLabels.Add(i + 0.5, i + 1.5, label);
+        }
+
+        area.AxisY.Maximum = Math.Ceiling((double)maxValue) + 1;
+    }
+
+    private async Task LoadAppointmentsAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            var until = today.AddDays(7);
+            var appointments = await _appointmentsApiClient!.GetAppointmentsAsync(today, until, cancellationToken);
+            BindAppointmentData(appointments);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Không thể tải danh sách cuộc hẹn: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void BindAppointmentData(IReadOnlyList<DoctorAppointmentListItemDto> appointments)
+    {
+        var culture = CultureInfo.GetCultureInfo("vi-VN");
+
+        var appointmentRows = appointments
+            .OrderBy(a => a.StartUtc)
+            .Select(a => new AppointmentGridRow(
+                a.PatientName,
+                a.DoctorName,
+                string.IsNullOrWhiteSpace(a.DateLabel) ? a.StartUtc.ToLocalTime().ToString("dd/MM/yyyy", culture) : a.DateLabel,
+                string.IsNullOrWhiteSpace(a.TimeLabel) ? a.StartUtc.ToLocalTime().ToString("HH:mm", culture) : a.TimeLabel,
+                string.IsNullOrWhiteSpace(a.StatusLabel) ? a.Status : a.StatusLabel))
+            .ToList();
+
+        dgvCuocHen.DataSource = appointmentRows;
+
+        var specialtyRows = appointments
+            .GroupBy(a => a.SpecialtyName)
+            .Select(group => new SpecialtyPerformanceRow(
+                string.IsNullOrWhiteSpace(group.Key) ? "Chưa xác định" : group.Key,
+                group.Count(),
+                group.Sum(x => x.Price).ToString("N0", culture)))
+            .ToList();
+
+        dgvChuyenKhoa.DataSource = specialtyRows;
+
+        var doctorRows = appointments
+            .GroupBy(a => a.DoctorName)
+            .Select(group => new DoctorPerformanceRow(
+                string.IsNullOrWhiteSpace(group.Key) ? "Chưa xác định" : group.Key,
+                group.Count(a => IsConfirmed(a.Status)),
+                group.Count(a => IsCanceled(a.Status))))
+            .ToList();
+
+        dgvBacSi.DataSource = doctorRows;
+    }
+
+    private async void cobXuHuong_SelectedIndexChanged(object? sender, EventArgs e)
+    {
+        if (LicenseManager.UsageMode == LicenseUsageMode.Designtime || _dashboardApiClient is null)
+        {
+            return;
+        }
+
+        await LoadAppointmentTrendAsync();
+    }
+
+    private sealed record AppointmentGridRow(string PatientName, string DoctorName, string Date, string Time, string Status);
+
+    private sealed record SpecialtyPerformanceRow(string Specialty, int AppointmentCount, string Revenue);
+
+    private sealed record DoctorPerformanceRow(string Doctor, int Confirmed, int Canceled);
 
     private Panel HeaderPanel;
     private Label label2;
@@ -87,9 +289,12 @@ public sealed class DashboardForm : Form
     private Panel panelXuHuong;
     private ComboBox cobXuHuong;
     private Label label5;
-    private Panel panelCongXuat;
-    private ComboBox cobCongXuat;
-    private Label label6;
+    private Label lbTrendRange;
+    private Label lbConfirmedTrend;
+    private Label lbCanceledTrend;
+    private Label labelConfirmedTitle;
+    private Label labelCanceledTitle;
+    private System.Windows.Forms.DataVisualization.Charting.Chart chartAppointmentTrend;
     private Panel panel1;
     private ComboBox cobCuocHen;
     private ComboBox cobTrangThai;
@@ -116,6 +321,9 @@ public sealed class DashboardForm : Form
         ChartArea chartArea3 = new ChartArea();
         Legend legend3 = new Legend();
         Series series3 = new Series();
+        ChartArea chartArea4 = new ChartArea();
+        Legend legend4 = new Legend();
+        Series series4 = new Series();
         HeaderPanel = new Panel();
         label2 = new Label();
         lbTitle = new Label();
@@ -138,9 +346,12 @@ public sealed class DashboardForm : Form
         panelXuHuong = new Panel();
         cobXuHuong = new ComboBox();
         label5 = new Label();
-        panelCongXuat = new Panel();
-        cobCongXuat = new ComboBox();
-        label6 = new Label();
+        lbTrendRange = new Label();
+        lbConfirmedTrend = new Label();
+        lbCanceledTrend = new Label();
+        labelConfirmedTitle = new Label();
+        labelCanceledTitle = new Label();
+        chartAppointmentTrend = new Chart();
         panel1 = new Panel();
         dgvCuocHen = new DataGridView();
         cobCuocHen = new ComboBox();
@@ -163,7 +374,6 @@ public sealed class DashboardForm : Form
         panelLichHen.SuspendLayout();
         ((ISupportInitialize)chart2).BeginInit();
         panelXuHuong.SuspendLayout();
-        panelCongXuat.SuspendLayout();
         panel1.SuspendLayout();
         ((ISupportInitialize)dgvCuocHen).BeginInit();
         panelHieuXuat.SuspendLayout();
@@ -210,9 +420,9 @@ public sealed class DashboardForm : Form
         flowLayoutPanel1.Controls.Add(panelDoanhThu);
         flowLayoutPanel1.Controls.Add(panelLichHen);
         flowLayoutPanel1.Controls.Add(panelXuHuong);
-        flowLayoutPanel1.Controls.Add(panelCongXuat);
         flowLayoutPanel1.Controls.Add(panel1);
         flowLayoutPanel1.Controls.Add(panelHieuXuat);
+        flowLayoutPanel1.SetFlowBreak(panelXuHuong, true);
         flowLayoutPanel1.Location = new Point(12, 164);
         flowLayoutPanel1.Name = "flowLayoutPanel1";
         flowLayoutPanel1.Size = new Size(1590, 743);
@@ -436,68 +646,114 @@ public sealed class DashboardForm : Form
         label4.Size = new Size(170, 28);
         label4.TabIndex = 0;
         label4.Text = "Lịch hẹn đang chờ";
-        // 
+        //
         // panelXuHuong
-        // 
-        // panelXuHuong.AutoSize = true;
-        // panelXuHuong.BorderStyle = BorderStyle.FixedSingle;
-        // panelXuHuong.Controls.Add(cobXuHuong);
-        // panelXuHuong.Controls.Add(label5);
-        // panelXuHuong.Location = new Point(80, 297);
-        // panelXuHuong.Margin = new Padding(80, 20, 20, 20);
-        // panelXuHuong.Name = "panelXuHuong";
-        // panelXuHuong.Size = new Size(960, 64);
-        // panelXuHuong.TabIndex = 12;
-        // // 
-        // // cobXuHuong
-        // // 
-        // cobXuHuong.DropDownStyle = ComboBoxStyle.DropDownList;
-        // cobXuHuong.FormattingEnabled = true;
-        // cobXuHuong.Location = new Point(823, 31);
-        // cobXuHuong.Name = "cobXuHuong";
-        // cobXuHuong.Size = new Size(132, 28);
-        // cobXuHuong.TabIndex = 1;
-        // 
+        //
+        panelXuHuong.AutoSize = true;
+        panelXuHuong.BorderStyle = BorderStyle.FixedSingle;
+        panelXuHuong.Controls.Add(chartAppointmentTrend);
+        panelXuHuong.Controls.Add(labelCanceledTitle);
+        panelXuHuong.Controls.Add(lbCanceledTrend);
+        panelXuHuong.Controls.Add(labelConfirmedTitle);
+        panelXuHuong.Controls.Add(lbConfirmedTrend);
+        panelXuHuong.Controls.Add(lbTrendRange);
+        panelXuHuong.Controls.Add(cobXuHuong);
+        panelXuHuong.Controls.Add(label5);
+        panelXuHuong.Location = new Point(80, 297);
+        panelXuHuong.Margin = new Padding(80, 20, 20, 20);
+        panelXuHuong.Name = "panelXuHuong";
+        panelXuHuong.Size = new Size(960, 250);
+        panelXuHuong.TabIndex = 12;
+        //
+        // cobXuHuong
+        //
+        cobXuHuong.DropDownStyle = ComboBoxStyle.DropDownList;
+        cobXuHuong.FormattingEnabled = true;
+        cobXuHuong.Location = new Point(791, 25);
+        cobXuHuong.Name = "cobXuHuong";
+        cobXuHuong.Size = new Size(150, 28);
+        cobXuHuong.TabIndex = 1;
+        cobXuHuong.SelectedIndexChanged += cobXuHuong_SelectedIndexChanged;
+        //
         // label5
-        // 
-        // label5.AutoSize = true;
-        // label5.Font = new Font("Segoe UI", 12F);
-        // label5.Location = new Point(35, 27);
-        // label5.Name = "label5";
-        // label5.Size = new Size(170, 28);
-        // label5.TabIndex = 0;
-        // label5.Text = "Xu hướng lịch hẹn";
-        
-        // panelCongXuat
-        
-        // panelCongXuat.AutoSize = true;
-        // panelCongXuat.BorderStyle = BorderStyle.FixedSingle;
-        // panelCongXuat.Controls.Add(cobCongXuat);
-        // panelCongXuat.Controls.Add(label6);
-        // panelCongXuat.Location = new Point(1080, 297);
-        // panelCongXuat.Margin = new Padding(20, 20, 3, 3);
-        // panelCongXuat.Name = "panelCongXuat";
-        // panelCongXuat.Size = new Size(461, 65);
-        // panelCongXuat.TabIndex = 12;
-        // // 
-        // // cobCongXuat
-        // // 
-        // cobCongXuat.DropDownStyle = ComboBoxStyle.DropDownList;
-        // cobCongXuat.FormattingEnabled = true;
-        // cobCongXuat.Location = new Point(324, 19);
-        // cobCongXuat.Name = "cobCongXuat";
-        // cobCongXuat.Size = new Size(132, 28);
-        // cobCongXuat.TabIndex = 1;
-        // // 
-        // // label6
-        // // 
-        label6.AutoSize = true;
-        label6.Font = new Font("Segoe UI", 12F);
-        label6.Location = new Point(25, 7);
-        label6.Name = "label6";
-        label6.Size = new Size(176, 56);
-        label6.TabIndex = 0;
-        label6.Text = "Công suất sử dụng\r\n hàng ngày";
+        //
+        label5.AutoSize = true;
+        label5.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+        label5.Location = new Point(25, 23);
+        label5.Name = "label5";
+        label5.Size = new Size(173, 28);
+        label5.TabIndex = 0;
+        label5.Text = "Xu hướng lịch hẹn";
+        //
+        // lbTrendRange
+        //
+        lbTrendRange.AutoSize = true;
+        lbTrendRange.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point);
+        lbTrendRange.ForeColor = Color.FromArgb(107, 114, 128);
+        lbTrendRange.Location = new Point(27, 61);
+        lbTrendRange.Name = "lbTrendRange";
+        lbTrendRange.Size = new Size(73, 20);
+        lbTrendRange.TabIndex = 2;
+        lbTrendRange.Text = "Tuần này";
+        //
+        // lbConfirmedTrend
+        //
+        lbConfirmedTrend.AutoSize = true;
+        lbConfirmedTrend.Font = new Font("Segoe UI", 24F, FontStyle.Bold, GraphicsUnit.Point);
+        lbConfirmedTrend.ForeColor = Color.FromArgb(16, 185, 129);
+        lbConfirmedTrend.Location = new Point(23, 97);
+        lbConfirmedTrend.Name = "lbConfirmedTrend";
+        lbConfirmedTrend.Size = new Size(46, 54);
+        lbConfirmedTrend.TabIndex = 3;
+        lbConfirmedTrend.Text = "-";
+        //
+        // lbCanceledTrend
+        //
+        lbCanceledTrend.AutoSize = true;
+        lbCanceledTrend.Font = new Font("Segoe UI", 24F, FontStyle.Bold, GraphicsUnit.Point);
+        lbCanceledTrend.ForeColor = Color.FromArgb(107, 114, 128);
+        lbCanceledTrend.Location = new Point(247, 97);
+        lbCanceledTrend.Name = "lbCanceledTrend";
+        lbCanceledTrend.Size = new Size(46, 54);
+        lbCanceledTrend.TabIndex = 4;
+        lbCanceledTrend.Text = "-";
+        //
+        // labelConfirmedTitle
+        //
+        labelConfirmedTitle.AutoSize = true;
+        labelConfirmedTitle.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point);
+        labelConfirmedTitle.Location = new Point(26, 151);
+        labelConfirmedTitle.Name = "labelConfirmedTitle";
+        labelConfirmedTitle.Size = new Size(130, 25);
+        labelConfirmedTitle.TabIndex = 5;
+        labelConfirmedTitle.Text = "Đã đặt lịch hẹn";
+        //
+        // labelCanceledTitle
+        //
+        labelCanceledTitle.AutoSize = true;
+        labelCanceledTitle.Font = new Font("Segoe UI", 11F, FontStyle.Regular, GraphicsUnit.Point);
+        labelCanceledTitle.Location = new Point(250, 151);
+        labelCanceledTitle.Name = "labelCanceledTitle";
+        labelCanceledTitle.Size = new Size(163, 25);
+        labelCanceledTitle.TabIndex = 6;
+        labelCanceledTitle.Text = "Các cuộc hẹn đã hủy";
+        //
+        // chartAppointmentTrend
+        //
+        chartArea4.Name = "ChartArea1";
+        chartAppointmentTrend.ChartAreas.Add(chartArea4);
+        legend4.Enabled = false;
+        legend4.Name = "Legend1";
+        chartAppointmentTrend.Legends.Add(legend4);
+        chartAppointmentTrend.Location = new Point(430, 61);
+        chartAppointmentTrend.Name = "chartAppointmentTrend";
+        series4.ChartArea = "ChartArea1";
+        series4.Legend = "Legend1";
+        series4.Name = "Series1";
+        chartAppointmentTrend.Series.Add(series4);
+        chartAppointmentTrend.Size = new Size(511, 172);
+        chartAppointmentTrend.TabIndex = 7;
+        chartAppointmentTrend.Text = "chart3";
         // 
         // panel1
         // 
@@ -663,8 +919,6 @@ public sealed class DashboardForm : Form
         ((ISupportInitialize)chart2).EndInit();
         panelXuHuong.ResumeLayout(false);
         panelXuHuong.PerformLayout();
-        panelCongXuat.ResumeLayout(false);
-        panelCongXuat.PerformLayout();
         panel1.ResumeLayout(false);
         panel1.PerformLayout();
         ((ISupportInitialize)dgvCuocHen).EndInit();
@@ -677,167 +931,5 @@ public sealed class DashboardForm : Form
         ((ISupportInitialize)dgvBacSi).EndInit();
         ResumeLayout(false);
 
-    }
-    private void PopulateDataGrids()
-    {
-        // === DataGridView Các cuộc hẹn (dgvCuocHen) ===
-        DataTable dtAppointments = new DataTable();
-
-        // Khởi tạo các cột
-        dtAppointments.Columns.Add("Tên bệnh nhân", typeof(string));
-        dtAppointments.Columns.Add("Tên bác sĩ", typeof(string));
-        dtAppointments.Columns.Add("Ngày", typeof(string));
-        dtAppointments.Columns.Add("Giờ", typeof(string));
-        dtAppointments.Columns.Add("Trạng thái", typeof(string));
-
-        // Thêm dữ liệu cứng (hàng)
-        dtAppointments.Rows.Add("Nguyễn Văn A", "Bs. Trần Thị B", "20/11/2025", "09:00", "Đã xác nhận");
-        dtAppointments.Rows.Add("Lê Thị C", "Bs. Nguyễn Văn D", "20/11/2025", "14:30", "Chờ xác nhận");
-        dtAppointments.Rows.Add("Phạm Văn E", "Bs. Trần Thị B", "19/11/2025", "11:00", "Đã hủy");
-        dtAppointments.Rows.Add("Vũ Thị G", "Bs. Lý H", "21/11/2025", "16:00", "Đã xác nhận");
-
-        // Gán DataSource
-        dgvCuocHen.DataSource = dtAppointments;
-        dgvCuocHen.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-
-        // === DataGridView Hiệu suất Chuyên khoa (dgvChuyenKhoa) ===
-        DataTable dtSpecialties = new DataTable();
-        dtSpecialties.Columns.Add("Chuyên khoa", typeof(string));
-        dtSpecialties.Columns.Add("SL Lịch hẹn", typeof(int));
-        dtSpecialties.Columns.Add("Doanh thu (₫)", typeof(string)); // Dùng string để hiển thị tiền tệ
-
-        dtSpecialties.Rows.Add("Nội tiết", 45, "15.000.000");
-        dtSpecialties.Rows.Add("Cơ xương khớp", 30, "10.500.000");
-        dtSpecialties.Rows.Add("Da liễu", 55, "18.000.000");
-
-        dgvChuyenKhoa.DataSource = dtSpecialties;
-        dgvChuyenKhoa.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-
-
-        // === DataGridView Hiệu suất Bác sĩ (dgvBacSi) ===
-        DataTable dtDoctors = new DataTable();
-        dtDoctors.Columns.Add("Tên bác sĩ", typeof(string));
-        dtDoctors.Columns.Add("Lịch hẹn Đã xác nhận", typeof(int));
-        dtDoctors.Columns.Add("Lịch hẹn Đã hủy", typeof(int));
-
-        dtDoctors.Rows.Add("Bs. Trần Thị B", 25, 2);
-        dtDoctors.Rows.Add("Bs. Nguyễn Văn D", 15, 5);
-        dtDoctors.Rows.Add("Bs. Lý H", 10, 1);
-
-        dgvBacSi.DataSource = dtDoctors;
-        dgvBacSi.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
-    }
-    private void PopulateChartsWithMockData()
-    {
-        // --- 1. Biểu đồ Khách hàng mới (chartKhachHang) ---
-        chartKhachHang.Series.Clear();
-        chartKhachHang.ChartAreas[0].AxisX.LabelStyle.Enabled = true; // QUAN TRỌNG: Bật hiển thị nhãn trục X
-
-        Series customerSeries = new Series("NewCustomers")
-        {
-            ChartType = SeriesChartType.Spline,
-            Color = Color.LimeGreen,
-            BorderWidth = 3,
-            IsVisibleInLegend = false
-        };
-        chartKhachHang.Series.Add(customerSeries);
-
-        // Sử dụng số thay vì chuỗi cho trục X để đường cong hiển thị đúng
-        customerSeries.Points.AddY(3);
-        customerSeries.Points.AddY(5);
-        customerSeries.Points.AddY(2);
-        customerSeries.Points.AddY(7);
-        customerSeries.Points.AddY(4);
-        customerSeries.Points.AddY(6);
-        customerSeries.Points.AddY(8);
-
-        // Thiết lập nhãn cho trục X
-        chartKhachHang.ChartAreas[0].AxisX.CustomLabels.Clear();
-        string[] days = { "Th 2", "Th 3", "Th 4", "Th 5", "Th 6", "Th 7", "CN" };
-        for (int i = 0; i < days.Length; i++)
-        {
-            chartKhachHang.ChartAreas[0].AxisX.CustomLabels.Add(i + 0.5, i + 1.5, days[i]);
-        }
-
-        // Cấu hình chart area
-        ChartArea areaCustomer = chartKhachHang.ChartAreas[0];
-        areaCustomer.AxisY.Minimum = 0;
-        areaCustomer.AxisY.Maximum = 10;
-        areaCustomer.AxisX.MajorGrid.Enabled = false;
-        areaCustomer.AxisY.MajorGrid.Enabled = false;
-
-        // --- 2. Biểu đồ Doanh thu (chart1) ---
-        chart1.Series.Clear();
-        chart1.ChartAreas[0].AxisX.LabelStyle.Enabled = true;
-
-        Series revenueSeries = new Series("Revenue")
-        {
-            ChartType = SeriesChartType.Spline,
-            Color = Color.Gray,
-            BorderWidth = 3,
-            IsVisibleInLegend = false
-        };
-        chart1.Series.Add(revenueSeries);
-
-        // Dữ liệu doanh thu
-        revenueSeries.Points.AddY(1.5);
-        revenueSeries.Points.AddY(2.0);
-        revenueSeries.Points.AddY(1.0);
-        revenueSeries.Points.AddY(3.5);
-        revenueSeries.Points.AddY(2.5);
-        revenueSeries.Points.AddY(4.0);
-        revenueSeries.Points.AddY(3.0);
-
-        // Thiết lập nhãn cho trục X
-        chart1.ChartAreas[0].AxisX.CustomLabels.Clear();
-        for (int i = 0; i < days.Length; i++)
-        {
-            chart1.ChartAreas[0].AxisX.CustomLabels.Add(i + 0.5, i + 1.5, days[i]);
-        }
-
-        ChartArea areaRevenue = chart1.ChartAreas[0];
-        areaRevenue.AxisY.Minimum = 0;
-        areaRevenue.AxisY.Maximum = 5.0;
-        areaRevenue.AxisX.MajorGrid.Enabled = false;
-        areaRevenue.AxisY.MajorGrid.Enabled = false;
-
-        lbDoanhThu.Text = "610.000 ₫";
-
-        // --- 3. Biểu đồ Lịch hẹn đang chờ (chart2) ---
-        chart2.Series.Clear();
-        chart2.ChartAreas[0].AxisX.LabelStyle.Enabled = true;
-
-        Series pendingSeries = new Series("PendingAppointments")
-        {
-            ChartType = SeriesChartType.Spline,
-            Color = Color.Gold,
-            BorderWidth = 3,
-            IsVisibleInLegend = false
-        };
-        chart2.Series.Add(pendingSeries);
-
-        // Dữ liệu lịch hẹn
-        pendingSeries.Points.AddY(1);
-        pendingSeries.Points.AddY(3);
-        pendingSeries.Points.AddY(1);
-        pendingSeries.Points.AddY(2);
-        pendingSeries.Points.AddY(0);
-        pendingSeries.Points.AddY(4);
-        pendingSeries.Points.AddY(1);
-
-        // Thiết lập nhãn cho trục X
-        chart2.ChartAreas[0].AxisX.CustomLabels.Clear();
-        for (int i = 0; i < days.Length; i++)
-        {
-            chart2.ChartAreas[0].AxisX.CustomLabels.Add(i + 0.5, i + 1.5, days[i]);
-        }
-
-        ChartArea areaPending = chart2.ChartAreas[0];
-        areaPending.AxisY.Minimum = 0;
-        areaPending.AxisY.Maximum = 5;
-        areaPending.AxisX.MajorGrid.Enabled = false;
-        areaPending.AxisY.MajorGrid.Enabled = false;
-
-        lbLichHen.Text = "0";
     }
 }

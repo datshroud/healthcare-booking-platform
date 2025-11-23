@@ -32,6 +32,8 @@ public static class AreaRegistration
             .AddTransient<AdminSpecialtyApiClient>()
             .AddTransient<AdminInvoiceApiClient>()
             .AddTransient<AdminAppointmentsApiClient>()
+            .AddTransient<DoctorDashboardApiClient>()
+            .AddTransient<DoctorAppointmentsApiClient>()
             .AddTransient<AppointmentManagementControl>()
             .AddTransient<AppointmentEditorForm>()
             .AddTransient<SpecialtyManagementControl>()
