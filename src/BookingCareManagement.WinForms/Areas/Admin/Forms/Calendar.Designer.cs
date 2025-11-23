@@ -29,13 +29,11 @@
         private void InitializeComponent()
         {
             headerPanel = new Panel();
-            newAppointmentBtn = new Button();
             headerTitleLabel = new Label();
             userPanel = new Panel();
             navigationPanel = new Panel();
             btnToday = new Button();
             comboBox1 = new ComboBox();
-            filtersBtn = new Button();
             dayBtn = new Button();
             weekBtn = new Button();
             monthBtn = new Button();
@@ -51,7 +49,6 @@
             // headerPanel
             // 
             headerPanel.BackColor = Color.FromArgb(243, 244, 246);
-            headerPanel.Controls.Add(newAppointmentBtn);
             headerPanel.Controls.Add(headerTitleLabel);
             headerPanel.Dock = DockStyle.Top;
             headerPanel.Location = new Point(0, 0);
@@ -60,21 +57,6 @@
             headerPanel.Padding = new Padding(30, 25, 30, 0);
             headerPanel.Size = new Size(1600, 100);
             headerPanel.TabIndex = 0;
-            // 
-            // newAppointmentBtn
-            // 
-            newAppointmentBtn.BackColor = Color.FromArgb(37, 99, 235);
-            newAppointmentBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
-            newAppointmentBtn.FlatStyle = FlatStyle.Flat;
-            newAppointmentBtn.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
-            newAppointmentBtn.ForeColor = Color.White;
-            newAppointmentBtn.Location = new Point(1317, 28);
-            newAppointmentBtn.Name = "newAppointmentBtn";
-            newAppointmentBtn.Size = new Size(250, 50);
-            newAppointmentBtn.TabIndex = 1;
-            newAppointmentBtn.Text = "+ Thêm cuộc hẹn";
-            newAppointmentBtn.UseVisualStyleBackColor = false;
-            newAppointmentBtn.Click += newAppointmentBtn_Click;
             // 
             // headerTitleLabel
             // 
@@ -104,7 +86,6 @@
             navigationPanel.BackColor = Color.White;
             navigationPanel.Controls.Add(btnToday);
             navigationPanel.Controls.Add(comboBox1);
-            navigationPanel.Controls.Add(filtersBtn);
             navigationPanel.Controls.Add(dayBtn);
             navigationPanel.Controls.Add(weekBtn);
             navigationPanel.Controls.Add(monthBtn);
@@ -142,19 +123,6 @@
             comboBox1.Name = "comboBox1";
             comboBox1.Size = new Size(141, 28);
             comboBox1.TabIndex = 8;
-            // 
-            // filtersBtn
-            // 
-            filtersBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
-            filtersBtn.FlatStyle = FlatStyle.Flat;
-            filtersBtn.Font = new Font("Segoe UI", 10F);
-            filtersBtn.ForeColor = Color.Black;
-            filtersBtn.Location = new Point(1428, 20);
-            filtersBtn.Name = "filtersBtn";
-            filtersBtn.Size = new Size(100, 50);
-            filtersBtn.TabIndex = 7;
-            filtersBtn.Text = "⚙ Bộ lọc";
-            filtersBtn.UseVisualStyleBackColor = true;
             // 
             // dayBtn
             // 
@@ -292,9 +260,7 @@
         private RoundedButton1 todayBtn;
         private System.Windows.Forms.Panel calendarPanel;
         private System.Windows.Forms.Panel contentPanel;
-        private Button newAppointmentBtn;
         private Button monthBtn;
-        private Button filtersBtn;
         private Button dayBtn;
         private Button weekBtn;
         private ComboBox comboBox1;

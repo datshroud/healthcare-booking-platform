@@ -106,19 +106,7 @@ namespace BookingCareManagement.WinForms
             }
 
             // primary action (add) keep static blue, no hover/active
-            if (newAppointmentBtn != null)
-            {
-                newAppointmentBtn.FlatStyle = FlatStyle.Flat;
-                newAppointmentBtn.FlatAppearance.BorderSize = 1;
-                newAppointmentBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
-                newAppointmentBtn.BackColor = Color.FromArgb(37, 99, 235);
-                newAppointmentBtn.ForeColor = Color.White;
-                newAppointmentBtn.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
-                newAppointmentBtn.Cursor = Cursors.Hand;
-                // remove hover handlers if any
-                newAppointmentBtn.MouseEnter -= (s, e) => newAppointmentBtn.BackColor = Color.FromArgb(29, 78, 216);
-                newAppointmentBtn.MouseLeave -= (s, e) => newAppointmentBtn.BackColor = Color.FromArgb(37, 99, 235);
-            }
+           
 
             // wire view buttons to an explicit activator to ensure only one active
             Action<Button> activate = b =>
