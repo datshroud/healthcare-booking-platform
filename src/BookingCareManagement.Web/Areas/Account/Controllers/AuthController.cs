@@ -256,8 +256,7 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
         [HttpGet("~/api/auth/google/start")]
         public IActionResult GoogleStart([FromQuery] string? returnUrl = "/")
         {
-            // Use configured RedirectUri so it exactly matches the URI registered in Google Console
-            var callback = _google.RedirectUri?.TrimEnd('/') ?? $"{Request.Scheme}://{Request.Host}/api/auth/google/callback";
+            var callback = ResolveRedirectUri();
 
             // tao state + PKCE
             var state = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
@@ -314,7 +313,7 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
                 ["code"] = code,
                 ["code_verifier"] = codeVerifier,
                 // ensure token exchange uses same redirect uri that was sent in the initial auth request
-                ["redirect_uri"] = _google.RedirectUri,
+                ["redirect_uri"] = ResolveRedirectUri(),
                 ["grant_type"] = "authorization_code",
             };
 
@@ -432,6 +431,38 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
                 refresh.Token, DateTime.UtcNow.AddDays(7));
 
             return Redirect(returnUrl);
+        }
+
+        private string ResolveRedirectUri()
+        {
+            var configured = _google.RedirectUri?.TrimEnd('/');
+
+            // Always respect an explicitly configured callback URI so it can match the value
+            // registered in Google Cloud (including when running behind Azure App Service).
+            if (!string.IsNullOrWhiteSpace(configured))
+            {
+                return configured;
+            }
+
+            var scheme = Request.Headers.TryGetValue("X-Forwarded-Proto", out var forwardedProto) &&
+                         !string.IsNullOrWhiteSpace(forwardedProto)
+                ? forwardedProto.ToString()
+                : Request.Scheme;
+
+            var host = Request.Headers.TryGetValue("X-Forwarded-Host", out var forwardedHost) &&
+                       !string.IsNullOrWhiteSpace(forwardedHost)
+                ? forwardedHost.ToString()
+                : Request.Host.ToString();
+
+            // When running behind Azure App Service, requests may terminate TLS before reaching the app,
+            // leaving Request.Scheme as http. Default to https for azurewebsites.net to avoid mismatches.
+            if (string.Equals(scheme, "http", StringComparison.OrdinalIgnoreCase) &&
+                host.Contains("azurewebsites.net", StringComparison.OrdinalIgnoreCase))
+            {
+                scheme = "https";
+            }
+
+            return $"{scheme}://{host}/api/auth/google/callback";
         }
 
         private static byte[] Sha256(string input)
