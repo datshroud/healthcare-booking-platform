@@ -178,3 +178,47 @@
 [2025-11-24T03:15:06.5328490+07:00] Login: succeeded
 [2025-11-24T03:20:18.0105129+07:00] Login: button clicked
 [2025-11-24T03:20:18.3240981+07:00] Login: succeeded
+[2025-11-24T03:23:58.9401340+07:00] Login: button clicked
+[2025-11-24T03:23:59.7272400+07:00] Login: succeeded
+[2025-11-24T03:23:59.7867030+07:00] MainForm: constructor start
+[2025-11-24T03:23:59.7999366+07:00] MainForm: after CreateSidebar
+[2025-11-24T03:23:59.8958454+07:00] MainForm: Load event
+[2025-11-24T03:24:53.7462153+07:00] Login: button clicked
+[2025-11-24T03:24:54.0328837+07:00] Login: succeeded
+[2025-11-24T03:32:48.8669617+07:00] Login: button clicked
+[2025-11-24T03:32:49.3523369+07:00] Login: succeeded
+[2025-11-24T04:01:59.9804263+07:00] Login: button clicked
+[2025-11-24T04:02:00.9207300+07:00] Login: succeeded
+[2025-11-24T04:02:00.9743205+07:00] MainForm: constructor start
+[2025-11-24T04:02:00.9828953+07:00] MainForm: after CreateSidebar
+[2025-11-24T04:02:01.0542067+07:00] MainForm: Load event
+[2025-11-24T04:11:46.7818637+07:00] Login: button clicked
+[2025-11-24T04:11:48.7760287+07:00] Login: succeeded
+[2025-11-24T04:11:48.8313923+07:00] MainForm: constructor start
+[2025-11-24T04:11:48.8387496+07:00] MainForm: after CreateSidebar
+[2025-11-24T04:11:48.9233551+07:00] MainForm: Load event
+[2025-11-24T04:26:42.3956887+07:00] Login: button clicked
+[2025-11-24T04:26:43.1399766+07:00] Login: succeeded
+[2025-11-24T04:26:43.1824013+07:00] MainForm: constructor start
+[2025-11-24T04:26:43.1956599+07:00] MainForm: after CreateSidebar
+[2025-11-24T04:26:43.2684581+07:00] MainForm: Load event
+[2025-11-24T04:31:05.1713595+07:00] Login: button clicked
+[2025-11-24T04:31:05.9225096+07:00] Login: succeeded
+[2025-11-24T04:31:05.9665873+07:00] MainForm: constructor start
+[2025-11-24T04:31:05.9788540+07:00] MainForm: after CreateSidebar
+[2025-11-24T04:31:06.0549210+07:00] MainForm: Load event
+[2025-11-24T04:36:36.7161415+07:00] Login: button clicked
+[2025-11-24T04:36:37.4232290+07:00] Login: succeeded
+[2025-11-24T04:36:37.4722887+07:00] MainForm: constructor start
+[2025-11-24T04:36:37.4799774+07:00] MainForm: after CreateSidebar
+[2025-11-24T04:36:37.5484700+07:00] MainForm: Load event
+[2025-11-24T05:03:05.6541622+07:00] Login: button clicked
+[2025-11-24T05:03:06.3536443+07:00] Login: succeeded
+[2025-11-24T05:03:06.4331081+07:00] MainForm: constructor start
+[2025-11-24T05:03:06.4455232+07:00] MainForm: after CreateSidebar
+[2025-11-24T05:03:06.5412906+07:00] MainForm: Load event
+[2025-11-24T05:15:08.5240715+07:00] Login: button clicked
+[2025-11-24T05:15:10.2174891+07:00] Login: succeeded
+[2025-11-24T05:15:10.2606010+07:00] MainForm: constructor start
+[2025-11-24T05:15:10.2734077+07:00] MainForm: after CreateSidebar
+[2025-11-24T05:15:10.3772405+07:00] MainForm: Load event

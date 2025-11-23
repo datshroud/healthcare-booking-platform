@@ -16,6 +16,8 @@ public sealed class AppointmentManagementControl : UserControl
     private readonly DialogService _dialogService;
     private readonly AdminAppointmentsApiClient _appointmentsApiClient;
     private readonly CustomerBookingApiClient _bookingApiClient;
+    private readonly ContextMenuStrip _rowMenu = new();
+    private int _actionColumnIndex = -1;
 
     private readonly Label _titleLabel = new()
     {
@@ -281,6 +283,17 @@ public sealed class AppointmentManagementControl : UserControl
         _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Trạng thái", DataPropertyName = nameof(AppointmentRow.Status), FillWeight = 15 });
         _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Bác sĩ", DataPropertyName = nameof(AppointmentRow.Employee), FillWeight = 15 });
         _grid.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "SĐT", DataPropertyName = nameof(AppointmentRow.Phone), FillWeight = 20 });
+        var actionColumn = new DataGridViewButtonColumn
+        {
+            HeaderText = string.Empty,
+            Text = "⋯",
+            UseColumnTextForButtonValue = true,
+            Width = 60,
+            FillWeight = 5,
+            FlatStyle = FlatStyle.Flat
+        };
+        _grid.Columns.Add(actionColumn);
+        _actionColumnIndex = _grid.Columns.Count - 1;
 
         _grid.CellFormatting += OnGridCellFormatting;
     }
@@ -297,14 +310,34 @@ public sealed class AppointmentManagementControl : UserControl
         {
             if (args.RowIndex >= 0 && args.RowIndex < _grid.Rows.Count)
             {
-                await ShowUpsertDialogAsync(GetRowByIndex(args.RowIndex));
+                await EditSelectedAsync(GetRowByIndex(args.RowIndex));
             }
         };
 
-        var contextMenu = new ContextMenuStrip();
-        contextMenu.Items.Add("Sửa", null, async (_, _) => await ShowUpsertDialogAsync(GetSelectedRow()));
-        contextMenu.Items.Add("Xóa", null, async (_, _) => await DeleteSelectedAsync());
-        _grid.ContextMenuStrip = contextMenu;
+        _rowMenu.Items.Add("Chỉnh sửa", null, async (_, _) => await EditSelectedAsync(GetSelectedRow()));
+        _rowMenu.Items.Add("Xóa", null, async (_, _) => await DeleteSelectedAsync());
+        _grid.CellContentClick += OnGridCellContentClickShowMenu;
+    }
+
+    private void OnGridCellContentClickShowMenu(object? sender, DataGridViewCellEventArgs e)
+    {
+        if (e.RowIndex < 0 || e.RowIndex >= _grid.Rows.Count)
+        {
+            return;
+        }
+
+        if (e.ColumnIndex != _actionColumnIndex)
+        {
+            return;
+        }
+
+        _grid.ClearSelection();
+        _grid.Rows[e.RowIndex].Selected = true;
+        _grid.CurrentCell = _grid.Rows[e.RowIndex].Cells[Math.Max(0, e.ColumnIndex)];
+
+        var cellRect = _grid.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, true);
+        var location = _grid.PointToScreen(new Point(cellRect.Left, cellRect.Bottom));
+        _rowMenu.Show(location);
     }
 
     private async Task LoadAppointmentsAsync()
@@ -451,6 +484,39 @@ public sealed class AppointmentManagementControl : UserControl
         {
             _dialogService.ShowError($"Lưu cuộc hẹn thất bại: {ex.Message}");
         }
+    }
+
+    private DateTime GetMinEditableTime()
+    {
+        return DateTime.Now.AddHours(2);
+    }
+
+    private bool CanEdit(AppointmentRow row)
+    {
+        var minTime = GetMinEditableTime();
+        if (row.Start < minTime)
+        {
+            _dialogService.ShowInfo($"Cuộc hẹn đã quá hạn chỉnh sửa.\nThời gian tối thiểu: {minTime:HH:mm dd/MM}.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task EditSelectedAsync(AppointmentRow? row)
+    {
+        if (row == null)
+        {
+            _dialogService.ShowInfo("Vui lòng chọn cuộc hẹn để chỉnh sửa.");
+            return;
+        }
+
+        if (!CanEdit(row))
+        {
+            return;
+        }
+
+        await ShowUpsertDialogAsync(row);
     }
 
     private async Task DeleteSelectedAsync()

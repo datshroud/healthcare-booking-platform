@@ -643,13 +643,13 @@ public sealed class DashboardForm : Form
 
             var perDay = dailyCustomers.ToDictionary(pair => pair.Key, pair => (decimal)pair.Value.Count);
             lbKhachHang.Text = FormatNumber(allCustomers.Count);
-            label1.Text = $"Kh�ch h�ng ({FormatRangeLabel(from, to)})";
+            label1.Text = $"Khách hàng ({FormatRangeLabel(from, to)})";
             RenderSparklineChart(chartKhachHang, BuildDailyPoints(from, to, perDay));
         }
         catch (Exception ex)
         {
             lbKhachHang.Text = "--";
-            MessageBox.Show($"Kh�ng th? t?i kh�ch h�ng (admin): {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show($"Không thể tải khách hàng (admin): {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
         {
@@ -684,7 +684,7 @@ public sealed class DashboardForm : Form
         catch (Exception ex)
         {
             lbDoanhThu.Text = "--";
-            MessageBox.Show($"Kh�ng th? t?i doanh thu (admin): {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show($"Không thể tải doanh thu (admin): {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
         {
@@ -723,13 +723,13 @@ public sealed class DashboardForm : Form
 
             var average = perDay.Count == 0 ? 0m : perDay.Values.Average();
             lbLichHen.Text = FormatPercent(average);
-            label4.Text = $"T? l? l?p d?y ({FormatRangeLabel(from, to)})";
+            label4.Text = $"Tỷ lệ lấp đầy ({FormatRangeLabel(from, to)})";
             RenderSparklineChart(chart2, BuildDailyPoints(from, to, perDay), clampToHundred: true);
         }
         catch (Exception ex)
         {
             lbLichHen.Text = "--";
-            MessageBox.Show($"Kh�ng th? t?i l?p d?y (admin): {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show($"Không thể tải lấp đầy (admin): {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
         {
@@ -747,7 +747,7 @@ public sealed class DashboardForm : Form
         try
         {
             cobXuHuong.Enabled = false;
-            lbTrendRange.Text = "Dang t?i...";
+            lbTrendRange.Text = "Đang tải...";
 
             var (from, to) = ResolveDateRange(cobXuHuong.SelectedItem?.ToString());
             var appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
@@ -770,8 +770,8 @@ public sealed class DashboardForm : Form
         }
         catch (Exception ex)
         {
-            lbTrendRange.Text = "Kh�ng th? t?i d? li?u";
-            MessageBox.Show($"Kh�ng th? t?i xu hu?ng (admin): {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            lbTrendRange.Text = "Không thể tải dữ liệu";
+            MessageBox.Show($"Không thể tải xu hướng (admin): {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
         finally
         {
@@ -792,12 +792,12 @@ public sealed class DashboardForm : Form
             var appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
             var filtered = FilterAppointmentsByStatus(appointments);
 
-            label7.Text = $"Cu?c h?n ({FormatRangeLabel(from, to)})";
+            label7.Text = $"Cuộc hẹn ({FormatRangeLabel(from, to)})";
             BindAppointmentData(filtered);
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Kh�ng th? t?i danh s�ch cu?c h?n (admin): {ex.Message}", "L?i", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            MessageBox.Show($"Không thể tải danh sách cuộc hẹn (admin): {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 

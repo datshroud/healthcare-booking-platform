@@ -63,7 +63,7 @@ public sealed class DoctorEditorForm : Form
         BackColor = Color.FromArgb(248, 250, 252)
     };
     // For multiple slots per day: store (CheckBox, ListBox display, Manage button)
-    private readonly Dictionary<DayOfWeek, (CheckBox chk, ListBox slotsDisplay, Button manage)> _scheduleControls = new();
+    private readonly Dictionary<DayOfWeek, (CheckBox chk, ListBox slotsDisplay, Button manage, Button apply)> _scheduleControls = new();
     // Internal storage of slots per day
     private readonly Dictionary<DayOfWeek, List<WorkingHourInfo>> _slotsPerDay = new();
 
@@ -425,9 +425,9 @@ public sealed class DoctorEditorForm : Form
             string day = _daysOfWeek[i];
             DayOfWeek dayOfWeek = (DayOfWeek)((i + 1) % 7);
 
-            var pnlRow = new Panel 
-            { 
-                Size = new Size(800, 40), 
+            var pnlRow = new Panel
+            {
+                Size = new Size(860, 40),
                 Margin = new Padding(0, 3, 0, 3), // Margin giữa các dòng
                 BackColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle
@@ -445,8 +445,8 @@ public sealed class DoctorEditorForm : Form
             // ListBox to display multiple slots
             var lbSlots = new ListBox
             {
-                Location = new Point(360, 6),
-                Size = new Size(320, 28),
+                Location = new Point(180, 6),
+                Size = new Size(240, 28),
                 Font = new Font("Segoe UI", 9),
                 Enabled = false
             };
@@ -455,7 +455,7 @@ public sealed class DoctorEditorForm : Form
             var btnManage = new Button
             {
                 Text = "Quản lý",
-                Location = new Point(690, 6),
+                Location = new Point(720, 6),
                 Size = new Size(80, 28),
                 Font = new Font("Segoe UI", 9),
                 Enabled = false,
@@ -464,10 +464,23 @@ public sealed class DoctorEditorForm : Form
             };
             btnManage.FlatAppearance.BorderSize = 0;
 
+            var btnApply = new Button
+            {
+                Text = "Áp dụng cho ngày khác",
+                Location = new Point(430, 6),
+                Size = new Size(170, 28),
+                Font = new Font("Segoe UI", 8, FontStyle.Regular),
+                Enabled = false,
+                Cursor = Cursors.Hand,
+                FlatStyle = FlatStyle.Flat
+            };
+            btnApply.FlatAppearance.BorderSize = 0;
+
             chkDay.CheckedChanged += (s, e) =>
             {
                 lbSlots.Enabled = chkDay.Checked;
                 btnManage.Enabled = chkDay.Checked;
+                btnApply.Enabled = chkDay.Checked;
                 pnlRow.BackColor = chkDay.Checked 
                     ? Color.FromArgb(240, 249, 255) 
                     : Color.White;
@@ -485,22 +498,32 @@ public sealed class DoctorEditorForm : Form
                 if (updated != null)
                 {
                     _slotsPerDay[dayOfWeek] = updated;
-                    // refresh listbox
-                    lbSlots.Items.Clear();
-                    foreach (var slot in updated)
-                    {
-                        lbSlots.Items.Add($"{slot.Start:hh\\:mm} - {slot.End:hh\\:mm}");
-                    }
-                    lbSlots.SelectedIndex = lbSlots.Items.Count - 1 >= 0 ? lbSlots.Items.Count - 1 : -1;
+                    RefreshSlotList(dayOfWeek);
                 }
             };
 
+            btnApply.Click += (_, _) =>
+            {
+                ApplyWorkingHoursToAll(dayOfWeek);
+            };
+
+            void RefreshSlotList(DayOfWeek day)
+            {
+                var list = _slotsPerDay[day];
+                lbSlots.Items.Clear();
+                foreach (var slot in list)
+                {
+                    lbSlots.Items.Add($"{slot.Start:hh\\:mm} - {slot.End:hh\\:mm}");
+                }
+                lbSlots.SelectedIndex = lbSlots.Items.Count - 1 >= 0 ? lbSlots.Items.Count - 1 : -1;
+            };
+
             pnlRow.Controls.AddRange(new Control[] { 
-                chkDay, lbSlots, btnManage
+                chkDay, lbSlots, btnApply, btnManage
             });
             _flowSchedule.Controls.Add(pnlRow);
 
-            _scheduleControls.Add(dayOfWeek, (chkDay, lbSlots, btnManage));
+            _scheduleControls.Add(dayOfWeek, (chkDay, lbSlots, btnManage, btnApply));
         }
 
         // Thêm một panel spacer ở cuối để đảm bảo có thể scroll đến Chủ Nhật
@@ -513,6 +536,40 @@ public sealed class DoctorEditorForm : Form
         _flowSchedule.Controls.Add(spacerPanel);
 
         _grpWorkingHours.Controls.Add(_flowSchedule);
+    }
+
+    private void ApplyWorkingHoursToAll(DayOfWeek sourceDay)
+    {
+        if (!_slotsPerDay.TryGetValue(sourceDay, out var slots) || slots.Count == 0)
+        {
+            MessageBox.Show(this, "Không có giờ làm để áp dụng.", "Thông báo", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            return;
+        }
+
+        var cloned = slots.Select(s => new WorkingHourInfo(s.Start, s.End)).ToList();
+        foreach (var kvp in _scheduleControls)
+        {
+            var day = kvp.Key;
+            if (day == sourceDay)
+            {
+                continue;
+            }
+
+            var (chk, listBox, manage, apply) = kvp.Value;
+            chk.Checked = true;
+            _slotsPerDay[day] = cloned.Select(s => new WorkingHourInfo(s.Start, s.End)).ToList();
+
+            listBox.Items.Clear();
+            foreach (var slot in _slotsPerDay[day])
+            {
+                listBox.Items.Add($"{slot.Start:hh\\:mm} - {slot.End:hh\\:mm}");
+            }
+            listBox.SelectedIndex = listBox.Items.Count - 1 >= 0 ? listBox.Items.Count - 1 : -1;
+            manage.Enabled = true;
+            apply.Enabled = true;
+        }
+
+        MessageBox.Show(this, "Đã áp dụng giờ làm cho tất cả các ngày còn lại.", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
     // Dialog to manage slots for a specific day
