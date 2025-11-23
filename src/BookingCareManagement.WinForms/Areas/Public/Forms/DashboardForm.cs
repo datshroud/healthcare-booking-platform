@@ -61,7 +61,6 @@ public sealed class DashboardForm : Form
         ConfigureUpcomingGrid();
         Shown += async (_, _) => await RefreshAsync();
     }
-   
     protected override void Dispose(bool disposing)
     {
         if (disposing)
