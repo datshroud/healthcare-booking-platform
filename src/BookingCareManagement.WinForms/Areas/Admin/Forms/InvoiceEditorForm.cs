@@ -368,8 +368,6 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             // Tạo dropdown cho Customer
             _customerDropdown = CreateFilterDropdown(btnCustomerFilter, GetUniqueCustomers());
 
-            // Tạo dropdown cho Employee (doctors)
-            _employeeDropdown = CreateFilterDropdown(btnEmployeeFilter, GetUniqueEmployees());
 
             // Tạo dropdown cho Service
             _serviceDropdown = CreateFilterDropdown(btnServiceFilter, GetUniqueServices());
@@ -382,7 +380,6 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
             // Reset tất cả buttons về màu trắng ban đầu
             ResetFilterButtonStyle(btnCustomerFilter);
-            ResetFilterButtonStyle(btnEmployeeFilter);
             ResetFilterButtonStyle(btnServiceFilter);
             ResetFilterButtonStyle(btnStatusFilter);
 
