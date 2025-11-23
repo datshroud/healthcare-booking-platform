@@ -11,6 +11,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Globalization;
 
 namespace BookingCareManagement.WinForms
 {
@@ -19,6 +20,7 @@ namespace BookingCareManagement.WinForms
         private ContextMenuStrip actionMenu;
         private int selectedRowIndex = -1;
         private List<CustomerDto> originalCustomers;
+        private List<CustomerDto> displayedCustomers;
         private CustomerService _customerService;
 
         // Parameterless ctor fallback for places that still use 'new Customer()'
@@ -34,6 +36,7 @@ namespace BookingCareManagement.WinForms
             _ = LoadCustomersAsync();
             AttachEvents();
             originalCustomers = new List<CustomerDto>();
+            displayedCustomers = new List<CustomerDto>();
         }
 
         #region Initialization Methods
@@ -48,23 +51,20 @@ namespace BookingCareManagement.WinForms
             actionMenu.Items.Add("Chỉnh sửa", null, EditMenuItem_Click);
             actionMenu.Items.Add("Xóa", null, DeleteMenuItem_Click);
             actionMenu.Padding = new Padding(0);
+
+            // Hide export button (removed from UI)
+            try { exportBtn.Visible = false; } catch { }
         }
 
         private void SetupDataGridView()
         {
-            AddCheckBoxColumn();
+            // Removed checkbox column to simplify UI
             AddCustomerColumn();
             AddTextColumn("# Số Cuộc hẹn", "Appointments");
             AddTextColumn("# Cuộc hẹn cuối cùng", "LastAppointment");
             AddTextColumn("# Ngày tạo tài khoản", "Created");
             AddActionColumn();
-            // Riêng cột checkbox vẫn cho phép click
-            if (customersDataGridView.Columns["Select"] != null)
-            {
-                customersDataGridView.Columns["Select"].ReadOnly = false;
-            }
-
-            // Riêng cột Actions vẫn cho phép click
+            // Actions column should remain editable so button clicks work
             if (customersDataGridView.Columns["Actions"] != null)
             {
                 customersDataGridView.Columns["Actions"].ReadOnly = false;
@@ -73,24 +73,13 @@ namespace BookingCareManagement.WinForms
         #endregion
 
         #region Data GridView Setup
-        private void AddCheckBoxColumn()
-        {
-            DataGridViewCheckBoxColumn checkCol = new DataGridViewCheckBoxColumn
-            {
-                Name = "Select",
-                HeaderText = "",
-                FillWeight =5
-            };
-            customersDataGridView.Columns.Add(checkCol);
-        }
-
         private void AddCustomerColumn()
         {
             DataGridViewTextBoxColumn customerCol = new DataGridViewTextBoxColumn
             {
                 Name = "Customer",
                 HeaderText = "Khách hàng",
-                FillWeight =30,
+                FillWeight = 30,
             };
             customersDataGridView.Columns.Add(customerCol);
         }
@@ -101,7 +90,7 @@ namespace BookingCareManagement.WinForms
             {
                 Name = name,
                 HeaderText = headerText,
-                FillWeight =15
+                FillWeight = 15
             };
             customersDataGridView.Columns.Add(col);
         }
@@ -116,7 +105,7 @@ namespace BookingCareManagement.WinForms
                 HeaderText = "",
                 UseColumnTextForButtonValue = true,
                 Text = horizontalEllipsis,
-                FillWeight =8,
+                FillWeight = 8,
             };
             customersDataGridView.Columns.Add(actionCol);
         }
@@ -148,10 +137,12 @@ namespace BookingCareManagement.WinForms
         private void BindDataToGridView()
         {
             customersDataGridView.Rows.Clear();
+            // track currently displayed customers (for painting and context actions)
+            displayedCustomers = originalCustomers.ToList();
             foreach (var customer in originalCustomers)
             {
                 customersDataGridView.Rows.Add(
-                    false, // Checkbox
+                    // Columns: Customer, Appointments, LastAppointment, Created
                     $"{customer.FullName}\n{customer.Email}",
                     customer.AppointmentCount.ToString(),
                     customer.LastAppointment?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa có",
@@ -160,39 +151,75 @@ namespace BookingCareManagement.WinForms
             }
         }
 
+        private string NormalizeString(string? input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+            var normalized = input.Normalize(NormalizationForm.FormD);
+            var chars = normalized.Where(c => CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark).ToArray();
+            return new string(chars).Normalize(NormalizationForm.FormC).ToLowerInvariant();
+        }
+
         private async Task SearchCustomersAsync(string searchText)
         {
             try
             {
                 SetLoadingState(true);
-                // Backend may not provide a search endpoint; fetch all and filter locally
-                var customers = await _customerService.GetAllAsync();
-                var filtered = customers.Where(c =>
- (!string.IsNullOrWhiteSpace(c.FullName) && c.FullName.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
- (!string.IsNullOrWhiteSpace(c.Email) && c.Email.Contains(searchText, StringComparison.OrdinalIgnoreCase)) ||
- (c.PhoneNumber != null && c.PhoneNumber.Contains(searchText, StringComparison.OrdinalIgnoreCase))
- ).ToList();
 
- DisplaySearchResults(filtered);
- }
- catch (Exception ex)
- {
- MessageBox.Show($"Lỗi khi tìm kiếm: {ex.Message}", "Lỗi",
- MessageBoxButtons.OK, MessageBoxIcon.Error);
- }
- finally
- {
- SetLoadingState(false);
- }
+                // Use already-loaded data to filter locally to avoid remote race conditions
+                if (originalCustomers == null)
+                {
+                    var customers = await _customerService.GetAllAsync();
+                    originalCustomers = customers.ToList();
+                }
+
+                string q = NormalizeString(searchText);
+
+                var filtered = originalCustomers.Where(c =>
+                {
+                    var name = NormalizeString(c.FullName);
+                    var phone = NormalizeString(c.PhoneNumber);
+
+                    // match against name words to avoid accidental substring matches across words
+                    // Name matching: allow single-character initial matches or substring in words
+                    if (!string.IsNullOrEmpty(name))
+                    {
+                        var words = name.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+                        if (q.Length == 1)
+                        {
+                            if (words.Any(w => w.StartsWith(q))) return true;
+                        }
+                        else
+                        {
+                            if (words.Any(w => w.Contains(q))) return true;
+                        }
+                    }
+
+                    // Phone matching: require at least2 chars to avoid noisy matches
+                    if (!string.IsNullOrEmpty(phone) && q.Length >= 2 && phone.Contains(q)) return true;
+
+                    return false;
+                }).ToList();
+
+                DisplaySearchResults(filtered);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi tìm kiếm: {ex.Message}", "Lỗi",
+                    MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            finally
+            {
+                SetLoadingState(false);
+            }
         }
 
         private void DisplaySearchResults(List<CustomerDto> searchResults)
         {
             customersDataGridView.Rows.Clear();
+            displayedCustomers = searchResults.ToList();
             foreach (var customer in searchResults)
             {
                 customersDataGridView.Rows.Add(
-                    false,
                     $"{customer.FullName}\n{customer.Email}",
                     customer.AppointmentCount.ToString(),
                     customer.LastAppointment?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa có",
@@ -210,7 +237,7 @@ namespace BookingCareManagement.WinForms
 
         private void UpdateCustomerCount()
         {
-            int count = originalCustomers?.Count ??0;
+            int count = originalCustomers?.Count ?? 0;
             title.Text = $"Khách hàng ({count})";
         }
 
@@ -231,9 +258,7 @@ namespace BookingCareManagement.WinForms
 
         private void AttachButtonEvents()
         {
-            exportBtn.Click += (s, e) => MessageBox.Show("Export Data", "Info");
-            importBtn.Click += (s, e) => MessageBox.Show("Import Data", "Info");
-            // addBtn.Click += addBtn_Click; // addBtn.Click is wired in the designer; do not attach again to avoid duplicate handling
+            // exportBtn.Click += (s, e) => MessageBox.Show("Xuất khách hàng", "Info");
 
             var refreshBtn = this.Controls.Find("refreshBtn", true).FirstOrDefault() as Button;
             if (refreshBtn != null)
@@ -297,9 +322,9 @@ namespace BookingCareManagement.WinForms
         private void Form_Resize(object sender, EventArgs e)
         {
             int formWidth = this.ClientSize.Width;
-            addBtn.Location = new Point(formWidth -190,18);
-            importBtn.Location = new Point(formWidth -340,18);
-            exportBtn.Location = new Point(formWidth -490,18);
+            // Place export and add buttons from right edge
+            exportBtn.Location = new Point(formWidth - 360, 18);
+            addBtn.Location = new Point(formWidth - 180, 18);
         }
 
         private void addBtn_Click(object sender, EventArgs e)
@@ -314,7 +339,7 @@ namespace BookingCareManagement.WinForms
 
         private void customersDataGridView_CellClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.ColumnIndex == customersDataGridView.Columns["Actions"].Index && e.RowIndex >=0)
+            if (e.ColumnIndex == customersDataGridView.Columns["Actions"].Index && e.RowIndex >= 0)
             {
                 selectedRowIndex = e.RowIndex;
                 Rectangle cellRect = customersDataGridView.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, false);
@@ -329,9 +354,9 @@ namespace BookingCareManagement.WinForms
         #region Context Menu Actions
         private void EditMenuItem_Click(object sender, EventArgs e)
         {
-            if (selectedRowIndex >=0 && selectedRowIndex < originalCustomers.Count)
+            if (selectedRowIndex >= 0 && selectedRowIndex < displayedCustomers.Count)
             {
-                var customerToEdit = originalCustomers[selectedRowIndex];
+                var customerToEdit = displayedCustomers[selectedRowIndex];
                 using (EditCustomerForm editForm = new EditCustomerForm(customerToEdit, _customerService))
                 {
                     if (editForm.ShowDialog() == DialogResult.OK)
@@ -346,9 +371,9 @@ namespace BookingCareManagement.WinForms
 
         private async void DeleteMenuItem_Click(object sender, EventArgs e)
         {
-            if (selectedRowIndex >=0 && selectedRowIndex < originalCustomers.Count)
+            if (selectedRowIndex >= 0 && selectedRowIndex < displayedCustomers.Count)
             {
-                var customerToDelete = originalCustomers[selectedRowIndex];
+                var customerToDelete = displayedCustomers[selectedRowIndex];
                 var result = MessageBox.Show($"Bạn có chắc chắn muốn xóa khách hàng {customerToDelete.FullName}?",
                     "Xác nhận xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 
@@ -375,14 +400,14 @@ namespace BookingCareManagement.WinForms
         #region Custom Painting
         private void customersDataGridView_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
         {
-            if (e.ColumnIndex ==1 && e.RowIndex >=0) // Customer column
+            if (e.ColumnIndex == 0 && e.RowIndex >= 0) // Customer column is now at index0
             {
                 e.PaintBackground(e.CellBounds, true);
 
-                if (e.RowIndex < originalCustomers.Count)
+                if (e.RowIndex < displayedCustomers.Count)
                 {
-                    var customer = originalCustomers[e.RowIndex];
-                    bool isSelected = (customersDataGridView.Rows[e.RowIndex].Selected) || (e.State & DataGridViewElementStates.Selected) !=0;
+                    var customer = displayedCustomers[e.RowIndex];
+                    bool isSelected = (customersDataGridView.Rows[e.RowIndex].Selected) || (e.State & DataGridViewElementStates.Selected) != 0;
                     DrawCustomerCell(e, customer, isSelected);
                 }
 
@@ -412,14 +437,14 @@ namespace BookingCareManagement.WinForms
         private void DrawDefaultAvatar(DataGridViewCellPaintingEventArgs e, string fullName)
         {
             // Draw circle background
-            using (var brush = new SolidBrush(Color.FromArgb(147,197,253)))
+            using (var brush = new SolidBrush(Color.FromArgb(147, 197, 253)))
             {
                 e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-                e.Graphics.FillEllipse(brush, e.CellBounds.X +15, e.CellBounds.Y +10,50,50);
+                e.Graphics.FillEllipse(brush, e.CellBounds.X + 15, e.CellBounds.Y + 10, 50, 50);
             }
 
             // Draw initials
-            using (var font = new Font("Segoe UI",12, FontStyle.Bold))
+            using (var font = new Font("Segoe UI", 12, FontStyle.Bold))
             using (var textBrush = new SolidBrush(Color.White))
             {
                 var sf = new StringFormat
@@ -427,7 +452,7 @@ namespace BookingCareManagement.WinForms
                     Alignment = StringAlignment.Center,
                     LineAlignment = StringAlignment.Center
                 };
-                var avatarRect = new Rectangle(e.CellBounds.X +15, e.CellBounds.Y +10,50,50);
+                var avatarRect = new Rectangle(e.CellBounds.X + 15, e.CellBounds.Y + 10, 50, 50);
                 string initials = GetInitials(fullName);
                 e.Graphics.DrawString(initials, font, textBrush, avatarRect, sf);
             }
@@ -436,18 +461,18 @@ namespace BookingCareManagement.WinForms
         private void DrawCustomerInfo(DataGridViewCellPaintingEventArgs e, CustomerDto customer, bool isSelected)
         {
             // Name uses accent blue normally, but gray when selected so it remains readable on gray selection background
-            var nameColor = isSelected ? Color.FromArgb(107,114,128) : Color.FromArgb(37,99,235);
-            var emailColor = isSelected ? Color.FromArgb(156,163,175) : Color.FromArgb(107,114,128);
+            var nameColor = isSelected ? Color.FromArgb(107, 114, 128) : Color.FromArgb(37, 99, 235);
+            var emailColor = isSelected ? Color.FromArgb(156, 163, 175) : Color.FromArgb(107, 114, 128);
 
-            using (var nameFont = new Font("Segoe UI",11, FontStyle.Bold))
-            using (var emailFont = new Font("Segoe UI",9))
+            using (var nameFont = new Font("Segoe UI", 11, FontStyle.Bold))
+            using (var emailFont = new Font("Segoe UI", 9))
             using (var nameBrush = new SolidBrush(nameColor))
             using (var emailBrush = new SolidBrush(emailColor))
             {
                 e.Graphics.DrawString(customer.FullName, nameFont, nameBrush,
-                    e.CellBounds.X +75, e.CellBounds.Y +18);
+                    e.CellBounds.X + 75, e.CellBounds.Y + 18);
                 e.Graphics.DrawString(customer.Email, emailFont, emailBrush,
-                    e.CellBounds.X +75, e.CellBounds.Y +40);
+                    e.CellBounds.X + 75, e.CellBounds.Y + 40);
             }
         }
 
@@ -457,10 +482,10 @@ namespace BookingCareManagement.WinForms
                 return "JD";
 
             string[] names = fullName.Split(' ');
-            if (names.Length >=2)
+            if (names.Length >= 2)
                 return $"{names[0][0]}{names[1][0]}".ToUpper();
-            else if (names.Length ==1 && names[0].Length >=2)
-                return names[0].Substring(0,2).ToUpper();
+            else if (names.Length == 1 && names[0].Length >= 2)
+                return names[0].Substring(0, 2).ToUpper();
             else
                 return "JD";
         }
@@ -469,6 +494,11 @@ namespace BookingCareManagement.WinForms
         #region Unused Methods
         private void importBtn_Click(object sender, EventArgs e) { }
         #endregion
+
+        private void title_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 
     public class AddCustomerForm : Form
@@ -477,10 +507,11 @@ namespace BookingCareManagement.WinForms
 
         // Controls
         private Label lblTitle;
-        private Label lblFirstName, lblLastName, lblEmail, lblPhone, lblEmailOption;
+        private Label lblFirstName, lblLastName, lblEmail, lblPhone, lblGender, lblDob;
         private TextBox txtFirstName, txtLastName, txtEmail, txtPhone;
         private ComboBox cboCountryCode;
-        private CheckBox chkSendEmail;
+        private ComboBox cboGender;
+        private DateTimePicker dtpDob;
         private Button btnCancel, btnAddCustomer;
 
         internal CustomerDto NewCustomer { get; private set; }
@@ -501,7 +532,7 @@ namespace BookingCareManagement.WinForms
         private void InitializeForm()
         {
             this.Text = "Thêm khách hàng";
-            this.Size = new Size(560,580);
+            this.Size = new Size(560,540);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -515,7 +546,8 @@ namespace BookingCareManagement.WinForms
             CreateNameFields();
             CreateEmailField();
             CreatePhoneField();
-            CreateCheckbox();
+            CreateGenderField();
+            CreateDobField();
             CreateButtons();
         }
 
@@ -564,9 +596,10 @@ namespace BookingCareManagement.WinForms
         private void CreatePhoneField()
         {
             // Put country code and phone input into a small panel so label appears above both, matching other fields
+            lblPhone = CreateLabel("Điện thoại",25,270);
             var phoneRow = new Panel
             {
-                Location = new Point(25,305),
+                Location = new Point(25,295),
                 Size = new Size(490,34)
             };
 
@@ -596,31 +629,39 @@ namespace BookingCareManagement.WinForms
             this.Controls.AddRange(new Control[] { lblPhone, phoneRow });
         }
 
-        private void CreateCheckbox()
+        private void CreateGenderField()
         {
-            chkSendEmail = new CheckBox
+            lblGender = CreateLabel("Giới tính",25,340);
+            cboGender = new ComboBox
             {
-                Location = new Point(25,355),
-                Size = new Size(20,20),
-                BackColor = Color.White
+                Location = new Point(25,365),
+                Size = new Size(200,30),
+                Font = new Font("Segoe UI",10),
+                DropDownStyle = ComboBoxStyle.DropDownList
             };
+            cboGender.Items.AddRange(new object[] { "", "Nam", "Nữ", "Khác" });
+            cboGender.SelectedIndex =0;
+            this.Controls.AddRange(new Control[] { lblGender, cboGender });
+        }
 
-            lblEmailOption = new Label
+        private void CreateDobField()
+        {
+            lblDob = CreateLabel("Ngày sinh",250,340);
+            dtpDob = new DateTimePicker
             {
-                Text = "Gửi email có thông tin đăng nhập của khách hàng\nTùy chọn này yêu cầu địa chỉ email.",
-                Location = new Point(50,353),
-                Size = new Size(450,40),
-                Font = new Font("Segoe UI",9),
-                ForeColor = Color.FromArgb(75,85,99)
+                Location = new Point(250,365),
+                Size = new Size(265,30),
+                Format = DateTimePickerFormat.Short,
+                MaxDate = DateTime.Today,
+                ShowUpDown = false
             };
-
-            this.Controls.AddRange(new Control[] { chkSendEmail, lblEmailOption });
+            this.Controls.AddRange(new Control[] { lblDob, dtpDob });
         }
 
         private void CreateButtons()
         {
-            btnCancel = CreateButton("Hủy",310,480, Color.White, Color.FromArgb(55,65,81));
-            btnAddCustomer = CreateButton("Thêm",415,480, Color.FromArgb(37,99,235), Color.White);
+            btnCancel = CreateButton("Hủy",310,420, Color.White, Color.FromArgb(55,65,81));
+            btnAddCustomer = CreateButton("Thêm",415,420, Color.FromArgb(37,99,235), Color.White);
 
             this.Controls.AddRange(new Control[] { btnCancel, btnAddCustomer });
         }
@@ -795,15 +836,24 @@ namespace BookingCareManagement.WinForms
 
         private CreateCustomerRequest CreateCustomerRequest()
         {
-            return new CreateCustomerRequest
-            {
-                FirstName = txtFirstName.Text.Trim(),
-                LastName = txtLastName.Text.Trim(),
-                Email = txtEmail.Text.Trim(),
-                PhoneNumber = GetPhoneNumber(),
-                Gender = null,
-                SendWelcomeEmail = chkSendEmail.Checked
-            };
+             DateTime? dob = null;
+             try
+             {
+             dob = dtpDob.Value == DateTime.MinValue ? null : dtpDob.Value;
+             }
+             catch { }
+
+             return new CreateCustomerRequest
+             {
+             FirstName = txtFirstName.Text.Trim(),
+             LastName = txtLastName.Text.Trim(),
+             Email = txtEmail.Text.Trim(),
+             PhoneNumber = GetPhoneNumber(),
+             Gender = string.IsNullOrWhiteSpace(cboGender?.Text) ? null : cboGender.Text,
+             DateOfBirth = dob,
+             // Simplified: do not send welcome email from Add dialog by default
+             SendWelcomeEmail = false
+             };
         }
 
         private string GetPhoneNumber()
@@ -827,9 +877,11 @@ namespace BookingCareManagement.WinForms
 
         // Controls
         private Label lblTitle;
-        private Label lblFirstName, lblLastName, lblEmail, lblPhone;
+        private Label lblFirstName, lblLastName, lblEmail, lblPhone, lblGender, lblDob;
         private TextBox txtFirstName, txtLastName, txtEmail, txtPhone;
         private ComboBox cboCountryCode;
+        private ComboBox cboGender;
+        private DateTimePicker dtpDob;
         private Button btnCancel, btnSaveCustomer;
 
         internal EditCustomerForm(CustomerDto customer, CustomerService customerService)
@@ -846,7 +898,7 @@ namespace BookingCareManagement.WinForms
         private void InitializeForm()
         {
             this.Text = "Chỉnh sửa khách hàng";
-            this.Size = new Size(560, 500);
+            this.Size = new Size(560,560);
             this.StartPosition = FormStartPosition.CenterScreen;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -860,6 +912,8 @@ namespace BookingCareManagement.WinForms
             CreateNameFields();
             CreateEmailField();
             CreatePhoneField();
+            CreateGenderField();
+            CreateDobField();
             CreateButtons();
         }
 
@@ -880,29 +934,29 @@ namespace BookingCareManagement.WinForms
             lblTitle = new Label
             {
                 Text = "Chỉnh sửa khách hàng",
-                Location = new Point(20, 20),
-                Size = new Size(250, 30),
-                Font = new Font("Segoe UI", 14, FontStyle.Bold),
-                ForeColor = Color.FromArgb(31, 41, 55)
+                Location = new Point(20,20),
+                Size = new Size(250,30),
+                Font = new Font("Segoe UI",14, FontStyle.Bold),
+                ForeColor = Color.FromArgb(31,41,55)
             };
             this.Controls.Add(lblTitle);
         }
 
         private void CreateNameFields()
         {
-            lblFirstName = CreateLabel("Họ *", 25, 70);
-            txtFirstName = CreateTextBox(25, 95);
+            lblFirstName = CreateLabel("Họ *",25,70);
+            txtFirstName = CreateTextBox(25,95);
 
-            lblLastName = CreateLabel("Tên *", 25, 140);
-            txtLastName = CreateTextBox(25, 165);
+            lblLastName = CreateLabel("Tên *",25,140);
+            txtLastName = CreateTextBox(25,165);
 
             this.Controls.AddRange(new Control[] { lblFirstName, txtFirstName, lblLastName, txtLastName });
         }
 
         private void CreateEmailField()
         {
-            lblEmail = CreateLabel("Email *", 25, 210);
-            txtEmail = CreateTextBox(25, 235);
+            lblEmail = CreateLabel("Email *",25,210);
+            txtEmail = CreateTextBox(25,235);
 
             this.Controls.AddRange(new Control[] { lblEmail, txtEmail });
         }
@@ -926,7 +980,7 @@ namespace BookingCareManagement.WinForms
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             cboCountryCode.Items.AddRange(new object[] { "+84 🇻🇳"});
-            cboCountryCode.SelectedIndex = 0;
+            cboCountryCode.SelectedIndex =0;
 
             txtPhone = new TextBox
             {
@@ -944,10 +998,39 @@ namespace BookingCareManagement.WinForms
             this.Controls.AddRange(new Control[] { lblPhone, phoneRow });
         }
 
+        private void CreateGenderField()
+        {
+            lblGender = CreateLabel("Giới tính",25,340);
+            cboGender = new ComboBox
+            {
+                Location = new Point(25,365),
+                Size = new Size(200,30),
+                Font = new Font("Segoe UI",10),
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            cboGender.Items.AddRange(new object[] { "", "Nam", "Nữ", "Khác" });
+            cboGender.SelectedIndex =0;
+            this.Controls.AddRange(new Control[] { lblGender, cboGender });
+        }
+
+        private void CreateDobField()
+        {
+            lblDob = CreateLabel("Ngày sinh",250,340);
+            dtpDob = new DateTimePicker
+            {
+                Location = new Point(250,365),
+                Size = new Size(265,30),
+                Format = DateTimePickerFormat.Short,
+                MaxDate = DateTime.Today,
+                ShowUpDown = false
+            };
+            this.Controls.AddRange(new Control[] { lblDob, dtpDob });
+        }
+
         private void CreateButtons()
         {
-            btnCancel = CreateButton("Hủy", 310, 380, Color.White, Color.FromArgb(55, 65, 81));
-            btnSaveCustomer = CreateButton("Lưu", 415, 380, Color.FromArgb(37, 99, 235), Color.White);
+            btnCancel = CreateButton("Hủy",310,440, Color.White, Color.FromArgb(55,65,81));
+            btnSaveCustomer = CreateButton("Lưu",415,440, Color.FromArgb(37,99,235), Color.White);
 
             this.Controls.AddRange(new Control[] { btnCancel, btnSaveCustomer });
         }
@@ -994,8 +1077,8 @@ namespace BookingCareManagement.WinForms
             {
                 Text = text,
                 Location = new Point(x, y),
-                Size = new Size(text == "Lưu" ? 120 : 100, 40),
-                Font = new Font("Segoe UI", 10),
+                Size = new Size(text == "Lưu" ?120 :100,40),
+                Font = new Font("Segoe UI",10),
                 FlatStyle = FlatStyle.Flat,
                 BackColor = backColor,
                 ForeColor = foreColor,
@@ -1004,11 +1087,11 @@ namespace BookingCareManagement.WinForms
 
             if (backColor == Color.White)
             {
-                button.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+                button.FlatAppearance.BorderColor = Color.FromArgb(209,213,219);
             }
             else
             {
-                button.FlatAppearance.BorderSize = 0;
+                button.FlatAppearance.BorderSize =0;
             }
 
             return button;
@@ -1057,6 +1140,23 @@ namespace BookingCareManagement.WinForms
                         // Không có country code, đặt vào ô số điện thoại và giữ country code mặc định
                         txtPhone.Text = phone;
                     }
+                }
+
+                // Load gender and dob
+                if (!string.IsNullOrWhiteSpace(_customer.Gender))
+                {
+                    try
+                    {
+                        int idx = cboGender.Items.IndexOf(_customer.Gender);
+                        if (idx >=0) cboGender.SelectedIndex = idx;
+                        else cboGender.SelectedIndex =0;
+                    }
+                    catch { }
+                }
+
+                if (_customer.DateOfBirth.HasValue)
+                {
+                    dtpDob.Value = _customer.DateOfBirth.Value;
                 }
             }
         }
@@ -1123,6 +1223,8 @@ namespace BookingCareManagement.WinForms
                 _customer.FullName = $"{txtFirstName.Text.Trim()} {_customer.LastName.Trim()}";
                 _customer.Email = txtEmail.Text.Trim();
                 _customer.PhoneNumber = GetFormattedPhoneNumber();
+                _customer.Gender = string.IsNullOrWhiteSpace(cboGender?.Text) ? _customer.Gender : cboGender.Text;
+                _customer.DateOfBirth = dtpDob.Value;
 
                 return true;
             }
@@ -1136,18 +1238,18 @@ namespace BookingCareManagement.WinForms
 
         private UpdateCustomerRequest CreateUpdateRequest()
         {
-            return new UpdateCustomerRequest
-            {
-                Id = _customer.Id,
-                FirstName = txtFirstName.Text.Trim(),
-                LastName = txtLastName.Text.Trim(),
-                Email = txtEmail.Text.Trim(),
-                PhoneNumber = GetFormattedPhoneNumber(),
-                Gender = _customer.Gender,
-                DateOfBirth = _customer.DateOfBirth,
-                InternalNote = _customer.InternalNote
-            };
-        }
+ return new UpdateCustomerRequest
+ {
+ Id = _customer.Id,
+ FirstName = txtFirstName.Text.Trim(),
+ LastName = txtLastName.Text.Trim(),
+ Email = txtEmail.Text.Trim(),
+ PhoneNumber = GetFormattedPhoneNumber(),
+ Gender = string.IsNullOrWhiteSpace(cboGender?.Text) ? _customer.Gender : cboGender.Text,
+ DateOfBirth = dtpDob.Value,
+ InternalNote = _customer.InternalNote
+ };
+ }
 
         private string GetFormattedPhoneNumber()
         {
@@ -1177,13 +1279,13 @@ namespace BookingCareManagement.WinForms
         protected override void OnPaint(PaintEventArgs e)
         {
             GraphicsPath path = new GraphicsPath();
-            int radius = 8;
-            Rectangle rect = new Rectangle(0, 0, Width - 1, Height - 1);
+            int radius =8;
+            Rectangle rect = new Rectangle(0,0, Width -1, Height -1);
 
-            path.AddArc(rect.X, rect.Y, radius, radius, 180, 90);
-            path.AddArc(rect.X + rect.Width - radius, rect.Y, radius, radius, 270, 90);
-            path.AddArc(rect.X + rect.Width - radius, rect.Y + rect.Height - radius, radius, radius, 0, 90);
-            path.AddArc(rect.X, rect.Y + rect.Height - radius, radius, radius, 90, 90);
+            path.AddArc(rect.X, rect.Y, radius, radius,180,90);
+            path.AddArc(rect.X + rect.Width - radius, rect.Y, radius, radius,270,90);
+            path.AddArc(rect.X + rect.Width - radius, rect.Y + rect.Height - radius, radius, radius,0,90);
+            path.AddArc(rect.X, rect.Y + rect.Height - radius, radius, radius,90,90);
             path.CloseFigure();
 
             this.Region = new Region(path);
@@ -1194,7 +1296,7 @@ namespace BookingCareManagement.WinForms
                 e.Graphics.FillPath(brush, path);
             }
 
-            if (this.FlatAppearance.BorderSize > 0)
+            if (this.FlatAppearance.BorderSize >0)
             {
                 using (Pen pen = new Pen(this.FlatAppearance.BorderColor, this.FlatAppearance.BorderSize))
                 {

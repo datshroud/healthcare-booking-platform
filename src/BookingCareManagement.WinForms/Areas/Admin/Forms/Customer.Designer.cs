@@ -11,7 +11,6 @@
         private Panel contentPanel;
         private DataGridView customersDataGridView;
         private RoundedButton exportBtn;
-        private RoundedButton importBtn;
         private RoundedButton addBtn;
         private Label title;
         private Panel whitePanel;
@@ -47,7 +46,6 @@
             headerPanel = new Panel();
             title = new Label();
             exportBtn = new RoundedButton();
-            importBtn = new RoundedButton();
             addBtn = new RoundedButton();
             contentPanel = new Panel();
             whitePanel = new Panel();
@@ -68,7 +66,6 @@
             headerPanel.BackColor = Color.FromArgb(243, 244, 246);
             headerPanel.Controls.Add(title);
             headerPanel.Controls.Add(exportBtn);
-            headerPanel.Controls.Add(importBtn);
             headerPanel.Controls.Add(addBtn);
             headerPanel.Dock = DockStyle.Top;
             headerPanel.Location = new Point(0, 0);
@@ -88,6 +85,7 @@
             title.Size = new Size(308, 54);
             title.TabIndex = 0;
             title.Text = "Khách hàng (1)";
+            title.Click += title_Click;
             // 
             // exportBtn
             // 
@@ -101,24 +99,8 @@
             exportBtn.Name = "exportBtn";
             exportBtn.Size = new Size(140, 44);
             exportBtn.TabIndex = 1;
-            exportBtn.Text = "⬇  Xuất dữ liệu";
+            exportBtn.Text = "⬇ Xuất khách hàng";
             exportBtn.UseVisualStyleBackColor = false;
-            // 
-            // importBtn
-            // 
-            importBtn.BackColor = Color.White;
-            importBtn.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
-            importBtn.FlatStyle = FlatStyle.Flat;
-            importBtn.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
-            importBtn.ForeColor = Color.FromArgb(55, 65, 81);
-            importBtn.Location = new Point(1050, 18);
-            importBtn.Margin = new Padding(3, 4, 3, 4);
-            importBtn.Name = "importBtn";
-            importBtn.Size = new Size(140, 44);
-            importBtn.TabIndex = 2;
-            importBtn.Text = "📄  Thên dữ liệu";
-            importBtn.UseVisualStyleBackColor = false;
-            importBtn.Click += importBtn_Click;
             // 
             // addBtn
             // 
@@ -127,12 +109,12 @@
             addBtn.FlatStyle = FlatStyle.Flat;
             addBtn.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             addBtn.ForeColor = Color.White;
-            addBtn.Location = new Point(1200, 18);
+            addBtn.Location = new Point(1050, 18);
             addBtn.Margin = new Padding(3, 4, 3, 4);
             addBtn.Name = "addBtn";
             addBtn.Size = new Size(180, 44);
             addBtn.TabIndex = 3;
-            addBtn.Text = "+  Thêm khách hàng";
+            addBtn.Text = "+ Thêm khách hàng";
             addBtn.UseVisualStyleBackColor = false;
             addBtn.Click += addBtn_Click;
             // 
@@ -171,12 +153,12 @@
             customersDataGridView.BorderStyle = BorderStyle.None;
             customersDataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
             dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle1.BackColor = Color.FromArgb(220, 220, 220);
+            dataGridViewCellStyle1.BackColor = Color.FromArgb(236, 236, 236);
             dataGridViewCellStyle1.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             dataGridViewCellStyle1.ForeColor = Color.FromArgb(60, 60, 60);
-            dataGridViewCellStyle1.Padding = new Padding(10, 20, 20, 20);
-            dataGridViewCellStyle1.SelectionBackColor = SystemColors.Highlight;
-            dataGridViewCellStyle1.SelectionForeColor = SystemColors.HighlightText;
+            dataGridViewCellStyle1.Padding = new Padding(10, 0, 0, 0);
+            dataGridViewCellStyle1.SelectionBackColor = Color.FromArgb(236, 236, 236);
+            dataGridViewCellStyle1.SelectionForeColor = Color.FromArgb(60, 60, 60);
             dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
             customersDataGridView.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             customersDataGridView.ColumnHeadersHeight = 50;
@@ -188,24 +170,8 @@
             dataGridViewCellStyle2.SelectionForeColor = Color.FromArgb(15, 23, 42);
             dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
             customersDataGridView.DefaultCellStyle = dataGridViewCellStyle2;
-            // ĐẶT CÁC THUỘC TÍNH STYLE NGAYỞ ĐÂY - TRƯỚC CÁC THUỘC TÍNH KHÁC
-            customersDataGridView.EnableHeadersVisualStyles = false;
-            // Header background: neutral light gray
-            customersDataGridView.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(236,236,236);
-            customersDataGridView.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(60,60,60);
-            customersDataGridView.ColumnHeadersDefaultCellStyle.Font = new Font("Segoe UI",10, FontStyle.Bold);
-            customersDataGridView.ColumnHeadersDefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            customersDataGridView.ColumnHeadersDefaultCellStyle.Padding = new Padding(10,0,0,0);
-            // Ensure header stays gray when focused/selected
-            customersDataGridView.ColumnHeadersDefaultCellStyle.SelectionBackColor = customersDataGridView.ColumnHeadersDefaultCellStyle.BackColor;
-            customersDataGridView.ColumnHeadersDefaultCellStyle.SelectionForeColor = customersDataGridView.ColumnHeadersDefaultCellStyle.ForeColor;
-
-            // Make cell borders more prominent
-            customersDataGridView.CellBorderStyle = DataGridViewCellBorderStyle.Single;
-            customersDataGridView.GridColor = Color.FromArgb(200,200,200); // darker grid lines
-            customersDataGridView.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.Single;
-
             customersDataGridView.Dock = DockStyle.Fill;
+            customersDataGridView.EnableHeadersVisualStyles = false;
             customersDataGridView.Font = new Font("Segoe UI", 12F);
             customersDataGridView.GridColor = Color.FromArgb(200, 200, 200);
             customersDataGridView.Location = new Point(30, 70);
@@ -238,13 +204,13 @@
             // 
             // searchBox
             // 
-            searchBox.BorderStyle = BorderStyle.None;
+            searchBox.BorderStyle = BorderStyle.FixedSingle;
             searchBox.Font = new Font("Segoe UI", 11F);
             searchBox.ForeColor = Color.Gray;
-            searchBox.Location = new Point(55, 20);
+            searchBox.Location = new Point(55, 15);
             searchBox.Margin = new Padding(3, 4, 3, 4);
             searchBox.Name = "searchBox";
-            searchBox.Size = new Size(300, 25);
+            searchBox.Size = new Size(420, 32);
             searchBox.TabIndex = 1;
             searchBox.Text = "Search";
             // 
@@ -256,6 +222,7 @@
             searchUnderline.Name = "searchUnderline";
             searchUnderline.Size = new Size(340, 1);
             searchUnderline.TabIndex = 2;
+            searchUnderline.Visible = false;
             // 
             // searchIcon
             // 
