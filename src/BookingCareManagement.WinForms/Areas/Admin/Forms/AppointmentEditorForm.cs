@@ -39,6 +39,18 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private CheckedListBox? _employeeDropdown;
         private CheckedListBox? _statusDropdown;
 
+        // Pagination state (client-side)
+        private List<AppointmentRow> _filteredAppointments = new();
+        private int _currentPage = 1;
+        private int _pageSize = 10;
+        private int _totalPages = 1;
+
+        // Pagination controls
+        private Button? _btnPrevPage;
+        private Button? _btnNextPage;
+        private Label? _lblPageInfo;
+        private ComboBox? _cbPageSize;
+
         private sealed record AppointmentRow(
             Guid Id,
             Guid DoctorId,
@@ -65,6 +77,10 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             ConfigureInputs();
             InitializeFilterDropdowns();
             ConfigureActions();
+
+            // Initialize runtime pagination controls
+            InitializePaginationControls();
+
             Shown += async (_, _) => await LoadAppointmentsAsync();
         }
 
@@ -385,15 +401,138 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
             var rows = data.OrderBy(a => a.Start).ToList();
 
-            appointmentGrid.Rows.Clear();
-            for (var i = 0; i < rows.Count; i++)
-            {
-                RenderRow(rows[i]);
-            }
+            // Set filtered list and render current page
+            _filteredAppointments = rows;
+            _currentPage = 1;
+            RenderPage();
 
             lblTitle.Text = $"Lịch Hẹn ({rows.Count})";
-            appointmentGrid.Visible = rows.Count > 0;
+            appointmentGrid.Visible = rows.Count > 0 && _filteredAppointments.Any();
             emptyStatePanel.Visible = rows.Count == 0;
+        }
+
+        private void InitializePaginationControls()
+        {
+            var paginationPanel = new Panel
+            {
+                Height = 40,
+                Dock = DockStyle.Bottom,
+                BackColor = Color.Transparent
+            };
+
+            _btnPrevPage = new Button
+            {
+                Text = "Trước",
+                Width = 80,
+                Height = 30,
+                Left = 10,
+                Top = 5
+            };
+            _btnPrevPage.Click += (s, e) => ChangePage(-1);
+
+            _btnNextPage = new Button
+            {
+                Text = "Tiếp",
+                Width = 80,
+                Height = 30,
+                Left = 100,
+                Top = 5
+            };
+            _btnNextPage.Click += (s, e) => ChangePage(1);
+
+            _lblPageInfo = new Label
+            {
+                AutoSize = false,
+                Width = 240,
+                Height = 30,
+                Left = 200,
+                Top = 8,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+
+            _cbPageSize = new ComboBox
+            {
+                Width = 80,
+                Height = 30,
+                Left = 460,
+                Top = 5,
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            _cbPageSize.Items.AddRange(new object[] { "5", "10", "20", "50" });
+            _cbPageSize.SelectedItem = _pageSize.ToString();
+            _cbPageSize.SelectedIndexChanged += (s, e) =>
+            {
+                if (int.TryParse(_cbPageSize.SelectedItem?.ToString(), out var newSize) && newSize > 0)
+                {
+                    _pageSize = newSize;
+                    _currentPage = 1;
+                    RenderPage();
+                }
+            };
+
+            paginationPanel.Controls.Add(_btnPrevPage);
+            paginationPanel.Controls.Add(_btnNextPage);
+            paginationPanel.Controls.Add(_lblPageInfo);
+            paginationPanel.Controls.Add(_cbPageSize);
+
+            this.Controls.Add(paginationPanel);
+            paginationPanel.BringToFront();
+        }
+
+        private void ChangePage(int delta)
+        {
+            _currentPage += delta;
+            if (_currentPage < 1) _currentPage = 1;
+            if (_currentPage > _totalPages) _currentPage = _totalPages;
+            RenderPage();
+        }
+
+        private void RenderPage()
+        {
+            appointmentGrid.Rows.Clear();
+
+            if (_filteredAppointments == null) _filteredAppointments = new List<AppointmentRow>();
+
+            var total = _filteredAppointments.Count;
+            _totalPages = Math.Max(1, (int)Math.Ceiling(total / (double)_pageSize));
+            if (_currentPage < 1) _currentPage = 1;
+            if (_currentPage > _totalPages) _currentPage = _totalPages;
+
+            var pageItems = _filteredAppointments.Skip((_currentPage - 1) * _pageSize).Take(_pageSize).ToList();
+
+            foreach (var row in pageItems)
+            {
+                RenderRow(row);
+            }
+
+            UpdatePaginationControls();
+
+            appointmentGrid.Visible = total > 0;
+            emptyStatePanel.Visible = total == 0;
+        }
+
+        private void UpdatePaginationControls()
+        {
+            if (_lblPageInfo != null)
+            {
+                _lblPageInfo.Text = $"Trang {_currentPage} / {_totalPages}   (Tổng {_filteredAppointments.Count})";
+            }
+
+            if (_btnPrevPage != null)
+            {
+                _btnPrevPage.Enabled = _currentPage > 1;
+            }
+
+            if (_btnNextPage != null)
+            {
+                _btnNextPage.Enabled = _currentPage < _totalPages;
+            }
+
+            if (_cbPageSize != null)
+            {
+                if (_cbPageSize.SelectedItem == null)
+                    _cbPageSize.SelectedItem = _pageSize.ToString();
+            }
         }
 
         private async Task LoadAppointmentsAsync()
