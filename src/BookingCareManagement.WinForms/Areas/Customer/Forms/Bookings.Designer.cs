@@ -120,13 +120,13 @@
             // 
             // panelLeft
             // 
-            panelLeft.Anchor = AnchorStyles.None;
+            panelLeft.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             panelLeft.AutoScroll = true;
-            panelLeft.BackColor = Color.FromArgb(52, 58, 64);
+            panelLeft.BackColor = Color.FromArgb(15, 23, 42);
             panelLeft.Controls.Add(panelLeftContent);
             panelLeft.Controls.Add(textBoxSearch);
             panelLeft.Controls.Add(panelLeftHeader);
-            panelLeft.Location = new Point(80, 240);
+            panelLeft.Location = new Point(80, 140);
             panelLeft.Margin = new Padding(4, 5, 4, 5);
             panelLeft.Name = "panelLeft";
             panelLeft.Size = new Size(867, 800);
@@ -539,11 +539,11 @@
             // 
             // panelRight
             // 
-            panelRight.Anchor = AnchorStyles.None;
-            panelRight.BackColor = Color.FromArgb(52, 58, 64);
+            panelRight.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Right;
+            panelRight.BackColor = Color.FromArgb(15, 23, 42);
             panelRight.Controls.Add(panelRightContent);
             panelRight.Controls.Add(labelRightTitle);
-            panelRight.Location = new Point(973, 240);
+            panelRight.Location = new Point(973, 140);
             panelRight.Margin = new Padding(4, 5, 4, 5);
             panelRight.Name = "panelRight";
             panelRight.Size = new Size(600, 800);
@@ -720,7 +720,7 @@
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.White;
-            ClientSize = new Size(1653, 1150);
+            ClientSize = new Size(1653, 1055);
             Controls.Add(panelRight);
             Controls.Add(panelLeft);
             Controls.Add(panelHeader);

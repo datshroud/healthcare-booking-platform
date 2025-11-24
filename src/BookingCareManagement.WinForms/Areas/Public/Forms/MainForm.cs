@@ -123,6 +123,7 @@ namespace BookingCareManagement.WinForms
 
         private void OpenRoleDashboard()
         {
+            // If user is doctor (but not admin), open doctor appointments
             if (HasDoctorAccess() && !HasAdminAccess())
             {
                 var doctorForm = _serviceProvider.GetRequiredService<DoctorAppointmentsForm>();
@@ -130,8 +131,30 @@ namespace BookingCareManagement.WinForms
                 return;
             }
 
-            var dashboard = _serviceProvider.GetRequiredService<DashboardForm>();
-            OpenChildForm(dashboard);
+            // If user is admin, open admin dashboard
+            if (HasAdminAccess())
+            {
+                var dashboard = _serviceProvider.GetRequiredService<DashboardForm>();
+                OpenChildForm(dashboard);
+                return;
+            }
+
+            // Default for regular customers: open Services page
+            try
+            {
+                var serviceForm = _serviceProvider.GetRequiredService<Service>();
+                OpenChildForm(serviceForm);
+            }
+            catch (Exception ex)
+            {
+                // Fallback to dashboard if Service resolution fails
+                try
+                {
+                    var dashboard = _serviceProvider.GetRequiredService<DashboardForm>();
+                    OpenChildForm(dashboard);
+                }
+                catch { }
+            }
         }
 
         private void CloseAccountMenu()
@@ -387,6 +410,51 @@ namespace BookingCareManagement.WinForms
             if (activeChildForm != null)
                 activeChildForm.Close();
 
+            // If the requested child is the Bookings form, host it inside a scrollable wrapper
+            if (childForm is BookingCareManagement.WinForms.Areas.Customer.Forms.Bookings)
+            {
+                // Remove any existing bookings host
+                var existingHost = contentPanel.Controls.Find("bookingsHost", false).FirstOrDefault() as Panel;
+                if (existingHost != null)
+                {
+                    contentPanel.Controls.Remove(existingHost);
+                    existingHost.Dispose();
+                }
+
+                // Create a scrollable host panel that fills the content area
+                var host = new Panel
+                {
+                    Name = "bookingsHost",
+                    Dock = DockStyle.Fill,
+                    AutoScroll = true,
+                    BackColor = Color.Transparent
+                };
+
+                activeChildForm = childForm;
+                childForm.TopLevel = false;
+                childForm.FormBorderStyle = FormBorderStyle.None;
+
+                // Let the bookings form keep its designed height; dock to Top so host can scroll vertically
+                childForm.Dock = DockStyle.Top;
+
+                // Add child into host, then host into contentPanel
+                host.Controls.Add(childForm);
+                contentPanel.Controls.Add(host);
+                contentPanel.Tag = childForm;
+
+                // Ensure child width matches host width to avoid horizontal scrollbar if not needed
+                try
+                {
+                    childForm.Width = Math.Max(childForm.ClientSize.Width, host.ClientSize.Width);
+                }
+                catch { }
+
+                childForm.BringToFront();
+                childForm.Show();
+                return;
+            }
+
+            // Default: host child forms normally (fill)
             activeChildForm = childForm;
             childForm.TopLevel = false;
             childForm.FormBorderStyle = FormBorderStyle.None;
@@ -423,8 +491,6 @@ namespace BookingCareManagement.WinForms
 
         private void CreateNavbar()
         {
-           
-
             CircularPictureBox avatar = new CircularPictureBox
             {
                 Name = "avatar",
@@ -679,7 +745,8 @@ namespace BookingCareManagement.WinForms
                         {
                             if (!(activeChildForm is Specialty))
                             {
-                                var specialtyForm = _serviceProvider.GetRequiredService<Specialty>();
+                                var specialtyForm = _serviceProvider.GetRequiredService<Specialty>
+                                ();
                                 OpenChildForm(specialtyForm);
                             }
                         }
@@ -1155,6 +1222,19 @@ namespace BookingCareManagement.WinForms
 
                 // Show inside content area
                 OpenChildForm(bookings);
+
+                // Activate the "Đặt lịch" sidebar button so UI reflects current view
+                try
+                {
+                    var bookBtn = sidebarPanel.Controls.OfType<SidebarButton>()
+                        .FirstOrDefault(b => (b.Text ?? string.Empty).IndexOf("Đặt lịch", StringComparison.OrdinalIgnoreCase) >= 0
+                                             || (b.Text ?? string.Empty).IndexOf("Đặt", StringComparison.OrdinalIgnoreCase) >= 0);
+                    if (bookBtn != null)
+                    {
+                        SetActiveButton(bookBtn);
+                    }
+                }
+                catch { }
             }
             catch (Exception ex)
             {
