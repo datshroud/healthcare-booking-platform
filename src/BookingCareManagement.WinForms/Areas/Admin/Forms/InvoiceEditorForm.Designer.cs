@@ -58,8 +58,8 @@
             headerPanel.Location = new Point(0, 0);
             headerPanel.Margin = new Padding(3, 4, 3, 4);
             headerPanel.Name = "headerPanel";
-            headerPanel.Padding = new Padding(34, 27, 34, 27);
-            headerPanel.Size = new Size(1600, 107);
+            headerPanel.Padding = new Padding(30, 25, 30, 25);
+            headerPanel.Size = new Size(1600, 100);
             headerPanel.TabIndex = 0;
             // 
             // lblTitle
@@ -67,7 +67,7 @@
             lblTitle.AutoSize = true;
             lblTitle.Font = new Font("Segoe UI", 24F, FontStyle.Bold);
             lblTitle.ForeColor = Color.FromArgb(17, 24, 39);
-            lblTitle.Location = new Point(34, 27);
+            lblTitle.Location = new Point(30, 25);
             lblTitle.Name = "lblTitle";
             lblTitle.Size = new Size(190, 54);
             lblTitle.TabIndex = 0;
@@ -78,11 +78,11 @@
             contentPanel.BackColor = Color.FromArgb(243, 244, 246);
             contentPanel.Controls.Add(whitePanel);
             contentPanel.Dock = DockStyle.Fill;
-            contentPanel.Location = new Point(0, 107);
+            contentPanel.Location = new Point(0, 100);
             contentPanel.Margin = new Padding(3, 4, 3, 4);
             contentPanel.Name = "contentPanel";
-            contentPanel.Padding = new Padding(34, 13, 34, 1333);
-            contentPanel.Size = new Size(1600, 948);
+            contentPanel.Padding = new Padding(30, 15, 30, 15);
+            contentPanel.Size = new Size(1600, 955);
             contentPanel.TabIndex = 1;
             // 
             // whitePanel
@@ -92,11 +92,11 @@
             whitePanel.Controls.Add(invoiceGrid);
             whitePanel.Controls.Add(filterContainerPanel);
             whitePanel.Controls.Add(searchPanel);
-            whitePanel.Location = new Point(34, 13);
+            whitePanel.Location = new Point(30, 15);
             whitePanel.Margin = new Padding(3, 4, 3, 4);
             whitePanel.Name = "whitePanel";
-            whitePanel.Padding = new Padding(34, 13, 34, 67);
-            whitePanel.Size = new Size(1531, 921);
+            whitePanel.Padding = new Padding(30, 15, 30, 15);
+            whitePanel.Size = new Size(1540, 925);
             whitePanel.TabIndex = 0;
             // 
             // invoiceGrid
@@ -107,19 +107,19 @@
             invoiceGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             invoiceGrid.BackgroundColor = Color.White;
             invoiceGrid.BorderStyle = BorderStyle.None;
-            invoiceGrid.ColumnHeadersHeight = 50;
+            invoiceGrid.ColumnHeadersHeight = 45;
             invoiceGrid.Dock = DockStyle.Fill;
-            invoiceGrid.GridColor = Color.FromArgb(243, 244, 246);
-            invoiceGrid.Location = new Point(34, 199);
+            invoiceGrid.GridColor = Color.FromArgb(229, 231, 235);
+            invoiceGrid.Location = new Point(30, 195);
             invoiceGrid.Margin = new Padding(3, 4, 3, 4);
             invoiceGrid.MultiSelect = false;
             invoiceGrid.Name = "invoiceGrid";
             invoiceGrid.ReadOnly = true;
             invoiceGrid.RowHeadersVisible = false;
             invoiceGrid.RowHeadersWidth = 51;
-            invoiceGrid.RowTemplate.Height = 60;
+            invoiceGrid.RowTemplate.Height = 55;
             invoiceGrid.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            invoiceGrid.Size = new Size(1463, 655);
+            invoiceGrid.Size = new Size(1480, 715);
             invoiceGrid.TabIndex = 1;
             // 
             // filterContainerPanel
@@ -127,10 +127,11 @@
             filterContainerPanel.BackColor = Color.White;
             filterContainerPanel.Controls.Add(filterPanel);
             filterContainerPanel.Dock = DockStyle.Top;
-            filterContainerPanel.Location = new Point(34, 106);
+            filterContainerPanel.Location = new Point(30, 110);
             filterContainerPanel.Margin = new Padding(3, 4, 3, 4);
             filterContainerPanel.Name = "filterContainerPanel";
-            filterContainerPanel.Size = new Size(1463, 93);
+            filterContainerPanel.Padding = new Padding(0, 10, 0, 10);
+            filterContainerPanel.Size = new Size(1480, 85);
             filterContainerPanel.TabIndex = 2;
             filterContainerPanel.Visible = false;
             // 
@@ -141,24 +142,26 @@
             filterPanel.Controls.Add(btnServiceFilter);
             filterPanel.Controls.Add(btnCustomerFilter);
             filterPanel.Dock = DockStyle.Fill;
-            filterPanel.Location = new Point(0, 0);
+            filterPanel.Location = new Point(0, 10);
             filterPanel.Margin = new Padding(3, 4, 3, 4);
             filterPanel.Name = "filterPanel";
-            filterPanel.Padding = new Padding(11, 13, 11, 13);
-            filterPanel.Size = new Size(1463, 93);
+            filterPanel.Padding = new Padding(10, 10, 10, 10);
+            filterPanel.Size = new Size(1480, 65);
             filterPanel.TabIndex = 0;
             // 
             // btnStatusFilter
             // 
             btnStatusFilter.BackColor = Color.White;
             btnStatusFilter.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            btnStatusFilter.FlatAppearance.BorderSize = 1;
             btnStatusFilter.FlatStyle = FlatStyle.Flat;
-            btnStatusFilter.Font = new Font("Segoe UI", 10F);
-            btnStatusFilter.Location = new Point(365, 20);
+            btnStatusFilter.Font = new Font("Segoe UI", 9.75F);
+            btnStatusFilter.ForeColor = Color.FromArgb(55, 65, 81);
+            btnStatusFilter.Location = new Point(350, 8);
             btnStatusFilter.Margin = new Padding(3, 4, 3, 4);
             btnStatusFilter.Name = "btnStatusFilter";
-            btnStatusFilter.Padding = new Padding(11, 0, 6, 0);
-            btnStatusFilter.Size = new Size(171, 53);
+            btnStatusFilter.Padding = new Padding(10, 0, 8, 0);
+            btnStatusFilter.Size = new Size(150, 48);
             btnStatusFilter.TabIndex = 3;
             btnStatusFilter.Text = "⚪ Trạng thái";
             btnStatusFilter.TextAlign = ContentAlignment.MiddleLeft;
@@ -168,13 +171,15 @@
             // 
             btnServiceFilter.BackColor = Color.White;
             btnServiceFilter.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            btnServiceFilter.FlatAppearance.BorderSize = 1;
             btnServiceFilter.FlatStyle = FlatStyle.Flat;
-            btnServiceFilter.Font = new Font("Segoe UI", 10F);
-            btnServiceFilter.Location = new Point(188, 20);
+            btnServiceFilter.Font = new Font("Segoe UI", 9.75F);
+            btnServiceFilter.ForeColor = Color.FromArgb(55, 65, 81);
+            btnServiceFilter.Location = new Point(175, 8);
             btnServiceFilter.Margin = new Padding(3, 4, 3, 4);
             btnServiceFilter.Name = "btnServiceFilter";
-            btnServiceFilter.Padding = new Padding(11, 0, 6, 0);
-            btnServiceFilter.Size = new Size(171, 53);
+            btnServiceFilter.Padding = new Padding(10, 0, 8, 0);
+            btnServiceFilter.Size = new Size(150, 48);
             btnServiceFilter.TabIndex = 2;
             btnServiceFilter.Text = "💼 Dịch vụ";
             btnServiceFilter.TextAlign = ContentAlignment.MiddleLeft;
@@ -184,14 +189,15 @@
             // 
             btnCustomerFilter.BackColor = Color.White;
             btnCustomerFilter.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            btnCustomerFilter.FlatAppearance.BorderSize = 1;
             btnCustomerFilter.FlatStyle = FlatStyle.Flat;
-            btnCustomerFilter.Font = new Font("Segoe UI", 10F);
-            btnCustomerFilter.ForeColor = Color.Black;
-            btnCustomerFilter.Location = new Point(11, 20);
+            btnCustomerFilter.Font = new Font("Segoe UI", 9.75F);
+            btnCustomerFilter.ForeColor = Color.FromArgb(55, 65, 81);
+            btnCustomerFilter.Location = new Point(0, 8);
             btnCustomerFilter.Margin = new Padding(3, 4, 3, 4);
             btnCustomerFilter.Name = "btnCustomerFilter";
-            btnCustomerFilter.Padding = new Padding(11, 0, 6, 0);
-            btnCustomerFilter.Size = new Size(171, 53);
+            btnCustomerFilter.Padding = new Padding(10, 0, 8, 0);
+            btnCustomerFilter.Size = new Size(150, 48);
             btnCustomerFilter.TabIndex = 0;
             btnCustomerFilter.Text = "👥 Khách hàng";
             btnCustomerFilter.TextAlign = ContentAlignment.MiddleLeft;
@@ -203,22 +209,23 @@
             searchPanel.Controls.Add(btnFilter);
             searchPanel.Controls.Add(txtSearch);
             searchPanel.Dock = DockStyle.Top;
-            searchPanel.Location = new Point(34, 13);
+            searchPanel.Location = new Point(30, 15);
             searchPanel.Margin = new Padding(3, 4, 3, 4);
             searchPanel.Name = "searchPanel";
-            searchPanel.Size = new Size(1463, 93);
+            searchPanel.Padding = new Padding(10, 10, 10, 10);
+            searchPanel.Size = new Size(1480, 75);
             searchPanel.TabIndex = 0;
             // 
             // btnFilter
             // 
             btnFilter.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnFilter.BackColor = Color.FromArgb(229, 231, 235);
+            btnFilter.BackColor = Color.FromArgb(243, 244, 246);
             btnFilter.FlatAppearance.BorderSize = 0;
             btnFilter.FlatStyle = FlatStyle.Flat;
-            btnFilter.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+            btnFilter.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold);
             btnFilter.ForeColor = Color.FromArgb(55, 65, 81);
-            btnFilter.Location = new Point(1300, 27);
-            btnFilter.Margin = new Padding(3, 4, 3, 4);
+            btnFilter.Location = new Point(1330, 17);
+            btnFilter.Margin = new Padding(6, 4, 6, 4);
             btnFilter.Name = "btnFilter";
             btnFilter.Size = new Size(140, 40);
             btnFilter.TabIndex = 1;
@@ -230,12 +237,12 @@
             // 
             txtSearch.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             txtSearch.BorderStyle = BorderStyle.FixedSingle;
-            txtSearch.Font = new Font("Segoe UI", 11F);
-            txtSearch.Location = new Point(23, 27);
+            txtSearch.Font = new Font("Segoe UI", 10.5F);
+            txtSearch.Location = new Point(12, 19);
             txtSearch.Margin = new Padding(3, 4, 3, 4);
             txtSearch.Name = "txtSearch";
             txtSearch.PlaceholderText = "🔍 Tìm kiếm hóa đơn...";
-            txtSearch.Size = new Size(1260, 32);
+            txtSearch.Size = new Size(1210, 36);
             txtSearch.TabIndex = 0;
             // 
             // InvoiceEditorForm

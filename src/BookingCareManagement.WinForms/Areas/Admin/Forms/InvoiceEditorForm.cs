@@ -15,6 +15,7 @@ using System.Text.Json;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Net.Http.Json;
+using System.Drawing.Drawing2D;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 {
@@ -234,154 +235,281 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 HeaderText = "Tổng tiền",
                 FillWeight = 10
             });
-            invoiceGrid.Columns.Add(new DataGridViewButtonColumn
+
+            // Action column - minimal width, no visible box - will be custom painted
+            var actionCol = new DataGridViewButtonColumn
             {
                 Name = "Action",
                 HeaderText = "",
-                Text = "⋯",
+                Text = "⋮",
                 UseColumnTextForButtonValue = true,
-                FillWeight = 5
-            });
+                FillWeight = 5,
+                Width = 48,
+                FlatStyle = FlatStyle.Flat
+            };
+            invoiceGrid.Columns.Add(actionCol);
+
+            // Column appearance tweaks
+            invoiceGrid.Columns["Action"].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            invoiceGrid.Columns["Action"].Resizable = DataGridViewTriState.False;
+            invoiceGrid.Columns["Action"].SortMode = DataGridViewColumnSortMode.NotSortable;
+
+            // Register custom painting for the action column
+            invoiceGrid.CellPainting -= InvoiceGrid_CellPainting;
+            invoiceGrid.CellPainting += InvoiceGrid_CellPainting;
+            invoiceGrid.CellMouseMove -= InvoiceGrid_CellMouseMove;
+            invoiceGrid.CellMouseMove += InvoiceGrid_CellMouseMove;
+            invoiceGrid.CellMouseLeave -= InvoiceGrid_CellMouseLeave;
+            invoiceGrid.CellMouseLeave += InvoiceGrid_CellMouseLeave;
+
+            // Ensure click handlers wired so menu appears when user clicks the action cell
+            invoiceGrid.CellContentClick -= InvoiceGrid_CellContentClick;
+            invoiceGrid.CellContentClick += InvoiceGrid_CellContentClick;
+            invoiceGrid.CellClick -= InvoiceGrid_CellClick;
+            invoiceGrid.CellClick += InvoiceGrid_CellClick;
+        }
+
+        private void InvoiceGrid_CellClick(object? sender, DataGridViewCellEventArgs e)
+        {
+            // Fallback: when user clicks cell (not content), treat as content click for Action column
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+            if (invoiceGrid.Columns[e.ColumnIndex].Name == "Action")
+            {
+                InvoiceGrid_CellContentClick(sender, e);
+            }
         }
 
         private void ApplyGridStyling()
         {
             var vietnameseFont = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point);
-            var vietnameseFontBold = new Font("Segoe UI", 10F, FontStyle.Bold, GraphicsUnit.Point);
+            var vietnameseFontBold = new Font("Segoe UI", 10.5F, FontStyle.Bold, GraphicsUnit.Point);
 
-            // Column header style
+            // Column header style - Segoe UI, light background
             invoiceGrid.ColumnHeadersDefaultCellStyle = new DataGridViewCellStyle
             {
-                BackColor = Color.White,
-                ForeColor = Color.FromArgb(107, 114, 128),
+                BackColor = Color.FromArgb(249, 250, 251),
+                ForeColor = Color.FromArgb(55, 65, 81),
                 Font = vietnameseFontBold,
                 Alignment = DataGridViewContentAlignment.MiddleLeft,
-                Padding = new Padding(15, 0, 0, 0)
+                Padding = new Padding(12, 8, 0, 8)
             };
 
             // Default cell style
             invoiceGrid.DefaultCellStyle = new DataGridViewCellStyle
             {
                 BackColor = Color.White,
-                ForeColor = Color.FromArgb(17, 24, 39),
+                ForeColor = Color.FromArgb(30, 41, 59),
                 SelectionBackColor = Color.FromArgb(243, 244, 246),
                 SelectionForeColor = Color.FromArgb(17, 24, 39),
-                Padding = new Padding(15, 10, 0, 10),
+                Padding = new Padding(12, 8, 0, 8),
                 Font = vietnameseFont
             };
 
-            // Alternating row style
+            // Alternating row style - subtle gray background
             invoiceGrid.AlternatingRowsDefaultCellStyle = new DataGridViewCellStyle
             {
                 BackColor = Color.FromArgb(249, 250, 251),
-                Font = vietnameseFont
+                ForeColor = Color.FromArgb(30, 41, 59),
+                Font = vietnameseFont,
+                Padding = new Padding(12, 8, 0, 8)
             };
+
+            // Remove default button-looking style for button cells
+            invoiceGrid.EnableHeadersVisualStyles = false;
+            invoiceGrid.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
 
             // Style cho cột Status - tô màu nền
+            invoiceGrid.CellFormatting -= InvoiceGrid_CellFormatting;
             invoiceGrid.CellFormatting += InvoiceGrid_CellFormatting;
-            invoiceGrid.CellContentClick += InvoiceGrid_CellContentClick;
+
+            // Ensure action column painting registered (in case columns recreated)
+            invoiceGrid.CellPainting -= InvoiceGrid_CellPainting;
+            invoiceGrid.CellPainting += InvoiceGrid_CellPainting;
         }
 
-        private void InitializePaginationControls()
+        private void InvoiceGrid_CellPainting(object? sender, DataGridViewCellPaintingEventArgs e)
         {
-            // Create a small panel under invoiceGrid to host pagination controls
-            var paginationPanel = new Panel
+            if (e.RowIndex < 0 || invoiceGrid.Columns[e.ColumnIndex].Name != "Action")
             {
-                Height = 40,
-                Dock = DockStyle.Bottom,
-                BackColor = Color.Transparent
-            };
+                return;
+            }
 
-            _btnPrevPage = new Button
-            {
-                Text = "Trước",
-                Width = 80,
-                Height = 30,
-                Left = 10,
-                Top = 5
-            };
-            _btnPrevPage.Click += (s, e) => ChangePage(-1);
+            e.Handled = true;
 
-            _btnNextPage = new Button
-            {
-                Text = "Tiếp",
-                Width = 80,
-                Height = 30,
-                Left = 100,
-                Top = 5
-            };
-            _btnNextPage.Click += (s, e) => ChangePage(1);
+            // Paint background normally (no focus rectangle)
+            e.PaintBackground(e.CellBounds, true);
 
-            _lblPageInfo = new Label
-            {
-                AutoSize = false,
-                Width = 240,
-                Height = 30,
-                Left = 200,
-                Top = 8,
-                TextAlign = ContentAlignment.MiddleLeft
-            };
+            var bounds = e.CellBounds;
+            var g = e.Graphics;
 
-            _cbPageSize = new ComboBox
+            // Determine center point for the three dots
+            int centerX = bounds.Left + bounds.Width / 2;
+            int centerY = bounds.Top + bounds.Height / 2;
+
+            // dots style
+            var dotColor = Color.FromArgb(107, 114, 128);
+            int dotRadius = 3; // small circles
+            int spacing = 8; // vertical spacing between dots
+
+            // Draw three vertical dots (top, center, bottom)
+            for (int i = -1; i <= 1; i++)
             {
-                Width = 80,
-                Height = 30,
-                Left = 460,
-                Top = 5,
-                DropDownStyle = ComboBoxStyle.DropDownList
-            };
-            _cbPageSize.Items.AddRange(new object[] { "5", "10", "20", "50" });
-            _cbPageSize.SelectedItem = _pageSize.ToString();
-            _cbPageSize.SelectedIndexChanged += (s, e) =>
+                int y = centerY + i * spacing - dotRadius;
+                var rect = new Rectangle(centerX - dotRadius, y, dotRadius * 2, dotRadius * 2);
+                using var brush = new SolidBrush(dotColor);
+                g.FillEllipse(brush, rect);
+            }
+
+            // If mouse is over this cell, draw subtle hover background
+            if (_hoveredActionCell.HasValue && _hoveredActionCell.Value.RowIndex == e.RowIndex && _hoveredActionCell.Value.ColumnIndex == e.ColumnIndex)
             {
-                if (int.TryParse(_cbPageSize.SelectedItem?.ToString(), out var newSize) && newSize > 0)
+                using var hoverBrush = new SolidBrush(Color.FromArgb(235, 243, 255));
+                var hoverRect = bounds;
+                hoverRect.Inflate(-6, -8);
+                var path = RoundedRectPath(hoverRect, 6);
+                g.FillPath(hoverBrush, path);
+
+                // redraw dots above hover
+                for (int i = -1; i <= 1; i++)
                 {
-                    _pageSize = newSize;
-                    _currentPage = 1;
-                    RenderPage();
+                    int y = centerY + i * spacing - dotRadius;
+                    var rect = new Rectangle(centerX - dotRadius, y, dotRadius * 2, dotRadius * 2);
+                    using var brush = new SolidBrush(Color.FromArgb(37, 99, 235));
+                    g.FillEllipse(brush, rect);
                 }
-            };
-
-            // Add controls to panel
-            paginationPanel.Controls.Add(_btnPrevPage);
-            paginationPanel.Controls.Add(_btnNextPage);
-            paginationPanel.Controls.Add(_lblPageInfo);
-            paginationPanel.Controls.Add(_cbPageSize);
-
-            // Add panel to form (below grid). Ensure it's placed above other docked controls
-            this.Controls.Add(paginationPanel);
-            paginationPanel.BringToFront();
+            }
         }
 
-        private void ChangePage(int delta)
+        private GraphicsPath RoundedRectPath(Rectangle rect, int radius)
         {
-            _currentPage += delta;
-            if (_currentPage < 1) _currentPage = 1;
-            if (_currentPage > _totalPages) _currentPage = _totalPages;
-            RenderPage();
+            var path = new GraphicsPath();
+            int d = radius * 2;
+            path.AddArc(rect.Left, rect.Top, d, d, 180, 90);
+            path.AddArc(rect.Right - d, rect.Top, d, d, 270, 90);
+            path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+            path.AddArc(rect.Left, rect.Bottom - d, d, d, 90, 90);
+            path.CloseFigure();
+            return path;
         }
 
-        private void UpdatePaginationControls()
+        private (int RowIndex, int ColumnIndex)? _hoveredActionCell = null;
+
+        private void InvoiceGrid_CellMouseMove(object? sender, DataGridViewCellMouseEventArgs e)
         {
-            if (_lblPageInfo != null)
+            if (e.RowIndex >= 0 && e.ColumnIndex >= 0 && invoiceGrid.Columns[e.ColumnIndex].Name == "Action")
             {
-                _lblPageInfo.Text = $"Trang {_currentPage} / {_totalPages}   (Tổng {_filteredInvoices.Count})";
+                this.Cursor = Cursors.Hand;
+                _hoveredActionCell = (e.RowIndex, e.ColumnIndex);
+                invoiceGrid.InvalidateCell(e.ColumnIndex, e.RowIndex);
+            }
+            else
+            {
+                if (_hoveredActionCell.HasValue)
+                {
+                    var prev = _hoveredActionCell.Value;
+                    _hoveredActionCell = null;
+                    invoiceGrid.InvalidateCell(prev.ColumnIndex, prev.RowIndex);
+                }
+                this.Cursor = Cursors.Default;
+            }
+        }
+
+        private void InvoiceGrid_CellMouseLeave(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (_hoveredActionCell.HasValue)
+            {
+                var prev = _hoveredActionCell.Value;
+                _hoveredActionCell = null;
+                invoiceGrid.InvalidateCell(prev.ColumnIndex, prev.RowIndex);
+            }
+            this.Cursor = Cursors.Default;
+        }
+
+        private Bitmap CreateMenuIcon(string symbol, Color bg, Color fg)
+        {
+            int size = 24;
+            var bmp = new Bitmap(size, size);
+            using var g = Graphics.FromImage(bmp);
+            g.SmoothingMode = SmoothingMode.AntiAlias;
+            g.Clear(Color.Transparent);
+
+            // Draw background circle
+            using (var brush = new SolidBrush(bg))
+            {
+                g.FillEllipse(brush, 0, 0, size - 1, size - 1);
             }
 
-            if (_btnPrevPage != null)
+            // Draw symbol centered
+            using var f = new Font("Segoe UI", 12F, FontStyle.Regular, GraphicsUnit.Pixel);
+            var sz = g.MeasureString(symbol, f);
+            using var sb = new SolidBrush(fg);
+            g.DrawString(symbol, f, sb, (size - sz.Width) / 2f, (size - sz.Height) / 2f - 1);
+
+            return bmp;
+        }
+
+        private sealed class RoundedToolStripRenderer : ToolStripProfessionalRenderer
+        {
+            protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e)
             {
-                _btnPrevPage.Enabled = _currentPage > 1;
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                var rect = new Rectangle(Point.Empty, e.ToolStrip.Size);
+                using var path = new GraphicsPath();
+                int radius = 8;
+                int d = radius * 2;
+                path.AddArc(rect.Left, rect.Top, d, d, 180, 90);
+                path.AddArc(rect.Right - d, rect.Top, d, d, 270, 90);
+                path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+                path.AddArc(rect.Left, rect.Bottom - d, d, d, 90, 90);
+                path.CloseFigure();
+
+                using var brush = new SolidBrush(Color.White);
+                g.FillPath(brush, path);
             }
 
-            if (_btnNextPage != null)
+            protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
             {
-                _btnNextPage.Enabled = _currentPage < _totalPages;
+                var g = e.Graphics;
+                g.SmoothingMode = SmoothingMode.AntiAlias;
+                var rect = new Rectangle(Point.Empty, e.ToolStrip.Size);
+                rect.Inflate(-1, -1);
+                using var path = new GraphicsPath();
+                int radius = 8;
+                int d = radius * 2;
+                path.AddArc(rect.Left, rect.Top, d, d, 180, 90);
+                path.AddArc(rect.Right - d, rect.Top, d, d, 270, 90);
+                path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90);
+                path.AddArc(rect.Left, rect.Bottom - d, d, d, 90, 90);
+                path.CloseFigure();
+
+                using var pen = new Pen(Color.FromArgb(229, 231, 235));
+                g.DrawPath(pen, path);
             }
 
-            if (_cbPageSize != null)
+            protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
             {
-                if (_cbPageSize.SelectedItem == null)
-                    _cbPageSize.SelectedItem = _pageSize.ToString();
+                var g = e.Graphics;
+                var bounds = new Rectangle(Point.Empty, e.Item.Bounds.Size);
+
+                if (e.Item.Selected)
+                {
+                    using var brush = new SolidBrush(Color.FromArgb(248, 250, 252));
+                    g.FillRectangle(brush, bounds);
+                }
+                else
+                {
+                    using var brush = new SolidBrush(Color.White);
+                    g.FillRectangle(brush, bounds);
+                }
+            }
+
+            protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)
+            {
+                var g = e.Graphics;
+                var rect = e.Item.Bounds;
+                using var pen = new Pen(Color.FromArgb(238, 242, 246));
+                g.DrawLine(pen, rect.Left + 8, rect.Top + rect.Height / 2, rect.Right - 8, rect.Top + rect.Height / 2);
             }
         }
 
@@ -398,28 +526,48 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 
                 if (invoice == null) return;
 
-                var contextMenu = new ContextMenuStrip();
-                
+                var contextMenu = new ContextMenuStrip
+                {
+                    Font = new Font("Segoe UI", 10F),
+                    ShowImageMargin = true,
+                    Renderer = new RoundedToolStripRenderer()
+                };
+
                 if (!invoice.Status.Equals("Paid", StringComparison.OrdinalIgnoreCase))
                 {
-                    contextMenu.Items.Add("✅ Đánh dấu đã thanh toán", null, async (s, args) => 
+                    var markPaidItem = new ToolStripMenuItem("Đánh dấu đã thanh toán")
                     {
-                        await MarkAsPaidAsync(invoice);
-                    });
+                        Image = CreateMenuIcon("✔", Color.FromArgb(16, 185, 129), Color.White),
+                        ImageScaling = ToolStripItemImageScaling.SizeToFit,
+                        Padding = new Padding(12, 8, 12, 8)
+                    };
+                    markPaidItem.Click += async (s, args) => await MarkAsPaidAsync(invoice);
+                    contextMenu.Items.Add(markPaidItem);
+
+                    // separator
+                    contextMenu.Items.Add(new ToolStripSeparator());
                 }
-                
-                contextMenu.Items.Add("📄 Tải PDF", null, async (s, args) => 
+
+                var downloadItem = new ToolStripMenuItem("Tải xuống")
                 {
-                    await DownloadPdfAsync(invoice);
-                });
-                
-                contextMenu.Items.Add("👁️ Xem chi tiết", null, (s, args) => 
+                    Image = CreateMenuIcon("↓", Color.FromArgb(241, 245, 249), Color.FromArgb(55, 65, 81)),
+                    ImageScaling = ToolStripItemImageScaling.SizeToFit,
+                    Padding = new Padding(12, 8, 12, 8)
+                };
+                downloadItem.Click += async (s, args) => await DownloadPdfAsync(invoice);
+                contextMenu.Items.Add(downloadItem);
+
+                var sendItem = new ToolStripMenuItem("Gửi hóa đơn")
                 {
-                    ShowInvoiceDetails(invoice);
-                });
+                    Image = CreateMenuIcon("✈", Color.FromArgb(241, 245, 249), Color.FromArgb(55, 65, 81)),
+                    ImageScaling = ToolStripItemImageScaling.SizeToFit,
+                    Padding = new Padding(12, 8, 12, 8)
+                };
+                sendItem.Click += (s, args) => ShowInvoiceDetails(invoice);
+                contextMenu.Items.Add(sendItem);
 
                 var cellRect = invoiceGrid.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, true);
-                var point = invoiceGrid.PointToScreen(new Point(cellRect.Left, cellRect.Bottom));
+                var point = invoiceGrid.PointToScreen(new Point(cellRect.Left + 8, cellRect.Bottom));
                 contextMenu.Show(point);
             }
         }
@@ -477,16 +625,18 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 if (status.Contains("Pending") || status.Contains("Đang chờ"))
                 {
                     e.CellStyle.BackColor = Color.FromArgb(254, 243, 199); // Màu vàng nhạt
-                    e.CellStyle.ForeColor = Color.FromArgb(133, 77, 14);
-                    e.CellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+                    e.CellStyle.ForeColor = Color.FromArgb(120, 75, 0);
+                    e.CellStyle.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
                     e.CellStyle.Padding = new Padding(8, 4, 8, 4);
+                    e.CellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
                 }
                 else if (status.Contains("Paid") || status.Contains("Đã thanh toán"))
                 {
                     e.CellStyle.BackColor = Color.FromArgb(209, 250, 229); // Màu xanh lá nhạt
-                    e.CellStyle.ForeColor = Color.FromArgb(22, 101, 52);
-                    e.CellStyle.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+                    e.CellStyle.ForeColor = Color.FromArgb(5, 100, 68);
+                    e.CellStyle.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
                     e.CellStyle.Padding = new Padding(8, 4, 8, 4);
+                    e.CellStyle.Alignment = DataGridViewContentAlignment.MiddleLeft;
                 }
             }
         }
@@ -634,8 +784,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private void ResetFilterButtonStyle(Button button)
         {
             button.BackColor = Color.White;
-            button.ForeColor = Color.Black;
-            button.Font = new Font("Segoe UI", 10F, FontStyle.Regular);
+            button.ForeColor = Color.FromArgb(55, 65, 81);
+            button.Font = new Font("Segoe UI", 9.75F, FontStyle.Regular);
         }
 
         private CheckedListBox CreateFilterDropdown(Button parentButton, string[] items)
@@ -647,9 +797,10 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 BorderStyle = BorderStyle.FixedSingle,
                 BackColor = Color.White,
                 AutoSize = false,
-                Width = parentButton.Width + 100,
+                Width = parentButton.Width + 80,
                 Height = Math.Min(items.Length * 25 + 50, 220),
-                Padding = new Padding(5)
+                Padding = new Padding(5),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left
             };
 
             // TextBox tìm kiếm
@@ -659,7 +810,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point),
                 Dock = DockStyle.Top,
-                Height = 25
+                Height = 28,
+                Margin = new Padding(0, 0, 0, 5)
             };
 
             // CheckedListBox với font hỗ trợ tiếng Việt
@@ -668,7 +820,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 CheckOnClick = true,
                 BorderStyle = BorderStyle.None,
                 BackColor = Color.White,
-                Font = new Font("Segoe UI", 10F, FontStyle.Regular, GraphicsUnit.Point),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Regular, GraphicsUnit.Point),
                 Dock = DockStyle.Fill,
                 IntegralHeight = false
             };
@@ -716,7 +868,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
                     dropdownPanel.Location = new Point(
                         btnLocationInForm.X,
-                        btnLocationInForm.Y + parentButton.Height + 5
+                        btnLocationInForm.Y + parentButton.Height + 8
                     );
 
                     dropdownPanel.BringToFront();
@@ -737,7 +889,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                         parentButton.Text = $"{baseText} ({checkedCount})";
                         parentButton.BackColor = Color.FromArgb(219, 234, 254);
                         parentButton.ForeColor = Color.FromArgb(37, 99, 235);
-                        parentButton.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
+                        parentButton.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
                     }
                     else
                     {
@@ -776,17 +928,150 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             {
                 btnFilter.BackColor = Color.FromArgb(37, 99, 235);
                 btnFilter.ForeColor = Color.White;
+                btnFilter.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold);
             }
             else
             {
-                btnFilter.BackColor = Color.FromArgb(229, 231, 235);
+                btnFilter.BackColor = Color.FromArgb(243, 244, 246);
                 btnFilter.ForeColor = Color.FromArgb(55, 65, 81);
+                btnFilter.Font = new Font("Segoe UI", 9.75F, FontStyle.Bold);
 
                 // Ẩn tất cả dropdown khi đóng filter panel
                 foreach (var dropdown in _filterDropdowns)
                 {
                     dropdown.Parent?.Hide();
                 }
+            }
+        }
+
+        private void InitializePaginationControls()
+        {
+            // Create a small panel under invoiceGrid to host pagination controls
+            var paginationPanel = new Panel
+            {
+                Height = 50,
+                Dock = DockStyle.Bottom,
+                BackColor = Color.White,
+                Padding = new Padding(10, 10, 10, 10)
+            };
+
+            // Place the pagination panel inside the whitePanel so it aligns with whitePanel's padding
+            // Try to add to whitePanel if available
+            try
+            {
+                whitePanel.Controls.Add(paginationPanel);
+            }
+            catch
+            {
+                this.Controls.Add(paginationPanel);
+            }
+
+            _btnPrevPage = new Button
+            {
+                Text = "◀ Trước",
+                Width = 100,
+                Height = 35,
+                Left = 15,
+                Top = 8,
+                Font = new Font("Segoe UI", 9.5F),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(243, 244, 246),
+                ForeColor = Color.FromArgb(55, 65, 81)
+            };
+            _btnPrevPage.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            _btnPrevPage.FlatAppearance.BorderSize = 1;
+            _btnPrevPage.Click += (s, e) => ChangePage(-1);
+
+            _btnNextPage = new Button
+            {
+                Text = "Tiếp ▶",
+                Width = 100,
+                Height = 35,
+                Left = 125,
+                Top = 8,
+                Font = new Font("Segoe UI", 9.5F),
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(243, 244, 246),
+                ForeColor = Color.FromArgb(55, 65, 81)
+            };
+            _btnNextPage.FlatAppearance.BorderColor = Color.FromArgb(209, 213, 219);
+            _btnNextPage.FlatAppearance.BorderSize = 1;
+            _btnNextPage.Click += (s, e) => ChangePage(1);
+
+            _lblPageInfo = new Label
+            {
+                AutoSize = false,
+                Width = 300,
+                Height = 35,
+                Left = 240,
+                Top = 8,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = new Font("Segoe UI", 9.5F),
+                ForeColor = Color.FromArgb(107, 114, 128)
+            };
+
+            _cbPageSize = new ComboBox
+            {
+                Width = 80,
+                Height = 35,
+                Left = 560,
+                Top = 8,
+                DropDownStyle = ComboBoxStyle.DropDownList,
+                Font = new Font("Segoe UI", 9.5F),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(55, 65, 81)
+            };
+            _cbPageSize.Items.AddRange(new object[] { "5", "10", "20", "50" });
+            _cbPageSize.SelectedItem = _pageSize.ToString();
+            _cbPageSize.SelectedIndexChanged += (s, e) =>
+            {
+                if (int.TryParse(_cbPageSize.SelectedItem?.ToString(), out var newSize) && newSize > 0)
+                {
+                    _pageSize = newSize;
+                    _currentPage = 1;
+                    RenderPage();
+                }
+            };
+
+            // Add controls to panel
+            paginationPanel.Controls.Add(_btnPrevPage);
+            paginationPanel.Controls.Add(_btnNextPage);
+            paginationPanel.Controls.Add(_lblPageInfo);
+            paginationPanel.Controls.Add(_cbPageSize);
+
+            // Add panel to form (below grid). Ensure it's placed above other docked controls
+            paginationPanel.BringToFront();
+        }
+
+        private void ChangePage(int delta)
+        {
+            _currentPage += delta;
+            if (_currentPage < 1) _currentPage = 1;
+            if (_currentPage > _totalPages) _currentPage = _totalPages;
+            RenderPage();
+        }
+
+        private void UpdatePaginationControls()
+        {
+            if (_lblPageInfo != null)
+            {
+                _lblPageInfo.Text = $"Trang {_currentPage} / {_totalPages}   (Tổng {_filteredInvoices.Count})";
+            }
+
+            if (_btnPrevPage != null)
+            {
+                _btnPrevPage.Enabled = _currentPage > 1;
+            }
+
+            if (_btnNextPage != null)
+            {
+                _btnNextPage.Enabled = _currentPage < _totalPages;
+            }
+
+            if (_cbPageSize != null)
+            {
+                if (_cbPageSize.SelectedItem == null)
+                    _cbPageSize.SelectedItem = _pageSize.ToString();
             }
         }
     }
