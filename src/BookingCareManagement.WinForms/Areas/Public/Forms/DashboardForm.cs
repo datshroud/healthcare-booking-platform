@@ -46,6 +46,7 @@ public sealed class DashboardForm : Form
             ConfigureTrendChart();
             ConfigureSparklineCharts();
             RegisterEventHandlers();
+            ApplyDashboardStyling();
             flowLayoutPanel1.SizeChanged += (_, _) => AdjustTrendPanelWidth();
             Resize += (_, _) => AdjustTrendPanelWidth();
             AdjustTrendPanelWidth();
@@ -260,24 +261,183 @@ public sealed class DashboardForm : Form
         {
             return;
         }
+        ApplyDashboardLayout();
+    }
 
-        var available = flowLayoutPanel1.ClientSize.Width - panelXuHuong.Margin.Left - panelXuHuong.Margin.Right;
-        if (available <= 0)
+    private void ApplyDashboardStyling()
+    {
+        BackColor = Color.FromArgb(248, 250, 252);
+        HeaderPanel.BackColor = Color.FromArgb(248, 250, 252);
+        HeaderPanel.Padding = new Padding(28, 16, 28, 12);
+        HeaderPanel.Height = 96;
+
+        lbTitle.Font = new Font("Segoe UI", 20F, FontStyle.Bold);
+        lbTitle.ForeColor = Color.FromArgb(15, 23, 42);
+        label2.Font = new Font("Segoe UI", 10.5F, FontStyle.Regular);
+        label2.ForeColor = Color.FromArgb(100, 116, 139);
+
+        flowLayoutPanel1.Dock = DockStyle.Fill;
+        flowLayoutPanel1.Location = new Point(0, HeaderPanel.Bottom);
+        flowLayoutPanel1.Padding = new Padding(28, 8, 28, 28);
+        flowLayoutPanel1.BackColor = BackColor;
+        flowLayoutPanel1.AutoScroll = true;
+        flowLayoutPanel1.WrapContents = true;
+
+        StyleCard(panelKhachHang);
+        StyleCard(panelDoanhThu);
+        StyleCard(panelLichHen);
+        StyleCard(panelXuHuong);
+        StyleCard(panel1);
+        StyleCard(panelHieuXuat);
+
+        ConfigureGridStyle(dgvCuocHen);
+        ConfigureGridStyle(dgvChuyenKhoa);
+        ConfigureGridStyle(dgvBacSi);
+
+        label5.Font = new Font("Segoe UI", 11.5F, FontStyle.Bold);
+        label7.Font = new Font("Segoe UI", 11.5F, FontStyle.Bold);
+        label8.Font = new Font("Segoe UI", 11.5F, FontStyle.Bold);
+        label1.Font = new Font("Segoe UI", 10.5F);
+        label3.Font = new Font("Segoe UI", 10.5F);
+        label4.Font = new Font("Segoe UI", 10.5F);
+
+        lbKhachHang.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
+        lbDoanhThu.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
+        lbLichHen.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
+
+        cobKhachHang.Font = new Font("Segoe UI", 9F);
+        cobDoanhThu.Font = new Font("Segoe UI", 9F);
+        cobLichHen.Font = new Font("Segoe UI", 9F);
+        cobXuHuong.Font = new Font("Segoe UI", 9F);
+        cobCuocHen.Font = new Font("Segoe UI", 9F);
+        cobTrangThai.Font = new Font("Segoe UI", 9F);
+        cobHieuXuat.Font = new Font("Segoe UI", 9F);
+    }
+
+    private void StyleCard(Panel panel)
+    {
+        panel.BackColor = Color.White;
+        panel.BorderStyle = BorderStyle.FixedSingle;
+        panel.AutoSize = false;
+        panel.Margin = new Padding(0, 0, 24, 24);
+    }
+
+    private void ConfigureGridStyle(DataGridView grid)
+    {
+        grid.BackgroundColor = Color.White;
+        grid.BorderStyle = BorderStyle.None;
+        grid.RowHeadersVisible = false;
+        grid.EnableHeadersVisualStyles = false;
+        grid.ColumnHeadersDefaultCellStyle.BackColor = Color.FromArgb(241, 245, 249);
+        grid.ColumnHeadersDefaultCellStyle.ForeColor = Color.FromArgb(15, 23, 42);
+        grid.DefaultCellStyle.BackColor = Color.White;
+        grid.DefaultCellStyle.ForeColor = Color.FromArgb(30, 41, 59);
+        grid.GridColor = Color.FromArgb(226, 232, 240);
+    }
+
+    private void ApplyDashboardLayout()
+    {
+        if (flowLayoutPanel1 is null)
         {
             return;
         }
 
-        panelXuHuong.Width = available;
-
-        if (chartAppointmentTrend is not null)
+        var availableWidth = flowLayoutPanel1.ClientSize.Width - flowLayoutPanel1.Padding.Left - flowLayoutPanel1.Padding.Right;
+        if (availableWidth <= 0)
         {
-            var width = panelXuHuong.Width - chartAppointmentTrend.Left - 20;
-            chartAppointmentTrend.Width = Math.Max(200, width);
-            var height = panelXuHuong.Height - chartAppointmentTrend.Top - 20;
-            chartAppointmentTrend.Height = Math.Max(150, height);
+            return;
         }
 
-        flowLayoutPanel1.AutoScrollMinSize = new Size(0, panelHieuXuat.Bottom + 60);
+        var gap = 24;
+        var cardWidth = Math.Max(280, (availableWidth - gap * 2) / 3);
+        var statHeight = 200;
+
+        panelKhachHang.Size = new Size(cardWidth, statHeight);
+        panelDoanhThu.Size = new Size(cardWidth, statHeight);
+        panelLichHen.Size = new Size(cardWidth, statHeight);
+
+        panelKhachHang.Margin = new Padding(0, 0, gap, gap);
+        panelDoanhThu.Margin = new Padding(0, 0, gap, gap);
+        panelLichHen.Margin = new Padding(0, 0, 0, gap);
+
+        panelXuHuong.Width = availableWidth;
+        panelXuHuong.Height = 300;
+        panelXuHuong.Margin = new Padding(0, 0, 0, gap);
+
+        var leftWidth = (int)(availableWidth * 0.64);
+        var rightWidth = availableWidth - leftWidth - gap;
+        panel1.Size = new Size(leftWidth, 360);
+        panelHieuXuat.Size = new Size(rightWidth, 360);
+        panel1.Margin = new Padding(0, 0, gap, 0);
+        panelHieuXuat.Margin = new Padding(0, 0, 0, 0);
+
+        LayoutStatCard(panelKhachHang, label1, lbKhachHang, cobKhachHang, chartKhachHang);
+        LayoutStatCard(panelDoanhThu, label3, lbDoanhThu, cobDoanhThu, chart1);
+        LayoutStatCard(panelLichHen, label4, lbLichHen, cobLichHen, chart2);
+
+        LayoutTrendPanel();
+        LayoutAppointmentsPanel();
+        LayoutPerformancePanel();
+
+        flowLayoutPanel1.AutoScrollMinSize = new Size(0, panelHieuXuat.Bottom + 40);
+    }
+
+    private void LayoutStatCard(Panel panel, Label title, Label value, ComboBox combo, Chart chart)
+    {
+        var pad = 16;
+        title.Location = new Point(pad, pad);
+        combo.Size = new Size(140, 28);
+        combo.Location = new Point(panel.Width - combo.Width - pad, pad);
+        value.Location = new Point(pad, pad + 38);
+
+        chart.Location = new Point(pad - 4, pad + 80);
+        chart.Size = new Size(panel.Width - pad * 2 + 8, panel.Height - (pad + 88));
+    }
+
+    private void LayoutTrendPanel()
+    {
+        var pad = 16;
+        label5.Location = new Point(pad, pad);
+        cobXuHuong.Size = new Size(160, 28);
+        cobXuHuong.Location = new Point(panelXuHuong.Width - cobXuHuong.Width - pad, pad);
+        lbTrendRange.Location = new Point(pad, pad + 32);
+
+        lbConfirmedTrend.Location = new Point(pad, pad + 70);
+        labelConfirmedTitle.Location = new Point(pad, pad + 125);
+
+        lbCanceledTrend.Location = new Point(pad + 190, pad + 70);
+        labelCanceledTitle.Location = new Point(pad + 190, pad + 125);
+
+        chartAppointmentTrend.Location = new Point(pad + 360, pad + 48);
+        chartAppointmentTrend.Size = new Size(panelXuHuong.Width - (pad + 380), panelXuHuong.Height - (pad + 70));
+    }
+
+    private void LayoutAppointmentsPanel()
+    {
+        var pad = 16;
+        label7.Location = new Point(pad, pad);
+        cobTrangThai.Size = new Size(180, 28);
+        cobCuocHen.Size = new Size(140, 28);
+
+        cobTrangThai.Location = new Point(panel1.Width - cobTrangThai.Width - pad, pad);
+        cobCuocHen.Location = new Point(cobTrangThai.Left - cobCuocHen.Width - 10, pad);
+
+        dgvCuocHen.Location = new Point(pad, pad + 48);
+        dgvCuocHen.Size = new Size(panel1.Width - pad * 2, panel1.Height - (pad + 64));
+    }
+
+    private void LayoutPerformancePanel()
+    {
+        var pad = 16;
+        label8.Location = new Point(pad, pad);
+        cobHieuXuat.Size = new Size(150, 28);
+        cobHieuXuat.Location = new Point(panelHieuXuat.Width - cobHieuXuat.Width - pad, pad);
+
+        tabControlHieuXuat.Location = new Point(pad, pad + 48);
+        tabControlHieuXuat.Size = new Size(panelHieuXuat.Width - pad * 2, panelHieuXuat.Height - (pad + 64));
+
+        dgvChuyenKhoa.Dock = DockStyle.Fill;
+        dgvBacSi.Dock = DockStyle.Fill;
     }
 
     private static string ResolveRangeToken(string? selection)
@@ -870,47 +1030,47 @@ public sealed class DashboardForm : Form
 
     private sealed record DoctorPerformanceRow(string Doctor, int Confirmed, int Canceled);
 
-    private Panel HeaderPanel;
-    private Label label2;
-    private FlowLayoutPanel flowLayoutPanel1;
-    private Panel panelDoanhThu;
-    private Label lbDoanhThu;
-    private System.Windows.Forms.DataVisualization.Charting.Chart chart1;
-    private ComboBox cobDoanhThu;
-    private Label label3;
-    private Panel panelKhachHang;
-    private System.Windows.Forms.DataVisualization.Charting.Chart chartKhachHang;
-    private Label lbKhachHang;
-    private ComboBox cobKhachHang;
-    private Label label1;
-    private Panel panelLichHen;
-    private Label lbLichHen;
-    private System.Windows.Forms.DataVisualization.Charting.Chart chart2;
-    private ComboBox cobLichHen;
-    private Label label4;
-    private Panel panelXuHuong;
-    private ComboBox cobXuHuong;
-    private Label label5;
-    private Label lbTrendRange;
-    private Label lbConfirmedTrend;
-    private Label lbCanceledTrend;
-    private Label labelConfirmedTitle;
-    private Label labelCanceledTitle;
-    private System.Windows.Forms.DataVisualization.Charting.Chart chartAppointmentTrend;
-    private Panel panel1;
-    private ComboBox cobCuocHen;
-    private ComboBox cobTrangThai;
-    private Label label7;
-    private Panel panelHieuXuat;
-    private ComboBox cobHieuXuat;
-    private Label label8;
-    private TabControl tabControlHieuXuat;
-    private TabPage tabPageChuyenKhoa;
-    private TabPage tabPageBacSi;
-    private DataGridView dgvCuocHen;
-    private DataGridView dgvChuyenKhoa;
-    private DataGridView dgvBacSi;
-    private Label lbTitle;
+    private Panel HeaderPanel = null!;
+    private Label label2 = null!;
+    private FlowLayoutPanel flowLayoutPanel1 = null!;
+    private Panel panelDoanhThu = null!;
+    private Label lbDoanhThu = null!;
+    private System.Windows.Forms.DataVisualization.Charting.Chart chart1 = null!;
+    private ComboBox cobDoanhThu = null!;
+    private Label label3 = null!;
+    private Panel panelKhachHang = null!;
+    private System.Windows.Forms.DataVisualization.Charting.Chart chartKhachHang = null!;
+    private Label lbKhachHang = null!;
+    private ComboBox cobKhachHang = null!;
+    private Label label1 = null!;
+    private Panel panelLichHen = null!;
+    private Label lbLichHen = null!;
+    private System.Windows.Forms.DataVisualization.Charting.Chart chart2 = null!;
+    private ComboBox cobLichHen = null!;
+    private Label label4 = null!;
+    private Panel panelXuHuong = null!;
+    private ComboBox cobXuHuong = null!;
+    private Label label5 = null!;
+    private Label lbTrendRange = null!;
+    private Label lbConfirmedTrend = null!;
+    private Label lbCanceledTrend = null!;
+    private Label labelConfirmedTitle = null!;
+    private Label labelCanceledTitle = null!;
+    private System.Windows.Forms.DataVisualization.Charting.Chart chartAppointmentTrend = null!;
+    private Panel panel1 = null!;
+    private ComboBox cobCuocHen = null!;
+    private ComboBox cobTrangThai = null!;
+    private Label label7 = null!;
+    private Panel panelHieuXuat = null!;
+    private ComboBox cobHieuXuat = null!;
+    private Label label8 = null!;
+    private TabControl tabControlHieuXuat = null!;
+    private TabPage tabPageChuyenKhoa = null!;
+    private TabPage tabPageBacSi = null!;
+    private DataGridView dgvCuocHen = null!;
+    private DataGridView dgvChuyenKhoa = null!;
+    private DataGridView dgvBacSi = null!;
+    private Label lbTitle = null!;
 
     private void InitializeComponent()
     {

@@ -193,7 +193,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             var headerFont = new iTextSharp.text.Font(baseFont, 16, iTextSharp.text.Font.BOLD);
             var boldFont = new iTextSharp.text.Font(baseFont, 12, iTextSharp.text.Font.BOLD);
             var normalFont = new iTextSharp.text.Font(baseFont, 10);
-            var grayFont = new iTextSharp.text.Font(baseFont, 9, iTextSharp.text.Font.NORMAL, BaseColor.GRAY);
+            var grayFont = new iTextSharp.text.Font(baseFont, 9, iTextSharp.text.Font.NORMAL, new BaseColor(128, 128, 128));
 
             // Header
             var headerTable = new PdfPTable(2) { WidthPercentage = 100 };

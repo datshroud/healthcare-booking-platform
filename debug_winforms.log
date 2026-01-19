@@ -222,3 +222,108 @@
 [2025-11-24T05:15:10.2606010+07:00] MainForm: constructor start
 [2025-11-24T05:15:10.2734077+07:00] MainForm: after CreateSidebar
 [2025-11-24T05:15:10.3772405+07:00] MainForm: Load event
+[2025-12-28T18:09:17.3434535+07:00] Login: button clicked
+[2025-12-28T18:09:18.0671975+07:00] Login: succeeded
+[2025-12-28T18:09:18.1509138+07:00] MainForm: constructor start
+[2025-12-28T18:09:18.1597399+07:00] MainForm: after CreateSidebar
+[2025-12-28T18:09:18.2398662+07:00] MainForm: Load event
+[2025-12-28T18:15:05.8488721+07:00] Login: button clicked
+[2025-12-28T18:15:06.1528567+07:00] Login: succeeded
+[2025-12-28T18:15:56.1625433+07:00] Login: button clicked
+[2025-12-28T18:15:56.4639787+07:00] Login: succeeded
+[2025-12-28T18:15:56.5340901+07:00] Service_Load start. SpecialtyApiClient is present.
+[2025-12-28T18:15:57.9932712+07:00] Service card created: Nhi Khoa
+[2025-12-28T18:15:58.1171218+07:00] Service card created: Nhãn Khoa (Mắt)
+[2025-12-28T18:15:58.1893995+07:00] Service card created: Nội Tổng Quát
+[2025-12-28T18:15:58.2650377+07:00] Service card created: Thần Kinh
+[2025-12-28T18:15:58.4008581+07:00] Service card created: Khám Tổng Quát
+[2025-12-28T18:15:58.4650512+07:00] Service card created: Răng - Hàm - Mặt
+[2025-12-28T18:15:58.7586541+07:00] Service card created: Tai - Mũi - Họng
+[2025-12-28T18:15:58.8126747+07:00] Service card created: Sản - Phụ Khoa
+[2025-12-28T18:15:58.9061814+07:00] Service card created: Da Liễu
+[2025-12-28T18:15:58.9654498+07:00] Service card created: Cơ Xương Khớp
+[2025-12-28T18:15:58.9983471+07:00] Service_Load completed successfully. Services count: 10
+[2025-12-28T18:18:00.4834019+07:00] Service_Load start. SpecialtyApiClient is present.
+[2025-12-28T18:18:01.8620776+07:00] Service card created: Nhi Khoa
+[2025-12-28T18:18:01.9375384+07:00] Service card created: Nhãn Khoa (Mắt)
+[2025-12-28T18:18:01.9968538+07:00] Service card created: Nội Tổng Quát
+[2025-12-28T18:18:02.0642788+07:00] Service card created: Thần Kinh
+[2025-12-28T18:18:02.2082250+07:00] Service card created: Khám Tổng Quát
+[2025-12-28T18:18:02.2741980+07:00] Service card created: Răng - Hàm - Mặt
+[2025-12-28T18:18:02.6233041+07:00] Service card created: Tai - Mũi - Họng
+[2025-12-28T18:18:02.6836919+07:00] Service card created: Sản - Phụ Khoa
+[2025-12-28T18:18:02.7937039+07:00] Service card created: Da Liễu
+[2025-12-28T18:18:02.8712508+07:00] Service card created: Cơ Xương Khớp
+[2025-12-28T18:18:02.9277500+07:00] Service_Load completed successfully. Services count: 10
+[2025-12-28T18:43:30.1649962+07:00] Service card created: Nhãn Khoa (Mắt)
+[2025-12-28T18:43:30.2280470+07:00] Service card created: Nội Tổng Quát
+[2025-12-28T18:43:30.2986406+07:00] Service card created: Thần Kinh
+[2025-12-28T18:43:30.4641809+07:00] Service card created: Khám Tổng Quát
+[2025-12-28T18:43:30.5270943+07:00] Service card created: Răng - Hàm - Mặt
+[2025-12-28T18:43:30.8325532+07:00] Service card created: Tai - Mũi - Họng
+[2025-12-28T18:43:30.9081890+07:00] Service card created: Thần Kinh
+[2025-12-28T18:43:31.8117372+07:00] Service card created: Nhãn Khoa (Mắt)
+[2025-12-28T18:43:31.8685516+07:00] Service card created: Nội Tổng Quát
+[2025-12-28T18:43:31.9283113+07:00] Service card created: Thần Kinh
+[2025-12-28T18:43:32.0000160+07:00] Service card created: Khám Tổng Quát
+[2025-12-28T18:43:32.0638765+07:00] Service card created: Răng - Hàm - Mặt
+[2025-12-28T18:43:32.2779066+07:00] Service card created: Tai - Mũi - Họng
+[2025-12-28T18:43:33.9922641+07:00] Service card created: Nhi Khoa
+[2025-12-28T18:43:34.0512607+07:00] Service card created: Nhãn Khoa (Mắt)
+[2025-12-28T18:43:34.1010600+07:00] Service card created: Nội Tổng Quát
+[2025-12-28T18:43:34.1638120+07:00] Service card created: Thần Kinh
+[2025-12-28T18:43:34.2345524+07:00] Service card created: Khám Tổng Quát
+[2025-12-28T18:43:34.2875524+07:00] Service card created: Răng - Hàm - Mặt
+[2025-12-28T18:43:34.4609842+07:00] Service card created: Tai - Mũi - Họng
+[2025-12-28T18:43:34.5245366+07:00] Service card created: Sản - Phụ Khoa
+[2025-12-28T18:43:34.6175910+07:00] Service card created: Da Liễu
+[2025-12-28T18:43:34.6867496+07:00] Service card created: Cơ Xương Khớp
+[2026-01-19T16:16:53.4199087+07:00] Login: button clicked
+[2026-01-19T16:39:56.7090827+07:00] Login: button clicked
+[2026-01-19T16:41:01.4184602+07:00] Login: button clicked
+[2026-01-19T16:41:02.1075112+07:00] Login: succeeded
+[2026-01-19T16:41:02.1993953+07:00] MainForm: constructor start
+[2026-01-19T16:41:02.2149695+07:00] MainForm: after CreateSidebar
+[2026-01-19T16:41:02.2724050+07:00] MainForm: Load event
+[2026-01-19T18:05:04.2359649+07:00] Login: button clicked
+[2026-01-19T18:05:08.6168348+07:00] Login: button clicked
+[2026-01-19T18:05:17.7838721+07:00] Login: button clicked
+[2026-01-19T18:05:49.8817525+07:00] Login: button clicked
+[2026-01-19T18:05:57.9265588+07:00] Login: button clicked
+[2026-01-19T18:05:58.2192229+07:00] Login: succeeded
+[2026-01-19T18:05:58.2573842+07:00] MainForm: constructor start
+[2026-01-19T18:05:58.2675712+07:00] MainForm: after CreateSidebar
+[2026-01-19T18:05:58.3221996+07:00] MainForm: Load event
+[2026-01-19T18:26:33.8093415+07:00] Login: button clicked
+[2026-01-19T18:26:34.4732258+07:00] Login: succeeded
+[2026-01-19T18:26:34.5283956+07:00] MainForm: constructor start
+[2026-01-19T18:26:34.5387381+07:00] MainForm: after CreateSidebar
+[2026-01-19T18:26:34.5926519+07:00] MainForm: Load event
+[2026-01-19T18:43:33.9637337+07:00] Login: button clicked
+[2026-01-19T18:43:34.7257814+07:00] Login: succeeded
+[2026-01-19T18:43:34.7639724+07:00] MainForm: constructor start
+[2026-01-19T18:43:34.7718045+07:00] MainForm: after CreateSidebar
+[2026-01-19T18:43:34.8309109+07:00] MainForm: Load event
+[2026-01-19T18:44:07.7460750+07:00] Login: button clicked
+[2026-01-19T18:44:08.3356442+07:00] Login: succeeded
+[2026-01-19T18:44:08.3712704+07:00] MainForm: constructor start
+[2026-01-19T18:44:08.3819606+07:00] MainForm: after CreateSidebar
+[2026-01-19T18:44:08.4487030+07:00] MainForm: Load event
+[2026-01-19T19:54:38.4510479+07:00] Login: button clicked
+[2026-01-19T19:58:18.4522354+07:00] Login: button clicked
+[2026-01-19T19:58:20.5808583+07:00] Login: succeeded
+[2026-01-19T19:58:20.6287198+07:00] MainForm: constructor start
+[2026-01-19T19:58:20.6446649+07:00] MainForm: after CreateSidebar
+[2026-01-19T19:58:20.7020508+07:00] MainForm: Load event
+[2026-01-19T22:53:26.8333425+07:00] Login: button clicked
+[2026-01-19T22:53:38.7616257+07:00] Login: button clicked
+[2026-01-19T22:53:39.1045857+07:00] Login: succeeded
+[2026-01-19T22:53:39.1572968+07:00] MainForm: constructor start
+[2026-01-19T22:53:39.1720160+07:00] MainForm: after CreateSidebar
+[2026-01-19T22:53:39.2678462+07:00] MainForm: Load event
+[2026-01-19T23:18:13.6442245+07:00] Login: button clicked
+[2026-01-19T23:18:20.7536776+07:00] Login: button clicked
+[2026-01-19T23:18:21.0602358+07:00] Login: succeeded
+[2026-01-19T23:18:21.1056577+07:00] MainForm: constructor start
+[2026-01-19T23:18:21.1182482+07:00] MainForm: after CreateSidebar
+[2026-01-19T23:18:21.1822972+07:00] MainForm: Load event

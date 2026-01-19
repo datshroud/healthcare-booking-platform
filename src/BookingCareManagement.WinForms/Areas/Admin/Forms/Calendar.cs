@@ -29,12 +29,33 @@ namespace BookingCareManagement.WinForms
         private DateTime _lastLoadedMonth = DateTime.MinValue;
 
         // Biến cho drag & drop
-        private Label draggedAppointment = null;
+        private Label? draggedAppointment;
         private Point dragStartPoint;
-        private Panel sourcePanel = null;
+        private Panel? sourcePanel;
 
         // state for active view
         private Button? _activeViewButton;
+        private Button? _activeDoctorFilterButton;
+        private string? _selectedDoctorName;
+        private FlowLayoutPanel? _doctorFilterPanel;
+        private Button? _doctorFilterToggleButton;
+        private ComboBox? _specialtyFilterComboBox;
+        private TextBox? _doctorSearchTextBox;
+        private string? _selectedSpecialty;
+        private bool _isDoctorFilterExpanded;
+        private bool _isUpdatingFilters;
+
+        private static readonly Color[] EventPalette = new[]
+        {
+            Color.FromArgb(254, 243, 199),
+            Color.FromArgb(219, 234, 254),
+            Color.FromArgb(220, 252, 231),
+            Color.FromArgb(243, 232, 255),
+            Color.FromArgb(254, 226, 226),
+            Color.FromArgb(224, 231, 255),
+            Color.FromArgb(240, 253, 250),
+            Color.FromArgb(255, 237, 213)
+        };
 
         // Chỉ giữ lại constructor DI
         public Calendar(AdminAppointmentsApiClient appointmentsApiClient)
@@ -56,6 +77,10 @@ namespace BookingCareManagement.WinForms
 
         private void InitializeCustomComponents()
         {
+            SetStyle(ControlStyles.OptimizedDoubleBuffer | ControlStyles.AllPaintingInWmPaint | ControlStyles.UserPaint, true);
+            UpdateStyles();
+            EnableDoubleBuffering(calendarPanel);
+
             // Gắn sự kiện cho các nút đã được tạo bởi Designer
             AttachEventHandlers();
             ApplyButtonStyling();
@@ -68,6 +93,9 @@ namespace BookingCareManagement.WinForms
             // set default combo selection
             comboBox1.SelectedIndex = 0;
             comboBox1.SelectedIndexChanged += (s, e) => RefreshCalendar();
+
+            ApplySurfaceStyling();
+            EnsureUserPanelLayout();
 
             RefreshCalendar();
         }
@@ -114,7 +142,18 @@ namespace BookingCareManagement.WinForms
                 b.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
                 b.Cursor = Cursors.Hand;
                 b.Padding = new Padding(8, 6, 8, 6);
-                // no hover for view buttons
+                b.MouseEnter += (s, e) =>
+                {
+                    if (s is not Button btn) return;
+                    if (btn == _activeViewButton) return;
+                    btn.BackColor = Color.FromArgb(248, 250, 252);
+                };
+                b.MouseLeave += (s, e) =>
+                {
+                    if (s is not Button btn) return;
+                    if (btn == _activeViewButton) return;
+                    btn.BackColor = Color.White;
+                };
             }
 
             // primary action (add) keep static blue, no hover/active
@@ -141,6 +180,152 @@ namespace BookingCareManagement.WinForms
 
             // set initial
             activate(monthBtn);
+        }
+
+        private void ApplySurfaceStyling()
+        {
+            BackColor = Color.FromArgb(248, 250, 252);
+            headerPanel.BackColor = Color.FromArgb(248, 250, 252);
+            navigationPanel.BackColor = Color.White;
+            calendarPanel.BackColor = Color.FromArgb(248, 250, 252);
+
+            headerTitleLabel.ForeColor = Color.FromArgb(15, 23, 42);
+            headerTitleLabel.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
+
+            comboBox1.Font = new Font("Segoe UI", 9.5F, FontStyle.Regular);
+            comboBox1.BackColor = Color.White;
+            comboBox1.ForeColor = Color.FromArgb(55, 65, 81);
+
+            btnToday.BackColor = Color.White;
+            btnToday.ForeColor = Color.FromArgb(55, 65, 81);
+            btnToday.FlatAppearance.BorderColor = Color.FromArgb(226, 232, 240);
+
+            monthLabel.ForeColor = Color.FromArgb(15, 23, 42);
+            monthLabel.Font = new Font("Segoe UI", 12.5F, FontStyle.Bold);
+
+            prevBtn.ForeColor = Color.FromArgb(71, 85, 105);
+            nextBtn.ForeColor = Color.FromArgb(71, 85, 105);
+        }
+
+        private void EnsureUserPanelLayout()
+        {
+            userPanel.Visible = true;
+            userPanel.BackColor = Color.White;
+            userPanel.Padding = new Padding(30, 12, 30, 10);
+            userPanel.Height = 130;
+
+            userPanel.Controls.Clear();
+
+            var headerRow = new Panel { Dock = DockStyle.Top, Height = 28, BackColor = Color.White };
+            var title = new Label
+            {
+                Text = "Lịch",
+                Dock = DockStyle.Left,
+                Width = 120,
+                Font = new Font("Segoe UI", 13F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(15, 23, 42)
+            };
+            headerRow.Controls.Add(title);
+
+            var filterRow = new Panel { Dock = DockStyle.Top, Height = 36, BackColor = Color.White, Padding = new Padding(0, 6, 0, 0) };
+
+            _doctorSearchTextBox = new TextBox
+            {
+                Width = 220,
+                Height = 28,
+                Font = new Font("Segoe UI", 9F),
+                ForeColor = Color.Gray,
+                Text = "Tìm bác sĩ",
+                BorderStyle = BorderStyle.FixedSingle
+            };
+            _doctorSearchTextBox.Enter += (s, e) =>
+            {
+                if (_doctorSearchTextBox.Text == "Tìm bác sĩ")
+                {
+                    _doctorSearchTextBox.Text = string.Empty;
+                    _doctorSearchTextBox.ForeColor = Color.FromArgb(15, 23, 42);
+                }
+            };
+            _doctorSearchTextBox.Leave += (s, e) =>
+            {
+                if (string.IsNullOrWhiteSpace(_doctorSearchTextBox.Text))
+                {
+                    _doctorSearchTextBox.Text = "Tìm bác sĩ";
+                    _doctorSearchTextBox.ForeColor = Color.Gray;
+                }
+            };
+            _doctorSearchTextBox.TextChanged += (s, e) =>
+            {
+                if (_doctorSearchTextBox.Text == "Tìm bác sĩ") return;
+                BuildDoctorFilters();
+            };
+
+            _specialtyFilterComboBox = new ComboBox
+            {
+                Width = 200,
+                Height = 28,
+                Font = new Font("Segoe UI", 9F),
+                DropDownStyle = ComboBoxStyle.DropDownList
+            };
+            _specialtyFilterComboBox.SelectedIndexChanged += (s, e) =>
+            {
+                if (_isUpdatingFilters) return;
+                _selectedSpecialty = _specialtyFilterComboBox.SelectedItem?.ToString();
+                if (_selectedSpecialty == "Tất cả chuyên khoa")
+                {
+                    _selectedSpecialty = null;
+                }
+                BuildDoctorFilters();
+                RefreshCalendar();
+            };
+
+            filterRow.Controls.Add(_specialtyFilterComboBox);
+            filterRow.Controls.Add(_doctorSearchTextBox);
+            _specialtyFilterComboBox.Location = new Point(filterRow.Width - 200, 4);
+            _doctorSearchTextBox.Location = new Point(filterRow.Width - 430, 4);
+            filterRow.Resize += (s, e) =>
+            {
+                _specialtyFilterComboBox.Location = new Point(filterRow.Width - _specialtyFilterComboBox.Width, 4);
+                _doctorSearchTextBox.Location = new Point(filterRow.Width - _specialtyFilterComboBox.Width - _doctorSearchTextBox.Width - 10, 4);
+            };
+
+            _doctorFilterPanel = new FlowLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                AutoScroll = true,
+                WrapContents = false,
+                FlowDirection = FlowDirection.LeftToRight,
+                Padding = new Padding(0, 4, 0, 0),
+                BackColor = Color.White
+            };
+
+            _doctorFilterToggleButton = new Button
+            {
+                Text = "Xem thêm",
+                Height = 28,
+                AutoSize = true,
+                FlatStyle = FlatStyle.Flat,
+                Font = new Font("Segoe UI", 9F),
+                BackColor = Color.White,
+                ForeColor = Color.FromArgb(37, 99, 235),
+                Cursor = Cursors.Hand,
+                Margin = new Padding(6, 0, 0, 0)
+            };
+            _doctorFilterToggleButton.FlatAppearance.BorderSize = 0;
+            _doctorFilterToggleButton.Click += (s, e) => ToggleDoctorFilterWrap();
+
+            var filtersContainer = new Panel { Dock = DockStyle.Fill, BackColor = Color.White };
+            filtersContainer.Controls.Add(_doctorFilterPanel);
+            filtersContainer.Controls.Add(_doctorFilterToggleButton);
+            filtersContainer.Resize += (s, e) =>
+            {
+                if (_doctorFilterToggleButton == null) return;
+                _doctorFilterToggleButton.Location = new Point(filtersContainer.Width - _doctorFilterToggleButton.Width, 2);
+            };
+
+            userPanel.Controls.Add(filtersContainer);
+            userPanel.Controls.Add(filterRow);
+            userPanel.Controls.Add(headerRow);
         }
 
         private void CreateUserPanel()
@@ -185,18 +370,20 @@ namespace BookingCareManagement.WinForms
 
             // Header thứ trong tuần (Tiếng Việt)
             string[] dayNames = { "T2", "T3", "T4", "T5", "T6", "T7", "CN" };
-            int headerY = 15;
-            int cellWidth = (this.ClientSize.Width - 60) / 7;
+            int headerY = 12;
+            int sidePadding = 18;
+            int cellGap = 6;
+            int cellWidth = Math.Max(140, (calendarPanel.ClientSize.Width - sidePadding * 2 - cellGap * 6) / 7);
 
             for (int i = 0; i < 7; i++)
             {
                 Label dayHeader = new Label
                 {
                     Text = dayNames[i],
-                    Location = new Point(15 + i * cellWidth, headerY),
-                    Size = new Size(cellWidth, 30),
-                    Font = new Font("Segoe UI", 11, FontStyle.Bold),
-                    ForeColor = Color.FromArgb(55, 65, 81),
+                    Location = new Point(sidePadding + i * (cellWidth + cellGap), headerY),
+                    Size = new Size(cellWidth, 26),
+                    Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(71, 85, 105),
                     TextAlign = ContentAlignment.TopLeft
                 };
                 calendarPanel.Controls.Add(dayHeader);
@@ -209,7 +396,7 @@ namespace BookingCareManagement.WinForms
             if (startDay == 0) startDay = 7;
             startDay--;
 
-            int cellHeight = 150;
+            int cellHeight = 135;
             int currentRow = 0;
             int currentCol = startDay;
             int dayCounter = 1;
@@ -221,14 +408,14 @@ namespace BookingCareManagement.WinForms
 
             for (int i = 0; i < startDay; i++)
             {
-                Panel dayCell = CreateDayCell(prevStart + i, true, i, currentRow, cellWidth, cellHeight);
+                Panel dayCell = CreateDayCell(prevStart + i, true, i, currentRow, cellWidth, cellHeight, sidePadding, cellGap);
                 calendarPanel.Controls.Add(dayCell);
             }
 
             // Ngày tháng hiện tại
             while (dayCounter <= daysInMonth)
             {
-                Panel dayCell = CreateDayCell(dayCounter, false, currentCol, currentRow, cellWidth, cellHeight);
+                Panel dayCell = CreateDayCell(dayCounter, false, currentCol, currentRow, cellWidth, cellHeight, sidePadding, cellGap);
 
                 calendarPanel.Controls.Add(dayCell);
 
@@ -245,7 +432,7 @@ namespace BookingCareManagement.WinForms
             int nextDay = 1;
             while (currentCol < 7)
             {
-                Panel dayCell = CreateDayCell(nextDay, true, currentCol, currentRow, cellWidth, cellHeight);
+                Panel dayCell = CreateDayCell(nextDay, true, currentCol, currentRow, cellWidth, cellHeight, sidePadding, cellGap);
                 calendarPanel.Controls.Add(dayCell);
                 nextDay++;
                 currentCol++;
@@ -289,7 +476,7 @@ namespace BookingCareManagement.WinForms
             calendarPanel.Controls.Add(content);
 
             int hours = 24;
-            int slotHeight = 60;
+            int slotHeight = 80;
 
             // time column and rows inside a large inner panel to enable scrolling
             var inner = new Panel { Location = new Point(0, 0), Width = leftColWidth + 7 * columnWidth, Height = hours * slotHeight }; // will be scrolled
@@ -323,7 +510,7 @@ namespace BookingCareManagement.WinForms
             }
 
             // Render appointment blocks
-            foreach (var ev in _events)
+            foreach (var ev in GetFilteredEvents())
             {
                 var localStart = ev.StartUtc.ToLocalTime();
                 var localEnd = ev.EndUtc.ToLocalTime();
@@ -339,15 +526,7 @@ namespace BookingCareManagement.WinForms
                 int top = (int)(minutesFromStart * slotHeight / 60.0);
                 int height = (int)(durationMinutes * slotHeight / 60.0);
 
-                var ap = new Panel
-                {
-                    Location = new Point(leftColWidth + col * columnWidth + 6, top),
-                    Size = new Size(columnWidth - 12, Math.Max(24, height)),
-                    BackColor = Color.FromArgb(207, 232, 255),
-                    Cursor = Cursors.Hand,
-                    Tag = ev
-                };
-                ap.Padding = new Padding(6);
+                var ap = CreateEventBlock(ev, new Rectangle(leftColWidth + col * columnWidth + 6, top, columnWidth - 12, Math.Max(32, height)));
 
                 string primary = comboBox1.SelectedItem?.ToString() switch
                 {
@@ -357,9 +536,10 @@ namespace BookingCareManagement.WinForms
                     _ => ev.DoctorName
                 };
 
-                var lbl1 = new Label { Text = primary, AutoSize = false, Height = 18, Dock = DockStyle.Top, Font = new Font("Segoe UI", 9F, FontStyle.Bold), ForeColor = Color.FromArgb(17, 24, 39) };
-                var lbl2 = new Label { Text = $"{localStart:HH:mm} - {localEnd:HH:mm}", AutoSize = false, Height = 16, Dock = DockStyle.Top, Font = new Font("Segoe UI", 8.5F), ForeColor = Color.FromArgb(55, 65, 81) };
-                ap.Controls.Add(lbl2); ap.Controls.Add(lbl1);
+                var lbl1 = new Label { Text = primary, AutoSize = false, Height = 18, Dock = DockStyle.Top, Font = new Font("Segoe UI", 9F, FontStyle.Bold), ForeColor = Color.FromArgb(15, 23, 42), BackColor = Color.Transparent };
+                var lbl2 = new Label { Text = $"{localStart:HH:mm} - {localEnd:HH:mm}", AutoSize = false, Height = 16, Dock = DockStyle.Top, Font = new Font("Segoe UI", 8.5F), ForeColor = Color.FromArgb(71, 85, 105), BackColor = Color.Transparent };
+                ap.Controls.Add(lbl2);
+                ap.Controls.Add(lbl1);
                 ap.Click += (s, e) => MessageBox.Show($"{ev.SpecialtyName}\n{ev.DoctorName}\n{ev.PatientName}\n{ev.StartUtc.ToLocalTime():HH:mm} - {ev.EndUtc.ToLocalTime():HH:mm}", "Chi tiết cuộc hẹn", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                 inner.Controls.Add(ap);
@@ -372,7 +552,7 @@ namespace BookingCareManagement.WinForms
             calendarPanel.Controls.Clear();
 
             int hours = 24;
-            int slotHeight = 60;
+            int slotHeight = 80;
             int leftColWidth = 70;
             int totalWidth = Math.Max(500, calendarPanel.ClientSize.Width);
             int columnWidth = totalWidth - leftColWidth;
@@ -398,7 +578,7 @@ namespace BookingCareManagement.WinForms
             }
 
             DateTime dayStart = currentDate.Date;
-            foreach (var ev in _events.Where(e => e.StartUtc.ToLocalTime().Date == dayStart))
+            foreach (var ev in GetFilteredEvents().Where(e => e.StartUtc.ToLocalTime().Date == dayStart))
             {
                 var localStart = ev.StartUtc.ToLocalTime();
                 var localEnd = ev.EndUtc.ToLocalTime();
@@ -410,8 +590,7 @@ namespace BookingCareManagement.WinForms
                 int top = (int)(minutesFromStart * slotHeight / 60.0);
                 int height = (int)(durationMinutes * slotHeight / 60.0);
 
-                var ap = new Panel { Location = new Point(leftColWidth + 6, top), Size = new Size(columnWidth - 12, Math.Max(24, height)), BackColor = Color.FromArgb(207, 232, 255), Cursor = Cursors.Hand, Tag = ev };
-                ap.Padding = new Padding(6);
+                var ap = CreateEventBlock(ev, new Rectangle(leftColWidth + 6, top, columnWidth - 12, Math.Max(32, height)));
 
                 string primary = comboBox1.SelectedItem?.ToString() switch
                 {
@@ -421,9 +600,10 @@ namespace BookingCareManagement.WinForms
                     _ => ev.DoctorName
                 };
 
-                var lbl1 = new Label { Text = primary, AutoSize = false, Height = 18, Dock = DockStyle.Top, Font = new Font("Segoe UI", 9F, FontStyle.Bold), ForeColor = Color.FromArgb(17, 24, 39) };
-                var lbl2 = new Label { Text = $"{localStart:HH:mm} - {localEnd:HH:mm}", AutoSize = false, Height = 16, Dock = DockStyle.Top, Font = new Font("Segoe UI", 8.5F), ForeColor = Color.FromArgb(55, 65, 81) };
-                ap.Controls.Add(lbl2); ap.Controls.Add(lbl1);
+                var lbl1 = new Label { Text = primary, AutoSize = false, Height = 18, Dock = DockStyle.Top, Font = new Font("Segoe UI", 9F, FontStyle.Bold), ForeColor = Color.FromArgb(15, 23, 42), BackColor = Color.Transparent };
+                var lbl2 = new Label { Text = $"{localStart:HH:mm} - {localEnd:HH:mm}", AutoSize = false, Height = 16, Dock = DockStyle.Top, Font = new Font("Segoe UI", 8.5F), ForeColor = Color.FromArgb(71, 85, 105), BackColor = Color.Transparent };
+                ap.Controls.Add(lbl2);
+                ap.Controls.Add(lbl1);
                 ap.Click += (s, e) => MessageBox.Show($"{ev.SpecialtyName}\n{ev.DoctorName}\n{ev.PatientName}\n{ev.StartUtc.ToLocalTime():HH:mm} - {ev.EndUtc.ToLocalTime():HH:mm}", "Chi tiết cuộc hẹn", MessageBoxButtons.OK, MessageBoxIcon.Information);
 
                 inner.Controls.Add(ap);
@@ -475,7 +655,7 @@ namespace BookingCareManagement.WinForms
             }
         }
 
-        private Panel CreateDayCell(int day, bool isOtherMonth, int col, int row, int width, int height)
+        private Panel CreateDayCell(int day, bool isOtherMonth, int col, int row, int width, int height, int sidePadding, int cellGap)
         {
             DateTime cellDate = new DateTime(currentDate.Year, currentDate.Month, 1).AddDays(day - 1);
             if (isOtherMonth)
@@ -491,28 +671,43 @@ namespace BookingCareManagement.WinForms
                     cellDate = new DateTime(nextMonth.Year, nextMonth.Month, day);
                 }
             }
-            Panel cell = new Panel
+            Panel cell = new RoundedPanel
             {
-                Location = new Point(15 + col * width, 50 + row * height),
-                Size = new Size(width - 2, height - 2),
-                BackColor = isOtherMonth ? Color.FromArgb(249, 250, 251) : Color.White,
-                BorderStyle = BorderStyle.FixedSingle,
-                Cursor = Cursors.Hand
+                Location = new Point(sidePadding + col * (width + cellGap), 46 + row * (height + cellGap)),
+                Size = new Size(width, height),
+                BackColor = isOtherMonth ? Color.FromArgb(248, 250, 252) : Color.White,
+                Cursor = Cursors.Hand,
+                Padding = new Padding(10, 8, 10, 8)
             };
+            if (cell is RoundedPanel roundedCell)
+            {
+                roundedCell.BorderColor = Color.FromArgb(226, 232, 240);
+                roundedCell.BorderThickness = 1;
+                roundedCell.CornerRadius = 8;
+            }
+
+            if (cellDate.Date == DateTime.Today)
+            {
+                if (cell is RoundedPanel todayCell)
+                {
+                    todayCell.BorderColor = Color.FromArgb(59, 130, 246);
+                    todayCell.BorderThickness = 2;
+                }
+            }
 
             Label dayLabel = new Label
             {
                 Text = day.ToString(),
-                Location = new Point(10, 5),
+                Location = new Point(2, 0),
                 AutoSize = true,
-                Font = new Font("Segoe UI", 11, FontStyle.Bold),
-                ForeColor = isOtherMonth ? Color.FromArgb(156, 163, 175) : Color.FromArgb(75, 85, 99)
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                ForeColor = isOtherMonth ? Color.FromArgb(148, 163, 184) : Color.FromArgb(51, 65, 85)
             };
             cell.Controls.Add(dayLabel);
 
             // Render appointments for this day
-            var evs = _events.Where(ev => ev.StartUtc.ToLocalTime().Date == cellDate.Date).ToList();
-            int y = 28;
+            var evs = GetFilteredEvents().Where(ev => ev.StartUtc.ToLocalTime().Date == cellDate.Date).ToList();
+            int y = 26;
             foreach (var ev in evs)
             {
                 string display = comboBox1.SelectedItem?.ToString() switch
@@ -523,32 +718,22 @@ namespace BookingCareManagement.WinForms
                     _ => ev.DoctorName
                 };
 
-                var lbl = new Label
+                var chip = CreateEventChip(ev, display, new Rectangle(2, y, cell.Width - 8, 20));
+                chip.Click += (s, e) =>
                 {
-                    Text = display,
-                    AutoSize = false,
-                    Size = new Size(cell.Width - 16, 18),
-                    Location = new Point(8, y),
-                    BackColor = Color.FromArgb(207, 232, 255),
-                    ForeColor = Color.FromArgb(17, 24, 39),
-                    Font = new Font("Segoe UI", 9, FontStyle.Regular),
-                    Padding = new Padding(2, 0, 2, 0),
-                    Tag = ev
-                };
-                lbl.Click += (s, e) =>
-                {
-                    var evt = (CalendarEventDto)((Label)s).Tag;
+                    if (s is not Control control) return;
+                    if (control.Tag is not CalendarEventDto evt) return;
                     MessageBox.Show($"{evt.DoctorName}\n{evt.StartUtc.ToLocalTime():HH:mm} - {evt.EndUtc.ToLocalTime():HH:mm}\n{evt.SpecialtyName}", "Chi tiết cuộc hẹn", MessageBoxButtons.OK, MessageBoxIcon.Information);
                 };
-                cell.Controls.Add(lbl);
-                y += 20;
+                cell.Controls.Add(chip);
+                y += 22;
             }
             return cell;
         }
 
         private async void RefreshCalendar()
         {
-            Label monthLabel = navigationPanel.Controls["monthLabel"] as Label;
+            Label? monthLabel = navigationPanel.Controls["monthLabel"] as Label;
             // center monthLabel between prev and next
             if (monthLabel != null)
             {
@@ -584,14 +769,17 @@ namespace BookingCareManagement.WinForms
                 if (currentView == "Month")
                 {
                     await LoadMonthEventsAsync();
+                    BuildDoctorFilters();
                     CreateCalendar();
                 }
                 else if (currentView == "Week")
                 {
+                    BuildDoctorFilters();
                     CreateWeekView();
                 }
                 else if (currentView == "Day")
                 {
+                    BuildDoctorFilters();
                     CreateDayView();
                 }
             }
@@ -655,19 +843,342 @@ namespace BookingCareManagement.WinForms
             }
         }
 
+        public class RoundedPanel : Panel
+        {
+            [Browsable(false)]
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+            public int CornerRadius { get; set; } = 8;
+
+            [Browsable(false)]
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+            public int BorderThickness { get; set; } = 1;
+
+            [Browsable(false)]
+            [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+            public Color BorderColor { get; set; } = Color.FromArgb(226, 232, 240);
+
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                base.OnPaint(e);
+                e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+                using (var path = GetRoundedRectanglePath(ClientRectangle, CornerRadius))
+                using (var borderPen = new Pen(BorderColor, BorderThickness))
+                using (var brush = new SolidBrush(BackColor))
+                {
+                    e.Graphics.FillPath(brush, path);
+                    if (BorderThickness > 0)
+                    {
+                        e.Graphics.DrawPath(borderPen, path);
+                    }
+                    Region = new Region(path);
+                }
+            }
+
+            private static GraphicsPath GetRoundedRectanglePath(Rectangle bounds, int radius)
+            {
+                int diameter = radius * 2;
+                var path = new GraphicsPath();
+                var arc = new Rectangle(bounds.Location, new Size(diameter, diameter));
+
+                path.AddArc(arc, 180, 90);
+                arc.X = bounds.Right - diameter;
+                path.AddArc(arc, 270, 90);
+                arc.Y = bounds.Bottom - diameter;
+                path.AddArc(arc, 0, 90);
+                arc.X = bounds.Left;
+                path.AddArc(arc, 90, 90);
+                path.CloseFigure();
+
+                return path;
+            }
+        }
+
+        private void BuildDoctorFilters()
+        {
+            if (_doctorFilterPanel == null)
+            {
+                return;
+            }
+
+            UpdateSpecialtyFilterItems();
+
+            _doctorFilterPanel.SuspendLayout();
+            _doctorFilterPanel.Controls.Clear();
+
+            var allButton = CreateFilterButton("Tất cả bác sĩ", isActive: _selectedDoctorName == null);
+            allButton.Click += (s, e) =>
+            {
+                _selectedDoctorName = null;
+                if (s is Button btn)
+                {
+                    SetActiveDoctorFilter(btn);
+                }
+                RefreshCalendar();
+            };
+            _doctorFilterPanel.Controls.Add(allButton);
+
+            var doctors = GetAvailableDoctors();
+
+            foreach (var doctor in doctors)
+            {
+                var btn = CreateFilterButton(doctor!, isActive: string.Equals(_selectedDoctorName, doctor, StringComparison.CurrentCultureIgnoreCase));
+                btn.Click += (s, e) =>
+                {
+                    _selectedDoctorName = doctor;
+                    if (s is Button button)
+                    {
+                        SetActiveDoctorFilter(button);
+                    }
+                    RefreshCalendar();
+                };
+                _doctorFilterPanel.Controls.Add(btn);
+            }
+
+            if (_activeDoctorFilterButton == null && _doctorFilterPanel.Controls.Count > 0)
+            {
+                _activeDoctorFilterButton = _doctorFilterPanel.Controls[0] as Button;
+            }
+
+            EnsureDoctorFilterToggleVisibility();
+
+            _doctorFilterPanel.ResumeLayout();
+        }
+
+        private Button CreateFilterButton(string text, bool isActive)
+        {
+            var btn = new Button
+            {
+                Text = text,
+                AutoSize = true,
+                Height = 30,
+                Padding = new Padding(12, 4, 12, 4),
+                Margin = new Padding(0, 0, 8, 0),
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            btn.FlatAppearance.BorderSize = 1;
+            btn.FlatAppearance.BorderColor = Color.FromArgb(226, 232, 240);
+
+            if (isActive)
+            {
+                btn.BackColor = Color.FromArgb(37, 99, 235);
+                btn.ForeColor = Color.White;
+                btn.FlatAppearance.BorderColor = Color.FromArgb(37, 99, 235);
+                _activeDoctorFilterButton = btn;
+            }
+            else
+            {
+                btn.BackColor = Color.White;
+                btn.ForeColor = Color.FromArgb(55, 65, 81);
+            }
+
+            btn.MouseEnter += (s, e) =>
+            {
+                if (s is not Button hovered) return;
+                if (hovered == _activeDoctorFilterButton) return;
+                hovered.BackColor = Color.FromArgb(241, 245, 249);
+            };
+            btn.MouseLeave += (s, e) =>
+            {
+                if (s is not Button hovered) return;
+                if (hovered == _activeDoctorFilterButton) return;
+                hovered.BackColor = Color.White;
+            };
+
+            return btn;
+        }
+
+        private void EnableDoubleBuffering(Control control)
+        {
+            typeof(Control).GetProperty("DoubleBuffered", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                ?.SetValue(control, true, null);
+        }
+
+        private void SetActiveDoctorFilter(Button btn)
+        {
+            if (_activeDoctorFilterButton != null && _activeDoctorFilterButton != btn)
+            {
+                _activeDoctorFilterButton.BackColor = Color.White;
+                _activeDoctorFilterButton.ForeColor = Color.FromArgb(55, 65, 81);
+                _activeDoctorFilterButton.FlatAppearance.BorderColor = Color.FromArgb(226, 232, 240);
+            }
+
+            btn.BackColor = Color.FromArgb(37, 99, 235);
+            btn.ForeColor = Color.White;
+            btn.FlatAppearance.BorderColor = Color.FromArgb(37, 99, 235);
+            _activeDoctorFilterButton = btn;
+        }
+
+        private IEnumerable<CalendarEventDto> GetFilteredEvents()
+        {
+            IEnumerable<CalendarEventDto> result = _events;
+            if (!string.IsNullOrWhiteSpace(_selectedSpecialty))
+            {
+                result = result.Where(e => string.Equals(e.SpecialtyName, _selectedSpecialty, StringComparison.CurrentCultureIgnoreCase));
+            }
+            if (!string.IsNullOrWhiteSpace(_selectedDoctorName))
+            {
+                result = result.Where(e => string.Equals(e.DoctorName, _selectedDoctorName, StringComparison.CurrentCultureIgnoreCase));
+            }
+            return result;
+        }
+
+        private List<string> GetAvailableDoctors()
+        {
+            var query = _events.AsEnumerable();
+            if (!string.IsNullOrWhiteSpace(_selectedSpecialty))
+            {
+                query = query.Where(e => string.Equals(e.SpecialtyName, _selectedSpecialty, StringComparison.CurrentCultureIgnoreCase));
+            }
+
+            var doctors = query
+                .Select(e => e.DoctorName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.CurrentCultureIgnoreCase)
+                .OrderBy(name => name)
+                .ToList();
+
+            var searchText = _doctorSearchTextBox?.Text;
+            if (!string.IsNullOrWhiteSpace(searchText) && searchText != "Tìm bác sĩ")
+            {
+                doctors = doctors
+                    .Where(d => d.Contains(searchText, StringComparison.CurrentCultureIgnoreCase))
+                    .ToList();
+            }
+
+            if (!string.IsNullOrWhiteSpace(_selectedDoctorName) && !doctors.Contains(_selectedDoctorName, StringComparer.CurrentCultureIgnoreCase))
+            {
+                _selectedDoctorName = null;
+                _activeDoctorFilterButton = null;
+            }
+
+            return doctors;
+        }
+
+        private void UpdateSpecialtyFilterItems()
+        {
+            if (_specialtyFilterComboBox == null) return;
+
+            _isUpdatingFilters = true;
+
+            var selected = _selectedSpecialty;
+            var specialties = _events.Select(e => e.SpecialtyName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.CurrentCultureIgnoreCase)
+                .OrderBy(name => name)
+                .ToList();
+
+            _specialtyFilterComboBox.Items.Clear();
+            _specialtyFilterComboBox.Items.Add("Tất cả chuyên khoa");
+            foreach (var specialty in specialties)
+            {
+                _specialtyFilterComboBox.Items.Add(specialty!);
+            }
+
+            if (string.IsNullOrWhiteSpace(selected))
+            {
+                _specialtyFilterComboBox.SelectedIndex = 0;
+            }
+            else
+            {
+                var index = _specialtyFilterComboBox.Items.IndexOf(selected);
+                _specialtyFilterComboBox.SelectedIndex = index >= 0 ? index : 0;
+            }
+
+            _isUpdatingFilters = false;
+        }
+
+        private void ToggleDoctorFilterWrap()
+        {
+            if (_doctorFilterPanel == null || _doctorFilterToggleButton == null) return;
+
+            _isDoctorFilterExpanded = !_isDoctorFilterExpanded;
+            _doctorFilterPanel.WrapContents = _isDoctorFilterExpanded;
+            _doctorFilterPanel.AutoScroll = !_isDoctorFilterExpanded;
+            _doctorFilterToggleButton.Text = _isDoctorFilterExpanded ? "Thu gọn" : "Xem thêm";
+            userPanel.Height = _isDoctorFilterExpanded ? 200 : 130;
+        }
+
+        private void EnsureDoctorFilterToggleVisibility()
+        {
+            if (_doctorFilterPanel == null || _doctorFilterToggleButton == null) return;
+
+            var totalWidth = _doctorFilterPanel.Controls.Cast<Control>().Sum(c => c.Width + c.Margin.Horizontal);
+            bool shouldShowToggle = totalWidth > _doctorFilterPanel.Width;
+            _doctorFilterToggleButton.Visible = shouldShowToggle;
+        }
+
+        private Panel CreateEventChip(CalendarEventDto ev, string text, Rectangle bounds)
+        {
+            var bg = PickEventColor(text);
+            var chip = new RoundedPanel
+            {
+                Location = bounds.Location,
+                Size = bounds.Size,
+                BackColor = bg,
+                BorderColor = Color.FromArgb(229, 231, 235),
+                BorderThickness = 1,
+                CornerRadius = 6,
+                Tag = ev
+            };
+            var label = new Label
+            {
+                Text = text,
+                Dock = DockStyle.Fill,
+                AutoEllipsis = true,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
+                ForeColor = Color.FromArgb(15, 23, 42),
+                BackColor = Color.Transparent,
+                Padding = new Padding(6, 0, 6, 0)
+            };
+            chip.Controls.Add(label);
+            return chip;
+        }
+
+        private Panel CreateEventBlock(CalendarEventDto ev, Rectangle bounds)
+        {
+            var bg = PickEventColor(ev.DoctorName ?? ev.SpecialtyName ?? "Event");
+            var panel = new RoundedPanel
+            {
+                Location = bounds.Location,
+                Size = bounds.Size,
+                BackColor = bg,
+                BorderColor = Color.FromArgb(226, 232, 240),
+                BorderThickness = 1,
+                CornerRadius = 8,
+                Cursor = Cursors.Hand,
+                Tag = ev,
+                Padding = new Padding(6)
+            };
+            return panel;
+        }
+
+        private Color PickEventColor(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                return EventPalette[0];
+            }
+            int idx = Math.Abs(key.GetHashCode()) % EventPalette.Length;
+            return EventPalette[idx];
+        }
+
 
         // Giữ nguyên class AppointmentDialog
         public class AppointmentDialog : Form
         {
             // ... (giữ nguyên toàn bộ code của AppointmentDialog)
-            private ComboBox serviceComboBox;
-            private ComboBox employeeComboBox;
-            private DateTimePicker datePicker;
-            private ComboBox timeComboBox;
-            private TextBox customerTextBox;
-            private CheckBox notificationCheckBox;
-            private Button cancelBtn;
-            private Button saveBtn;
+            private ComboBox serviceComboBox = null!;
+            private ComboBox employeeComboBox = null!;
+            private DateTimePicker datePicker = null!;
+            private ComboBox timeComboBox = null!;
+            private TextBox customerTextBox = null!;
+            private CheckBox notificationCheckBox = null!;
+            private Button cancelBtn = null!;
+            private Button saveBtn = null!;
 
             public AppointmentDialog()
             {
@@ -926,7 +1437,7 @@ namespace BookingCareManagement.WinForms
                 // Code để refresh danh sách khách hàng
             }
 
-            private void SaveBtn_Click(object sender, EventArgs e)
+            private void SaveBtn_Click(object? sender, EventArgs e)
             {
                 if (serviceComboBox.SelectedIndex == -1)
                 {
