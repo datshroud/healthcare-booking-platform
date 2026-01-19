@@ -72,7 +72,7 @@ namespace BookingCareManagement.WinForms
             panelPager = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 56,
+                Height = 60,
                 BackColor = Color.White,
                 Padding = new Padding(30, 8, 30, 8)
             };
@@ -88,8 +88,8 @@ namespace BookingCareManagement.WinForms
             };
 
             lblPageInfoPager = new Label { AutoSize = true, Text = "Trang 0 / 0", Padding = new Padding(0, 10, 6, 0) };
-            btnPrevPage = new Button { Text = "‹ Trước", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(37, 99, 235), ForeColor = Color.White, Cursor = Cursors.Hand };
-            btnNextPage = new Button { Text = "Tiếp ›", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(37, 99, 235), ForeColor = Color.White, Cursor = Cursors.Hand };
+            btnPrevPage = new Button { Text = "‹ Trước", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(255, 255, 255), ForeColor = Color.Black, Cursor = Cursors.Hand };
+            btnNextPage = new Button { Text = "Tiếp ›", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(255, 255, 255), ForeColor = Color.Black, Cursor = Cursors.Hand };
             comboPageSize = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 80 };
             comboPageSize.Items.AddRange(new object[] { "7", "10", "25", "50", "100" });
             comboPageSize.SelectedItem = _pageSize.ToString();
@@ -804,6 +804,8 @@ namespace BookingCareManagement.WinForms
         {
             textBox.Text = placeholder;
             textBox.ForeColor = Color.LightGray;
+            // keep placeholder text in Tag so event handlers can restore it
+            textBox.Tag = placeholder;
             textBox.Enter += RemovePlaceholder;
             textBox.Leave += SetPlaceholder;
         }
@@ -822,7 +824,11 @@ namespace BookingCareManagement.WinForms
             if (sender is TextBox tb && string.IsNullOrWhiteSpace(tb.Text))
             {
                 tb.ForeColor = Color.LightGray;
-                // determine placeholder based on control reference isn't necessary here; keep empty
+                // restore placeholder text from Tag if present
+                if (tb.Tag is string placeholder)
+                {
+                    tb.Text = placeholder;
+                }
             }
         }
         #endregion
@@ -846,10 +852,21 @@ namespace BookingCareManagement.WinForms
             if (IsEmptyField(txtLastName, "tên")) return false;
             if (IsEmptyField(txtEmail, "email")) return false;
 
-            if (!ValidateEmail(txtEmail.Text))
+            var email = txtEmail.Text?.Trim() ?? string.Empty;
+
+            if (!ValidateEmail(email))
             {
                 MessageBox.Show("Email không hợp lệ! Vui lòng nhập đúng định dạng email.",
                     "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return false;
+            }
+
+            // Enforce gmail.com domain for AddCustomerForm
+            if (!email.EndsWith("@gmail.com", StringComparison.OrdinalIgnoreCase))
+            {
+                MessageBox.Show("Email phải thuộc miền @gmail.com.", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtEmail.Focus();
+                txtEmail.SelectAll();
                 return false;
             }
 
@@ -869,6 +886,8 @@ namespace BookingCareManagement.WinForms
 
         private bool ValidateEmail(string email)
         {
+            if (string.IsNullOrWhiteSpace(email)) return false;
+            email = email.Trim();
             try
             {
                 var addr = new System.Net.Mail.MailAddress(email);
@@ -1248,6 +1267,8 @@ namespace BookingCareManagement.WinForms
 
         private bool ValidateEmail(string email)
         {
+            if (string.IsNullOrWhiteSpace(email)) return false;
+            email = email.Trim();
             try
             {
                 var addr = new System.Net.Mail.MailAddress(email);

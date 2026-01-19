@@ -61,7 +61,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             panelPager = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 56,
+                Height = 60,
                 BackColor = Color.White,
                 Padding = new Padding(27, 8, 27, 8)
             };
@@ -77,8 +77,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             };
 
             lblPageInfoPager = new Label { AutoSize = true, Text = "Trang 0 / 0", Padding = new Padding(0, 10, 6, 0) };
-            btnPrevPage = new Button { Text = "‹ Trước", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(37,99,235), ForeColor = Color.White, Cursor = Cursors.Hand };
-            btnNextPage = new Button { Text = "Tiếp ›", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(37,99,235), ForeColor = Color.White, Cursor = Cursors.Hand };
+            btnPrevPage = new Button { Text = "‹ Trước", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(255, 255, 255), ForeColor = Color.Black, Cursor = Cursors.Hand };
+            btnNextPage = new Button { Text = "Tiếp ›", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(255, 255, 255), ForeColor = Color.Black, Cursor = Cursors.Hand };
             comboPageSize = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 80 };
             comboPageSize.Items.AddRange(new object[] { "6", "10", "25", "50", "100" });
             comboPageSize.SelectedItem = _pageSize.ToString();
