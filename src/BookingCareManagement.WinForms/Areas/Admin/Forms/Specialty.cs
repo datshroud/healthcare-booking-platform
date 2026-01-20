@@ -15,6 +15,9 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 {
     public partial class Specialty : Form
     {
+        // keep reference to currently shown context menu so it stays alive
+        private ContextMenuStrip? _activeContextMenu;
+
         private List<SpecialtyDto> specialties = new();
         private List<SpecialtyDto> filteredSpecialties = new();
         private List<DoctorDto> doctors = new();
@@ -29,7 +32,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private ComboBox comboPageSize;
         private Label lblPageInfoPager;
         private int _currentPage = 1;
-        private int _pageSize = 6; // default 6 per page
+        private int _pageSize = 7; // default 7 per page
         private int _totalItems = 0;
 
         // shared HttpClient for async downloads
@@ -50,9 +53,23 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             this.textBoxSearch.Leave += TextBoxSearch_Leave;
             this.textBoxSearch.TextChanged += TextBoxSearch_TextChanged;
             this.buttonAdd.Click += ButtonAdd_Click;
-            this.buttonEdit.Click += ButtonEdit_Click;
-            this.buttonDelete.Click += ButtonDelete_Click;
             this.dataGridViewSpecialties.CellDoubleClick += DataGridViewSpecialties_CellDoubleClick;
+            // show actions on mouse up to ensure menu receives click
+            this.dataGridViewSpecialties.CellMouseUp += DataGridViewSpecialties_CellMouseUp;
+
+            this.Shown += Specialty_Shown;
+        }
+
+        private void Specialty_Shown(object? sender, EventArgs e)
+        {
+            try
+            {
+                // place labelCount to the right of title to avoid overlap
+                labelCount.Left = labelTitle.Right + 8;
+                labelCount.Top = labelTitle.Top + (labelTitle.Height - labelCount.Height) / 2;
+                labelCount.BringToFront();
+            }
+            catch { }
         }
 
         private void BuildPager()
@@ -76,10 +93,17 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             };
 
             lblPageInfoPager = new Label { AutoSize = true, Text = "Trang 0 / 0", Padding = new Padding(0, 10, 6, 0) };
-            btnPrevPage = new Button { Text = "‹ Trước", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(37,99,235), ForeColor = Color.White, Cursor = Cursors.Hand };
-            btnNextPage = new Button { Text = "Tiếp ›", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(37,99,235), ForeColor = Color.White, Cursor = Cursors.Hand };
+            // pager buttons with white background and black text
+            btnPrevPage = new Button { Text = "‹ Trước", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.White, ForeColor = Color.Black, Cursor = Cursors.Hand };
+            btnNextPage = new Button { Text = "Tiếp ›", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.White, ForeColor = Color.Black, Cursor = Cursors.Hand };
+            // small border for pager buttons
+            btnPrevPage.FlatAppearance.BorderSize = 1;
+            btnPrevPage.FlatAppearance.BorderColor = Color.FromArgb(220, 220, 220);
+            btnNextPage.FlatAppearance.BorderSize = 1;
+            btnNextPage.FlatAppearance.BorderColor = Color.FromArgb(220, 220, 220);
+
             comboPageSize = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 80 };
-            comboPageSize.Items.AddRange(new object[] { "6", "10", "25", "50", "100" });
+            comboPageSize.Items.AddRange(new object[] { "7", "10", "25", "50", "100" });
             comboPageSize.SelectedItem = _pageSize.ToString();
 
             btnPrevPage.Click += (_, _) => { if (_currentPage > 1) { _currentPage--; LoadSpecialties(); } };
@@ -95,19 +119,17 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             pagerInner.Controls.Add(comboPageSize);
 
             panelPager.Controls.Add(pagerInner);
-            panelMain.Controls.Add(panelPager);
+
+            // add a small bottom spacer so pager appears slightly above the bottom
+            var panelBottomSpacer = new Panel { Dock = DockStyle.Bottom, Height = 12, BackColor = Color.Transparent };
+            this.Controls.Add(panelBottomSpacer);
+            // Add pager above spacer
+            this.Controls.Add(panelPager);
             panelPager.BringToFront();
         }
 
         private async void Specialty_Load(object sender, EventArgs e)
         {
-            // Disable nút sửa và xóa ban đầu
-            buttonEdit.Enabled = false;
-            buttonDelete.Enabled = false;
-
-            // Sự kiện selection changed
-            dataGridViewSpecialties.SelectionChanged += DataGridViewSpecialties_SelectionChanged;
-            
             await LoadDataAsync();
         }
 
@@ -117,16 +139,16 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             {
                 // Hiển thị loading
                 this.Cursor = Cursors.WaitCursor;
-                
+
                 // Load danh sách chuyên khoa và bác sĩ từ API
                 var specialtiesTask = _specialtyApiClient.GetAllAsync();
                 var doctorsTask = _doctorApiClient.GetAllAsync();
-                
+
                 await Task.WhenAll(specialtiesTask, doctorsTask);
-                
+
                 specialties = specialtiesTask.Result?.ToList() ?? new List<SpecialtyDto>();
                 doctors = doctorsTask.Result?.ToList() ?? new List<DoctorDto>();
-                
+
                 filteredSpecialties = new List<SpecialtyDto>(specialties);
                 _totalItems = filteredSpecialties.Count;
                 _currentPage = 1;
@@ -158,23 +180,29 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 int rowIndex = dataGridViewSpecialties.Rows.Add();
                 DataGridViewRow row = dataGridViewSpecialties.Rows[rowIndex];
 
-                // Show placeholder immediately
-                row.Cells[0].Value = CreatePlaceholder(specialty.Name, specialty.Color);
+                // Show placeholder immediately (circular)
+                row.Cells[0].Value = CreateCircularPlaceholder(specialty.Name, specialty.Color);
 
                 // Start async load and update cell when ready
                 _ = LoadSpecialtyImageAsync(specialty, row);
 
                 row.Cells[1].Value = specialty.Name;
-                
+
                 // Hiển thị danh sách bác sĩ
                 var doctorNames = specialty.Doctors.Select(d => d.FullName);
                 row.Cells[2].Value = doctorNames.Any() ? string.Join(", ", doctorNames) : "(Chưa có bác sĩ)";
 
                 // Hiển thị giá tiền
-                row.Cells[3].Value = specialty.Price > 0 
-                    ? string.Format("{0:N0} VNĐ", specialty.Price) 
+                row.Cells[3].Value = specialty.Price > 0
+                    ? string.Format("{0:N0} VNĐ", specialty.Price)
                     : "Liên hệ";
-                
+
+                // Hiển thị trạng thái
+                row.Cells[4].Value = specialty.Active ? "Hoạt động" : "Không hoạt động";
+
+                // Actions button
+                row.Cells[5].Value = "···";
+
                 row.Tag = specialty.Id;
             }
             labelCount.Text = $"({_totalItems})";
@@ -200,10 +228,11 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 {
                     using var original = Image.FromFile(specialty.ImageUrl);
                     var resized = ResizeImage(original, 60, 60);
+                    var circular = MakeCircularImage(resized, 60);
                     // update UI on UI thread
                     if (row.DataGridView != null && !row.DataGridView.IsDisposed)
                     {
-                        dataGridViewSpecialties.InvokeIfRequired(() => row.Cells[0].Value = resized);
+                        dataGridViewSpecialties.InvokeIfRequired(() => row.Cells[0].Value = circular);
                     }
                     return;
                 }
@@ -218,9 +247,10 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     await using var stream = await resp.Content.ReadAsStreamAsync();
                     using var original = Image.FromStream(stream);
                     var resized = ResizeImage(original, 60, 60);
+                    var circular = MakeCircularImage(resized, 60);
                     if (row.DataGridView != null && !row.DataGridView.IsDisposed)
                     {
-                        dataGridViewSpecialties.InvokeIfRequired(() => row.Cells[0].Value = resized);
+                        dataGridViewSpecialties.InvokeIfRequired(() => row.Cells[0].Value = circular);
                     }
                     return;
                 }
@@ -238,7 +268,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private Image LoadSpecialtyImage(SpecialtyDto specialty)
         {
             // Return placeholder quickly; real image will be loaded async
-            return CreatePlaceholder(specialty.Name, specialty.Color);
+            return CreateCircularPlaceholder(specialty.Name, specialty.Color);
         }
 
         /// <summary>
@@ -269,36 +299,71 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             return destImage;
         }
 
-        private Bitmap CreatePlaceholder(string name, string? colorHex)
+        private Bitmap CreateCircularPlaceholder(string name, string? colorHex)
         {
-            Bitmap placeholder = new Bitmap(60, 60);
-            using (Graphics g = Graphics.FromImage(placeholder))
+            int size = 60;
+            var bmp = new Bitmap(size, size);
+            using (Graphics g = Graphics.FromImage(bmp))
             {
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
                 Color bgColor;
                 try
                 {
-                    bgColor = string.IsNullOrEmpty(colorHex) 
-                        ? Color.FromArgb(220, 220, 220) 
+                    bgColor = string.IsNullOrEmpty(colorHex)
+                        ? Color.FromArgb(220, 220, 220)
                         : ColorTranslator.FromHtml(colorHex);
                 }
                 catch
                 {
                     bgColor = Color.FromArgb(220, 220, 220);
                 }
-                
-                g.Clear(bgColor);
+
+                // Fill circle background
+                using (Brush b = new SolidBrush(bgColor))
+                {
+                    g.FillEllipse(b, 0, 0, size - 1, size - 1);
+                }
+
                 using (Font font = new Font("Segoe UI", 20, FontStyle.Bold))
                 {
-                    string initial = name.Length > 0 ? name.Substring(0, 1).ToUpper() : "?";
-                    SizeF size = g.MeasureString(initial, font);
-                    
-                    // Chọn màu chữ dựa trên độ sáng của màu nền
+                    string initial = !string.IsNullOrEmpty(name) ? name.Substring(0, 1).ToUpper() : "?";
+                    SizeF sizeF = g.MeasureString(initial, font);
+
+                    // Choose text color based on brightness
                     Brush textBrush = GetBrightness(bgColor) > 128 ? Brushes.Black : Brushes.White;
                     g.DrawString(initial, font, textBrush,
-                        (60 - size.Width) / 2, (60 - size.Height) / 2);
+                        (size - sizeF.Width) / 2, (size - sizeF.Height) / 2);
+                }
+
+                // Draw subtle border
+                using (Pen p = new Pen(Color.FromArgb(200, 200, 200)))
+                {
+                    g.DrawEllipse(p, 0, 0, size - 1, size - 1);
                 }
             }
-            return placeholder;
+            return bmp;
+        }
+
+        private Image MakeCircularImage(Image source, int diameter)
+        {
+            var bmp = new Bitmap(diameter, diameter);
+            using (var g = Graphics.FromImage(bmp))
+            {
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                using (var path = new System.Drawing.Drawing2D.GraphicsPath())
+                {
+                    path.AddEllipse(0, 0, diameter - 1, diameter - 1);
+                    g.SetClip(path);
+                    g.DrawImage(source, 0, 0, diameter, diameter);
+                }
+                // optional border
+                using (var pen = new Pen(Color.FromArgb(200, 200, 200)))
+                {
+                    g.ResetClip();
+                    g.DrawEllipse(pen, 0, 0, diameter - 1, diameter - 1);
+                }
+            }
+            return bmp;
         }
 
         private int GetBrightness(Color color)
@@ -311,7 +376,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
         private void TextBoxSearch_Enter(object sender, EventArgs e)
         {
-            if (textBoxSearch.Text == "Tìm kiếm chuyên khoa...")
+            if (textBoxSearch.Text == "🔍 Tìm kiếm...")
             {
                 textBoxSearch.Text = "";
                 textBoxSearch.ForeColor = Color.Black;
@@ -322,14 +387,14 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         {
             if (string.IsNullOrWhiteSpace(textBoxSearch.Text))
             {
-                textBoxSearch.Text = "Tìm kiếm chuyên khoa...";
-                textBoxSearch.ForeColor = Color.Gray;
+                textBoxSearch.Text = "🔍 Tìm kiếm...";
+                textBoxSearch.ForeColor = Color.FromArgb(100, 100, 100);
             }
         }
 
         private void TextBoxSearch_TextChanged(object sender, EventArgs e)
         {
-            if (textBoxSearch.Text == "Tìm kiếm chuyên khoa..." || string.IsNullOrWhiteSpace(textBoxSearch.Text))
+            if (textBoxSearch.Text == "🔍 Tìm kiếm..." || string.IsNullOrWhiteSpace(textBoxSearch.Text))
             {
                 filteredSpecialties = new List<SpecialtyDto>(specialties);
             }
@@ -347,11 +412,176 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
         private void DataGridViewSpecialties_SelectionChanged(object sender, EventArgs e)
         {
-            bool hasSelection = dataGridViewSpecialties.SelectedRows.Count > 0;
-            buttonEdit.Enabled = hasSelection;
-            buttonDelete.Enabled = hasSelection;
+            // Selection changed event - no longer needed for button enabling
+            // since Edit/Delete buttons are removed from the UI
         }
 
+        private void DataGridViewSpecialties_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+
+            // Check if click is on the Actions button column (column 5)
+            if (e.ColumnIndex == 5)
+            {
+                DataGridViewRow row = dataGridViewSpecialties.Rows[e.RowIndex];
+                var cellRect = dataGridViewSpecialties.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, true);
+                var screenPos = dataGridViewSpecialties.PointToScreen(new Point(cellRect.Left + cellRect.Width / 2, cellRect.Top + cellRect.Height));
+                // Show context menu or handle actions
+                ShowSpecialtyActions(row, screenPos);
+            }
+        }
+
+        private void DataGridViewSpecialties_CellMouseUp(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+            if (e.ColumnIndex == 5 && e.Button == MouseButtons.Left)
+            {
+                var row = dataGridViewSpecialties.Rows[e.RowIndex];
+                // show at current cursor position
+                var screenPos = Cursor.Position;
+                this.BeginInvoke(new Action(() => ShowSpecialtyActions(row, screenPos)));
+            }
+        }
+
+        private void ShowSpecialtyActions(DataGridViewRow row, Point screenPosition)
+        {
+            if (row?.Tag == null) return;
+            Guid selectedId = (Guid)row.Tag;
+
+            // dispose previous if any
+            try { _activeContextMenu?.Dispose(); } catch { }
+
+            _activeContextMenu = new ContextMenuStrip();
+            _activeContextMenu.Tag = selectedId;
+            _activeContextMenu.Items.Add("✏️ Sửa");
+            _activeContextMenu.Items.Add("🗑️ Xóa");
+            _activeContextMenu.ItemClicked += ActiveContextMenu_ItemClicked;
+            _activeContextMenu.Closed += (s, e) => { _activeContextMenu?.Dispose(); _activeContextMenu = null; };
+
+            // show near the cell rect to be consistent
+            int colIndex = row.Cells.IndexOf(row.Cells[5]);
+            var cellRect = dataGridViewSpecialties.GetCellDisplayRectangle(5, row.Index, true);
+            var showAt = dataGridViewSpecialties.PointToScreen(new Point(cellRect.Left + cellRect.Width / 2, cellRect.Bottom));
+            _activeContextMenu.Show(showAt);
+        }
+
+        private void ActiveContextMenu_ItemClicked(object? sender, ToolStripItemClickedEventArgs e)
+        {
+            if (sender is not ContextMenuStrip cms) return;
+            if (!(cms.Tag is Guid id)) return;
+
+            var text = e.ClickedItem?.Text;
+            if (text == "✏️ Sửa") EditSpecialtyById(id);
+            else if (text == "🗑️ Xóa") DeleteSpecialtyById(id);
+        }
+
+        private void EditSpecialtyById(Guid id)
+        {
+            var dto = specialties.FirstOrDefault(s => s.Id == id);
+            if (dto == null)
+            {
+                MessageBox.Show("Không tìm thấy chuyên khoa để sửa.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            EditSpecialty(dto);
+        }
+
+        private void DeleteSpecialtyById(Guid id)
+        {
+            var dto = specialties.FirstOrDefault(s => s.Id == id);
+            if (dto == null)
+            {
+                MessageBox.Show("Không tìm thấy chuyên khoa để xóa.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+            DeleteSpecialty(dto);
+        }
+
+        private async void EditSpecialty(SpecialtyDto selectedSpecialty)
+        {
+            // ensure any active context menu is closed so dialog gets focus
+            try { _activeContextMenu?.Close(); } catch { }
+
+            try
+            {
+                var editorForm = new SpecialtyEditorForm(doctors, selectedSpecialty);
+                // set this form as owner to ensure CenterParent works
+                var result = editorForm.ShowDialog(this);
+
+                if (result == DialogResult.OK)
+                {
+                    try
+                    {
+                        this.Cursor = Cursors.WaitCursor;
+
+                        var request = editorForm.BuildRequest();
+
+                        // If image is a local file, upload it first
+                        if (!string.IsNullOrWhiteSpace(request.ImageUrl) && File.Exists(request.ImageUrl))
+                        {
+                            try
+                            {
+                                var uploaded = await _specialtyApiClient.UploadFileAsync(request.ImageUrl);
+                                if (!string.IsNullOrWhiteSpace(uploaded))
+                                {
+                                    request.ImageUrl = uploaded;
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show($"Không thể upload ảnh: {ex.Message}", "Lỗi upload", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                request.ImageUrl = null;
+                            }
+                        }
+
+                        await _specialtyApiClient.UpdateAsync(selectedSpecialty.Id, request);
+
+                        MessageBox.Show("Cập nhật chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        await LoadDataAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show($"Lỗi khi cập nhật chuyên khoa: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
+                    finally
+                    {
+                        this.Cursor = Cursors.Default;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi mở form chỉnh sửa: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private async void DeleteSpecialty(SpecialtyDto selectedSpecialty)
+        {
+            DialogResult result = MessageBox.Show(
+                $"Bạn có chắc chắn muốn xóa chuyên khoa '{selectedSpecialty.Name}'?",
+                "Xác nhận xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+
+            if (result == DialogResult.Yes)
+            {
+                try
+                {
+                    this.Cursor = Cursors.WaitCursor;
+
+                    await _specialtyApiClient.DeleteAsync(selectedSpecialty.Id);
+
+                    MessageBox.Show("Xóa chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    await LoadDataAsync();
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Lỗi khi xóa chuyên khoa: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+                finally
+                {
+                    this.Cursor = Cursors.Default;
+                }
+             }
+         }
         private async void ButtonAdd_Click(object sender, EventArgs e)
         {
             var editorForm = new SpecialtyEditorForm(doctors);
@@ -360,7 +590,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 try
                 {
                     this.Cursor = Cursors.WaitCursor;
-                    
+
                     var request = editorForm.BuildRequest();
 
                     // If image is a local file, upload it first
@@ -382,7 +612,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     }
 
                     var createdSpecialty = await _specialtyApiClient.CreateAsync(request);
-                    
+
                     if (createdSpecialty != null)
                     {
                         MessageBox.Show("Thêm chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -413,47 +643,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
             if (selectedSpecialty != null)
             {
-                var editorForm = new SpecialtyEditorForm(doctors, selectedSpecialty);
-                if (editorForm.ShowDialog() == DialogResult.OK)
-                {
-                    try
-                    {
-                        this.Cursor = Cursors.WaitCursor;
-                        
-                        var request = editorForm.BuildRequest();
-
-                        // If image is a local file, upload it first
-                        if (!string.IsNullOrWhiteSpace(request.ImageUrl) && File.Exists(request.ImageUrl))
-                        {
-                            try
-                            {
-                                var uploaded = await _specialtyApiClient.UploadFileAsync(request.ImageUrl);
-                                if (!string.IsNullOrWhiteSpace(uploaded))
-                                {
-                                    request.ImageUrl = uploaded;
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                MessageBox.Show($"Không thể upload ảnh: {ex.Message}", "Lỗi upload", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                                request.ImageUrl = null;
-                            }
-                        }
-
-                        await _specialtyApiClient.UpdateAsync(selectedId, request);
-                        
-                        MessageBox.Show("Cập nhật chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        await LoadDataAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Lỗi khi cập nhật chuyên khoa: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                    finally
-                    {
-                        this.Cursor = Cursors.Default;
-                    }
-                }
+                EditSpecialty(selectedSpecialty);
             }
         }
 
@@ -466,36 +656,22 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
             if (selectedSpecialty != null)
             {
-                DialogResult result = MessageBox.Show(
-                    $"Bạn có chắc chắn muốn xóa chuyên khoa '{selectedSpecialty.Name}'?",
-                    "Xác nhận xóa", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-
-                if (result == DialogResult.Yes)
-                {
-                    try
-                    {
-                        this.Cursor = Cursors.WaitCursor;
-                        
-                        await _specialtyApiClient.DeleteAsync(selectedId);
-                        
-                        MessageBox.Show("Xóa chuyên khoa thành công!", "Thành công", MessageBoxButtons.OK, MessageBoxIcon.Information);
-                        await LoadDataAsync();
-                    }
-                    catch (Exception ex)
-                    {
-                        MessageBox.Show($"Lỗi khi xóa chuyên khoa: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    }
-                    finally
-                    {
-                        this.Cursor = Cursors.Default;
-                    }
-                }
+                DeleteSpecialty(selectedSpecialty);
             }
         }
 
         private void DataGridViewSpecialties_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (e.RowIndex >= 0) ButtonEdit_Click(sender, e);
+            if (e.RowIndex >= 0)
+            {
+                DataGridViewRow row = dataGridViewSpecialties.Rows[e.RowIndex];
+                Guid selectedId = (Guid)row.Tag;
+                SpecialtyDto? selectedSpecialty = specialties.FirstOrDefault(s => s.Id == selectedId);
+                if (selectedSpecialty != null)
+                {
+                    EditSpecialty(selectedSpecialty);
+                }
+            }
         }
     }
 

@@ -874,11 +874,22 @@ public sealed class DoctorEditorForm : Form
 
         try
         {
+            var start = DateOnly.FromDateTime(_dtpDayOffStart.Value.Date);
+            var end = DateOnly.FromDateTime(_dtpDayOffEnd.Value.Date);
+
+            // Prevent adding duplicate date ranges regardless of name
+            if (_daysOffList.Any(d => d.StartDate == start && d.EndDate == end))
+            {
+                MessageBox.Show("Không thể thêm: đã tồn tại ngày nghỉ với cùng khoảng thời gian.", "Trùng ngày", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Allow duplicate visible names by sending a name with an invisible suffix when necessary
             var request = new
             {
-                Name = _txtDayOffReason.Text.Trim(),
-                StartDate = DateOnly.FromDateTime(_dtpDayOffStart.Value.Date),
-                EndDate = DateOnly.FromDateTime(_dtpDayOffEnd.Value.Date),
+                Name = PrepareUniqueDayOffName(_txtDayOffReason.Text.Trim(), start, end, null),
+                StartDate = start,
+                EndDate = end,
                 RepeatYearly = _chkRepeatYearly.Checked
             };
 
@@ -908,7 +919,8 @@ public sealed class DoctorEditorForm : Form
         var dayOff = _daysOffList[selectedIndex];
         
         _editingDayOffId = dayOff.Id;
-        _txtDayOffReason.Text = dayOff.Name;
+        // show clean name without invisible markers
+        _txtDayOffReason.Text = StripInvisibleMarkers(dayOff.Name);
         _dtpDayOffStart.Value = dayOff.StartDate.ToDateTime(TimeOnly.MinValue);
         _dtpDayOffEnd.Value = dayOff.EndDate.ToDateTime(TimeOnly.MinValue);
         _chkRepeatYearly.Checked = dayOff.RepeatYearly;
@@ -937,11 +949,22 @@ public sealed class DoctorEditorForm : Form
 
         try
         {
+            var start = DateOnly.FromDateTime(_dtpDayOffStart.Value.Date);
+            var end = DateOnly.FromDateTime(_dtpDayOffEnd.Value.Date);
+
+            // Prevent updating to a date range that already exists on another entry
+            if (_daysOffList.Any(d => d.Id != _editingDayOffId.Value && d.StartDate == start && d.EndDate == end))
+            {
+                MessageBox.Show("Không thể cập nhật: đã tồn tại ngày nghỉ với cùng khoảng thời gian.", "Trùng ngày", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Allow duplicate visible names by sending a name with an invisible suffix when necessary
             var request = new
             {
-                Name = _txtDayOffReason.Text.Trim(),
-                StartDate = DateOnly.FromDateTime(_dtpDayOffStart.Value.Date),
-                EndDate = DateOnly.FromDateTime(_dtpDayOffEnd.Value.Date),
+                Name = PrepareUniqueDayOffName(_txtDayOffReason.Text.Trim(), start, end, _editingDayOffId),
+                StartDate = start,
+                EndDate = end,
                 RepeatYearly = _chkRepeatYearly.Checked
             };
 
@@ -967,7 +990,8 @@ public sealed class DoctorEditorForm : Form
 
         var dayOff = _daysOffList[selectedIndex];
 
-        if (MessageBox.Show($"Bạn có chắc muốn xóa ngày nghỉ '{dayOff.Name}'?", "Xác nhận", 
+        var visibleName = GetDisplayName(dayOff);
+        if (MessageBox.Show($"Bạn có chắc muốn xóa ngày nghỉ '{visibleName}'?", "Xác nhận", 
             MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
         {
             return;
@@ -1295,15 +1319,41 @@ public sealed class DoctorEditorForm : Form
     private void RefreshDaysOffGrid()
     {
         _dgvDaysOff.Rows.Clear();
+        // Precompute counts for visible names (strip invisible markers) so we can show date next to names that are duplicated
+        var nameCounts = _daysOffList
+            .GroupBy(d => StripInvisibleMarkers(d.Name).Trim(), StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
+
         foreach (var dayOff in _daysOffList.OrderBy(d => d.StartDate))
         {
+            var display = GetDisplayName(dayOff, nameCounts);
             _dgvDaysOff.Rows.Add(
-                dayOff.Name,
+                display,
                 dayOff.StartDate.ToString("dd/MM/yyyy"),
                 dayOff.EndDate.ToString("dd/MM/yyyy"),
                 dayOff.RepeatYearly ? "Có" : "Không"
             );
         }
+    }
+
+    private string GetDisplayName(DoctorDayOffDto dayOff, Dictionary<string,int>? nameCounts = null)
+    {
+        var visibleName = StripInvisibleMarkers(dayOff.Name).Trim();
+        if (nameCounts == null)
+        {
+            nameCounts = _daysOffList
+                .GroupBy(d => (d.Name ?? string.Empty).Trim(), StringComparer.OrdinalIgnoreCase)
+                .ToDictionary(g => g.Key, g => g.Count(), StringComparer.OrdinalIgnoreCase);
+        }
+
+        var key = visibleName;
+        if (nameCounts.TryGetValue(key, out var cnt) && cnt > 1)
+        {
+            // show date next to name when there are duplicates
+            return $"{visibleName} ({dayOff.StartDate:dd/MM/yyyy}-{dayOff.EndDate:dd/MM/yyyy})";
+        }
+
+        return visibleName;
     }
 
     private void ClearDayOffInputs()
@@ -1360,5 +1410,31 @@ public sealed class DoctorEditorForm : Form
     {
         // overlap if aStart < bEnd && bStart < aEnd
         return aStart < bEnd && bStart < aEnd;
+    }
+
+    private string PrepareUniqueDayOffName(string baseName, DateOnly start, DateOnly end, Guid? editingId)
+    {
+        baseName ??= string.Empty;
+        var visible = baseName.Trim();
+
+        // If no existing with same visible name, return as-is
+        var same = _daysOffList.Where(d => string.Equals(StripInvisibleMarkers(d.Name).Trim(), visible, StringComparison.OrdinalIgnoreCase));
+        if (!same.Any()) return baseName;
+
+        // If identical date-range exists for same visible name (excluding editing), keep baseName
+        var identical = same.Any(d => d.Id != editingId && d.StartDate == start && d.EndDate == end);
+        if (identical) return baseName;
+
+        // Otherwise append invisible suffix
+        int idx = same.Count();
+        return baseName + '\u200B' + (idx + 1).ToString();
+    }
+
+    private static string StripInvisibleMarkers(string? s)
+    {
+        if (string.IsNullOrEmpty(s)) return string.Empty;
+        var zw = '\u200B';
+        int idx = s.IndexOf(zw);
+        return idx < 0 ? s : s.Substring(0, idx);
     }
 }

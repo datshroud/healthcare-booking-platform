@@ -10,6 +10,7 @@ using BookingCareManagement.WinForms.Shared.Models.Dtos;
 using System.Net;
 using System.IO;
 using System.Net.Http;
+using System.Net.Http.Json;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 {
@@ -29,7 +30,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private ComboBox comboPageSize;
         private Label lblPageInfoPager;
         private int _currentPage = 1;
-        private int _pageSize = 6; // default one page shows 6 doctors
+        private int _pageSize = 7; // default one page shows 7 doctors
         private int _totalItems = 0;
 
         // shared HttpClient for async avatar downloads
@@ -45,15 +46,91 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             // build pager controls programmatically and add to panelMain under dataGridViewDoctors
             BuildPager();
 
+            // =============== ENHANCE UI WITH HOVER EFFECTS ===============
+            EnhanceButtonAppearance();
+
             this.Load += Doctor_Load;
             this.textBoxSearch.Enter += TextBoxSearch_Enter;
             this.textBoxSearch.Leave += TextBoxSearch_Leave;
             this.textBoxSearch.TextChanged += TextBoxSearch_TextChanged;
             this.buttonAdd.Click += ButtonAdd_Click;
-            this.buttonEdit.Click += ButtonEdit_Click;
-            this.buttonDelete.Click += ButtonDelete_Click;
+            this.buttonFilter.Click += (s, e) => MessageBox.Show("Bộ lọc chưa được triển khai", "Thông báo");
             this.dataGridViewDoctors.CellDoubleClick += DataGridViewDoctors_CellDoubleClick;
+            this.dataGridViewDoctors.CellClick += DataGridViewDoctors_CellClick;
             this.dataGridViewDoctors.SelectionChanged += DataGridViewDoctors_SelectionChanged;
+        }
+
+        /// <summary>
+        /// Enhance button appearance with hover effects and modern styling
+        /// </summary>
+        private void EnhanceButtonAppearance()
+        {
+            // Configure Add button (Blue) with hover effect
+            buttonAdd.MouseEnter += (s, e) => buttonAdd.BackColor = Color.FromArgb(0, 85, 179);
+            buttonAdd.MouseLeave += (s, e) => buttonAdd.BackColor = Color.FromArgb(0, 102, 204);
+            
+            // Configure Filter button with hover effect
+            buttonFilter.MouseEnter += (s, e) => buttonFilter.BackColor = Color.FromArgb(245, 245, 247);
+            buttonFilter.MouseLeave += (s, e) => buttonFilter.BackColor = Color.White;
+        }
+
+        // =============== ACTIONS COLUMN HANDLING ===============
+        private void DataGridViewDoctors_CellClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0) return;
+
+            // If Actions column clicked, show context menu with options
+            if (e.ColumnIndex == dataGridViewDoctors.Columns["ColumnActions"].Index)
+            {
+                var row = dataGridViewDoctors.Rows[e.RowIndex];
+                var id = (Guid)row.Tag;
+                var doc = doctors.FirstOrDefault(d => d.Id == id);
+                if (doc == null) return;
+
+                var menu = new ContextMenuStrip();
+                menu.Items.Add("✏️ Chỉnh sửa", null, async (s, ea) =>
+                {
+                    // select row and open edit
+                    row.Selected = true;
+                    ButtonEdit_Click(this, EventArgs.Empty);
+                });
+                var toggleText = doc.Active ? "Vô hiệu hóa" : "Kích hoạt";
+                menu.Items.Add(toggleText, null, async (s, ea) =>
+                {
+                    try
+                    {
+                        this.Cursor = Cursors.WaitCursor;
+                        await _doctorApiClient.UpdateProfileAsync(id, new { AvatarUrl = doc.AvatarUrl, /* keep avatar */ });
+                        // call status endpoint - backend expects PUT /api/Doctor/{id}/status
+                        var client = new HttpClient();
+                        var resp = await client.PutAsJsonAsync($"/api/Doctor/{id}/status", new { active = !doc.Active });
+                    }
+                    catch { }
+                    finally { this.Cursor = Cursors.Default; }
+                    await LoadDataAsync();
+                });
+                menu.Items.Add("🗑️ Xóa", null, async (s, ea) =>
+                {
+                    var confirm = MessageBox.Show($"Bạn có chắc chắn muốn xóa bác sĩ '{doc.FullName}'?", "Xác nhận", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                    if (confirm == DialogResult.Yes)
+                    {
+                        try
+                        {
+                            this.Cursor = Cursors.WaitCursor;
+                            await _doctorApiClient.DeleteAsync(id);
+                        }
+                        catch (Exception ex)
+                        {
+                            MessageBox.Show("Xóa thất bại: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                        finally { this.Cursor = Cursors.Default; }
+                        await LoadDataAsync();
+                    }
+                });
+
+                var p = dataGridViewDoctors.PointToScreen(new Point(dataGridViewDoctors.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, false).Right, dataGridViewDoctors.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, false).Top));
+                menu.Show(p);
+            }
         }
 
         private void BuildPager()
@@ -61,7 +138,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             panelPager = new Panel
             {
                 Dock = DockStyle.Bottom,
-                Height = 56,
+                Height = 90,
                 BackColor = Color.White,
                 Padding = new Padding(27, 8, 27, 8)
             };
@@ -77,37 +154,29 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             };
 
             lblPageInfoPager = new Label { AutoSize = true, Text = "Trang 0 / 0", Padding = new Padding(0, 10, 6, 0) };
-            btnPrevPage = new Button { Text = "‹ Trước", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(37,99,235), ForeColor = Color.White, Cursor = Cursors.Hand };
-            btnNextPage = new Button { Text = "Tiếp ›", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.FromArgb(37,99,235), ForeColor = Color.White, Cursor = Cursors.Hand };
-            comboPageSize = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 80 };
-            comboPageSize.Items.AddRange(new object[] { "6", "10", "25", "50", "100" });
-            comboPageSize.SelectedItem = _pageSize.ToString();
-
+            // Pager buttons: white background with black text as requested
+            btnPrevPage = new Button { Text = "‹ Trước", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.White, ForeColor = Color.Black, Cursor = Cursors.Hand };
+            btnNextPage = new Button { Text = "Tiếp ›", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.White, ForeColor = Color.Black, Cursor = Cursors.Hand };
+            // No page-size selector: user requested to remove the "Hiển thị" control
             btnPrevPage.Click += (_, _) => { if (_currentPage > 1) { _currentPage--; LoadDoctors(); } };
             btnNextPage.Click += (_, _) => { _currentPage++; LoadDoctors(); };
-            comboPageSize.SelectedIndexChanged += (_, _) => { if (int.TryParse(comboPageSize.SelectedItem?.ToString(), out var s)) { _pageSize = s; _currentPage = 1; LoadDoctors(); } };
 
-            // Add controls in logical order: page info then spacer then buttons and page-size
+            // Add controls in logical order: page info then spacer then buttons
             pagerInner.Controls.Add(lblPageInfoPager);
             pagerInner.Controls.Add(new Label { Width = 12 });
             pagerInner.Controls.Add(btnPrevPage);
             pagerInner.Controls.Add(btnNextPage);
-            pagerInner.Controls.Add(new Label { Width = 12 });
-            pagerInner.Controls.Add(new Label { Text = "Hiển thị:", AutoSize = true, Padding = new Padding(6, 12, 0, 0) });
-            pagerInner.Controls.Add(comboPageSize);
 
             panelPager.Controls.Add(pagerInner);
 
-            // Add pager below the data grid inside panelMain
-            panelMain.Controls.Add(panelPager);
+            // Place pager at bottom of the form (outside panelMain) so it won't overlap grid content
+            this.Controls.Add(panelPager);
             panelPager.BringToFront();
         }
 
         private async void Doctor_Load(object sender, EventArgs e)
         {
-            buttonEdit.Enabled = false;
-            buttonDelete.Enabled = false;
-            await LoadDataAsync();
+             await LoadDataAsync();
         }
 
         private async Task LoadDataAsync()
@@ -190,10 +259,11 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 if (File.Exists(doc.AvatarUrl))
                 {
                     using var img = Image.FromFile(doc.AvatarUrl);
-                    var bmp = new Bitmap(img, new Size(60, 60));
+                    using var tmp = new Bitmap(img, new Size(60, 60));
+                    var rounded = MakeRoundedBitmap(tmp, 60);
                     if (row.DataGridView != null && !row.DataGridView.IsDisposed)
                     {
-                        dataGridViewDoctors.InvokeIfRequired(() => row.Cells[0].Value = bmp);
+                        dataGridViewDoctors.InvokeIfRequired(() => row.Cells[0].Value = rounded);
                     }
                     return;
                 }
@@ -205,10 +275,11 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     if (!resp.IsSuccessStatusCode) return;
                     await using var stream = await resp.Content.ReadAsStreamAsync();
                     using var img = Image.FromStream(stream);
-                    var bmp = new Bitmap(img, new Size(60, 60));
+                    using var tmp = new Bitmap(img, new Size(60, 60));
+                    var rounded = MakeRoundedBitmap(tmp, 60);
                     if (row.DataGridView != null && !row.DataGridView.IsDisposed)
                     {
-                        dataGridViewDoctors.InvokeIfRequired(() => row.Cells[0].Value = bmp);
+                        dataGridViewDoctors.InvokeIfRequired(() => row.Cells[0].Value = rounded);
                     }
                     return;
                 }
@@ -232,13 +303,36 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     g.DrawString(initial, font, Brushes.Gray, (60 - size.Width) / 2, (60 - size.Height) / 2);
                 }
             }
-            return placeholder;
+
+            var rounded = MakeRoundedBitmap(placeholder, 60);
+            placeholder.Dispose();
+            return rounded;
+        }
+
+        // Helper: create a circular cropped bitmap of specified diameter
+        private static Bitmap MakeRoundedBitmap(Bitmap src, int diameter)
+        {
+            var dst = new Bitmap(diameter, diameter);
+            dst.MakeTransparent();
+
+            using (Graphics g = Graphics.FromImage(dst))
+            {
+                g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+                using (var path = new System.Drawing.Drawing2D.GraphicsPath())
+                {
+                    path.AddEllipse(0, 0, diameter - 1, diameter - 1);
+                    g.SetClip(path);
+                    g.DrawImage(src, new Rectangle(0, 0, diameter, diameter));
+                }
+            }
+
+            return dst;
         }
 
         // --- Search Logic ---
         private void TextBoxSearch_Enter(object sender, EventArgs e)
         {
-            if (textBoxSearch.Text == "Tìm kiếm bác sĩ...")
+            if (textBoxSearch.Text == "🔍 Tìm kiếm...")
             {
                 textBoxSearch.Text = "";
                 textBoxSearch.ForeColor = Color.Black;
@@ -249,14 +343,14 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         {
             if (string.IsNullOrWhiteSpace(textBoxSearch.Text))
             {
-                textBoxSearch.Text = "Tìm kiếm bác sĩ...";
+                textBoxSearch.Text = "🔍 Tìm kiếm...";
                 textBoxSearch.ForeColor = Color.Gray;
             }
         }
 
         private void TextBoxSearch_TextChanged(object sender, EventArgs e)
         {
-            if (textBoxSearch.Text == "Tìm kiếm bác sĩ..." || string.IsNullOrWhiteSpace(textBoxSearch.Text))
+            if (textBoxSearch.Text == "🔍 Tìm kiếm..." || string.IsNullOrWhiteSpace(textBoxSearch.Text))
             {
                 filteredDoctors = new List<DoctorDto>(doctors);
             }
@@ -279,9 +373,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private void DataGridViewDoctors_SelectionChanged(object sender, EventArgs e)
         {
             bool hasSelection = dataGridViewDoctors.SelectedRows.Count > 0;
-            buttonEdit.Enabled = hasSelection;
-            buttonDelete.Enabled = hasSelection;
-        }
+         }
 
         private async void ButtonAdd_Click(object sender, EventArgs e)
         {
