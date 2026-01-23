@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
+using BookingCareManagement.WinForms.Areas.Customer.Services.Models;
 
 namespace BookingCareManagement.WinForms.Areas.Customer.Services.Models;
 
@@ -51,6 +52,15 @@ public sealed class CustomerBookingApiClient
  using var resp = await client.PostAsJsonAsync("/api/customer-booking", request, cancellationToken);
  await EnsureSuccessAsync(resp);
  return await resp.Content.ReadFromJsonAsync<AppointmentDto>(cancellationToken: cancellationToken);
+ }
+
+ public async Task<CustomerProfileDto?> GetProfileAsync(CancellationToken cancellationToken = default)
+ {
+ var client = _httpClientFactory.CreateClient("BookingCareApi");
+ using var resp = await client.GetAsync("/api/customer-booking/profile", cancellationToken);
+ if (!resp.IsSuccessStatusCode) return null;
+ var profile = await resp.Content.ReadFromJsonAsync<CustomerProfileDto>(cancellationToken: cancellationToken);
+ return profile;
  }
 
  private static async Task EnsureSuccessAsync(HttpResponseMessage response)

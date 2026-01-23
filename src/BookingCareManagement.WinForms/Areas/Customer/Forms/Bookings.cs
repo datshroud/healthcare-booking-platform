@@ -9,12 +9,14 @@ using System.Windows.Forms;
 using BookingCareManagement.WinForms.Areas.Customer.Services;
 using BookingCareManagement.WinForms.Areas.Customer.Services.Models;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
+using BookingCareManagement.WinForms.Shared.State;
 
 namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 {
     public partial class Bookings : Form
     {
         private readonly CustomerBookingApiClient _apiClient;
+        private readonly SessionState _session;
 
         private Guid selectedSpecialtyId = Guid.Empty;
         private Guid selectedEmployeeId = Guid.Empty;
@@ -39,9 +41,10 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
 
         private BookingStep currentStep = BookingStep.Specialty;
 
-        public Bookings(CustomerBookingApiClient apiClient)
+        public Bookings(CustomerBookingApiClient apiClient, SessionState session)
         {
             _apiClient = apiClient;
+            _session = session;
             InitializeComponent();
 
             // Thiết lập sự kiện
@@ -70,6 +73,9 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             // Load initial data from API, fallback to local static data if API not reachable
             await InitializeDataAsync();
 
+            // Load current user profile to pre-fill name and phone
+            _ = LoadCurrentUserProfileAsync();
+            
             LoadSpecialties();
             // Make sure card widths match container
             AdjustCardWidths();
@@ -77,6 +83,76 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             dateTimePickerAppointment.MinDate = DateTime.Now.AddDays(2);
             dateTimePickerAppointment.MaxDate = DateTime.Now.AddMonths(3);
             dateTimePickerAppointment.Value = DateTime.Now.AddDays(2);
+        }
+        
+        private async Task LoadCurrentUserProfileAsync()
+        {
+            try
+            {
+                // Prefer session state (already loaded at login or after editing account)
+                if (_session != null && _session.IsAuthenticated)
+                {
+                    var nameFromSession = _session.DisplayName;
+                    var phoneFromSession = string.Empty; // SessionState currently doesn't expose phone; try profile API as fallback
+
+                    if (this.InvokeRequired)
+                    {
+                        this.Invoke(new Action(() =>
+                        {
+                            if (!string.IsNullOrWhiteSpace(nameFromSession)) textBoxName.Text = nameFromSession;
+                        }));
+                    }
+                    else
+                    {
+                        if (!string.IsNullOrWhiteSpace(nameFromSession)) textBoxName.Text = nameFromSession;
+                    }
+
+                    // Try to get phone from server profile if API available
+                    try
+                    {
+                        var profile = await _apiClient.GetProfileAsync();
+                        if (profile != null && !string.IsNullOrWhiteSpace(profile.PhoneNumber))
+                        {
+                            if (this.InvokeRequired)
+                            {
+                                this.Invoke(new Action(() => textBoxPhone.Text = profile.PhoneNumber));
+                            }
+                            else
+                            {
+                                textBoxPhone.Text = profile.PhoneNumber;
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // ignore
+                    }
+
+                    return;
+                }
+
+                // Fallback: call profile API directly
+                var profileApi = await _apiClient.GetProfileAsync();
+                if (profileApi is null) return;
+
+                if (this.InvokeRequired)
+                {
+                    this.Invoke(new Action(() =>
+                    {
+                        if (!string.IsNullOrWhiteSpace(profileApi.FullName)) textBoxName.Text = profileApi.FullName;
+                        if (!string.IsNullOrWhiteSpace(profileApi.PhoneNumber)) textBoxPhone.Text = profileApi.PhoneNumber;
+                    }));
+                }
+                else
+                {
+                    if (!string.IsNullOrWhiteSpace(profileApi.FullName)) textBoxName.Text = profileApi.FullName;
+                    if (!string.IsNullOrWhiteSpace(profileApi.PhoneNumber)) textBoxPhone.Text = profileApi.PhoneNumber;
+                }
+            }
+            catch
+            {
+                // ignore
+            }
         }
 
         private async Task InitializeDataAsync()
@@ -647,12 +723,15 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
             // Ensure initial data loaded
             await InitializeDataAsync();
 
+            // Ensure user profile loaded so name/phone are prefilled
+            await LoadCurrentUserProfileAsync();
+
             // Set selection
             selectedSpecialtyId = specialtyId;
             selectedSpecialty = specialtyName ?? string.Empty;
             totalPrice = price;
 
-            labelSelectedSpecialtyValue.Text = selectedSpecialty;
+            labelSelectedSpecialtyValue.Text = specialtyName;
             labelTotalPrice.Text = $"{totalPrice:N0} VNĐ";
             labelCheckoutTotal.Text = $"{totalPrice:N0} VNĐ";
             panelTotalSection.Visible = true;
