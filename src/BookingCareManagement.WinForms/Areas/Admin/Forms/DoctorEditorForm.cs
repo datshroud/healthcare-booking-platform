@@ -427,8 +427,8 @@ public sealed class DoctorEditorForm : Form
 
             var pnlRow = new Panel
             {
-                Size = new Size(860, 40),
-                Margin = new Padding(0, 3, 0, 3), // Margin giữa các dòng
+                Size = new Size(860, 120), // increased row height to fit 5 lines in ListBox
+                Margin = new Padding(0, 6, 0, 6),
                 BackColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle
             };
@@ -436,7 +436,8 @@ public sealed class DoctorEditorForm : Form
             var chkDay = new CheckBox
             {
                 Text = day,
-                Location = new Point(10, 10),
+                // position vertically centered relative to row height
+                Location = new Point(10, (pnlRow.Height - 20) / 2),
                 Width = 110,
                 Font = new Font("Segoe UI", 9, FontStyle.Regular),
                 ForeColor = Color.FromArgb(30, 41, 59)
@@ -445,36 +446,64 @@ public sealed class DoctorEditorForm : Form
             // ListBox to display multiple slots
             var lbSlots = new ListBox
             {
-                Location = new Point(180, 6),
-                Size = new Size(240, 28),
+                // keep X a bit after checkbox
+                Location = new Point(140, 12),
+                Size = new Size(320, 5 * 20), // height to display ~5 rows (20px per item estimate)
                 Font = new Font("Segoe UI", 9),
-                Enabled = false
+                Enabled = false,
+                IntegralHeight = false,
+                HorizontalScrollbar = false
             };
+            // Try to set ItemHeight based on font metrics for better accuracy
+            try
+            {
+                lbSlots.ItemHeight = TextRenderer.MeasureText("00:00", lbSlots.Font).Height;
+                // adjust exact height to fit 5 items
+                lbSlots.Height = lbSlots.ItemHeight * 5 + 4;
+            }
+            catch
+            {
+                // fallback - already set size above
+            }
 
             // Manage button to open dialog for add/edit/delete
             var btnManage = new Button
             {
                 Text = "Quản lý",
-                Location = new Point(720, 6),
                 Size = new Size(80, 28),
                 Font = new Font("Segoe UI", 9),
                 Enabled = false,
                 Cursor = Cursors.Hand,
-                FlatStyle = FlatStyle.Flat
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(0, 85, 179), // dark blue
+                ForeColor = Color.White
             };
             btnManage.FlatAppearance.BorderSize = 0;
+            btnManage.MouseEnter += (s, e) => { try { btnManage.BackColor = Color.FromArgb(0, 102, 204); } catch { } };
+            btnManage.MouseLeave += (s, e) => { try { btnManage.BackColor = Color.FromArgb(0, 85, 179); } catch { } };
 
             var btnApply = new Button
             {
                 Text = "Áp dụng cho ngày khác",
-                Location = new Point(430, 6),
-                Size = new Size(170, 28),
+                Size = new Size(140, 28),
                 Font = new Font("Segoe UI", 8, FontStyle.Regular),
                 Enabled = false,
                 Cursor = Cursors.Hand,
-                FlatStyle = FlatStyle.Flat
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.FromArgb(0, 85, 179), // dark blue
+                ForeColor = Color.White
             };
             btnApply.FlatAppearance.BorderSize = 0;
+            btnApply.MouseEnter += (s, e) => { try { btnApply.BackColor = Color.FromArgb(0, 102, 204); } catch { } };
+            btnApply.MouseLeave += (s, e) => { try { btnApply.BackColor = Color.FromArgb(0, 85, 179); } catch { } };
+
+            // Position buttons relative to ListBox to ensure consistent small gap
+            int gap = 8; // horizontal gap between controls
+            // Place Apply button just to the right of ListBox
+            btnApply.Location = new Point(lbSlots.Right + gap, lbSlots.Top + (lbSlots.Height - btnApply.Height) / 2);
+            // Place Manage button to the right of Apply button with same gap + a small extra offset
+            int extraManageOffset = 12; // move manage slightly to the right
+            btnManage.Location = new Point(btnApply.Right + gap + extraManageOffset, btnApply.Top);
 
             chkDay.CheckedChanged += (s, e) =>
             {
@@ -515,7 +544,7 @@ public sealed class DoctorEditorForm : Form
                 {
                     lbSlots.Items.Add($"{slot.Start:hh\\:mm} - {slot.End:hh\\:mm}");
                 }
-                lbSlots.SelectedIndex = lbSlots.Items.Count - 1 >= 0 ? lbSlots.Items.Count - 1 : -1;
+                // keep fixed size and allow vertical scrollbar when items overflow
             };
 
             pnlRow.Controls.AddRange(new Control[] { 

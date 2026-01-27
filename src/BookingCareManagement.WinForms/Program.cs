@@ -23,17 +23,30 @@ static class Program
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
         Application.ThreadException += (s, e) =>
         {
-            Console.Error.WriteLine("Unhandled UI thread exception:");
-            Console.Error.WriteLine(e.Exception.ToString());
+            try
+            {
+                Console.Error.WriteLine("Unhandled UI thread exception:");
+                Console.Error.WriteLine(e.Exception.ToString());
+                MessageBox.Show($"Lỗi không xử lý trong UI thread:\n\n{e.Exception}", "Lỗi chưa xử lý", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+            catch { }
         };
 
         AppDomain.CurrentDomain.UnhandledException += (s, e) =>
         {
-            Console.Error.WriteLine("Unhandled domain exception:");
-            if (e.ExceptionObject is Exception ex)
-                Console.Error.WriteLine(ex.ToString());
-            else
-                Console.Error.WriteLine(e.ExceptionObject?.ToString());
+            try
+            {
+                Console.Error.WriteLine("Unhandled domain exception:");
+                if (e.ExceptionObject is Exception ex)
+                    Console.Error.WriteLine(ex.ToString());
+                else
+                    Console.Error.WriteLine(e.ExceptionObject?.ToString());
+
+                // try to show a message so user sees the error when app terminates
+                var msg = e.ExceptionObject is Exception ex2 ? ex2.ToString() : e.ExceptionObject?.ToString() ?? "Unknown error";
+                try { MessageBox.Show($"Lỗi không xử lý (domain):\n\n{msg}", "Lỗi chưa xử lý", MessageBoxButtons.OK, MessageBoxIcon.Error); } catch { }
+            }
+            catch { }
         };
 
         // now proceed with host and login flow

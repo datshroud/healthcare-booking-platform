@@ -14,15 +14,16 @@
 
         private void InitializeComponent()
         {
-            DataGridViewCellStyle dataGridViewCellStyle4 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle5 = new DataGridViewCellStyle();
-            DataGridViewCellStyle dataGridViewCellStyle6 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle3 = new DataGridViewCellStyle();
             panelTop = new Panel();
             labelTitle = new Label();
             labelCount = new Label();
             buttonAdd = new Button();
             panelSearchFilter = new Panel();
             textBoxSearch = new TextBox();
+            buttonFilter = new Button();
             panelMain = new Panel();
             dataGridViewDoctors = new DataGridView();
             ColumnImage = new DataGridViewImageColumn();
@@ -32,7 +33,6 @@
             ColumnSpecialty = new DataGridViewTextBoxColumn();
             ColumnStatus = new DataGridViewTextBoxColumn();
             ColumnActions = new DataGridViewButtonColumn();
-            buttonFilter = new Button();
             panelTop.SuspendLayout();
             panelSearchFilter.SuspendLayout();
             panelMain.SuspendLayout();
@@ -67,11 +67,11 @@
             // labelCount
             // 
             labelCount.AutoSize = true;
-            labelCount.Font = new Font("Segoe UI", 18F, FontStyle.Regular, GraphicsUnit.Point, 0);
+            labelCount.Font = new Font("Segoe UI", 19.8000011F, FontStyle.Regular, GraphicsUnit.Point, 0);
             labelCount.ForeColor = Color.Black;
             labelCount.Location = new Point(188, 25);
             labelCount.Name = "labelCount";
-            labelCount.Size = new Size(52, 41);
+            labelCount.Size = new Size(58, 46);
             labelCount.TabIndex = 3;
             labelCount.Text = "(0)";
             // 
@@ -117,6 +117,22 @@
             textBoxSearch.TabIndex = 1;
             textBoxSearch.Text = "🔍 Tìm kiếm...";
             // 
+            // buttonFilter
+            // 
+            buttonFilter.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            buttonFilter.BackColor = Color.White;
+            buttonFilter.Cursor = Cursors.Hand;
+            buttonFilter.FlatAppearance.BorderColor = Color.FromArgb(210, 210, 215);
+            buttonFilter.FlatStyle = FlatStyle.Flat;
+            buttonFilter.Font = new Font("Segoe UI", 11F);
+            buttonFilter.ForeColor = Color.FromArgb(29, 29, 31);
+            buttonFilter.Location = new Point(1220, 12);
+            buttonFilter.Name = "buttonFilter";
+            buttonFilter.Size = new Size(150, 36);
+            buttonFilter.TabIndex = 2;
+            buttonFilter.Text = "🔽 Bộ lọc";
+            buttonFilter.UseVisualStyleBackColor = false;
+            // 
             // panelMain
             // 
             panelMain.BackColor = Color.White;
@@ -133,36 +149,36 @@
             // 
             dataGridViewDoctors.AllowUserToAddRows = false;
             dataGridViewDoctors.AllowUserToDeleteRows = false;
-            dataGridViewCellStyle4.BackColor = Color.FromArgb(250, 250, 250);
-            dataGridViewCellStyle4.Font = new Font("Segoe UI", 10F);
-            dataGridViewCellStyle4.ForeColor = Color.FromArgb(29, 29, 31);
-            dataGridViewDoctors.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle4;
+            dataGridViewCellStyle1.BackColor = Color.FromArgb(250, 250, 250);
+            dataGridViewCellStyle1.Font = new Font("Segoe UI", 10F);
+            dataGridViewCellStyle1.ForeColor = Color.FromArgb(29, 29, 31);
+            dataGridViewDoctors.AlternatingRowsDefaultCellStyle = dataGridViewCellStyle1;
             dataGridViewDoctors.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dataGridViewDoctors.BackgroundColor = Color.White;
             dataGridViewDoctors.BorderStyle = BorderStyle.None;
             dataGridViewDoctors.CellBorderStyle = DataGridViewCellBorderStyle.None;
             dataGridViewDoctors.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
-            dataGridViewCellStyle5.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle5.BackColor = Color.FromArgb(250, 250, 250);
-            dataGridViewCellStyle5.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
-            dataGridViewCellStyle5.ForeColor = Color.FromArgb(134, 134, 139);
-            dataGridViewCellStyle5.Padding = new Padding(0, 12, 0, 12);
-            dataGridViewCellStyle5.SelectionBackColor = Color.FromArgb(250, 250, 250);
-            dataGridViewCellStyle5.SelectionForeColor = Color.FromArgb(134, 134, 139);
-            dataGridViewCellStyle5.WrapMode = DataGridViewTriState.True;
-            dataGridViewDoctors.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle5;
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = Color.FromArgb(250, 250, 250);
+            dataGridViewCellStyle2.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            dataGridViewCellStyle2.ForeColor = Color.FromArgb(134, 134, 139);
+            dataGridViewCellStyle2.Padding = new Padding(0, 12, 0, 12);
+            dataGridViewCellStyle2.SelectionBackColor = Color.FromArgb(250, 250, 250);
+            dataGridViewCellStyle2.SelectionForeColor = Color.FromArgb(134, 134, 139);
+            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.True;
+            dataGridViewDoctors.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle2;
             dataGridViewDoctors.ColumnHeadersHeight = 62;
             dataGridViewDoctors.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             dataGridViewDoctors.Columns.AddRange(new DataGridViewColumn[] { ColumnImage, ColumnName, ColumnEmail, ColumnPhone, ColumnSpecialty, ColumnStatus, ColumnActions });
-            dataGridViewCellStyle6.Alignment = DataGridViewContentAlignment.MiddleLeft;
-            dataGridViewCellStyle6.BackColor = Color.White;
-            dataGridViewCellStyle6.Font = new Font("Segoe UI", 10F);
-            dataGridViewCellStyle6.ForeColor = Color.FromArgb(29, 29, 31);
-            dataGridViewCellStyle6.Padding = new Padding(0, 12, 0, 12);
-            dataGridViewCellStyle6.SelectionBackColor = Color.FromArgb(230, 245, 255);
-            dataGridViewCellStyle6.SelectionForeColor = Color.FromArgb(29, 29, 31);
-            dataGridViewCellStyle6.WrapMode = DataGridViewTriState.False;
-            dataGridViewDoctors.DefaultCellStyle = dataGridViewCellStyle6;
+            dataGridViewCellStyle3.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle3.BackColor = Color.White;
+            dataGridViewCellStyle3.Font = new Font("Segoe UI", 10F);
+            dataGridViewCellStyle3.ForeColor = Color.FromArgb(29, 29, 31);
+            dataGridViewCellStyle3.Padding = new Padding(0, 12, 0, 12);
+            dataGridViewCellStyle3.SelectionBackColor = Color.FromArgb(230, 245, 255);
+            dataGridViewCellStyle3.SelectionForeColor = Color.FromArgb(29, 29, 31);
+            dataGridViewCellStyle3.WrapMode = DataGridViewTriState.False;
+            dataGridViewDoctors.DefaultCellStyle = dataGridViewCellStyle3;
             dataGridViewDoctors.Dock = DockStyle.Fill;
             dataGridViewDoctors.EnableHeadersVisualStyles = false;
             dataGridViewDoctors.GridColor = Color.White;
@@ -236,22 +252,6 @@
             ColumnActions.ReadOnly = true;
             ColumnActions.Text = "···";
             ColumnActions.UseColumnTextForButtonValue = true;
-            // 
-            // buttonFilter
-            // 
-            buttonFilter.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            buttonFilter.BackColor = Color.White;
-            buttonFilter.Cursor = Cursors.Hand;
-            buttonFilter.FlatAppearance.BorderColor = Color.FromArgb(210, 210, 215);
-            buttonFilter.FlatStyle = FlatStyle.Flat;
-            buttonFilter.Font = new Font("Segoe UI", 11F);
-            buttonFilter.ForeColor = Color.FromArgb(29, 29, 31);
-            buttonFilter.Location = new Point(1220, 12);
-            buttonFilter.Name = "buttonFilter";
-            buttonFilter.Size = new Size(150, 36);
-            buttonFilter.TabIndex = 2;
-            buttonFilter.Text = "🔽 Bộ lọc";
-            buttonFilter.UseVisualStyleBackColor = false;
             // 
             // Doctor
             // 

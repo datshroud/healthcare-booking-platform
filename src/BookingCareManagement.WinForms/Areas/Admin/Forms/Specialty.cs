@@ -15,8 +15,13 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 {
     public partial class Specialty : Form
     {
-        // keep reference to currently shown context menu so it stays alive
+        // keep single context menu instance to avoid dispose/reentrancy races
         private ContextMenuStrip? _activeContextMenu;
+        // simple diagnostic log path
+        private readonly string _diagLogPath = Path.Combine(Path.GetTempPath(), "specialty_actions.log");
+        // lock to prevent reentrant menu creation
+        private readonly object _menuLock = new object();
+        private DateTime _lastMenuShown = DateTime.MinValue;
 
         private List<SpecialtyDto> specialties = new();
         private List<SpecialtyDto> filteredSpecialties = new();
@@ -55,6 +60,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             this.buttonAdd.Click += ButtonAdd_Click;
             this.dataGridViewSpecialties.CellDoubleClick += DataGridViewSpecialties_CellDoubleClick;
             // show actions on mouse up to ensure menu receives click
+            // ensure CellClick won't conflict
+            try { this.dataGridViewSpecialties.CellClick -= DataGridViewSpecialties_CellClick; } catch { }
             this.dataGridViewSpecialties.CellMouseUp += DataGridViewSpecialties_CellMouseUp;
 
             this.Shown += Specialty_Shown;
@@ -433,69 +440,133 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
         private void DataGridViewSpecialties_CellMouseUp(object sender, DataGridViewCellMouseEventArgs e)
         {
-            if (e.RowIndex < 0) return;
-            if (e.ColumnIndex == 5 && e.Button == MouseButtons.Left)
+            try
             {
-                var row = dataGridViewSpecialties.Rows[e.RowIndex];
-                // show at current cursor position
-                var screenPos = Cursor.Position;
-                this.BeginInvoke(new Action(() => ShowSpecialtyActions(row, screenPos)));
+                if (e.RowIndex < 0) return;
+                if (e.ColumnIndex == 5 && e.Button == MouseButtons.Left)
+                {
+                    var row = dataGridViewSpecialties.Rows[e.RowIndex];
+                    // show at current cursor position
+                    var screenPos = Cursor.Position;
+                    this.BeginInvoke(new Action(() => ShowSpecialtyActions(row, screenPos)));
+                }
             }
-        }
+            catch (Exception ex)
+            {
+                // swallow unexpected exceptions to avoid crashing the app
+                try { MessageBox.Show($"Lỗi khi hiển thị menu hành động: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error); } catch { }
+            }
+         }
 
         private void ShowSpecialtyActions(DataGridViewRow row, Point screenPosition)
         {
-            if (row?.Tag == null) return;
-            Guid selectedId = (Guid)row.Tag;
+            try
+            {
+                if (row?.Tag == null) return;
+                if (!(row.Tag is Guid selectedId)) return;
 
-            // dispose previous if any
-            try { _activeContextMenu?.Dispose(); } catch { }
+                // reuse single context menu instance to avoid disposing while native events active
+                try
+                {
+                    LogDiag($"ShowSpecialtyActions: preparing menu for {selectedId} at {DateTime.UtcNow:O}");
+                    if (_activeContextMenu == null)
+                    {
+                        _activeContextMenu = new ContextMenuStrip();
+                        _activeContextMenu.ItemClicked += ActiveContextMenu_ItemClicked;
+                        _activeContextMenu.Closed += (s, e) =>
+                        {
+                            try { dataGridViewSpecialties.Enabled = true; } catch { }
+                        };
+                    }
 
-            _activeContextMenu = new ContextMenuStrip();
-            _activeContextMenu.Tag = selectedId;
-            _activeContextMenu.Items.Add("✏️ Sửa");
-            _activeContextMenu.Items.Add("🗑️ Xóa");
-            _activeContextMenu.ItemClicked += ActiveContextMenu_ItemClicked;
-            _activeContextMenu.Closed += (s, e) => { _activeContextMenu?.Dispose(); _activeContextMenu = null; };
+                    // update items safely
+                    _activeContextMenu.Tag = selectedId;
+                    _activeContextMenu.Items.Clear();
+                    _activeContextMenu.Items.Add("✏️ Sửa");
+                    _activeContextMenu.Items.Add("🗑️ Xóa");
 
-            // show near the cell rect to be consistent
-            int colIndex = row.Cells.IndexOf(row.Cells[5]);
-            var cellRect = dataGridViewSpecialties.GetCellDisplayRectangle(5, row.Index, true);
-            var showAt = dataGridViewSpecialties.PointToScreen(new Point(cellRect.Left + cellRect.Width / 2, cellRect.Bottom));
-            _activeContextMenu.Show(showAt);
-        }
+                    // disable grid while menu is open to avoid reentrant clicks
+                    try { dataGridViewSpecialties.Enabled = false; } catch { }
+                }
+                catch { }
+
+                // throttle menu showing to prevent rapid double-click crashes
+                var now = DateTime.Now;
+                if ((now - _lastMenuShown).TotalMilliseconds < 200)
+                {
+                    // too fast, ignore
+                    return;
+                }
+                _lastMenuShown = now;
+
+                // show near the cell rect to be consistent
+                var cellRect = dataGridViewSpecialties.GetCellDisplayRectangle(5, row.Index, true);
+                var showAt = dataGridViewSpecialties.PointToScreen(new Point(cellRect.Left + cellRect.Width / 2, cellRect.Bottom));
+                _activeContextMenu?.Show(showAt);
+                LogDiag($"ShowSpecialtyActions: shown for {selectedId} at {DateTime.UtcNow:O}");
+            }
+            catch (Exception ex)
+            {
+                try { MessageBox.Show($"Lỗi khi hiển thị menu hành động: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error); } catch { }
+            }
+         }
 
         private void ActiveContextMenu_ItemClicked(object? sender, ToolStripItemClickedEventArgs e)
         {
-            if (sender is not ContextMenuStrip cms) return;
-            if (!(cms.Tag is Guid id)) return;
+            try
+            {
+                if (sender is not ContextMenuStrip cms) return;
+                if (!(cms.Tag is Guid id)) return;
 
-            var text = e.ClickedItem?.Text;
-            if (text == "✏️ Sửa") EditSpecialtyById(id);
-            else if (text == "🗑️ Xóa") DeleteSpecialtyById(id);
-        }
+                var text = e.ClickedItem?.Text;
+                LogDiag($"ActiveContextMenu_ItemClicked: {text} for {id} at {DateTime.UtcNow:O}");
+
+                // close menu, keep handler attached so menu works repeatedly
+                try { if (cms.Visible) cms.Close(); } catch { }
+
+                // ensure action runs after menu is closed (avoid running inside menu event)
+                this.BeginInvoke(new Action(() =>
+                {
+                    try
+                    {
+                        if (text == "✏️ Sửa") EditSpecialtyById(id);
+                        else if (text == "🗑️ Xóa") DeleteSpecialtyById(id);
+                    }
+                    catch (Exception ex)
+                    {
+                        LogDiag($"ActiveContextMenu_ItemClicked action error: {ex}");
+                    }
+                }));
+            }
+            catch (Exception ex)
+            {
+                LogDiag($"ActiveContextMenu_ItemClicked exception: {ex}");
+            }
+         }
 
         private void EditSpecialtyById(Guid id)
         {
-            var dto = specialties.FirstOrDefault(s => s.Id == id);
-            if (dto == null)
-            {
-                MessageBox.Show("Không tìm thấy chuyên khoa để sửa.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            EditSpecialty(dto);
-        }
+            LogDiag($"EditSpecialtyById invoked for {id} at {DateTime.UtcNow:O}");
+             var dto = specialties.FirstOrDefault(s => s.Id == id);
+             if (dto == null)
+             {
+                 MessageBox.Show("Không tìm thấy chuyên khoa để sửa.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                 return;
+             }
+             EditSpecialty(dto);
+         }
 
         private void DeleteSpecialtyById(Guid id)
         {
-            var dto = specialties.FirstOrDefault(s => s.Id == id);
-            if (dto == null)
-            {
-                MessageBox.Show("Không tìm thấy chuyên khoa để xóa.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-            DeleteSpecialty(dto);
-        }
+            LogDiag($"DeleteSpecialtyById invoked for {id} at {DateTime.UtcNow:O}");
+             var dto = specialties.FirstOrDefault(s => s.Id == id);
+             if (dto == null)
+             {
+                 MessageBox.Show("Không tìm thấy chuyên khoa để xóa.", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                 return;
+             }
+             DeleteSpecialty(dto);
+         }
 
         private async void EditSpecialty(SpecialtyDto selectedSpecialty)
         {
@@ -672,6 +743,15 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     EditSpecialty(selectedSpecialty);
                 }
             }
+        }
+
+        private void LogDiag(string message)
+        {
+            try
+            {
+                File.AppendAllText(_diagLogPath, message + "\r\n");
+            }
+            catch { }
         }
     }
 
