@@ -97,7 +97,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             });
 
             // Other columns
-            appointmentGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Time", HeaderText = "Thời Gian", FillWeight = 10 });
+            appointmentGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Time", HeaderText = "Thời Gian", FillWeight = 15 });
             appointmentGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Service", HeaderText = "Dịch Vụ", FillWeight = 15 });
             appointmentGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Customer", HeaderText = "Khách Hàng", FillWeight = 25 });
             appointmentGrid.Columns.Add(new DataGridViewTextBoxColumn { Name = "Duration", HeaderText = "Thời Lượng", FillWeight = 10 });
@@ -324,9 +324,44 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             appointmentGrid.ContextMenuStrip = contextMenu;
             appointmentGrid.CellContentClick += async (_, args) =>
             {
-                if (args.ColumnIndex == appointmentGrid.Columns["Action"].Index && args.RowIndex >= 0)
+                if (args.ColumnIndex == appointmentGrid.Columns["Action"].Index && args.RowIndex >=0)
                 {
-                    await ShowUpsertDialogAsync(GetRowAtIndex(args.RowIndex));
+                    var row = GetRowAtIndex(args.RowIndex);
+                    if (row == null) return;
+
+                    var menu = new ContextMenuStrip();
+                    var editItem = new ToolStripMenuItem("Chỉnh sửa");
+                    var deleteItem = new ToolStripMenuItem("Xóa");
+
+                    editItem.Click += async (_, _) =>
+                    {
+                        await ShowUpsertDialogAsync(row);
+                    };
+
+                    deleteItem.Click += async (_, _) =>
+                    {
+                        if (!_dialogService.Confirm("Bạn có chắc chắn muốn xóa cuộc hẹn này?"))
+                        {
+                            return;
+                        }
+
+                        try
+                        {
+                            var request = new AdminAppointmentStatusRequest { Status = "canceled" };
+                            await _appointmentsApiClient.UpdateStatusAsync(row.Id, request);
+                            await LoadAppointmentsAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            _dialogService.ShowError($"Xóa cuộc hẹn thất bại: {ex.Message}");
+                        }
+                    };
+
+                    menu.Items.Add(editItem);
+                    menu.Items.Add(deleteItem);
+
+                    var cellRect = appointmentGrid.GetCellDisplayRectangle(args.ColumnIndex, args.RowIndex, true);
+                    menu.Show(appointmentGrid, new Point(cellRect.Left, cellRect.Bottom));
                 }
             };
         }
@@ -399,16 +434,17 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             data = ApplyDropdownFilter(_employeeDropdown, data);
             data = ApplyDropdownFilter(_statusDropdown, data);
 
-            var rows = data.OrderBy(a => a.Start).ToList();
+            // Show newest appointments first
+            var rows = data.OrderByDescending(a => a.Start).ToList();
 
             // Set filtered list and render current page
             _filteredAppointments = rows;
-            _currentPage = 1;
+            _currentPage =1;
             RenderPage();
 
             lblTitle.Text = $"Lịch Hẹn ({rows.Count})";
-            appointmentGrid.Visible = rows.Count > 0 && _filteredAppointments.Any();
-            emptyStatePanel.Visible = rows.Count == 0;
+            appointmentGrid.Visible = rows.Count >0 && _filteredAppointments.Any();
+            emptyStatePanel.Visible = rows.Count ==0;
         }
 
         private void InitializePaginationControls()
@@ -547,7 +583,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 var appointments = await _appointmentsApiClient.GetAppointmentsAsync(from, to);
 
                 _appointments.Clear();
-                _appointments.AddRange(appointments.Select(ToRow).OrderBy(a => a.Start));
+                // Keep newest appointments first
+                _appointments.AddRange(appointments.Select(ToRow).OrderByDescending(a => a.Start));
 
                 UpdateFilterOptionsFromData();
                 RefreshGrid();
@@ -707,7 +744,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 _ => $"{row.DurationMinutes} phút"
             };
 
-            var formattedTime = row.Start.ToString("HH:mm - dd/MM");
+            // Include year in time column
+            var formattedTime = row.Start.ToString("HH:mm - dd/MM/yyyy");
 
             var index = appointmentGrid.Rows.Add(false, formattedTime, row.Specialty, row.Patient, durationText, row.StatusLabel, row.Doctor, row.Note, "•••");
             var statusCell = appointmentGrid.Rows[index].Cells["Status"];
@@ -774,6 +812,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private sealed class AppointmentUpsertDialog : Form
         {
             private const int MinAppointmentLeadDays = 2;
+            // Limit new/updated appointments to within this many months from today
+            private const int MaxAppointmentLeadMonths = 1;
             private const int DefaultDurationMinutes = 30;
 
             private readonly ComboBox _doctorBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
@@ -1064,6 +1104,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 _timeSlotBox.Text = "Chọn ngày để xem khung giờ";
 
                 _datePicker.MinDate = DateTime.Today.AddDays(MinAppointmentLeadDays);
+                _datePicker.MaxDate = DateTime.Today.AddMonths(MaxAppointmentLeadMonths);
                 _datePicker.Checked = false;
                 _datePicker.ValueChanged += async (_, _) => await HandleDateChangedAsync();
 
@@ -1107,7 +1148,13 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 _existingSlotStart = _existing.Start;
                 _hasSelectedDate = true;
                 _datePicker.Checked = true;
-                _datePicker.Value = _existing.Start.Date;
+                // Clamp existing date into allowed range to avoid DateTimePicker range errors
+                var minDate = DateTime.Today.AddDays(MinAppointmentLeadDays);
+                var maxDate = DateTime.Today.AddMonths(MaxAppointmentLeadMonths);
+                var existingDate = _existing.Start.Date;
+                if (existingDate < minDate) existingDate = minDate;
+                if (existingDate > maxDate) existingDate = maxDate;
+                _datePicker.Value = existingDate;
 
                 var patientId = _existing.PatientId;
                 if (string.IsNullOrWhiteSpace(patientId))
@@ -1197,9 +1244,15 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
                 var startLocal = slot.StartLocal;
                 var minDate = DateTime.Today.AddDays(MinAppointmentLeadDays);
+                var maxDate = DateTime.Today.AddMonths(MaxAppointmentLeadMonths);
                 if (startLocal.Date < minDate)
                 {
                     throw new InvalidOperationException($"Ngày khám phải cách hiện tại ít nhất {MinAppointmentLeadDays} ngày.");
+                }
+                
+                if (startLocal.Date > maxDate)
+                {
+                    throw new InvalidOperationException($"Ngày khám phải nằm trong vòng {MaxAppointmentLeadMonths} tháng kể từ hôm nay.");
                 }
 
                 var duration = DefaultDurationMinutes;
