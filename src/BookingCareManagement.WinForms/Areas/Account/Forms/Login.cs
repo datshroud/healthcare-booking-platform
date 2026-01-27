@@ -14,6 +14,21 @@ namespace BookingCareManagement.WinForms.Areas.Account.Forms
             _services = services;
             InitializeComponent();
 
+            try
+            {
+                var storage = _services.GetRequiredService<BookingCareManagement.WinForms.Shared.State.IAuthStorage>();
+                var snapshot = storage.Load();
+                checkBoxRemember.Checked = snapshot?.RememberMe == true;
+                if (!string.IsNullOrWhiteSpace(snapshot?.Email))
+                {
+                    textBoxUsername.Text = snapshot.Email;
+                }
+            }
+            catch
+            {
+                // ignore storage errors
+            }
+
             void PreventNewLines(TextBox textBox)
             {
                 textBox.Multiline = false;
@@ -79,7 +94,7 @@ namespace BookingCareManagement.WinForms.Areas.Account.Forms
                         Password = textBoxPassword.Text
                     };
 
-                    var ok = await auth.LoginAsync(req);
+                    var ok = await auth.LoginAsync(req, checkBoxRemember.Checked);
                     if (ok)
                     {
                         try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] Login: succeeded\n"); } catch {}

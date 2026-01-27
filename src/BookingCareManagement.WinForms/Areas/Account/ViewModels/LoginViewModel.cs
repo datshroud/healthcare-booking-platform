@@ -7,6 +7,7 @@ public sealed class LoginViewModel : ViewModelBase
     private string _userName = string.Empty;
     private string _password = string.Empty;
     private bool _isBusy;
+    private bool _rememberMe;
 
     public string UserName
     {
@@ -24,5 +25,11 @@ public sealed class LoginViewModel : ViewModelBase
     {
         get => _isBusy;
         set => SetProperty(ref _isBusy, value);
+    }
+
+    public bool RememberMe
+    {
+        get => _rememberMe;
+        set => SetProperty(ref _rememberMe, value);
     }
 }

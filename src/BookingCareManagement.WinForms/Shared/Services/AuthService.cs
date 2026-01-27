@@ -107,7 +107,7 @@ public sealed class AuthService
         return null;
     }
 
-    public async Task<bool> LoginAsync(LoginRequestDto request)
+    public async Task<bool> LoginAsync(LoginRequestDto request, bool rememberMe = true)
     {
         try
         {
@@ -144,21 +144,29 @@ public sealed class AuthService
 
             await LoadProfileAsync(client);
 
-            _storage.Save(new SessionSnapshot(
-                _session.AccessToken,
-                _session.RefreshToken,
-                _session.CurrentUserId,
-                _session.DisplayName,
-                _session.Email,
-                _session.FirstName,
-                _session.LastName,
-                _session.AvatarUrl,
-                _session.DateOfBirth,
-                _session.Roles.ToArray(),
-                _session.IsAdmin,
-                _session.IsDoctor,
-                _session.HasCookieSession,
-                string.IsNullOrWhiteSpace(auth.Redirect) ? _session.LastRedirect : auth.Redirect));
+            if (rememberMe)
+            {
+                _storage.Save(new SessionSnapshot(
+                    _session.AccessToken,
+                    _session.RefreshToken,
+                    _session.CurrentUserId,
+                    _session.DisplayName,
+                    _session.Email,
+                    _session.FirstName,
+                    _session.LastName,
+                    _session.AvatarUrl,
+                    _session.DateOfBirth,
+                    _session.Roles.ToArray(),
+                    _session.IsAdmin,
+                    _session.IsDoctor,
+                    _session.HasCookieSession,
+                    string.IsNullOrWhiteSpace(auth.Redirect) ? _session.LastRedirect : auth.Redirect,
+                    true));
+            }
+            else
+            {
+                _storage.Clear();
+            }
             return true;
         }
         catch (Exception ex)
@@ -219,7 +227,8 @@ public sealed class AuthService
                 _session.IsAdmin,
                 _session.IsDoctor,
                 _session.HasCookieSession,
-                string.IsNullOrWhiteSpace(auth.Redirect) ? _session.LastRedirect : auth.Redirect));
+                string.IsNullOrWhiteSpace(auth.Redirect) ? _session.LastRedirect : auth.Redirect,
+                true));
             return true;
         }
         catch (Exception ex)

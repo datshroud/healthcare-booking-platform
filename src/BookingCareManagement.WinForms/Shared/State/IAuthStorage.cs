@@ -23,4 +23,5 @@ public sealed record SessionSnapshot(
     bool IsAdmin = false,
     bool IsDoctor = false,
     bool CookieAuthenticated = false,
-    string? Redirect = null);
+    string? Redirect = null,
+    bool RememberMe = false);

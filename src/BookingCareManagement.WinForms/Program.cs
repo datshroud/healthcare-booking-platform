@@ -62,7 +62,7 @@ static class Program
 
             // Try to restore persisted tokens
             var persisted = storage.Load();
-            if (persisted is not null)
+            if (persisted is not null && persisted.RememberMe)
             {
                 session.AccessToken = persisted.AccessToken;
                 session.RefreshToken = persisted.RefreshToken;
@@ -94,9 +94,11 @@ static class Program
                 }
             }
 
-            // Ensure a clean session on startup so the login always appears
-            storage.Clear();
-            session.Clear();
+            if (persisted is null || !persisted.RememberMe)
+            {
+                storage.Clear();
+                session.Clear();
+            }
 
             // If not authenticated, show login form first (designer form)
             if (!session.IsAuthenticated)

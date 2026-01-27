@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Drawing.Drawing2D;
 using System.Globalization;
 using System.Linq;
 using System.Threading;
@@ -45,6 +46,9 @@ public sealed class DashboardForm : Form
             ConfigureDataGrids();
             ConfigureTrendChart();
             ConfigureSparklineCharts();
+            BuildCustomerMixPanel();
+            BuildHeatmapPanel();
+            PopulateHeatmapComboBox();
             RegisterEventHandlers();
             ApplyDashboardStyling();
             flowLayoutPanel1.SizeChanged += (_, _) => AdjustTrendPanelWidth();
@@ -94,10 +98,13 @@ public sealed class DashboardForm : Form
             var adminTasks = new List<Task>
             {
                 LoadNewCustomersAsync(),
+                LoadCustomerMixAsync(),
                 LoadRevenueAsync(),
                 LoadOccupancyAsync(),
                 LoadAppointmentTrendAsync(),
-                LoadAppointmentsAsync()
+                LoadAppointmentsAsync(),
+                LoadPerformanceAsync(),
+                LoadHeatmapAsync()
             };
 
             await Task.WhenAll(adminTasks);
@@ -112,10 +119,13 @@ public sealed class DashboardForm : Form
         var loadTasks = new List<Task>
         {
             LoadNewCustomersAsync(),
+            LoadCustomerMixAsync(),
             LoadRevenueAsync(),
             LoadOccupancyAsync(),
             LoadAppointmentTrendAsync(),
-            LoadAppointmentsAsync()
+            LoadAppointmentsAsync(),
+            LoadPerformanceAsync(),
+            LoadHeatmapAsync()
         };
 
         await Task.WhenAll(loadTasks);
@@ -147,6 +157,170 @@ public sealed class DashboardForm : Form
         if (cobTrangThai.Items.Count > 0) cobTrangThai.SelectedIndex = 0;
     }
 
+    private void PopulateHeatmapComboBox()
+    {
+        if (cobHeatmap is null)
+        {
+            return;
+        }
+
+        cobHeatmap.Items.Clear();
+        var today = DateTime.Today;
+        var start = new DateTime(today.Year, today.Month, 1);
+        for (var i = 0; i < 12; i++)
+        {
+            var month = start.AddMonths(-i);
+            cobHeatmap.Items.Add(new HeatmapMonthOption(month));
+        }
+
+        if (cobHeatmap.Items.Count > 0)
+        {
+            cobHeatmap.SelectedIndex = 0;
+        }
+    }
+
+    private void BuildCustomerMixPanel()
+    {
+        panelCustomerMix = new Panel { Name = "panelCustomerMix", BorderStyle = BorderStyle.None };
+        labelCustomerMixTitle = new Label { AutoSize = true, Text = "Khách hàng" };
+        labelNewCustomerPercent = new Label { AutoSize = true, Text = "0%" };
+        labelReturningPercent = new Label { AutoSize = true, Text = "0%" };
+        labelNewCustomerCaption = new Label
+        {
+            AutoSize = true,
+            Text = "Khách hàng mới",
+            TextAlign = ContentAlignment.MiddleCenter
+        };
+        labelReturningCaption = new Label
+        {
+            AutoSize = true,
+            Text = "Khách hàng quay lại",
+            TextAlign = ContentAlignment.MiddleCenter
+        };
+        labelDonutCenter = new Label
+        {
+            AutoSize = false,
+            Text = "0%",
+            TextAlign = ContentAlignment.MiddleCenter,
+            Font = new Font("Segoe UI", 16F, FontStyle.Bold),
+            ForeColor = Color.FromArgb(37, 99, 235),
+            BackColor = Color.Transparent
+        };
+        labelReturningCenter = new Label
+        {
+            AutoSize = false,
+            Text = "0%",
+            TextAlign = ContentAlignment.MiddleCenter,
+            Font = new Font("Segoe UI", 16F, FontStyle.Bold),
+            ForeColor = Color.FromArgb(37, 99, 235),
+            BackColor = Color.Transparent
+        };
+
+        chartCustomerMix = new Chart { Name = "chartCustomerMix" };
+        var area = new ChartArea("CustomerMixArea");
+        area.AxisX.LabelStyle.Enabled = false;
+        area.AxisY.LabelStyle.Enabled = false;
+        area.AxisX.MajorGrid.Enabled = false;
+        area.AxisY.MajorGrid.Enabled = false;
+        area.Position = new ElementPosition(0, 0, 100, 100);
+        area.InnerPlotPosition = new ElementPosition(5, 5, 90, 90);
+        chartCustomerMix.ChartAreas.Add(area);
+        chartCustomerMix.Legends.Clear();
+        var series = new Series("CustomerMix")
+        {
+            ChartType = SeriesChartType.Doughnut,
+            ChartArea = "CustomerMixArea",
+            IsVisibleInLegend = false
+        };
+        series["DoughnutRadius"] = "55";
+        chartCustomerMix.Series.Add(series);
+
+        chartReturningCustomer = new Chart { Name = "chartReturningCustomer" };
+        var area2 = new ChartArea("ReturningArea");
+        area2.AxisX.LabelStyle.Enabled = false;
+        area2.AxisY.LabelStyle.Enabled = false;
+        area2.AxisX.MajorGrid.Enabled = false;
+        area2.AxisY.MajorGrid.Enabled = false;
+        area2.Position = new ElementPosition(0, 0, 100, 100);
+        area2.InnerPlotPosition = new ElementPosition(5, 5, 90, 90);
+        chartReturningCustomer.ChartAreas.Add(area2);
+        chartReturningCustomer.Legends.Clear();
+        var series2 = new Series("ReturningMix")
+        {
+            ChartType = SeriesChartType.Doughnut,
+            ChartArea = "ReturningArea",
+            IsVisibleInLegend = false
+        };
+        series2["DoughnutRadius"] = "55";
+        chartReturningCustomer.Series.Add(series2);
+
+        panelCustomerMix.Controls.Add(labelDonutCenter);
+        panelCustomerMix.Controls.Add(labelReturningCenter);
+        panelCustomerMix.Controls.Add(labelCustomerMixTitle);
+        panelCustomerMix.Controls.Add(chartCustomerMix);
+        panelCustomerMix.Controls.Add(chartReturningCustomer);
+        panelCustomerMix.Controls.Add(labelNewCustomerPercent);
+        panelCustomerMix.Controls.Add(labelNewCustomerCaption);
+        panelCustomerMix.Controls.Add(labelReturningPercent);
+        panelCustomerMix.Controls.Add(labelReturningCaption);
+        labelDonutCenter.BringToFront();
+        labelReturningCenter.BringToFront();
+
+        panelXuHuong.Controls.Add(panelCustomerMix);
+    }
+
+    private void BuildHeatmapPanel()
+    {
+        panelHeatmap = new Panel { Name = "panelHeatmap" };
+        labelHeatmapTitle = new Label { AutoSize = true, Text = "Công suất sử dụng hằng ngày" };
+        cobHeatmap = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList };
+        heatmapToolTip = new ToolTip
+        {
+            IsBalloon = true,
+            ToolTipTitle = "Chi tiết công suất"
+        };
+        heatmapGrid = new TableLayoutPanel
+        {
+            ColumnCount = 7,
+            RowCount = 7,
+            Name = "heatmapGrid"
+        };
+
+        for (int i = 0; i < 7; i++)
+        {
+            heatmapGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f / 7f));
+        }
+
+        heatmapGrid.RowStyles.Add(new RowStyle(SizeType.Absolute, 24));
+        for (int i = 1; i < 7; i++)
+        {
+            heatmapGrid.RowStyles.Add(new RowStyle(SizeType.Percent, 100f / 6f));
+        }
+
+        heatmapLegend = new FlowLayoutPanel
+        {
+            FlowDirection = FlowDirection.TopDown,
+            WrapContents = false,
+            AutoSize = true,
+            AutoSizeMode = AutoSizeMode.GrowAndShrink,
+            Name = "heatmapLegend"
+        };
+
+        panelHeatmap.Controls.Add(labelHeatmapTitle);
+        panelHeatmap.Controls.Add(cobHeatmap);
+        panelHeatmap.Controls.Add(heatmapGrid);
+        panelHeatmap.Controls.Add(heatmapLegend);
+
+        flowLayoutPanel1.Controls.Add(panelHeatmap);
+        var trendIndex = flowLayoutPanel1.Controls.IndexOf(panelXuHuong);
+        if (trendIndex >= 0)
+        {
+            flowLayoutPanel1.Controls.SetChildIndex(panelHeatmap, trendIndex + 1);
+        }
+        flowLayoutPanel1.SetFlowBreak(panelXuHuong, false);
+        flowLayoutPanel1.SetFlowBreak(panelHeatmap, true);
+    }
+
     private void ConfigureDataGrids()
     {
         dgvCuocHen.AutoGenerateColumns = false;
@@ -169,8 +343,11 @@ public sealed class DashboardForm : Form
         dgvBacSi.Columns.Clear();
         dgvBacSi.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         dgvBacSi.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Tên bác sĩ", DataPropertyName = nameof(DoctorPerformanceRow.Doctor) });
-        dgvBacSi.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Lịch hẹn Đã xác nhận", DataPropertyName = nameof(DoctorPerformanceRow.Confirmed) });
-        dgvBacSi.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Lịch hẹn Đã hủy", DataPropertyName = nameof(DoctorPerformanceRow.Canceled) });
+        dgvBacSi.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Tổng lịch hẹn", DataPropertyName = nameof(DoctorPerformanceRow.Total) });
+        dgvBacSi.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Đã xác nhận", DataPropertyName = nameof(DoctorPerformanceRow.Confirmed) });
+        dgvBacSi.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Đã hủy", DataPropertyName = nameof(DoctorPerformanceRow.Canceled) });
+        dgvBacSi.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Doanh thu (₫)", DataPropertyName = nameof(DoctorPerformanceRow.Revenue) });
+        dgvBacSi.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Tỷ lệ xác nhận", DataPropertyName = nameof(DoctorPerformanceRow.ConfirmRate) });
     }
 
     private void ConfigureTrendChart()
@@ -179,23 +356,45 @@ public sealed class DashboardForm : Form
         area.AxisX.MajorGrid.Enabled = false;
         area.AxisY.MajorGrid.Enabled = false;
         area.AxisY.Minimum = 0;
+        area.AxisX.IsMarginVisible = true;
+        area.AxisX.MajorTickMark.Enabled = false;
+        area.AxisY.MajorTickMark.Enabled = false;
+        area.Position = new ElementPosition(2, 8, 96, 84);
+        area.InnerPlotPosition = new ElementPosition(6, 10, 90, 76);
 
         var series = chartAppointmentTrend.Series[0];
         series.ChartType = SeriesChartType.Line;
         series.BorderWidth = 3;
         series.Color = Color.FromArgb(59, 130, 246);
         series.IsVisibleInLegend = false;
+        series.MarkerStyle = MarkerStyle.Circle;
+        series.MarkerSize = 6;
+        series.MarkerColor = Color.FromArgb(59, 130, 246);
+        series.MarkerBorderColor = Color.White;
+        series.MarkerBorderWidth = 1;
     }
 
     private void RegisterEventHandlers()
     {
-        cobKhachHang.SelectedIndexChanged += async (_, _) => await LoadNewCustomersAsync();
+        cobKhachHang.SelectedIndexChanged += async (_, _) =>
+        {
+            await LoadNewCustomersAsync();
+            await LoadCustomerMixAsync();
+        };
         cobDoanhThu.SelectedIndexChanged += async (_, _) => await LoadRevenueAsync();
         cobLichHen.SelectedIndexChanged += async (_, _) => await LoadOccupancyAsync();
         cobCuocHen.SelectedIndexChanged += async (_, _) => await LoadAppointmentsAsync();
-        cobHieuXuat.SelectedIndexChanged += async (_, _) => await LoadAppointmentsAsync();
+        cobHieuXuat.SelectedIndexChanged += async (_, _) => await LoadPerformanceAsync();
         cobTrangThai.SelectedIndexChanged += async (_, _) => await LoadAppointmentsAsync();
-        cobXuHuong.SelectedIndexChanged += cobXuHuong_SelectedIndexChanged;
+        cobXuHuong.SelectedIndexChanged += async (_, _) =>
+        {
+            await LoadAppointmentTrendAsync();
+            await LoadCustomerMixAsync();
+        };
+        if (cobHeatmap is not null)
+        {
+            cobHeatmap.SelectedIndexChanged += async (_, _) => await LoadHeatmapAsync();
+        }
     }
 
     private void ApplyLocalization()
@@ -210,6 +409,18 @@ public sealed class DashboardForm : Form
         labelCanceledTitle.Text = "Các cuộc hẹn đã hủy";
         lbTrendRange.Text = "Tuần này";
         label2.Text = "Xin chào,";
+
+        if (labelCustomerMixTitle is not null)
+        {
+            labelCustomerMixTitle.Text = string.Empty;
+            labelNewCustomerCaption.Text = "Khách hàng mới";
+            labelReturningCaption.Text = "Khách hàng quay lại";
+        }
+
+        if (labelHeatmapTitle is not null)
+        {
+            labelHeatmapTitle.Text = "Công suất sử dụng hằng ngày";
+        }
     }
 
     private void ConfigureSparklineCharts()
@@ -237,7 +448,7 @@ public sealed class DashboardForm : Form
         area.AxisY.MajorTickMark.Enabled = false;
         area.AxisY.LineColor = Color.Transparent;
         area.AxisY.Minimum = 0;
-        area.InnerPlotPosition = new ElementPosition(5, 5, 90, 90);
+        area.InnerPlotPosition = new ElementPosition(5, 2, 90, 94);
         area.Position = new ElementPosition(1, 1, 98, 98);
 
         var series = chart.Series[0];
@@ -287,6 +498,10 @@ public sealed class DashboardForm : Form
         StyleCard(panelDoanhThu);
         StyleCard(panelLichHen);
         StyleCard(panelXuHuong);
+        if (panelHeatmap is not null)
+        {
+            StyleCard(panelHeatmap);
+        }
         StyleCard(panel1);
         StyleCard(panelHieuXuat);
 
@@ -301,6 +516,20 @@ public sealed class DashboardForm : Form
         label3.Font = new Font("Segoe UI", 10.5F);
         label4.Font = new Font("Segoe UI", 10.5F);
 
+        if (labelCustomerMixTitle is not null)
+        {
+            labelCustomerMixTitle.Font = new Font("Segoe UI", 11.5F, FontStyle.Bold);
+            labelNewCustomerPercent.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            labelReturningPercent.Font = new Font("Segoe UI", 16F, FontStyle.Bold);
+            labelNewCustomerCaption.Font = new Font("Segoe UI", 9.5F);
+            labelReturningCaption.Font = new Font("Segoe UI", 9.5F);
+        }
+
+        if (labelHeatmapTitle is not null)
+        {
+            labelHeatmapTitle.Font = new Font("Segoe UI", 11.5F, FontStyle.Bold);
+        }
+
         lbKhachHang.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
         lbDoanhThu.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
         lbLichHen.Font = new Font("Segoe UI", 18F, FontStyle.Bold);
@@ -312,6 +541,10 @@ public sealed class DashboardForm : Form
         cobCuocHen.Font = new Font("Segoe UI", 9F);
         cobTrangThai.Font = new Font("Segoe UI", 9F);
         cobHieuXuat.Font = new Font("Segoe UI", 9F);
+        if (cobHeatmap is not null)
+        {
+            cobHeatmap.Font = new Font("Segoe UI", 9F);
+        }
     }
 
     private void StyleCard(Panel panel)
@@ -319,7 +552,7 @@ public sealed class DashboardForm : Form
         panel.BackColor = Color.White;
         panel.BorderStyle = BorderStyle.FixedSingle;
         panel.AutoSize = false;
-        panel.Margin = new Padding(0, 0, 24, 24);
+        panel.Margin = new Padding(0, 0, 16, 16);
     }
 
     private void ConfigureGridStyle(DataGridView grid)
@@ -348,9 +581,9 @@ public sealed class DashboardForm : Form
             return;
         }
 
-        var gap = 24;
-        var cardWidth = Math.Max(280, (availableWidth - gap * 2) / 3);
-        var statHeight = 200;
+        var gap = 16;
+        var cardWidth = (availableWidth - gap * 2) / 3;
+        var statHeight = 180;
 
         panelKhachHang.Size = new Size(cardWidth, statHeight);
         panelDoanhThu.Size = new Size(cardWidth, statHeight);
@@ -360,14 +593,21 @@ public sealed class DashboardForm : Form
         panelDoanhThu.Margin = new Padding(0, 0, gap, gap);
         panelLichHen.Margin = new Padding(0, 0, 0, gap);
 
-        panelXuHuong.Width = availableWidth;
-        panelXuHuong.Height = 300;
-        panelXuHuong.Margin = new Padding(0, 0, 0, gap);
-
-        var leftWidth = (int)(availableWidth * 0.64);
+        var leftWidth = (int)(availableWidth * 0.66);
         var rightWidth = availableWidth - leftWidth - gap;
-        panel1.Size = new Size(leftWidth, 360);
-        panelHieuXuat.Size = new Size(rightWidth, 360);
+        var mainCardHeight = 420;
+
+        panelXuHuong.Size = new Size(leftWidth, mainCardHeight);
+        panelXuHuong.Margin = new Padding(0, 0, gap, gap);
+
+        if (panelHeatmap is not null)
+        {
+            panelHeatmap.Size = new Size(rightWidth, mainCardHeight);
+            panelHeatmap.Margin = new Padding(0, 0, 0, gap);
+        }
+
+        panel1.Size = new Size(leftWidth, mainCardHeight);
+        panelHieuXuat.Size = new Size(rightWidth, mainCardHeight);
         panel1.Margin = new Padding(0, 0, gap, 0);
         panelHieuXuat.Margin = new Padding(0, 0, 0, 0);
 
@@ -376,40 +616,151 @@ public sealed class DashboardForm : Form
         LayoutStatCard(panelLichHen, label4, lbLichHen, cobLichHen, chart2);
 
         LayoutTrendPanel();
+        LayoutCustomerMixPanel();
+        LayoutHeatmapPanel();
         LayoutAppointmentsPanel();
         LayoutPerformancePanel();
 
         flowLayoutPanel1.AutoScrollMinSize = new Size(0, panelHieuXuat.Bottom + 40);
     }
 
+    private void LayoutCustomerMixPanel()
+    {
+        if (panelCustomerMix is null)
+        {
+            return;
+        }
+
+        labelCustomerMixTitle.Visible = false;
+        labelNewCustomerPercent.Visible = false;
+        labelReturningPercent.Visible = false;
+        
+        var halfWidth = panelCustomerMix.Width / 2;
+        var chartSize = Math.Min(120, panelCustomerMix.Height - 30);
+        
+        // Left donut - New customers
+        var leftChartX = (halfWidth - chartSize) / 2;
+        chartCustomerMix.Location = new Point(leftChartX, 0);
+        chartCustomerMix.Size = new Size(chartSize, chartSize);
+
+        var centerLabelSize = new Size(60, 30);
+        labelDonutCenter.Size = centerLabelSize;
+        labelDonutCenter.Location = new Point(
+            chartCustomerMix.Left + (chartCustomerMix.Width - centerLabelSize.Width) / 2,
+            chartCustomerMix.Top + (chartCustomerMix.Height - centerLabelSize.Height) / 2
+        );
+
+        labelNewCustomerCaption.Location = new Point(
+            (halfWidth - labelNewCustomerCaption.PreferredWidth) / 2,
+            chartCustomerMix.Bottom + 4
+        );
+
+        // Right donut - Returning customers
+        var rightChartX = halfWidth + (halfWidth - chartSize) / 2;
+        chartReturningCustomer.Location = new Point(rightChartX, 0);
+        chartReturningCustomer.Size = new Size(chartSize, chartSize);
+
+        labelReturningCenter.Size = centerLabelSize;
+        labelReturningCenter.Location = new Point(
+            chartReturningCustomer.Left + (chartReturningCustomer.Width - centerLabelSize.Width) / 2,
+            chartReturningCustomer.Top + (chartReturningCustomer.Height - centerLabelSize.Height) / 2
+        );
+
+        labelReturningCaption.Location = new Point(
+            halfWidth + (halfWidth - labelReturningCaption.PreferredWidth) / 2,
+            chartReturningCustomer.Bottom + 4
+        );
+    }
+
+    private void LayoutHeatmapPanel()
+    {
+        if (panelHeatmap is null)
+        {
+            return;
+        }
+
+        var pad = 20;
+        var legendSpacing = 16;
+        var gridTop = pad + 48;
+        labelHeatmapTitle.Location = new Point(pad, pad);
+        cobHeatmap.Size = new Size(170, 28);
+        cobHeatmap.Location = new Point(panelHeatmap.Width - cobHeatmap.Width - pad, pad);
+
+        var availableWidth = panelHeatmap.Width - pad * 2;
+        var preferredLegendHeight = heatmapLegend.GetPreferredSize(new Size(availableWidth, 0)).Height;
+        var legendHeight = Math.Max(preferredLegendHeight, 100);
+        var headerHeight = 20;
+        var gridAvailableHeight = panelHeatmap.Height - (gridTop + legendSpacing + legendHeight + pad);
+        var cellSize = Math.Max(32, Math.Min(availableWidth / 7, (gridAvailableHeight - headerHeight) / 6));
+
+        var gridWidth = (int)(cellSize * 7);
+        var gridHeight = (int)(headerHeight + cellSize * 6);
+        var gridX = pad + Math.Max(0, (availableWidth - gridWidth) / 2);
+
+        heatmapGrid.Location = new Point(gridX, gridTop);
+        heatmapGrid.Size = new Size(gridWidth, gridHeight);
+        heatmapGrid.Padding = new Padding(0);
+        heatmapGrid.AutoSize = false;
+        heatmapGrid.CellBorderStyle = TableLayoutPanelCellBorderStyle.None;
+
+        heatmapGrid.ColumnStyles.Clear();
+        heatmapGrid.RowStyles.Clear();
+        for (int i = 0; i < 7; i++)
+        {
+            heatmapGrid.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, cellSize));
+        }
+        heatmapGrid.RowStyles.Add(new RowStyle(SizeType.Absolute, headerHeight));
+        for (int i = 1; i < 7; i++)
+        {
+            heatmapGrid.RowStyles.Add(new RowStyle(SizeType.Absolute, cellSize));
+        }
+
+        heatmapLegend.Location = new Point(pad, heatmapGrid.Bottom + legendSpacing);
+        heatmapLegend.MaximumSize = new Size(availableWidth, 0);
+        heatmapLegend.MinimumSize = new Size(availableWidth, 0);
+
+        var neededHeight = heatmapLegend.Bottom + pad;
+        if (panelHeatmap.Height < neededHeight)
+        {
+            panelHeatmap.Height = neededHeight;
+        }
+    }
+
     private void LayoutStatCard(Panel panel, Label title, Label value, ComboBox combo, Chart chart)
     {
-        var pad = 16;
+        var pad = 20;
         title.Location = new Point(pad, pad);
-        combo.Size = new Size(140, 28);
+        combo.Size = new Size(150, 28);
         combo.Location = new Point(panel.Width - combo.Width - pad, pad);
-        value.Location = new Point(pad, pad + 38);
+        value.Location = new Point(pad, pad + 32);
 
-        chart.Location = new Point(pad - 4, pad + 80);
-        chart.Size = new Size(panel.Width - pad * 2 + 8, panel.Height - (pad + 88));
+        chart.Location = new Point(pad - 4, pad + 74);
+        chart.Size = new Size(panel.Width - pad * 2 + 8, panel.Height - (pad + 82));
     }
 
     private void LayoutTrendPanel()
     {
-        var pad = 16;
+        var pad = 20;
         label5.Location = new Point(pad, pad);
-        cobXuHuong.Size = new Size(160, 28);
+        cobXuHuong.Size = new Size(150, 28);
         cobXuHuong.Location = new Point(panelXuHuong.Width - cobXuHuong.Width - pad, pad);
         lbTrendRange.Location = new Point(pad, pad + 32);
 
-        lbConfirmedTrend.Location = new Point(pad, pad + 70);
-        labelConfirmedTitle.Location = new Point(pad, pad + 125);
+        lbConfirmedTrend.Location = new Point(pad, pad + 60);
+        labelConfirmedTitle.Location = new Point(pad, lbConfirmedTrend.Bottom + 6);
 
-        lbCanceledTrend.Location = new Point(pad + 190, pad + 70);
-        labelCanceledTitle.Location = new Point(pad + 190, pad + 125);
+        lbCanceledTrend.Location = new Point(pad + 200, pad + 60);
+        labelCanceledTitle.Location = new Point(pad + 200, lbCanceledTrend.Bottom + 6);
 
-        chartAppointmentTrend.Location = new Point(pad + 360, pad + 48);
-        chartAppointmentTrend.Size = new Size(panelXuHuong.Width - (pad + 380), panelXuHuong.Height - (pad + 70));
+        var lineChartTop = pad + 115;
+        chartAppointmentTrend.Location = new Point(pad, lineChartTop);
+        chartAppointmentTrend.Size = new Size(panelXuHuong.Width - pad * 2, 120);
+
+        if (panelCustomerMix is not null)
+        {
+            panelCustomerMix.Location = new Point(pad, chartAppointmentTrend.Bottom + 20);
+            panelCustomerMix.Size = new Size(panelXuHuong.Width - pad * 2, panelXuHuong.Height - (chartAppointmentTrend.Bottom + pad + 20));
+        }
     }
 
     private void LayoutAppointmentsPanel()
@@ -623,6 +974,328 @@ public sealed class DashboardForm : Form
         }
     }
 
+    private async Task LoadCustomerMixAsync(CancellationToken cancellationToken = default)
+    {
+        if (panelCustomerMix is null)
+        {
+            return;
+        }
+
+        if (_useAdminDashboard)
+        {
+            await LoadAdminCustomerMixAsync(cancellationToken);
+            return;
+        }
+
+        try
+        {
+            var rangeToken = ResolveRangeToken(cobXuHuong.SelectedItem?.ToString());
+            var response = await _dashboardApiClient!.GetCustomerMixAsync(rangeToken, cancellationToken);
+            labelCustomerMixTitle.Text = string.Empty;
+            RenderCustomerMix(response.NewCustomers, response.ReturningCustomers);
+        }
+        catch (Exception ex)
+        {
+            labelCustomerMixTitle.Text = "Khách hàng";
+            RenderCustomerMix(0, 0);
+            MessageBox.Show($"Không thể tải tỷ lệ khách hàng: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private async Task LoadAdminCustomerMixAsync(CancellationToken cancellationToken)
+    {
+        if (_adminAppointmentsApiClient is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var (from, to) = ResolveDateRange(cobXuHuong.SelectedItem?.ToString());
+            var appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+
+            var groups = appointments
+                .GroupBy(a => BuildPatientKey(a.PatientId, a.CustomerPhone, a.PatientName))
+                .ToList();
+
+            var newCustomers = groups.Count(g => g.Count() <= 1);
+            var returningCustomers = groups.Count - newCustomers;
+            labelCustomerMixTitle.Text = string.Empty;
+            RenderCustomerMix(newCustomers, returningCustomers);
+        }
+        catch (Exception ex)
+        {
+            labelCustomerMixTitle.Text = "Khách hàng";
+            RenderCustomerMix(0, 0);
+            MessageBox.Show($"Không thể tải tỷ lệ khách hàng (admin): {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void RenderCustomerMix(int newCustomers, int returningCustomers)
+    {
+        var total = newCustomers + returningCustomers;
+        var newPercent = total == 0 ? 0m : Math.Round((decimal)newCustomers / total * 100m, 0, MidpointRounding.AwayFromZero);
+        var returningPercent = 100m - newPercent;
+
+        labelDonutCenter.Text = $"{newPercent:N0}%";
+        labelReturningCenter.Text = $"{returningPercent:N0}%";
+
+        // New customer donut
+        var series = chartCustomerMix.Series[0];
+        series.Points.Clear();
+        if (total == 0)
+        {
+            series.Points.AddXY("Mới", 1);
+            series.Points.AddXY("Trống", 0);
+            series.Points[0].Color = Color.FromArgb(37, 99, 235);
+            series.Points[1].Color = Color.FromArgb(229, 231, 235);
+        }
+        else
+        {
+            series.Points.AddXY("Mới", newCustomers);
+            series.Points.AddXY("Trống", total - newCustomers);
+            series.Points[0].Color = Color.FromArgb(37, 99, 235);
+            series.Points[1].Color = Color.FromArgb(229, 231, 235);
+        }
+
+        // Returning customer donut
+        var series2 = chartReturningCustomer.Series[0];
+        series2.Points.Clear();
+        if (total == 0)
+        {
+            series2.Points.AddXY("Quay lại", 0);
+            series2.Points.AddXY("Trống", 1);
+            series2.Points[0].Color = Color.FromArgb(37, 99, 235);
+            series2.Points[1].Color = Color.FromArgb(229, 231, 235);
+        }
+        else
+        {
+            series2.Points.AddXY("Quay lại", returningCustomers);
+            series2.Points.AddXY("Trống", total - returningCustomers);
+            series2.Points[0].Color = Color.FromArgb(37, 99, 235);
+            series2.Points[1].Color = Color.FromArgb(229, 231, 235);
+        }
+    }
+
+    private async Task LoadHeatmapAsync(CancellationToken cancellationToken = default)
+    {
+        if (panelHeatmap is null)
+        {
+            return;
+        }
+
+        try
+        {
+            var month = ResolveHeatmapMonth();
+            var start = month;
+            var end = month.AddMonths(1);
+
+            IReadOnlyList<DoctorAppointmentListItemDto> appointments;
+            if (_useAdminDashboard)
+            {
+                if (_adminAppointmentsApiClient is null)
+                {
+                    return;
+                }
+
+                appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(start, end, cancellationToken);
+            }
+            else
+            {
+                if (_appointmentsApiClient is null)
+                {
+                    return;
+                }
+
+                appointments = await _appointmentsApiClient.GetAppointmentsAsync(start, end, cancellationToken);
+            }
+
+            var counts = appointments
+                .Where(a => IsConfirmed(a.Status))
+                .GroupBy(a => ToLocalDate(a.StartUtc))
+                .ToDictionary(group => group.Key, group => group.Count());
+
+            RenderHeatmap(start, counts);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Không thể tải công suất hằng ngày: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private void RenderHeatmap(DateOnly monthStart, IReadOnlyDictionary<DateOnly, int> counts)
+    {
+        heatmapGrid.SuspendLayout();
+        heatmapGrid.Controls.Clear();
+
+        var dayHeaders = new[] { "M", "T", "W", "T", "F", "S", "S" };
+        for (int i = 0; i < dayHeaders.Length; i++)
+        {
+            var header = new Label
+            {
+                Text = dayHeaders[i],
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleCenter,
+                ForeColor = Color.FromArgb(100, 116, 139)
+            };
+            heatmapGrid.Controls.Add(header, i, 0);
+        }
+
+        var firstDay = new DateOnly(monthStart.Year, monthStart.Month, 1);
+        var startDate = firstDay;
+        while (startDate.DayOfWeek != DayOfWeek.Monday)
+        {
+            startDate = startDate.AddDays(-1);
+        }
+
+        var days = new List<DateOnly>();
+        for (int i = 0; i < 42; i++)
+        {
+            days.Add(startDate.AddDays(i));
+        }
+
+        var maxCount = counts.Values.DefaultIfEmpty(0).Max();
+
+        for (int index = 0; index < days.Count; index++)
+        {
+            var date = days[index];
+            var row = index / 7 + 1;
+            var col = index % 7;
+            var inMonth = date.Month == monthStart.Month;
+            var count = counts.TryGetValue(date, out var value) ? value : 0;
+            var percent = maxCount == 0 ? 0m : Math.Round((decimal)count / maxCount * 100m, 0, MidpointRounding.AwayFromZero);
+
+            Control cell;
+            if (inMonth)
+            {
+                var label = new Label
+                {
+                    Dock = DockStyle.Fill,
+                    Margin = new Padding(4),
+                    BackColor = ResolveHeatmapColor(percent, true),
+                    Text = string.Empty,
+                    Tag = date
+                };
+                label.SizeChanged += (_, _) => ApplyRoundedRegion(label, 6);
+                heatmapToolTip.SetToolTip(label, $"Ngày: {date:dd/MM/yyyy}\nCông suất: {percent:N0}%");
+                cell = label;
+            }
+            else
+            {
+                cell = new Panel
+                {
+                    Dock = DockStyle.Fill,
+                    Margin = new Padding(4),
+                    BackColor = Color.Transparent
+                };
+            }
+
+            heatmapGrid.Controls.Add(cell, col, row);
+        }
+
+        heatmapGrid.ResumeLayout();
+        RenderHeatmapLegend();
+        LayoutHeatmapPanel();
+    }
+
+    private static void ApplyRoundedRegion(Control control, int radius)
+    {
+        if (control.Width <= 0 || control.Height <= 0)
+        {
+            return;
+        }
+
+        using var path = new GraphicsPath();
+        var rect = new Rectangle(0, 0, control.Width, control.Height);
+        var diameter = radius * 2;
+        path.AddArc(rect.X, rect.Y, diameter, diameter, 180, 90);
+        path.AddArc(rect.Right - diameter, rect.Y, diameter, diameter, 270, 90);
+        path.AddArc(rect.Right - diameter, rect.Bottom - diameter, diameter, diameter, 0, 90);
+        path.AddArc(rect.X, rect.Bottom - diameter, diameter, diameter, 90, 90);
+        path.CloseFigure();
+        control.Region = new Region(path);
+    }
+
+    private Color ResolveHeatmapColor(decimal percent, bool inMonth)
+    {
+        if (!inMonth)
+        {
+            return Color.FromArgb(241, 245, 249);
+        }
+
+        if (percent >= 81)
+        {
+            return Color.FromArgb(37, 99, 235);
+        }
+
+        if (percent >= 41)
+        {
+            return Color.FromArgb(96, 165, 250);
+        }
+
+        if (percent >= 21)
+        {
+            return Color.FromArgb(191, 219, 254);
+        }
+
+        if (percent >= 1)
+        {
+            return Color.FromArgb(226, 232, 240);
+        }
+
+        return Color.FromArgb(241, 245, 249);
+    }
+
+    private void RenderHeatmapLegend()
+    {
+        heatmapLegend.Controls.Clear();
+        var legendItems = new (string Label, Color Color)[]
+        {
+            ("81% trở lên", Color.FromArgb(37, 99, 235)),
+            ("Từ 41% đến 80%", Color.FromArgb(96, 165, 250)),
+            ("Từ 21% đến 40%", Color.FromArgb(191, 219, 254)),
+            ("20% trở xuống", Color.FromArgb(226, 232, 240)),
+            ("0%", Color.FromArgb(241, 245, 249))
+        };
+
+        foreach (var (label, color) in legendItems)
+        {
+            var row = new FlowLayoutPanel
+            {
+                FlowDirection = FlowDirection.LeftToRight,
+                AutoSize = true,
+                WrapContents = false
+            };
+            var box = new Panel
+            {
+                Width = 12,
+                Height = 12,
+                BackColor = color,
+                Margin = new Padding(0, 6, 8, 0)
+            };
+            var text = new Label
+            {
+                AutoSize = true,
+                Text = label,
+                ForeColor = Color.FromArgb(100, 116, 139)
+            };
+            row.Controls.Add(box);
+            row.Controls.Add(text);
+            heatmapLegend.Controls.Add(row);
+        }
+    }
+
+    private DateOnly ResolveHeatmapMonth()
+    {
+        if (cobHeatmap?.SelectedItem is HeatmapMonthOption option)
+        {
+            return option.Start;
+        }
+
+        var today = DateTime.Today;
+        return new DateOnly(today.Year, today.Month, 1);
+    }
+
     private async Task LoadRevenueAsync(CancellationToken cancellationToken = default)
     {
         if (_useAdminDashboard)
@@ -765,6 +1438,41 @@ public sealed class DashboardForm : Form
         catch (Exception ex)
         {
             MessageBox.Show($"Không thể tải danh sách cuộc hẹn: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    private async Task LoadPerformanceAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var (from, to) = ResolveDateRange(cobHieuXuat.SelectedItem?.ToString());
+
+            IReadOnlyList<DoctorAppointmentListItemDto> appointments;
+            if (_useAdminDashboard)
+            {
+                if (_adminAppointmentsApiClient is null)
+                {
+                    return;
+                }
+
+                appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+            }
+            else
+            {
+                if (_appointmentsApiClient is null)
+                {
+                    return;
+                }
+
+                appointments = await _appointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+            }
+
+            label8.Text = $"Hiệu suất ({FormatRangeLabel(from, to)})";
+            BindPerformanceData(appointments);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Không thể tải hiệu suất bác sĩ: {ex.Message}", "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }
 
@@ -987,7 +1695,10 @@ public sealed class DashboardForm : Form
             .ToList();
 
         dgvCuocHen.DataSource = appointmentRows;
+    }
 
+    private void BindPerformanceData(IReadOnlyList<DoctorAppointmentListItemDto> appointments)
+    {
         var specialtyRows = appointments
             .GroupBy(a => a.SpecialtyName)
             .Select(group => new SpecialtyPerformanceRow(
@@ -1000,10 +1711,22 @@ public sealed class DashboardForm : Form
 
         var doctorRows = appointments
             .GroupBy(a => a.DoctorName)
-            .Select(group => new DoctorPerformanceRow(
-                string.IsNullOrWhiteSpace(group.Key) ? "Chưa xác định" : group.Key,
-                group.Count(a => IsConfirmed(a.Status)),
-                group.Count(a => IsCanceled(a.Status))))
+            .Select(group =>
+            {
+                var total = group.Count();
+                var confirmed = group.Count(a => IsConfirmed(a.Status));
+                var canceled = group.Count(a => IsCanceled(a.Status));
+                var revenue = group.Where(a => IsConfirmed(a.Status)).Sum(x => x.Price);
+                var confirmRate = total == 0 ? 0m : Math.Round((decimal)confirmed / total * 100m, 2, MidpointRounding.AwayFromZero);
+
+                return new DoctorPerformanceRow(
+                    string.IsNullOrWhiteSpace(group.Key) ? "Chưa xác định" : group.Key,
+                    total,
+                    confirmed,
+                    canceled,
+                    revenue.ToString("N0", VietnamCulture),
+                    $"{confirmRate:N2}%");
+            })
             .ToList();
 
         dgvBacSi.DataSource = doctorRows;
@@ -1028,7 +1751,13 @@ public sealed class DashboardForm : Form
 
     private sealed record SpecialtyPerformanceRow(string Specialty, int AppointmentCount, string Revenue);
 
-    private sealed record DoctorPerformanceRow(string Doctor, int Confirmed, int Canceled);
+    private sealed record DoctorPerformanceRow(string Doctor, int Total, int Confirmed, int Canceled, string Revenue, string ConfirmRate);
+
+    private sealed record HeatmapMonthOption(DateTime MonthStart)
+    {
+        public DateOnly Start => DateOnly.FromDateTime(MonthStart);
+        public override string ToString() => $"Tháng {MonthStart:MM} {MonthStart:yyyy}";
+    }
 
     private Panel HeaderPanel = null!;
     private Label label2 = null!;
@@ -1071,6 +1800,24 @@ public sealed class DashboardForm : Form
     private DataGridView dgvChuyenKhoa = null!;
     private DataGridView dgvBacSi = null!;
     private Label lbTitle = null!;
+
+    private Panel panelCustomerMix = null!;
+    private Label labelCustomerMixTitle = null!;
+    private Label labelNewCustomerPercent = null!;
+    private Label labelReturningPercent = null!;
+    private Label labelNewCustomerCaption = null!;
+    private Label labelReturningCaption = null!;
+    private Label labelDonutCenter = null!;
+    private Label labelReturningCenter = null!;
+    private Chart chartCustomerMix = null!;
+    private Chart chartReturningCustomer = null!;
+
+    private Panel panelHeatmap = null!;
+    private Label labelHeatmapTitle = null!;
+    private ComboBox cobHeatmap = null!;
+    private TableLayoutPanel heatmapGrid = null!;
+    private FlowLayoutPanel heatmapLegend = null!;
+    private ToolTip heatmapToolTip = null!;
 
     private void InitializeComponent()
     {
@@ -1184,7 +1931,7 @@ public sealed class DashboardForm : Form
         flowLayoutPanel1.Controls.Add(panelXuHuong);
         flowLayoutPanel1.Controls.Add(panel1);
         flowLayoutPanel1.Controls.Add(panelHieuXuat);
-        flowLayoutPanel1.SetFlowBreak(panelXuHuong, true);
+        flowLayoutPanel1.SetFlowBreak(panelXuHuong, false);
         flowLayoutPanel1.Location = new Point(12, 164);
         flowLayoutPanel1.Name = "flowLayoutPanel1";
         flowLayoutPanel1.Size = new Size(1590, 743);

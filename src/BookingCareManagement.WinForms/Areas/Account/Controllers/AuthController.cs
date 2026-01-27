@@ -59,22 +59,29 @@ public sealed class AuthController
 
             await LoadProfileAsync(client, cancellationToken);
 
-            // Persist snapshot
-            _storage.Save(new SessionSnapshot(
-                _sessionState.AccessToken,
-                _sessionState.RefreshToken,
-                _sessionState.CurrentUserId,
-                _sessionState.DisplayName,
-                _sessionState.Email,
-                _sessionState.FirstName,
-                _sessionState.LastName,
-                _sessionState.AvatarUrl,
-                _sessionState.DateOfBirth,
-                _sessionState.Roles.ToArray(),
-                _sessionState.IsAdmin,
-                _sessionState.IsDoctor,
-                _sessionState.HasCookieSession,
-                _sessionState.LastRedirect));
+            if (_viewModel.RememberMe)
+            {
+                _storage.Save(new SessionSnapshot(
+                    _sessionState.AccessToken,
+                    _sessionState.RefreshToken,
+                    _sessionState.CurrentUserId,
+                    _sessionState.DisplayName,
+                    _sessionState.Email,
+                    _sessionState.FirstName,
+                    _sessionState.LastName,
+                    _sessionState.AvatarUrl,
+                    _sessionState.DateOfBirth,
+                    _sessionState.Roles.ToArray(),
+                    _sessionState.IsAdmin,
+                    _sessionState.IsDoctor,
+                    _sessionState.HasCookieSession,
+                    _sessionState.LastRedirect,
+                    true));
+            }
+            else
+            {
+                _storage.Clear();
+            }
             return true;
         }
         finally
