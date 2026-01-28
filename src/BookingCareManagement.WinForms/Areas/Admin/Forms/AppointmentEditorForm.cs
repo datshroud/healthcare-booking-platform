@@ -1123,6 +1123,9 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 _patientBox.ValueMember = nameof(AdminAppointmentPatientOptionDto.Id);
                 _patientBox.SelectedIndexChanged += (_, _) => UpdatePhoneForSelectedPatient();
 
+                // Ensure phone field is populated for the initially selected patient (if any)
+                UpdatePhoneForSelectedPatient();
+
                 _statusBox.DataSource = _metadata.Statuses.ToList();
                 _statusBox.DisplayMember = nameof(AdminAppointmentStatusOptionDto.Label);
                 _statusBox.ValueMember = nameof(AdminAppointmentStatusOptionDto.Code);
