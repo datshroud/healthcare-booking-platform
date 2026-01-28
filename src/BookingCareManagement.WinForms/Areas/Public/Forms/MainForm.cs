@@ -6,6 +6,7 @@ using BookingCareManagement.WinForms.Areas.Customer.Forms;
 using BookingCareManagement.WinForms.Shared.State;
 using BookingCareManagement.WinForms.Areas.Account.Forms;
 using BookingCareManagement.WinForms.Shared.Services;
+using BookingCareManagement.WinForms.Areas.Customer.Services.Models;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -771,7 +772,8 @@ namespace BookingCareManagement.WinForms
                             {
                                 var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
                                 var customerService = _serviceProvider.GetRequiredService<CustomerService>();
-                                OpenChildForm(new Calendar(appointmentsApiClient, customerService));
+                                var bookingApiClient = _serviceProvider.GetRequiredService<CustomerBookingApiClient>();
+                                OpenChildForm(new Calendar(appointmentsApiClient, customerService, bookingApiClient));
                             }
                         }
                         if (btn.Text.Contains("Cuộc hẹn"))
@@ -869,7 +871,9 @@ namespace BookingCareManagement.WinForms
                         {
                             // Use doctor client when opening calendar for doctors
                             var doctorApi = _serviceProvider.GetRequiredService<DoctorAppointmentsApiClient>();
-                            OpenChildForm(new Calendar(doctorApi));
+                            var customerService = _serviceProvider.GetRequiredService<CustomerService>();
+                            var bookingApiClient = _serviceProvider.GetRequiredService<CustomerBookingApiClient>();
+                            OpenChildForm(new Calendar(doctorApi, customerService, bookingApiClient));
                         }
                         if (item.Contains("Quản lý"))
                         {
@@ -1242,13 +1246,15 @@ namespace BookingCareManagement.WinForms
                 {
                     var doctorApi = _serviceProvider.GetRequiredService<DoctorAppointmentsApiClient>();
                     var customerService = _serviceProvider.GetRequiredService<CustomerService>();
-                    OpenChildForm(new Calendar(doctorApi, customerService));
+                    var bookingApiClient = _serviceProvider.GetRequiredService<CustomerBookingApiClient>();
+                    OpenChildForm(new Calendar(doctorApi, customerService, bookingApiClient));
                 }
                 else
                 {
                     var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
                     var customerService = _serviceProvider.GetRequiredService<CustomerService>();
-                    OpenChildForm(new Calendar(appointmentsApiClient, customerService));
+                    var bookingApiClient = _serviceProvider.GetRequiredService<CustomerBookingApiClient>();
+                    OpenChildForm(new Calendar(appointmentsApiClient, customerService, bookingApiClient));
                 }
             }
         }
