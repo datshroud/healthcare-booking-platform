@@ -673,6 +673,7 @@ namespace BookingCareManagement.WinForms
                     "📊 Bảng điều khiển",
                     "✅ Cuộc hẹn",
                     "👥 Bác sĩ",
+                    "🤝 BS - KH",
                     "👤 Khách hàng",
                     "🎯 Chuyên khoa",
                     "💰 Hóa đơn",
@@ -726,6 +727,14 @@ namespace BookingCareManagement.WinForms
                             {
                                 var appointmentForm = _serviceProvider.GetRequiredService<AppointmentEditorForm>();
                                 OpenChildForm(appointmentForm);
+                            }
+                        }
+                        if (btn.Text.Contains("BS - KH"))
+                        {
+                            if (!(activeChildForm is DoctorCustomerRelationshipForm))
+                            {
+                                var relationForm = _serviceProvider.GetRequiredService<DoctorCustomerRelationshipForm>();
+                                OpenChildForm(relationForm);
                             }
                         }
                         if (btn.Text.Contains("Hóa đơn"))

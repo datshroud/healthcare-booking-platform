@@ -239,6 +239,60 @@ public sealed class AuthService
         }
     }
 
+    public async Task<bool> RefreshAccessTokenAsync(bool showDialog = false)
+    {
+        if (string.IsNullOrWhiteSpace(_session.RefreshToken))
+        {
+            return false;
+        }
+
+        try
+        {
+            var client = _httpFactory.CreateClient("BookingCareApi.NoAuth");
+            var resp = await client.PostAsJsonAsync("api/account/auth/refresh", new RefreshTokenRequest(_session.RefreshToken));
+            var respText = await resp.Content.ReadAsStringAsync();
+            if (!resp.IsSuccessStatusCode)
+            {
+                if (showDialog)
+                {
+                    _dialogs.ShowError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                }
+                return false;
+            }
+
+            var auth = NormalizeAuthResponse(respText, JsonSerializer.Deserialize<AuthResponseDto>(respText, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }));
+            if (!string.IsNullOrWhiteSpace(auth.AccessToken))
+            {
+                _session.AccessToken = auth.AccessToken;
+            }
+            if (!string.IsNullOrWhiteSpace(auth.RefreshToken))
+            {
+                _session.RefreshToken = auth.RefreshToken;
+            }
+
+            var snapshot = _storage.Load();
+            if (snapshot is not null && snapshot.RememberMe)
+            {
+                _storage.Save(snapshot with
+                {
+                    AccessToken = _session.AccessToken,
+                    RefreshToken = _session.RefreshToken
+                });
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[AuthService] Refresh exception: {ex}");
+            if (showDialog)
+            {
+                _dialogs.ShowError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+            }
+            return false;
+        }
+    }
+
     private async Task LoadProfileAsync(HttpClient client)
     {
         try
@@ -314,4 +368,6 @@ public sealed class AuthService
 
         return auth;
     }
+
+    private sealed record RefreshTokenRequest(string RefreshToken);
 }

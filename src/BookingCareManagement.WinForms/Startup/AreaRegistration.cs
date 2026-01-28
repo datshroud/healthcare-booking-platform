@@ -38,6 +38,7 @@ public static class AreaRegistration
             .AddTransient<AppointmentEditorForm>()
             .AddTransient<SpecialtyManagementControl>()
             .AddTransient<DoctorManagementControl>()
+            .AddTransient<DoctorCustomerRelationshipControl>()
             .AddTransient<InvoiceManagementControl>()
             .AddTransient<InvoiceEditorForm>()
             .AddTransient<DashboardForm>()
@@ -46,6 +47,7 @@ public static class AreaRegistration
             .AddTransient<AdminShellForm>()
             // Register WinForms for Admin area so DI can inject API clients
             .AddTransient<Doctor>()
+            .AddTransient<DoctorCustomerRelationshipForm>()
             .AddTransient<Specialty>()
             .AddTransient<CustomerService>()
             .AddTransient<Customer>();

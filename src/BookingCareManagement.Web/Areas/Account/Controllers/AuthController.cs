@@ -33,7 +33,7 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
             try {
                 var resp = await handler.Handle(req);
                 CookieHelper.SetAuthCookies(Response, resp.AccessToken, resp.ExpiresAt.ToUniversalTime(),
-                    resp.RefreshToken, DateTime.UtcNow.AddDays(7));
+                    resp.RefreshToken, DateTime.UtcNow.AddDays(30));
                 // For API clients return JSON containing frontend redirect URL (avoid redirecting to API GET)
                 // hiển thị thông báo đăng ký thành công (bằng sweetalert) và chuyển hướng đến trang đăng nhập
 
@@ -103,8 +103,8 @@ namespace BookingCareManagement.Web.Areas.Account.Controllers
         {
             var resp = await handler.Handle(req);
             CookieHelper.SetAuthCookies(Response, resp.AccessToken, resp.ExpiresAt.ToUniversalTime(),
-                resp.RefreshToken, DateTime.UtcNow.AddDays(7));
-            return NoContent();
+                resp.RefreshToken, DateTime.UtcNow.AddDays(30));
+            return Ok(new { accessToken = resp.AccessToken, refreshToken = resp.RefreshToken, expiresAt = resp.ExpiresAt });
         }
 
         [HttpPost("logout")]

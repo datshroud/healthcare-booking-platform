@@ -47,6 +47,15 @@ public sealed class AdminNavigationController
         _ = control.InitializeAsync();
     }
 
+    public void ShowDoctorCustomerRelationships(Control host)
+    {
+        host.Controls.Clear();
+        var control = _serviceProvider.GetRequiredService<DoctorCustomerRelationshipControl>();
+        control.Dock = DockStyle.Fill;
+        host.Controls.Add(control);
+        _ = control.InitializeAsync();
+    }
+
     public void ShowAppointments(Control host)
     {
         host.Controls.Clear();

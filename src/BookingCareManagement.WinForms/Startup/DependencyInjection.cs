@@ -34,6 +34,19 @@ public static class DependencyInjection
                 ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
             });
 
+        services.AddHttpClient("BookingCareApi.NoAuth", (sp, client) =>
+            {
+                var baseUrl = configuration["Api:BaseUrl"]
+                              ?? Environment.GetEnvironmentVariable("API_BASE_URL")
+                              ?? "https://healthcare-booking-dzhba4dmdjagcdbq.southeastasia-01.azurewebsites.net";
+
+                client.BaseAddress = new Uri(baseUrl);
+            })
+            .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
+            {
+                ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+            });
+
         services.AddAdminArea();
         services.AddDoctorArea();
         services.AddCustomerArea();

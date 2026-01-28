@@ -22,6 +22,13 @@ public sealed class DashboardForm : Form
     private readonly DoctorAppointmentsApiClient? _appointmentsApiClient = null;
     private readonly SessionState? _sessionState;
     private readonly bool _useAdminDashboard;
+    private readonly bool _useEntityDashboard;
+    private readonly Guid? _filterDoctorId;
+    private readonly string? _filterCustomerKey;
+    private readonly string? _overrideTitle;
+    private readonly string? _overrideSubtitle;
+    private readonly Action? _onBack;
+    private Button? _btnBack;
     private static readonly CultureInfo VietnamCulture = CultureInfo.GetCultureInfo("vi-VN");
 
     private static readonly Dictionary<string, string> AppointmentStatusMap = new(StringComparer.OrdinalIgnoreCase)
@@ -64,6 +71,7 @@ public sealed class DashboardForm : Form
         _adminAppointmentsApiClient = null;
         _sessionState = null;
         _useAdminDashboard = false;
+        _useEntityDashboard = false;
     }
 
     public DashboardForm(
@@ -77,6 +85,28 @@ public sealed class DashboardForm : Form
         _adminAppointmentsApiClient = adminAppointmentsApiClient;
         _sessionState = sessionState;
         _useAdminDashboard = sessionState?.IsAdmin == true && sessionState?.IsDoctor != true;
+    }
+
+    public DashboardForm(
+        AdminAppointmentsApiClient adminAppointmentsApiClient,
+        SessionState sessionState,
+        Guid? doctorId,
+        string? customerKey,
+        string displayName,
+        string roleLabel,
+        Action? onBack = null) : this()
+    {
+        _adminAppointmentsApiClient = adminAppointmentsApiClient;
+        _sessionState = sessionState;
+        _useAdminDashboard = true;
+        _useEntityDashboard = true;
+        _filterDoctorId = doctorId;
+        _filterCustomerKey = customerKey;
+        _overrideTitle = displayName;
+        _overrideSubtitle = roleLabel;
+        _onBack = onBack;
+
+        ApplyEntityHeaderOverrides();
     }
 
     protected override async void OnLoad(EventArgs e)
@@ -332,6 +362,26 @@ public sealed class DashboardForm : Form
         dgvCuocHen.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Giờ", DataPropertyName = nameof(AppointmentGridRow.Time) });
         dgvCuocHen.Columns.Add(new DataGridViewTextBoxColumn { HeaderText = "Trạng thái", DataPropertyName = nameof(AppointmentGridRow.Status) });
 
+        dgvCuocHen.CellFormatting += (_, e) =>
+        {
+            if (dgvCuocHen.Columns[e.ColumnIndex].DataPropertyName != nameof(AppointmentGridRow.Status))
+            {
+                return;
+            }
+
+            var text = e.Value?.ToString() ?? string.Empty;
+            if (text.Contains("Đã xác nhận", StringComparison.CurrentCultureIgnoreCase)
+                || text.Equals("Approved", StringComparison.OrdinalIgnoreCase))
+            {
+                e.CellStyle.ForeColor = Color.FromArgb(34, 197, 94);
+            }
+            else if (text.Contains("Đã hủy", StringComparison.CurrentCultureIgnoreCase)
+                     || text.Equals("Canceled", StringComparison.OrdinalIgnoreCase))
+            {
+                e.CellStyle.ForeColor = Color.FromArgb(239, 68, 68);
+            }
+        };
+
         dgvChuyenKhoa.AutoGenerateColumns = false;
         dgvChuyenKhoa.Columns.Clear();
         dgvChuyenKhoa.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
@@ -421,6 +471,75 @@ public sealed class DashboardForm : Form
         {
             labelHeatmapTitle.Text = "Công suất sử dụng hằng ngày";
         }
+
+        ApplyEntityHeaderOverrides();
+    }
+
+    private void ApplyEntityHeaderOverrides()
+    {
+        if (!_useEntityDashboard)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_overrideTitle))
+        {
+            lbTitle.Text = _overrideTitle;
+        }
+
+        if (!string.IsNullOrWhiteSpace(_overrideSubtitle))
+        {
+            label2.Text = _overrideSubtitle;
+        }
+
+        if (_btnBack is null)
+        {
+            _btnBack = new Button
+            {
+                Text = "← Quay lại",
+                AutoSize = true,
+                FlatStyle = FlatStyle.Flat,
+                BackColor = Color.Transparent,
+                ForeColor = Color.FromArgb(37, 99, 235),
+                Location = new Point(28, 20)
+            };
+            _btnBack.FlatAppearance.BorderSize = 0;
+            _btnBack.Click += (_, _) =>
+            {
+                if (_onBack is not null)
+                {
+                    _onBack();
+                    return;
+                }
+
+                Close();
+            };
+            HeaderPanel.Controls.Add(_btnBack);
+            _btnBack.BringToFront();
+        }
+    }
+
+    private async Task<IReadOnlyList<DoctorAppointmentListItemDto>> GetFilteredAdminAppointmentsAsync(DateOnly from, DateOnly to, CancellationToken cancellationToken)
+    {
+        if (_adminAppointmentsApiClient is null)
+        {
+            return Array.Empty<DoctorAppointmentListItemDto>();
+        }
+
+        var appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+        if (_filterDoctorId.HasValue)
+        {
+            appointments = appointments.Where(a => a.DoctorId == _filterDoctorId.Value).ToList();
+        }
+
+        if (!string.IsNullOrWhiteSpace(_filterCustomerKey))
+        {
+            appointments = appointments
+                .Where(a => string.Equals(BuildPatientKey(a.PatientId, a.CustomerPhone, a.PatientName), _filterCustomerKey, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+
+        return appointments;
     }
 
     private void ConfigureSparklineCharts()
@@ -1012,7 +1131,9 @@ public sealed class DashboardForm : Form
         try
         {
             var (from, to) = ResolveDateRange(cobXuHuong.SelectedItem?.ToString());
-            var appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+            var appointments = _useEntityDashboard
+                ? await GetFilteredAdminAppointmentsAsync(from, to, cancellationToken)
+                : await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
 
             var groups = appointments
                 .GroupBy(a => BuildPatientKey(a.PatientId, a.CustomerPhone, a.PatientName))
@@ -1098,7 +1219,9 @@ public sealed class DashboardForm : Form
                     return;
                 }
 
-                appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(start, end, cancellationToken);
+                appointments = _useEntityDashboard
+                    ? await GetFilteredAdminAppointmentsAsync(start, end, cancellationToken)
+                    : await _adminAppointmentsApiClient.GetAppointmentsAsync(start, end, cancellationToken);
             }
             else
             {
@@ -1455,7 +1578,9 @@ public sealed class DashboardForm : Form
                     return;
                 }
 
-                appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+                appointments = _useEntityDashboard
+                    ? await GetFilteredAdminAppointmentsAsync(from, to, cancellationToken)
+                    : await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
             }
             else
             {
@@ -1490,7 +1615,9 @@ public sealed class DashboardForm : Form
             label1.Text = "Kh�ch h�ng";
 
             var (from, to) = ResolveDateRange(cobKhachHang.SelectedItem?.ToString());
-            var appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+            var appointments = _useEntityDashboard
+                ? await GetFilteredAdminAppointmentsAsync(from, to, cancellationToken)
+                : await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
 
             var allCustomers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             var dailyCustomers = new Dictionary<DateOnly, HashSet<string>>();
@@ -1539,7 +1666,9 @@ public sealed class DashboardForm : Form
             label3.Text = "Doanh thu";
 
             var (from, to) = ResolveDateRange(cobDoanhThu.SelectedItem?.ToString());
-            var appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+            var appointments = _useEntityDashboard
+                ? await GetFilteredAdminAppointmentsAsync(from, to, cancellationToken)
+                : await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
             var perDay = appointments
                 .GroupBy(a => ToLocalDate(a.StartUtc))
                 .ToDictionary(group => group.Key, group => group.Sum(x => x.Price));
@@ -1574,7 +1703,9 @@ public sealed class DashboardForm : Form
             label4.Text = "T? l? l?p d?y";
 
             var (from, to) = ResolveDateRange(cobLichHen.SelectedItem?.ToString());
-            var appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+            var appointments = _useEntityDashboard
+                ? await GetFilteredAdminAppointmentsAsync(from, to, cancellationToken)
+                : await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
             var perDay = appointments
                 .GroupBy(a => ToLocalDate(a.StartUtc))
                 .ToDictionary(group => group.Key, group =>
@@ -1618,7 +1749,9 @@ public sealed class DashboardForm : Form
             lbTrendRange.Text = "Đang tải...";
 
             var (from, to) = ResolveDateRange(cobXuHuong.SelectedItem?.ToString());
-            var appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+            var appointments = _useEntityDashboard
+                ? await GetFilteredAdminAppointmentsAsync(from, to, cancellationToken)
+                : await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
             var perDay = appointments
                 .GroupBy(a => ToLocalDate(a.StartUtc))
                 .ToDictionary(group => group.Key, group => (decimal)group.Count());
@@ -1657,7 +1790,9 @@ public sealed class DashboardForm : Form
         try
         {
             var (from, to) = ResolveDateRange(cobCuocHen.SelectedItem?.ToString());
-            var appointments = await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
+            var appointments = _useEntityDashboard
+                ? await GetFilteredAdminAppointmentsAsync(from, to, cancellationToken)
+                : await _adminAppointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken);
             var filtered = FilterAppointmentsByStatus(appointments);
 
             label7.Text = $"Cuộc hẹn ({FormatRangeLabel(from, to)})";
