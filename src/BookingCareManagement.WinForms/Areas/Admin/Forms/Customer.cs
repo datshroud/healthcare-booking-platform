@@ -12,6 +12,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace BookingCareManagement.WinForms
 {
@@ -702,10 +703,22 @@ namespace BookingCareManagement.WinForms
                 ForeColor = Color.Black
             };
 
+            // Allow only digits while typing
+            txtPhone.KeyPress += Phone_KeyPress;
+
             phoneRow.Controls.Add(cboCountryCode);
             phoneRow.Controls.Add(txtPhone);
 
             this.Controls.AddRange(new Control[] { lblPhone, phoneRow });
+        }
+
+        // Restrict phone input to digits only (AddCustomerForm)
+        private void Phone_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+            }
         }
 
         private void CreateGenderField()
@@ -852,14 +865,39 @@ namespace BookingCareManagement.WinForms
             if (IsEmptyField(txtLastName, "tên")) return false;
             if (IsEmptyField(txtEmail, "email")) return false;
 
-            var email = txtEmail.Text?.Trim() ?? string.Empty;
-
-            if (!ValidateEmail(email))
+            // Disallow numbers in first and last name
+            if (Regex.IsMatch(txtFirstName.Text ?? string.Empty, "\\d"))
             {
-                MessageBox.Show("Email không hợp lệ! Vui lòng nhập đúng định dạng email.",
-                    "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Họ không được chứa số", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtFirstName.Focus();
                 return false;
             }
+
+            if (Regex.IsMatch(txtLastName.Text ?? string.Empty, "\\d"))
+            {
+                MessageBox.Show("Tên không được chứa số", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtLastName.Focus();
+                return false;
+            }
+
+            // Phone: required and must be valid
+            if (txtPhone.ForeColor == Color.LightGray || string.IsNullOrWhiteSpace(txtPhone.Text))
+            {
+                MessageBox.Show("Vui lòng nhập số điện thoại khách hàng!", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtPhone.Focus();
+                return false;
+            }
+
+            var phone = txtPhone.Text.Trim();
+            var countryCode = cboCountryCode?.Text?.Split(' ')[0] ?? string.Empty;
+            if (!PhoneValidation.IsValidPhoneNumber(phone, countryCode))
+            {
+                MessageBox.Show("Số điện thoại không đúng định dạng", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtPhone.Focus();
+                return false;
+            }
+
+            var email = txtEmail.Text?.Trim() ?? string.Empty;
 
             // Enforce gmail.com domain for AddCustomerForm
             if (!email.EndsWith("@gmail.com", StringComparison.OrdinalIgnoreCase))
@@ -882,21 +920,6 @@ namespace BookingCareManagement.WinForms
                 return true;
             }
             return false;
-        }
-
-        private bool ValidateEmail(string email)
-        {
-            if (string.IsNullOrWhiteSpace(email)) return false;
-            email = email.Trim();
-            try
-            {
-                var addr = new System.Net.Mail.MailAddress(email);
-                return addr.Address == email;
-            }
-            catch
-            {
-                return false;
-            }
         }
 
         private async Task<bool> AddCustomerAsync()
@@ -1075,10 +1098,22 @@ namespace BookingCareManagement.WinForms
                 ForeColor = Color.Black
             };
 
+            // Allow only digits while typing
+            txtPhone.KeyPress += Phone_KeyPress;
+
             phoneRow.Controls.Add(cboCountryCode);
             phoneRow.Controls.Add(txtPhone);
 
             this.Controls.AddRange(new Control[] { lblPhone, phoneRow });
+        }
+
+        // Restrict phone input to digits only (EditCustomerForm)
+        private void Phone_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+            }
         }
 
         private void CreateGenderField()
@@ -1253,31 +1288,48 @@ namespace BookingCareManagement.WinForms
                 return false;
             }
 
-            if (!ValidateEmail(txtEmail.Text.Trim()))
+            // Disallow numbers in first and last name
+            if (Regex.IsMatch(txtFirstName.Text ?? string.Empty, "\\d"))
+            {
+                MessageBox.Show("Họ không được chứa số", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtFirstName.Focus();
+                return false;
+            }
+
+            if (Regex.IsMatch(txtLastName.Text ?? string.Empty, "\\d"))
+            {
+                MessageBox.Show("Tên không được chứa số", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtLastName.Focus();
+                return false;
+            }
+
+            if (!ValidationHelpers.IsValidEmail(txtEmail.Text.Trim()))
             {
                 MessageBox.Show("Email không hợp lệ! Vui lòng nhập đúng định dạng email.",
-                    "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                    "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtEmail.Focus();
                 txtEmail.SelectAll();
                 return false;
             }
 
-            return true;
-        }
-
-        private bool ValidateEmail(string email)
-        {
-            if (string.IsNullOrWhiteSpace(email)) return false;
-            email = email.Trim();
-            try
+            // Phone: required and must be valid
+            if (txtPhone.ForeColor == Color.LightGray || string.IsNullOrWhiteSpace(txtPhone.Text))
             {
-                var addr = new System.Net.Mail.MailAddress(email);
-                return addr.Address == email;
-            }
-            catch
-            {
+                MessageBox.Show("Vui lòng nhập số điện thoại khách hàng!", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtPhone.Focus();
                 return false;
             }
+
+            var phone = txtPhone.Text.Trim();
+            var countryCode = cboCountryCode?.Text?.Split(' ')[0] ?? string.Empty;
+            if (!PhoneValidation.IsValidPhoneNumber(phone, countryCode))
+            {
+                MessageBox.Show("Số điện thoại không đúng định dạng", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                txtPhone.Focus();
+                return false;
+            }
+
+            return true;
         }
 
         private async Task<bool> UpdateCustomerAsync()
@@ -1377,6 +1429,46 @@ namespace BookingCareManagement.WinForms
             TextRenderer.DrawText(e.Graphics, this.Text, this.Font,
                 this.ClientRectangle, this.ForeColor,
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+        }
+    }
+
+    // Validation helpers
+    public static class PhoneValidation
+    {
+        public static bool IsValidPhoneNumber(string phone, string countryCode)
+        {
+            if (string.IsNullOrWhiteSpace(phone)) return false;
+            // must be digits only
+            if (!phone.All(char.IsDigit)) return false;
+
+            // Rules for Vietnam (+84): allow 10 digits starting with 0 or 9 digits when using +84 without leading 0
+            if (!string.IsNullOrWhiteSpace(countryCode) && countryCode.StartsWith("+84"))
+            {
+                if (phone.Length == 10 && phone.StartsWith("0")) return true;
+                if (phone.Length == 9) return true; // assumes user removed leading 0
+                return false;
+            }
+
+            // Generic rule: accept 7..15 digits
+            return phone.Length >= 7 && phone.Length <= 15;
+        }
+    }
+
+    public static class ValidationHelpers
+    {
+        public static bool IsValidEmail(string email)
+        {
+            if (string.IsNullOrWhiteSpace(email)) return false;
+            email = email.Trim();
+            try
+            {
+                var addr = new System.Net.Mail.MailAddress(email);
+                return addr.Address == email;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

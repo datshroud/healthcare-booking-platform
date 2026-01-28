@@ -5,6 +5,7 @@ using System.Linq;
 using System.Windows.Forms;
 using BookingCareManagement.WinForms.Areas.Admin.Models;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
+using System.Text.RegularExpressions;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Forms;
 
@@ -269,10 +270,27 @@ public sealed class SpecialtyEditorForm : Form
             return;
         }
 
+        // Disallow numbers in specialty name
+        if (Regex.IsMatch(_txtName.Text, "\\d"))
+        {
+            MessageBox.Show(this, "Tên chuyên khoa không được chứa số", "Tên không hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _txtName.Focus();
+            return;
+        }
+
         if (_numPrice.Value < 0)
         {
             MessageBox.Show(this, "Giá khám không hợp lệ", "Thiếu thông tin", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             _numPrice.Focus();
+            return;
+        }
+
+        // Slug validation: if provided, it must not contain numbers
+        var slug = (_txtSlug.Text ?? string.Empty).Trim();
+        if (!string.IsNullOrEmpty(slug) && Regex.IsMatch(slug, "\\d"))
+        {
+            MessageBox.Show(this, "Slug không được chứa số", "Slug không hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            _txtSlug.Focus();
             return;
         }
 
