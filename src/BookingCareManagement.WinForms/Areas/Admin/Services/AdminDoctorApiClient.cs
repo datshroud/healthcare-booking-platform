@@ -148,6 +148,13 @@ public sealed class AdminDoctorApiClient
         await EnsureSuccessAsync(response);
     }
 
+    public async Task UpdateStatusAsync(Guid doctorId, bool active, CancellationToken cancellationToken = default)
+    {
+        var client = CreateClient();
+        using var response = await client.PutAsJsonAsync($"/api/Doctor/{doctorId}/status", new { active }, cancellationToken);
+        await EnsureSuccessAsync(response);
+    }
+
     public async Task DeleteAsync(Guid doctorId, CancellationToken cancellationToken = default)
     {
         var client = CreateClient();

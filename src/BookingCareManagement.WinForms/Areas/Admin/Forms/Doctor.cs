@@ -100,12 +100,13 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     try
                     {
                         this.Cursor = Cursors.WaitCursor;
-                        await _doctorApiClient.UpdateProfileAsync(id, new { AvatarUrl = doc.AvatarUrl, /* keep avatar */ });
-                        // call status endpoint - backend expects PUT /api/Doctor/{id}/status
-                        var client = new HttpClient();
-                        var resp = await client.PutAsJsonAsync($"/api/Doctor/{id}/status", new { active = !doc.Active });
+                        // Use the shared API client to toggle active status
+                        await _doctorApiClient.UpdateStatusAsync(id, !doc.Active);
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show("Cập nhật trạng thái thất bại: " + ex.Message, "Lỗi", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    }
                     finally { this.Cursor = Cursors.Default; }
                     await LoadDataAsync();
                 });
