@@ -46,6 +46,26 @@
 
         <div id="bookingsList" class="booking-cards d-none"></div>
 
+        <div id="bookingsPagination" class="bookings-pagination d-none">
+            <button class="pagination-btn" type="button" data-page-prev>
+                <i class="fa-solid fa-chevron-left"></i>
+                Trước
+            </button>
+            <span class="pagination-info" data-page-info>Trang 1 / 1</span>
+            <button class="pagination-btn" type="button" data-page-next>
+                Sau
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+            <div class="pagination-size">
+                <span>Hiển thị</span>
+                <select id="pageSizeSelect" class="form-select">
+                    <option value="6">6</option>
+                    <option value="10">10</option>
+                    <option value="20">20</option>
+                </select>
+            </div>
+        </div>
+
         <div class="empty-state d-none" id="emptyState">
             <div class="empty-state-icon">
                 <i class="fa fa-calendar-days"></i>

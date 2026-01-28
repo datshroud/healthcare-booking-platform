@@ -151,8 +151,10 @@ public class CustomerBookingController : ControllerBase
 
     [HttpGet("my-bookings")]
     [Authorize]
-    public async Task<ActionResult<IReadOnlyCollection<CustomerBookingSummaryDto>>> GetMyBookings(
+    public async Task<ActionResult> GetMyBookings(
         [FromQuery] string? filter,
+        [FromQuery] int? page,
+        [FromQuery] int? pageSize,
         CancellationToken cancellationToken)
     {
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
@@ -161,8 +163,19 @@ public class CustomerBookingController : ControllerBase
             return Unauthorized();
         }
 
+        userId = userId.Trim();
+
         var normalizedFilter = NormalizeFilter(filter);
         var nowUtc = DateTime.UtcNow;
+
+        var resolvedPage = page.GetValueOrDefault(1);
+        if (resolvedPage < 1)
+        {
+            resolvedPage = 1;
+        }
+
+        var resolvedPageSize = pageSize.GetValueOrDefault(6);
+        resolvedPageSize = Math.Clamp(resolvedPageSize, 1, 50);
 
         var query =
             from appointment in _dbContext.Appointments.AsNoTracking()
@@ -187,15 +200,34 @@ public class CustomerBookingController : ControllerBase
             _ => query
         };
 
+        var totalItems = await query.CountAsync(cancellationToken);
+        var totalPages = totalItems == 0
+            ? 1
+            : (int)Math.Ceiling(totalItems / (double)resolvedPageSize);
+
+        if (resolvedPage > totalPages)
+        {
+            resolvedPage = totalPages;
+        }
+
         var records = await query
             .OrderByDescending(x => x.Appointment.StartUtc)
+            .Skip((resolvedPage - 1) * resolvedPageSize)
+            .Take(resolvedPageSize)
             .ToListAsync(cancellationToken);
 
         var dtos = records
             .Select(x => ToCustomerBookingSummaryDto(x.Appointment, x.Specialty, x.DoctorUser, x.ClinicRoom))
             .ToArray();
 
-        return Ok(dtos);
+        return Ok(new
+        {
+            Items = dtos,
+            Page = resolvedPage,
+            PageSize = resolvedPageSize,
+            TotalItems = totalItems,
+            TotalPages = totalPages
+        });
     }
 
     [HttpPost]

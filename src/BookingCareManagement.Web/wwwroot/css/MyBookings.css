@@ -222,6 +222,62 @@
     gap: 1.5rem;
 }
 
+.bookings-pagination {
+    margin-top: 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-top: 1px solid #2d3748;
+    padding-top: 1.5rem;
+}
+
+.pagination-btn {
+    background: transparent;
+    border: 1px solid #2d3748;
+    color: #e2e8f0;
+    padding: 0.55rem 1.1rem;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.pagination-btn:not(:disabled):hover {
+    border-color: #48bb78;
+    color: #48bb78;
+}
+
+.pagination-info {
+    color: #cbd5f5;
+    font-weight: 600;
+}
+
+.pagination-size {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.pagination-size .form-select {
+    background-color: #111827;
+    border: 1px solid #2d3748;
+    color: #f8fafc;
+    border-radius: 10px;
+    padding: 0.35rem 0.75rem;
+    min-width: 80px;
+}
+
 .booking-card {
     background-color: #1b2231;
     border: 1px solid #2d3748;

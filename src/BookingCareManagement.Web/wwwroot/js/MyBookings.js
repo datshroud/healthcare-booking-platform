@@ -22,6 +22,11 @@
         empty: document.getElementById("emptyState"),
         emptyText: document.querySelector("#emptyState .empty-state-text"),
         error: document.getElementById("bookingsError"),
+        pagination: document.getElementById("bookingsPagination"),
+        pageInfo: document.querySelector("[data-page-info]"),
+        pagePrev: document.querySelector("[data-page-prev]"),
+        pageNext: document.querySelector("[data-page-next]"),
+        pageSizeSelect: document.getElementById("pageSizeSelect"),
         rescheduleModal: document.getElementById("rescheduleModal"),
         rescheduleForm: document.getElementById("rescheduleForm"),
         rescheduleDate: document.getElementById("rescheduleDate"),
@@ -33,6 +38,10 @@
     const state = {
         filter: "all",
         bookings: new Map(),
+        page: 1,
+        pageSize: 6,
+        totalPages: 1,
+        totalItems: 0,
         openMenu: null,
         rescheduleTarget: null,
         rescheduleSlots: []
@@ -58,6 +67,7 @@
         if (isLoading) {
             elements.list?.classList.add("d-none");
             elements.empty?.classList.add("d-none");
+            elements.pagination?.classList.add("d-none");
         }
     };
 
@@ -220,6 +230,45 @@
         elements.list.classList.remove("d-none");
     };
 
+    const normalizeResponse = (data) => {
+        if (Array.isArray(data)) {
+            return {
+                items: data,
+                page: 1,
+                pageSize: data.length || state.pageSize,
+                totalItems: data.length,
+                totalPages: 1
+            };
+        }
+
+        const items = Array.isArray(data?.items) ? data.items : Array.isArray(data?.Items) ? data.Items : [];
+        return {
+            items,
+            page: Number(data?.page ?? data?.Page ?? 1),
+            pageSize: Number(data?.pageSize ?? data?.PageSize ?? state.pageSize),
+            totalItems: Number(data?.totalItems ?? data?.TotalItems ?? items.length),
+            totalPages: Number(data?.totalPages ?? data?.TotalPages ?? 1)
+        };
+    };
+
+    const updatePagination = () => {
+        if (!elements.pagination || !elements.pageInfo || !elements.pagePrev || !elements.pageNext) {
+            return;
+        }
+
+        const hasItems = state.totalItems > 0;
+        const shouldShow = hasItems && state.totalPages > 1;
+        elements.pagination.classList.toggle("d-none", !shouldShow);
+
+        elements.pageInfo.textContent = `Trang ${state.page} / ${state.totalPages} (Tổng ${state.totalItems})`;
+        elements.pagePrev.disabled = state.page <= 1;
+        elements.pageNext.disabled = state.page >= state.totalPages;
+
+        if (elements.pageSizeSelect) {
+            elements.pageSizeSelect.value = String(state.pageSize);
+        }
+    };
+
     const setActiveFilter = (filter) => {
         state.filter = filter;
         elements.dropdownItems.forEach((item) => {
@@ -237,11 +286,16 @@
         renderEmptyState("Vui lòng đăng nhập để xem lịch hẹn của bạn.");
     };
 
-    const loadBookings = async (filter) => {
+    const loadBookings = async (filter, page = state.page) => {
         setLoading(true);
         showError("");
         try {
-            const response = await fetch(`${apiBase}/my-bookings?filter=${filter}`, { credentials: "include" });
+            const query = new URLSearchParams({
+                filter,
+                page: String(page),
+                pageSize: String(state.pageSize)
+            });
+            const response = await fetch(`${apiBase}/my-bookings?${query}`, { credentials: "include" });
             if (response.status === 401) {
                 renderUnauthorized();
                 return;
@@ -253,7 +307,15 @@
             }
 
             const data = await response.json();
-            renderBookings(Array.isArray(data) ? data : []);
+            const normalized = normalizeResponse(data);
+
+            state.page = normalized.page || 1;
+            state.pageSize = normalized.pageSize || state.pageSize;
+            state.totalItems = normalized.totalItems || 0;
+            state.totalPages = normalized.totalPages || 1;
+
+            renderBookings(normalized.items);
+            updatePagination();
         } catch (error) {
             console.error(error);
             showError("Không thể tải lịch hẹn. Vui lòng thử lại sau.");
@@ -263,7 +325,7 @@
         }
     };
 
-    const reloadCurrentFilter = () => loadBookings(state.filter);
+    const reloadCurrentFilter = () => loadBookings(state.filter, state.page);
 
     const openMenu = (trigger) => {
         if (!trigger) {
@@ -583,8 +645,9 @@
                     return;
                 }
                 setActiveFilter(targetFilter);
+                state.page = 1;
                 closeDropdown();
-                loadBookings(targetFilter);
+                loadBookings(targetFilter, 1);
             });
         });
 
@@ -632,13 +695,37 @@
         elements.rescheduleForm?.addEventListener("submit", submitReschedule);
     };
 
+    const attachPaginationHandlers = () => {
+        elements.pagePrev?.addEventListener("click", () => {
+            if (state.page > 1) {
+                loadBookings(state.filter, state.page - 1);
+            }
+        });
+
+        elements.pageNext?.addEventListener("click", () => {
+            if (state.page < state.totalPages) {
+                loadBookings(state.filter, state.page + 1);
+            }
+        });
+
+        elements.pageSizeSelect?.addEventListener("change", () => {
+            const value = Number(elements.pageSizeSelect.value);
+            if (Number.isFinite(value) && value > 0) {
+                state.pageSize = value;
+                state.page = 1;
+                loadBookings(state.filter, 1);
+            }
+        });
+    };
+
     const init = () => {
         attachDropdownHandlers();
         attachListHandlers();
         attachRescheduleHandlers();
+        attachPaginationHandlers();
         resetRescheduleForm();
         setActiveFilter(state.filter);
-        loadBookings(state.filter);
+        loadBookings(state.filter, state.page);
     };
 
     document.addEventListener("DOMContentLoaded", init);
