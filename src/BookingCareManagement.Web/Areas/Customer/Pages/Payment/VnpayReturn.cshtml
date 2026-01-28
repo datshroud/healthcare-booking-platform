@@ -1,0 +1,56 @@
+@page "/payment/vnpay/return"
+@model BookingCareManagement.Areas.Customer.Pages.Payment.VnpayReturnModel
+@{
+    ViewData["Title"] = "VNPay Return";
+}
+
+<div class="container py-5">
+    <div class="card shadow-sm">
+        <div class="card-body text-center">
+            <h4 class="mb-2">Kết quả thanh toán</h4>
+            <div id="status" class="text-muted">Đang xử lý...</div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const orderId = "@Model.OrderId";
+        const responseCode = "@Model.ResponseCode";
+        const signatureValid = @Model.SignatureValid.ToString().ToLowerInvariant();
+
+        const statusEl = document.getElementById("status");
+
+        const confirm = async () => {
+            if (!signatureValid) {
+                statusEl.textContent = "Chữ ký VNPay không hợp lệ.";
+                return;
+            }
+
+            if (responseCode !== "00") {
+                statusEl.textContent = "Thanh toán thất bại hoặc bị hủy.";
+                return;
+            }
+
+            try {
+                const resp = await fetch("/api/customer-booking/payment-confirm", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ token: orderId })
+                });
+
+                if (!resp.ok) {
+                    const text = await resp.text();
+                    throw new Error(text || resp.statusText);
+                }
+
+                statusEl.textContent = "Thanh toán thành công! Đang chuyển về lịch hẹn...";
+                setTimeout(() => window.location.assign("/my-bookings"), 1200);
+            } catch (err) {
+                statusEl.textContent = err.message || "Không thể xác nhận thanh toán.";
+            }
+        };
+
+        confirm();
+    </script>
+}

@@ -84,6 +84,13 @@ public sealed class AdminAppointmentsApiClient
         return await resp.Content.ReadFromJsonAsync<DoctorAppointmentListItemDto>(cancellationToken: cancellationToken);
     }
 
+    public async Task DeleteAsync(Guid appointmentId, CancellationToken cancellationToken = default)
+    {
+        var client = _httpClientFactory.CreateClient("BookingCareApi");
+        using var resp = await client.DeleteAsync($"/api/admin/appointments/{appointmentId}", cancellationToken);
+        await EnsureSuccessAsync(resp);
+    }
+
     private static string BuildDateRangeQuery(DateOnly? from, DateOnly? to)
     {
         var query = new List<string>();

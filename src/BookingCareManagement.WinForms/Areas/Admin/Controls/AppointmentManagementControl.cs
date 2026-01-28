@@ -535,8 +535,7 @@ public sealed class AppointmentManagementControl : UserControl
 
         try
         {
-            var request = new AdminAppointmentStatusRequest { Status = "canceled" };
-            await _appointmentsApiClient.UpdateStatusAsync(row.Id, request);
+            await _appointmentsApiClient.DeleteAsync(row.Id);
             await LoadAppointmentsAsync();
         }
         catch (Exception ex)

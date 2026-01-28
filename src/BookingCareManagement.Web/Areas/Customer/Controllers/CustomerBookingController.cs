@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Security.Claims;
 using System.Linq;
+using System.Collections.Concurrent;
 using BookingCareManagement.Application.Common.Exceptions;
 using BookingCareManagement.Application.Features.Appointments.Commands;
 using BookingCareManagement.Application.Features.Appointments.Dtos;
@@ -11,11 +12,13 @@ using BookingCareManagement.Application.Features.Specialties.Dtos;
 using BookingCareManagement.Application.Features.Specialties.Queries;
 using BookingCareManagement.Domain.Abstractions;
 using BookingCareManagement.Domain.Aggregates.Appointment;
+using BookingCareManagement.Domain.Aggregates.Invoice;
 using BookingCareManagement.Domain.Aggregates.ClinicRoom;
 using BookingCareManagement.Domain.Aggregates.Doctor;
 using BookingCareManagement.Domain.Aggregates.User;
 using BookingCareManagement.Infrastructure.Persistence;
 using BookingCareManagement.Web.Areas.Customer.Dtos;
+using BookingCareManagement.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -31,6 +34,7 @@ public class CustomerBookingController : ControllerBase
     private readonly ApplicationDBContext _dbContext;
     private static readonly CultureInfo VietnamCulture = CultureInfo.GetCultureInfo("vi-VN");
     private static readonly TimeZoneInfo VietnamTimeZone = ResolveVietnamTimeZone();
+    private static readonly ConcurrentDictionary<string, PaymentSession> PaymentSessions = new();
     private static readonly IReadOnlyDictionary<string, CustomerBookingStatusPresentation> StatusPresentationMap =
         new Dictionary<string, CustomerBookingStatusPresentation>(StringComparer.OrdinalIgnoreCase)
         {
@@ -38,7 +42,10 @@ public class CustomerBookingController : ControllerBase
             [AppointmentStatus.Approved] = new(AppointmentStatus.Approved, "Đã xác nhận", "approved", "fa-circle-check"),
             [AppointmentStatus.Canceled] = new(AppointmentStatus.Canceled, "Đã hủy", "canceled", "fa-ban"),
             [AppointmentStatus.Rejected] = new(AppointmentStatus.Rejected, "Bị từ chối", "rejected", "fa-circle-xmark"),
-            [AppointmentStatus.NoShow] = new(AppointmentStatus.NoShow, "Vắng mặt", "noshow", "fa-user-xmark")
+            [AppointmentStatus.NoShow] = new(AppointmentStatus.NoShow, "Vắng mặt", "noshow", "fa-user-xmark"),
+            [AppointmentStatus.PaidTransfer] = new(AppointmentStatus.PaidTransfer, "Đã thanh toán (CK)", "paidtransfer", "fa-qrcode"),
+            [AppointmentStatus.PaidMomo] = new(AppointmentStatus.PaidMomo, "Đã thanh toán (MoMo)", "paidmomo", "fa-qrcode"),
+            [AppointmentStatus.PaidVnpay] = new(AppointmentStatus.PaidVnpay, "Đã thanh toán (VNPay)", "paidvnpay", "fa-qrcode")
         };
 
     public CustomerBookingController(ApplicationDBContext dbContext)
@@ -192,7 +199,7 @@ public class CustomerBookingController : ControllerBase
     }
 
     [HttpPost]
-    public async Task<ActionResult<AppointmentDto>> CreateBooking(
+    public async Task<IActionResult> CreateBooking(
         [FromBody] CreateCustomerBookingRequest request,
         [FromServices] CreateAppointmentCommandHandler handler,
         [FromServices] IDoctorRepository doctorRepository,
@@ -200,149 +207,220 @@ public class CustomerBookingController : ControllerBase
         [FromServices] CreateAdminNotificationCommandHandler notificationHandler,
         CancellationToken cancellationToken)
     {
-        if (request.SpecialtyId == Guid.Empty)
+        var result = await CreateBookingInternal(request, handler, doctorRepository, specialtyRepository, notificationHandler, cancellationToken);
+        if (result.Error is not null)
         {
-            return BadRequest(new ProblemDetails { Title = "Chuyên khoa bắt buộc" });
+            return result.Error;
         }
 
-        if (request.DoctorId == Guid.Empty)
+        return Ok(result.Dto);
+    }
+
+    [HttpPost("payment-intent")]
+    public async Task<IActionResult> CreatePaymentIntent(
+        [FromBody] PaymentIntentRequest request,
+        [FromServices] CreateAppointmentCommandHandler handler,
+        [FromServices] IDoctorRepository doctorRepository,
+        [FromServices] ISpecialtyRepository specialtyRepository,
+        [FromServices] CreateAdminNotificationCommandHandler notificationHandler,
+        [FromServices] MomoPaymentService momoPayment,
+        [FromServices] VnpayPaymentService vnpayPayment,
+        CancellationToken cancellationToken)
+    {
+        if (request is null)
         {
-            return BadRequest(new ProblemDetails { Title = "Bác sĩ bắt buộc" });
+            return BadRequest(new ProblemDetails { Title = "Yêu cầu không hợp lệ" });
         }
 
-        if (request.SlotStartUtc == default)
+        var method = (request.PaymentMethod ?? "momo").Trim().ToLowerInvariant();
+        if (method is not ("momo" or "vnpay"))
         {
-            return BadRequest(new ProblemDetails { Title = "Chưa chọn thời gian" });
+            return BadRequest(new ProblemDetails { Title = "Phương thức thanh toán không hợp lệ" });
         }
 
-        var trimmedName = request.CustomerName?.Trim() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(trimmedName))
+        var bookingRequest = new CreateCustomerBookingRequest
         {
-            return BadRequest(new ProblemDetails { Title = "Vui lòng nhập họ tên" });
-        }
-
-        var trimmedPhone = request.CustomerPhone?.Trim() ?? string.Empty;
-        if (string.IsNullOrWhiteSpace(trimmedPhone))
-        {
-            return BadRequest(new ProblemDetails { Title = "Vui lòng nhập số điện thoại" });
-        }
-
-        var slotStartUtc = DateTime.SpecifyKind(request.SlotStartUtc, DateTimeKind.Utc);
-        var durationMinutes = request.DurationMinutes <= 0 ? 30 : request.DurationMinutes;
-        var slotEndUtc = slotStartUtc.AddMinutes(durationMinutes);
-
-        var minLeadLocal = GetVietnamDate().AddDays(2);
-        var minLeadUtc = TimeZoneInfo.ConvertTimeToUtc(minLeadLocal, VietnamTimeZone);
-        if (slotStartUtc < minLeadUtc)
-        {
-            var limitMessage = $"Ngày đặt phải từ {minLeadLocal.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)} trở đi";
-            return BadRequest(new ProblemDetails { Title = limitMessage });
-        }
-
-        var specialty = await specialtyRepository.GetByIdAsync(request.SpecialtyId, cancellationToken);
-        if (specialty is null)
-        {
-            return NotFound(new ProblemDetails { Title = "Không tìm thấy chuyên khoa" });
-        }
-
-        var doctor = await doctorRepository.GetByIdAsync(request.DoctorId, cancellationToken);
-        if (doctor is null)
-        {
-            return NotFound(new ProblemDetails { Title = "Không tìm thấy bác sĩ" });
-        }
-
-        if (!doctor.Specialties.Any(s => s.Id == request.SpecialtyId))
-        {
-            return BadRequest(new ProblemDetails { Title = "Bác sĩ không thuộc chuyên khoa đã chọn" });
-        }
-
-        var slotLocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(slotStartUtc, VietnamTimeZone));
-        if (IsDoctorOnDayOff(slotLocalDate, doctor.DaysOff))
-        {
-            return BadRequest(new ProblemDetails { Title = "Bác sĩ nghỉ trong ngày này, vui lòng chọn ngày khác" });
-        }
-
-        var clinicRoomId = await _dbContext.ClinicRooms
-            .AsNoTracking()
-            .Select(r => r.Id)
-            .FirstOrDefaultAsync(cancellationToken);
-
-        if (clinicRoomId == Guid.Empty)
-        {
-            var fallbackRoom = new ClinicRoom("CR-001");
-            await _dbContext.ClinicRooms.AddAsync(fallbackRoom, cancellationToken);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-            clinicRoomId = fallbackRoom.Id;
-        }
-
-        var slotTaken = await _dbContext.Appointments
-            .AsNoTracking()
-            .AnyAsync(
-                a => a.DoctorId == doctor.Id && slotStartUtc < a.EndUtc && a.StartUtc < slotEndUtc,
-                cancellationToken);
-
-        if (slotTaken)
-        {
-            return Conflict(new ProblemDetails { Title = "Khung giờ này đã được đặt" });
-        }
-
-        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-        var command = new CreateAppointmentCommand
-        {
-            DoctorId = request.DoctorId,
             SpecialtyId = request.SpecialtyId,
-            ClinicRoomId = clinicRoomId,
-            StartUtc = slotStartUtc,
-            DurationMinutes = durationMinutes,
-            PatientName = trimmedName,
-            CustomerPhone = trimmedPhone,
-            PatientId = string.IsNullOrWhiteSpace(currentUserId) ? null : currentUserId,
-            Price = specialty.Price
+            DoctorId = request.DoctorId,
+            SlotStartUtc = request.SlotStartUtc,
+            DurationMinutes = request.DurationMinutes,
+            CustomerName = request.CustomerName,
+            CustomerPhone = request.CustomerPhone
         };
 
-        var dto = await handler.Handle(command, cancellationToken);
-
-        if (!string.IsNullOrWhiteSpace(currentUserId))
+        var validation = await ValidateBookingInput(bookingRequest, doctorRepository, specialtyRepository, cancellationToken);
+        if (validation.Error is not null)
         {
-            var currentUser = await _dbContext.Users
-                .FirstOrDefaultAsync(u => u.Id == currentUserId, cancellationToken);
-
-            if (currentUser is not null)
-            {
-                var updated = false;
-
-                if (!string.Equals(currentUser.FullName, trimmedName, StringComparison.Ordinal))
-                {
-                    currentUser.FullName = trimmedName;
-                    updated = true;
-                }
-
-                if (!string.Equals(currentUser.PhoneNumber, trimmedPhone, StringComparison.Ordinal))
-                {
-                    currentUser.PhoneNumber = trimmedPhone;
-                    updated = true;
-                }
-
-                if (updated)
-                {
-                    await _dbContext.SaveChangesAsync(cancellationToken);
-                }
-            }
+            return validation.Error;
         }
 
-        var doctorDisplayName = ResolveDoctorDisplayName(doctor);
-        var specialtyName = ResolveSpecialtyDisplayName(specialty);
-        var startLocal = TimeZoneInfo.ConvertTimeFromUtc(slotStartUtc, VietnamTimeZone);
+        var token = Guid.NewGuid().ToString("N");
+        PaymentSessions[token] = new PaymentSession(bookingRequest, method, validation.Total, DateTime.UtcNow);
 
-        await TryCreateAdminNotificationAsync(
-            notificationHandler,
-            "Đặt lịch mới",
-            $"{trimmedName} đã đặt {specialtyName} với {doctorDisplayName} ({startLocal:HH:mm dd/MM}).",
-            dto.Id,
-            cancellationToken);
+        if (method == "momo")
+        {
+            if (!momoPayment.IsConfigured)
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Chưa cấu hình MoMo",
+                    Detail = "Vui lòng cấu hình Momo: PartnerCode, AccessKey, SecretKey, RedirectUrl, IpnUrl."
+                });
+            }
 
-        return Ok(dto);
+            var orderInfo = $"Thanh toán lịch hẹn #{token}";
+            var momoResp = await momoPayment.CreateQrPaymentAsync(token, validation.Total, orderInfo);
+            if (momoResp is null || !momoResp.Success || string.IsNullOrWhiteSpace(momoResp.PayUrl))
+            {
+                return StatusCode(502, new ProblemDetails
+                {
+                    Title = "Không tạo được phiên thanh toán MoMo",
+                    Detail = momoResp?.Message ?? momoResp?.RawResponse
+                });
+            }
+
+            return Ok(new { token, redirectUrl = momoResp.PayUrl });
+        }
+
+        if (method == "vnpay")
+        {
+            if (!vnpayPayment.IsConfigured)
+            {
+                return BadRequest(new ProblemDetails
+                {
+                    Title = "Chưa cấu hình VNPay",
+                    Detail = "Vui lòng cấu hình Vnpay: TmnCode, HashSecret, ReturnUrl."
+                });
+            }
+
+            var orderInfo = $"Thanh toan lich hen {token}";
+            var ipAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+            var payUrl = vnpayPayment.CreatePaymentUrl(token, validation.Total, orderInfo, ipAddress);
+            return Ok(new { token, redirectUrl = payUrl });
+        }
+
+        var redirectUrl = $"/payment/momo/sandbox?token={Uri.EscapeDataString(token)}&amount={validation.Total}&method={Uri.EscapeDataString(method)}";
+        return Ok(new { token, redirectUrl });
+    }
+
+    [HttpPost("{appointmentId:guid}/mark-paid")]
+    [Authorize]
+    public async Task<IActionResult> MarkPaid(
+        [FromRoute] Guid appointmentId,
+        [FromBody] PaymentConfirmRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (appointmentId == Guid.Empty)
+        {
+            return BadRequest(new ProblemDetails { Title = "AppointmentId không hợp lệ" });
+        }
+
+        var method = (request?.Method ?? "transfer").Trim().ToLowerInvariant();
+        if (method is not ("transfer" or "momo" or "vnpay"))
+        {
+            return BadRequest(new ProblemDetails { Title = "Phương thức thanh toán không hợp lệ" });
+        }
+
+        var appointment = await _dbContext.Appointments
+            .FirstOrDefaultAsync(a => a.Id == appointmentId, cancellationToken);
+        if (appointment is null)
+        {
+            return NotFound(new ProblemDetails { Title = "Không tìm thấy lịch hẹn" });
+        }
+
+        var invoice = await _dbContext.Invoices
+            .FirstOrDefaultAsync(i => i.AppointmentId == appointmentId, cancellationToken);
+
+        if (invoice is null)
+        {
+            var specialty = await _dbContext.Specialties
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == appointment.SpecialtyId, cancellationToken);
+
+            var total = appointment.Price > 0
+                ? appointment.Price
+                : specialty?.Price ?? 0m;
+
+            invoice = new Invoice(appointmentId, total, invoiceDate: DateTime.UtcNow);
+            _dbContext.Invoices.Add(invoice);
+        }
+
+        invoice.SetStatus("Paid");
+        appointment.SetStatus(method switch
+        {
+            "momo" => AppointmentStatus.PaidMomo,
+            "vnpay" => AppointmentStatus.PaidVnpay,
+            _ => AppointmentStatus.PaidTransfer
+        });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        return Ok(new { appointmentId, status = appointment.Status, invoiceStatus = invoice.Status });
+    }
+
+    [HttpPost("payment-confirm")]
+    public async Task<IActionResult> ConfirmSandboxPayment(
+        [FromBody] PaymentSessionConfirmRequest request,
+        [FromServices] CreateAppointmentCommandHandler handler,
+        [FromServices] IDoctorRepository doctorRepository,
+        [FromServices] ISpecialtyRepository specialtyRepository,
+        [FromServices] CreateAdminNotificationCommandHandler notificationHandler,
+        CancellationToken cancellationToken)
+    {
+        if (request is null || string.IsNullOrWhiteSpace(request.Token))
+        {
+            return BadRequest(new ProblemDetails { Title = "Token không hợp lệ" });
+        }
+
+        if (!PaymentSessions.TryRemove(request.Token.Trim(), out var session))
+        {
+            return NotFound(new ProblemDetails { Title = "Phiên thanh toán không tồn tại hoặc đã hết hạn" });
+        }
+
+        var result = await CreateBookingInternal(session.Request, handler, doctorRepository, specialtyRepository, notificationHandler, cancellationToken);
+        if (result.Error is not null || result.Dto is null)
+        {
+            return result.Error ?? StatusCode(500, new ProblemDetails { Title = "Không thể tạo lịch hẹn" });
+        }
+
+        await MarkPaidInternal(result.Dto.Id, session.Method, cancellationToken);
+
+        return Ok(new { appointmentId = result.Dto.Id, status = session.Method });
+    }
+
+    [HttpPost("momo/ipn")]
+    public async Task<IActionResult> MomoIpn(
+        [FromBody] MomoIpnRequest request,
+        [FromServices] CreateAppointmentCommandHandler handler,
+        [FromServices] IDoctorRepository doctorRepository,
+        [FromServices] ISpecialtyRepository specialtyRepository,
+        [FromServices] CreateAdminNotificationCommandHandler notificationHandler,
+        CancellationToken cancellationToken)
+    {
+        if (request is null || string.IsNullOrWhiteSpace(request.orderId))
+        {
+            return BadRequest();
+        }
+
+        if (request.resultCode != 0)
+        {
+            return Ok(new { message = "ignored" });
+        }
+
+        var token = request.orderId.Trim();
+        if (!PaymentSessions.TryRemove(token, out var session))
+        {
+            return Ok(new { message = "session-not-found" });
+        }
+
+        var result = await CreateBookingInternal(session.Request, handler, doctorRepository, specialtyRepository, notificationHandler, cancellationToken);
+        if (result.Dto is null)
+        {
+            return StatusCode(500);
+        }
+
+        await MarkPaidInternal(result.Dto.Id, session.Method, cancellationToken);
+        return Ok(new { message = "ok" });
     }
 
     [HttpPost("{appointmentId:guid}/reschedule")]
@@ -667,6 +745,222 @@ public class CustomerBookingController : ControllerBase
 
         return string.IsNullOrWhiteSpace(room.Code) ? "Phòng khám" : $"Phòng khám {room.Code}";
     }
+
+    private async Task<(AppointmentDto? Dto, decimal Total, IActionResult? Error)> CreateBookingInternal(
+        CreateCustomerBookingRequest request,
+        CreateAppointmentCommandHandler handler,
+        IDoctorRepository doctorRepository,
+        ISpecialtyRepository specialtyRepository,
+        CreateAdminNotificationCommandHandler notificationHandler,
+        CancellationToken cancellationToken)
+    {
+        var validation = await ValidateBookingInput(request, doctorRepository, specialtyRepository, cancellationToken);
+        if (validation.Error is not null || validation.Specialty is null || validation.Doctor is null)
+        {
+            return (null, 0m, validation.Error ?? StatusCode(500));
+        }
+
+        var trimmedName = request.CustomerName?.Trim() ?? string.Empty;
+        var trimmedPhone = request.CustomerPhone?.Trim() ?? string.Empty;
+        var slotStartUtc = DateTime.SpecifyKind(request.SlotStartUtc, DateTimeKind.Utc);
+        var durationMinutes = request.DurationMinutes <= 0 ? 30 : request.DurationMinutes;
+
+        var clinicRoomId = await _dbContext.ClinicRooms
+            .AsNoTracking()
+            .Select(r => r.Id)
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (clinicRoomId == Guid.Empty)
+        {
+            var fallbackRoom = new ClinicRoom("CR-001");
+            await _dbContext.ClinicRooms.AddAsync(fallbackRoom, cancellationToken);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+            clinicRoomId = fallbackRoom.Id;
+        }
+
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        var command = new CreateAppointmentCommand
+        {
+            DoctorId = request.DoctorId,
+            SpecialtyId = request.SpecialtyId,
+            ClinicRoomId = clinicRoomId,
+            StartUtc = slotStartUtc,
+            DurationMinutes = durationMinutes,
+            PatientName = trimmedName,
+            CustomerPhone = trimmedPhone,
+            PatientId = string.IsNullOrWhiteSpace(currentUserId) ? null : currentUserId,
+            Price = validation.Total
+        };
+
+        var dto = await handler.Handle(command, cancellationToken);
+
+        if (!string.IsNullOrWhiteSpace(currentUserId))
+        {
+            var currentUser = await _dbContext.Users
+                .FirstOrDefaultAsync(u => u.Id == currentUserId, cancellationToken);
+
+            if (currentUser is not null)
+            {
+                var updated = false;
+
+                if (!string.Equals(currentUser.FullName, trimmedName, StringComparison.Ordinal))
+                {
+                    currentUser.FullName = trimmedName;
+                    updated = true;
+                }
+
+                if (!string.Equals(currentUser.PhoneNumber, trimmedPhone, StringComparison.Ordinal))
+                {
+                    currentUser.PhoneNumber = trimmedPhone;
+                    updated = true;
+                }
+
+                if (updated)
+                {
+                    await _dbContext.SaveChangesAsync(cancellationToken);
+                }
+            }
+        }
+
+        var doctorDisplayName = ResolveDoctorDisplayName(validation.Doctor);
+        var specialtyName = ResolveSpecialtyDisplayName(validation.Specialty);
+        var startLocal = TimeZoneInfo.ConvertTimeFromUtc(slotStartUtc, VietnamTimeZone);
+
+        await TryCreateAdminNotificationAsync(
+            notificationHandler,
+            "Đặt lịch mới",
+            $"{trimmedName} đã đặt {specialtyName} với {doctorDisplayName} ({startLocal:HH:mm dd/MM}).",
+            dto.Id,
+            cancellationToken);
+
+        return (dto, validation.Total, null);
+    }
+
+    private async Task<(DomainSpecialty? Specialty, DomainDoctor? Doctor, decimal Total, IActionResult? Error)>
+        ValidateBookingInput(
+            CreateCustomerBookingRequest request,
+            IDoctorRepository doctorRepository,
+            ISpecialtyRepository specialtyRepository,
+            CancellationToken cancellationToken)
+    {
+        if (request.SpecialtyId == Guid.Empty)
+        {
+            return (null, null, 0m, BadRequest(new ProblemDetails { Title = "Chuyên khoa bắt buộc" }));
+        }
+
+        if (request.DoctorId == Guid.Empty)
+        {
+            return (null, null, 0m, BadRequest(new ProblemDetails { Title = "Bác sĩ bắt buộc" }));
+        }
+
+        if (request.SlotStartUtc == default)
+        {
+            return (null, null, 0m, BadRequest(new ProblemDetails { Title = "Chưa chọn thời gian" }));
+        }
+
+        var trimmedName = request.CustomerName?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(trimmedName))
+        {
+            return (null, null, 0m, BadRequest(new ProblemDetails { Title = "Vui lòng nhập họ tên" }));
+        }
+
+        var trimmedPhone = request.CustomerPhone?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(trimmedPhone))
+        {
+            return (null, null, 0m, BadRequest(new ProblemDetails { Title = "Vui lòng nhập số điện thoại" }));
+        }
+
+        var slotStartUtc = DateTime.SpecifyKind(request.SlotStartUtc, DateTimeKind.Utc);
+        var durationMinutes = request.DurationMinutes <= 0 ? 30 : request.DurationMinutes;
+        var slotEndUtc = slotStartUtc.AddMinutes(durationMinutes);
+
+        var minLeadLocal = GetVietnamDate().AddDays(2);
+        var minLeadUtc = TimeZoneInfo.ConvertTimeToUtc(minLeadLocal, VietnamTimeZone);
+        if (slotStartUtc < minLeadUtc)
+        {
+            var limitMessage = $"Ngày đặt phải từ {minLeadLocal.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)} trở đi";
+            return (null, null, 0m, BadRequest(new ProblemDetails { Title = limitMessage }));
+        }
+
+        var specialty = await specialtyRepository.GetByIdAsync(request.SpecialtyId, cancellationToken);
+        if (specialty is null)
+        {
+            return (null, null, 0m, NotFound(new ProblemDetails { Title = "Không tìm thấy chuyên khoa" }));
+        }
+
+        var doctor = await doctorRepository.GetByIdAsync(request.DoctorId, cancellationToken);
+        if (doctor is null)
+        {
+            return (null, null, 0m, NotFound(new ProblemDetails { Title = "Không tìm thấy bác sĩ" }));
+        }
+
+        if (!doctor.Specialties.Any(s => s.Id == request.SpecialtyId))
+        {
+            return (null, null, 0m, BadRequest(new ProblemDetails { Title = "Bác sĩ không thuộc chuyên khoa đã chọn" }));
+        }
+
+        var slotLocalDate = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(slotStartUtc, VietnamTimeZone));
+        if (IsDoctorOnDayOff(slotLocalDate, doctor.DaysOff))
+        {
+            return (null, null, 0m, BadRequest(new ProblemDetails { Title = "Bác sĩ nghỉ trong ngày này, vui lòng chọn ngày khác" }));
+        }
+
+        var slotTaken = await _dbContext.Appointments
+            .AsNoTracking()
+            .AnyAsync(
+                a => a.DoctorId == doctor.Id && slotStartUtc < a.EndUtc && a.StartUtc < slotEndUtc,
+                cancellationToken);
+
+        if (slotTaken)
+        {
+            return (null, null, 0m, Conflict(new ProblemDetails { Title = "Khung giờ này đã được đặt" }));
+        }
+
+        return (specialty, doctor, specialty.Price, null);
+    }
+
+    private async Task MarkPaidInternal(Guid appointmentId, string method, CancellationToken cancellationToken)
+    {
+        var appointment = await _dbContext.Appointments
+            .FirstOrDefaultAsync(a => a.Id == appointmentId, cancellationToken);
+        if (appointment is null)
+        {
+            return;
+        }
+
+        var invoice = await _dbContext.Invoices
+            .FirstOrDefaultAsync(i => i.AppointmentId == appointmentId, cancellationToken);
+
+        if (invoice is null)
+        {
+            var specialty = await _dbContext.Specialties
+                .AsNoTracking()
+                .FirstOrDefaultAsync(s => s.Id == appointment.SpecialtyId, cancellationToken);
+
+            var total = appointment.Price > 0
+                ? appointment.Price
+                : specialty?.Price ?? 0m;
+
+            invoice = new Invoice(appointmentId, total, invoiceDate: DateTime.UtcNow);
+            _dbContext.Invoices.Add(invoice);
+        }
+
+        invoice.SetStatus("Paid");
+        appointment.SetStatus(method switch
+        {
+            "momo" => AppointmentStatus.PaidMomo,
+            "vnpay" => AppointmentStatus.PaidVnpay,
+            _ => AppointmentStatus.PaidTransfer
+        });
+
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public sealed record PaymentConfirmRequest(string? Method);
+    public sealed record PaymentSessionConfirmRequest(string Token);
+    public sealed record MomoIpnRequest(string? orderId, int resultCode);
+    private sealed record PaymentSession(CreateCustomerBookingRequest Request, string Method, decimal Amount, DateTime CreatedUtc);
 
     private static string BuildDateLabel(DateTime startLocal)
     {

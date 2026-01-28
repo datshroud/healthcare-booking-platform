@@ -25,7 +25,11 @@
         customerPhone: document.getElementById("customer-phone"),
         addToCalendarBtn: document.getElementById("add-to-calendar"),
         calendarDropdown: document.getElementById("calendarDropdown"),
-        calendarSelected: document.getElementById("calendarSelected")
+        calendarSelected: document.getElementById("calendarSelected"),
+        paymentCash: document.getElementById("payment-cash"),
+        paymentMomo: document.getElementById("payment-momo"),
+        paymentVnpay: document.getElementById("payment-vnpay"),
+        paymentNote: document.getElementById("payment-note")
     };
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -57,7 +61,7 @@
 
         if (!response.ok) {
             const payload = await response.json().catch(() => null);
-            const message = payload?.title || payload?.detail || "Đã có lỗi xảy ra";
+            const message = payload?.detail || payload?.title || "Đã có lỗi xảy ra";
             throw new Error(message);
         }
 
@@ -329,6 +333,11 @@
     };
 
     const submitBooking = async () => {
+        const paymentMethod = dom.paymentMomo?.checked
+            ? "momo"
+            : dom.paymentVnpay?.checked
+                ? "vnpay"
+                : "cash";
         const name = dom.customerName.value.trim();
         const phone = dom.customerPhone.value.trim();
 
@@ -369,12 +378,26 @@
                 customerPhone: phone
             };
 
-            await fetchJson(`${apiBase}`, {
-                method: "POST",
-                body: JSON.stringify(payload)
-            });
+            if (paymentMethod === "cash") {
+                await fetchJson(`${apiBase}`, {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
 
-            setStep("thankyou");
+                setStep("thankyou");
+            } else {
+                const intent = await fetchJson(`${apiBase}/payment-intent`, {
+                    method: "POST",
+                    body: JSON.stringify({ ...payload, paymentMethod })
+                });
+
+                if (!intent?.redirectUrl) {
+                    throw new Error("Không tạo được phiên thanh toán");
+                }
+
+                window.open(intent.redirectUrl, "_blank", "noopener,noreferrer");
+                return;
+            }
         } catch (error) {
             Swal.fire({
                 background: "#1e1e1e",
@@ -415,6 +438,20 @@
             dom.promoMessage.textContent = "❌ Mã giảm giá không hợp lệ";
             dom.promoMessage.classList.remove("d-none", "text-success");
             dom.promoMessage.classList.add("text-warning");
+        }
+    };
+
+    const updatePaymentNote = () => {
+        if (!dom.paymentNote) return;
+        if (dom.paymentMomo?.checked) {
+            dom.paymentNote.innerHTML = "Thanh toán bằng <b>MoMo sandbox</b>. Sau khi quét thành công, lịch hẹn sẽ cập nhật đã thanh toán.";
+            dom.confirmBooking.textContent = "Thanh toán & đặt lịch";
+        } else if (dom.paymentVnpay?.checked) {
+            dom.paymentNote.innerHTML = "Thanh toán bằng <b>VNPay sandbox</b>. Sau khi quét thành công, lịch hẹn sẽ cập nhật đã thanh toán.";
+            dom.confirmBooking.textContent = "Thanh toán & đặt lịch";
+        } else {
+            dom.paymentNote.innerHTML = "Thanh toán sẽ được thực hiện <b>tại địa điểm đặt lịch</b>.";
+            dom.confirmBooking.textContent = "Hoàn tất đặt lịch";
         }
     };
 
@@ -544,6 +581,9 @@
     dom.confirmSlot.addEventListener("click", confirmSlot);
     dom.applyPromoBtn.addEventListener("click", applyPromo);
     dom.confirmBooking.addEventListener("click", submitBooking);
+    dom.paymentCash?.addEventListener("change", updatePaymentNote);
+    dom.paymentMomo?.addEventListener("change", updatePaymentNote);
+    dom.paymentVnpay?.addEventListener("change", updatePaymentNote);
 
     document.querySelectorAll(".dropdown-menu .dropdown-item").forEach(item => {
         item.addEventListener("click", (evt) => {
@@ -570,4 +610,5 @@
     setStep("specialty");
     loadSpecialties();
     loadCustomerProfile();
+    updatePaymentNote();
 });

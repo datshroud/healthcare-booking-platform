@@ -279,7 +279,7 @@ public sealed partial class DoctorAppointmentsForm : Form
 
                 // If appointment not approved, offer confirm action
                 var status = (dto.Status ?? string.Empty).ToLowerInvariant();
-                if (status != "approved")
+                if (status != "approved" && status != "paidtransfer")
                 {
                     var confirmItem = new ToolStripMenuItem("Xác nhận cuộc hẹn");
                     confirmItem.ForeColor = Color.FromArgb(22, 101, 52);
@@ -291,6 +291,11 @@ public sealed partial class DoctorAppointmentsForm : Form
                 var infoItem = new ToolStripMenuItem("Chi tiết");
                 infoItem.Click += (_, _) => ShowAppointmentDetails(dto);
                 actionMenu.Items.Add(infoItem);
+
+                var deleteItem = new ToolStripMenuItem("Xóa cuộc hẹn");
+                deleteItem.ForeColor = Color.FromArgb(185, 28, 28);
+                deleteItem.Click += async (_, _) => await DeleteAppointmentAsync(dto.Id);
+                actionMenu.Items.Add(deleteItem);
 
                 // show menu at cell location
                 var cellRect = appointmentGrid.GetCellDisplayRectangle(args.ColumnIndex, args.RowIndex, true);
@@ -349,6 +354,36 @@ public sealed partial class DoctorAppointmentsForm : Form
         catch (Exception ex)
         {
             _dialogService.ShowError($"Không thể xác nhận cuộc hẹn: {ex.Message}");
+        }
+        finally
+        {
+            ToggleLoading(false);
+        }
+    }
+
+    private async Task DeleteAppointmentAsync(Guid appointmentId)
+    {
+        if (!_dialogService.Confirm("Bạn có chắc chắn muốn xóa cuộc hẹn này?"))
+        {
+            return;
+        }
+
+        try
+        {
+            ToggleLoading(true);
+            await _appointmentsApiClient.DeleteAsync(appointmentId);
+
+            var idx = _appointments.FindIndex(a => a.Id == appointmentId);
+            if (idx >= 0)
+            {
+                _appointments.RemoveAt(idx);
+            }
+
+            RefreshGrid();
+        }
+        catch (Exception ex)
+        {
+            _dialogService.ShowError($"Không thể xóa cuộc hẹn: {ex.Message}");
         }
         finally
         {
@@ -415,6 +450,7 @@ public sealed partial class DoctorAppointmentsForm : Form
             switch ((dto.Status ?? string.Empty).ToLowerInvariant())
             {
                 case "approved":
+                case "paidtransfer":
                     statusCell.Style.BackColor = Color.FromArgb(220, 252, 231);
                     statusCell.Style.ForeColor = Color.FromArgb(22, 101, 52);
                     break;

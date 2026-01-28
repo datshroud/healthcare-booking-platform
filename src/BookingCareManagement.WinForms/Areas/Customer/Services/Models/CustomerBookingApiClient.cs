@@ -63,6 +63,14 @@ public sealed class CustomerBookingApiClient
  return profile;
  }
 
+ public async Task<bool> MarkPaidAsync(Guid appointmentId, string method = "transfer", CancellationToken cancellationToken = default)
+ {
+ var client = _httpClientFactory.CreateClient("BookingCareApi");
+ var payload = new { method };
+ using var resp = await client.PostAsJsonAsync($"/api/customer-booking/{appointmentId}/mark-paid", payload, cancellationToken);
+ return resp.IsSuccessStatusCode;
+ }
+
  private static async Task EnsureSuccessAsync(HttpResponseMessage response)
  {
  if (response.IsSuccessStatusCode) return;

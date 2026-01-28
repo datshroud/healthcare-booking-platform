@@ -37,7 +37,8 @@ public sealed class DashboardForm : Form
         { "Chờ xác nhận", "Pending" },
         { "Đã hủy", "Canceled" },
         { "Đã từ chối", "Rejected" },
-        { "Vắng mặt", "NoShow" }
+        { "Vắng mặt", "NoShow" },
+        { "Đã thanh toán (CK)", "PaidTransfer" }
     };
 
     public DashboardForm()
@@ -371,7 +372,9 @@ public sealed class DashboardForm : Form
 
             var text = e.Value?.ToString() ?? string.Empty;
             if (text.Contains("Đã xác nhận", StringComparison.CurrentCultureIgnoreCase)
-                || text.Equals("Approved", StringComparison.OrdinalIgnoreCase))
+                || text.Equals("Approved", StringComparison.OrdinalIgnoreCase)
+                || text.Contains("Đã thanh toán", StringComparison.CurrentCultureIgnoreCase)
+                || text.Equals("PaidTransfer", StringComparison.OrdinalIgnoreCase))
             {
                 e.CellStyle.ForeColor = Color.FromArgb(34, 197, 94);
             }

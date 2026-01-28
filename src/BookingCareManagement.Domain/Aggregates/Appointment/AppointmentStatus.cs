@@ -10,6 +10,9 @@ public static class AppointmentStatus
     public const string Canceled = "Canceled";
     public const string Rejected = "Rejected";
     public const string NoShow = "NoShow";
+    public const string PaidTransfer = "PaidTransfer";
+    public const string PaidMomo = "PaidMomo";
+    public const string PaidVnpay = "PaidVnpay";
 
     private static readonly HashSet<string> ValidStatuses = new(StringComparer.OrdinalIgnoreCase)
     {
@@ -17,7 +20,10 @@ public static class AppointmentStatus
         Approved,
         Canceled,
         Rejected,
-        NoShow
+        NoShow,
+        PaidTransfer,
+        PaidMomo,
+        PaidVnpay
     };
 
     public static bool IsValid(string? status)

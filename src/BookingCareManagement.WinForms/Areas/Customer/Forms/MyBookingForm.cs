@@ -30,6 +30,9 @@ namespace BookingCareManagement.WinForms.Areas.Customer.Forms
                 ["cancelled"] = "Đã Hủy",
                 ["rejected"] = "Bị từ chối",
                 ["noshow"] = "Vắng mặt",
+                ["paidtransfer"] = "Đã thanh toán (CK)",
+                ["paidmomo"] = "Đã thanh toán (MoMo)",
+                ["paidvnpay"] = "Đã thanh toán (VNPay)",
             };
 
         // Pagination state

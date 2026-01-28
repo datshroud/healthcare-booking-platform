@@ -324,7 +324,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             appointmentGrid.ContextMenuStrip = contextMenu;
             appointmentGrid.CellContentClick += async (_, args) =>
             {
-                if (args.ColumnIndex == appointmentGrid.Columns["Action"].Index && args.RowIndex >=0)
+                var actionColumn = appointmentGrid.Columns["Action"];
+                if (actionColumn != null && args.ColumnIndex == actionColumn.Index && args.RowIndex >= 0)
                 {
                     var row = GetRowAtIndex(args.RowIndex);
                     if (row == null) return;
@@ -347,8 +348,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
                         try
                         {
-                            var request = new AdminAppointmentStatusRequest { Status = "canceled" };
-                            await _appointmentsApiClient.UpdateStatusAsync(row.Id, request);
+                            await _appointmentsApiClient.DeleteAsync(row.Id);
                             await LoadAppointmentsAsync();
                         }
                         catch (Exception ex)

@@ -35,12 +35,31 @@ public sealed class AdminAppointmentsController : ControllerBase
             [AppointmentStatus.Approved] = new(AppointmentStatus.Approved, "Đã xác nhận", "approved", "fa-circle-check"),
             [AppointmentStatus.Canceled] = new(AppointmentStatus.Canceled, "Đã hủy", "canceled", "fa-ban"),
             [AppointmentStatus.Rejected] = new(AppointmentStatus.Rejected, "Từ chối", "rejected", "fa-circle-xmark"),
-            [AppointmentStatus.NoShow] = new(AppointmentStatus.NoShow, "Vắng mặt", "noshow", "fa-user-xmark")
+            [AppointmentStatus.NoShow] = new(AppointmentStatus.NoShow, "Vắng mặt", "noshow", "fa-user-xmark"),
+            [AppointmentStatus.PaidTransfer] = new(AppointmentStatus.PaidTransfer, "Đã thanh toán (CK)", "paidtransfer", "fa-qrcode"),
+            [AppointmentStatus.PaidMomo] = new(AppointmentStatus.PaidMomo, "Đã thanh toán (MoMo)", "paidmomo", "fa-qrcode"),
+            [AppointmentStatus.PaidVnpay] = new(AppointmentStatus.PaidVnpay, "Đã thanh toán (VNPay)", "paidvnpay", "fa-qrcode")
         };
 
     public AdminAppointmentsController(ApplicationDBContext dbContext)
     {
         _dbContext = dbContext;
+    }
+
+    [HttpDelete("{appointmentId:guid}")]
+    public async Task<IActionResult> Delete(Guid appointmentId, CancellationToken cancellationToken)
+    {
+        var appointment = await _dbContext.Appointments
+            .FirstOrDefaultAsync(a => a.Id == appointmentId, cancellationToken);
+
+        if (appointment is null)
+        {
+            return NotFound(new ProblemDetails { Title = "Không tìm thấy cuộc hẹn" });
+        }
+
+        _dbContext.Appointments.Remove(appointment);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        return NoContent();
     }
 
     [HttpGet("metadata")]

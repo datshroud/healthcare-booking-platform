@@ -18,6 +18,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
+using BookingCareManagement.Web.Options;
+using BookingCareManagement.Web.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,6 +29,9 @@ builder.Services.AddRazorPages(options =>
     options.Conventions.AuthorizeAreaFolder("Admin", "/", "AdminOnly");
     options.Conventions.AuthorizeAreaFolder("Doctor", "/", "DoctorOrAbove");
     options.Conventions.AuthorizeAreaFolder("Customer", "/", "CustomerOrAbove");
+    options.Conventions.AllowAnonymousToAreaPage("Customer", "/Payment/MomoSandbox");
+    options.Conventions.AllowAnonymousToAreaPage("Customer", "/Payment/MomoReturn");
+    options.Conventions.AllowAnonymousToAreaPage("Customer", "/Payment/VnpayReturn");
 });
 
 builder.Services.AddAuthorization(options =>
@@ -47,6 +52,10 @@ builder.Services.AddScoped<LoginHandler>();
 builder.Services.AddScoped<RefreshTokenHandler>();
 
 builder.Services.Configure<GoogleOAuthSettings>(builder.Configuration.GetSection("GoogleOAuth"));
+builder.Services.Configure<MomoOptions>(builder.Configuration.GetSection("MomoApi"));
+builder.Services.Configure<VnpayOptions>(builder.Configuration.GetSection("Vnpay"));
+builder.Services.AddHttpClient<MomoPaymentService>();
+builder.Services.AddScoped<VnpayPaymentService>();
 
 builder.Services.AddCors(o =>
     o.AddPolicy("spa", p => p

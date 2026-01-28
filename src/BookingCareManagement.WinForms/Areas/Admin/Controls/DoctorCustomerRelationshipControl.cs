@@ -1366,7 +1366,9 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
     private static Color GetStatusColor(string status)
     {
         if (status.Contains("Đã xác nhận", StringComparison.CurrentCultureIgnoreCase)
-            || status.Equals("Approved", StringComparison.OrdinalIgnoreCase))
+            || status.Equals("Approved", StringComparison.OrdinalIgnoreCase)
+            || status.Contains("Đã thanh toán", StringComparison.CurrentCultureIgnoreCase)
+            || status.Equals("PaidTransfer", StringComparison.OrdinalIgnoreCase))
         {
             return Color.FromArgb(34, 197, 94); // green
         }
