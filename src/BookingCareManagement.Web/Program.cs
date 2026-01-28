@@ -92,6 +92,7 @@ builder.Services.AddScoped<UpdateCustomerCommandHandler>();
 builder.Services.AddScoped<DeleteCustomerCommandHandler>();
 
 builder.Services.AddScoped<IInvoiceRepository, InvoiceRepository>();
+builder.Services.AddScoped<BookingCareManagement.Web.Utils.DataCleanupService>();
 
 var app = builder.Build();
 
@@ -106,6 +107,8 @@ using (var scope = app.Services.CreateScope())
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDBContext>();
     await db.Database.MigrateAsync();
     await DbSeeder.SeedAsync(scope.ServiceProvider);
+    var cleanup = scope.ServiceProvider.GetRequiredService<BookingCareManagement.Web.Utils.DataCleanupService>();
+    await cleanup.NormalizeAsync();
 }
 
 app.MapGet("/_routes", (IEnumerable<EndpointDataSource> sources) =>

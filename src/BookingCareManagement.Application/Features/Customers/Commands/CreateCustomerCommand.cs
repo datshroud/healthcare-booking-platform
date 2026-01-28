@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
-using BookingCareManagement.Application.Features.Customers.Dtos;
+    using BookingCareManagement.Application.Common.Validation;
+    using BookingCareManagement.Application.Features.Customers.Dtos;
 using BookingCareManagement.Domain.Aggregates.User;
 using Microsoft.AspNetCore.Identity;
 
@@ -25,8 +26,26 @@ public class CreateCustomerCommandHandler
 
     public async Task<CustomerDto> Handle(CreateCustomerCommand command, CancellationToken cancellationToken)
     {
-        var firstName = command.FirstName?.Trim() ?? string.Empty;
-        var lastName = command.LastName?.Trim() ?? string.Empty;
+        var firstName = InputValidator.SanitizeName(command.FirstName);
+        var lastName = InputValidator.SanitizeName(command.LastName);
+        var email = InputValidator.NormalizeEmail(command.Email);
+        var phone = InputValidator.NormalizePhone(command.PhoneNumber);
+
+        if (!InputValidator.IsValidPersonName(firstName) || !InputValidator.IsValidPersonName(lastName))
+        {
+            throw new ArgumentException("Họ tên không hợp lệ (không chứa số hoặc ký tự đặc biệt).");
+        }
+
+        if (!InputValidator.IsValidEmail(email))
+        {
+            throw new ArgumentException("Email không hợp lệ.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(phone) && !InputValidator.IsValidVietnamPhone(phone))
+        {
+            throw new ArgumentException("Số điện thoại không hợp lệ (phải đúng 10 số và bắt đầu bằng 0).");
+        }
+
         var fullName = string.Join(" ", new[] { firstName, lastName }.Where(x => !string.IsNullOrWhiteSpace(x)));
 
         var appUser = new AppUser
@@ -41,9 +60,9 @@ public class CreateCustomerCommandHandler
             CreatedAt = DateTime.UtcNow
         };
 
-        // Mật khẩu tạm thời
-        var result = await _userManager.CreateAsync(appUser, "Customer123!");
-        if (!result.Succeeded)
+            Email = email,
+            UserName = email,
+            PhoneNumber = string.IsNullOrWhiteSpace(phone) ? null : phone,
         {
             throw new Exception($"Failed to create user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
         }
@@ -62,4 +81,6 @@ public class CreateCustomerCommandHandler
             CreatedAt = appUser.CreatedAt
         };
     }
-}
+            FullName = string.IsNullOrWhiteSpace(fullName) ? email : fullName,
+            Email = email,
+            PhoneNumber = appUser.PhoneNumber ?? string.Empty,

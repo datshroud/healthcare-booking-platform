@@ -1,4 +1,5 @@
 ﻿using BookingCareManagement.Application.Common.Exceptions;
+using BookingCareManagement.Application.Common.Validation;
 using BookingCareManagement.Domain.Abstractions;
 using BookingCareManagement.Domain.Aggregates.User; // Cần cho AppUser
 using Microsoft.AspNetCore.Identity; // Cần cho UserManager
@@ -60,11 +61,31 @@ public class UpdateDoctorCommandHandler
         // 2. Cập nhật AppUser liên kết
         // (doctor.AppUser đã được gộp vào nhờ GetByIdWithTrackingAsync)
         var appUser = doctor.AppUser;
-        appUser.FirstName = command.FirstName;
-        appUser.LastName = command.LastName;
-        appUser.Email = command.Email;
-        appUser.UserName = command.Email;
-        appUser.PhoneNumber = command.PhoneNumber;
+        var firstName = InputValidator.SanitizeName(command.FirstName);
+        var lastName = InputValidator.SanitizeName(command.LastName);
+        var email = InputValidator.NormalizeEmail(command.Email);
+        var phone = InputValidator.NormalizePhone(command.PhoneNumber);
+
+        if (!InputValidator.IsValidPersonName(firstName) || !InputValidator.IsValidPersonName(lastName))
+        {
+            throw new ArgumentException("Họ tên không hợp lệ (không chứa số hoặc ký tự đặc biệt).");
+        }
+
+        if (!InputValidator.IsValidEmail(email))
+        {
+            throw new ArgumentException("Email không hợp lệ.");
+        }
+
+        if (!InputValidator.IsValidVietnamPhone(phone))
+        {
+            throw new ArgumentException("Số điện thoại không hợp lệ (phải đúng 10 số và bắt đầu bằng 0).");
+        }
+
+        appUser.FirstName = firstName;
+        appUser.LastName = lastName;
+        appUser.Email = email;
+        appUser.UserName = email;
+        appUser.PhoneNumber = phone;
 
         var userResult = await _userManager.UpdateAsync(appUser);
         if (!userResult.Succeeded)

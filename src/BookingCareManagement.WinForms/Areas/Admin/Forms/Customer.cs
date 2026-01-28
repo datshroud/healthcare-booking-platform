@@ -14,6 +14,8 @@ using System.Windows.Forms;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
+#nullable disable
+
 namespace BookingCareManagement.WinForms
 {
     public partial class Customer : Form
@@ -116,6 +118,7 @@ namespace BookingCareManagement.WinForms
         {
             // Removed checkbox column to simplify UI
             AddCustomerColumn();
+            AddEmailColumn();
             AddTextColumn("# Số Cuộc hẹn", "Appointments");
             AddTextColumn("# Cuộc hẹn cuối cùng", "LastAppointment");
             AddTextColumn("# Ngày tạo tài khoản", "Created");
@@ -147,6 +150,17 @@ namespace BookingCareManagement.WinForms
                 Name = name,
                 HeaderText = headerText,
                 FillWeight = 15
+            };
+            customersDataGridView.Columns.Add(col);
+        }
+
+        private void AddEmailColumn()
+        {
+            DataGridViewTextBoxColumn col = new DataGridViewTextBoxColumn
+            {
+                Name = "Email",
+                HeaderText = "Email",
+                FillWeight = 20
             };
             customersDataGridView.Columns.Add(col);
         }
@@ -191,7 +205,7 @@ namespace BookingCareManagement.WinForms
             }
         }
 
-        private CustomerDto? GetCustomerByDisplayRow(int displayRowIndex)
+        private CustomerDto GetCustomerByDisplayRow(int displayRowIndex)
         {
             if (_activeList == null) return null;
             var idx = (_currentPage - 1) * _pageSize + displayRowIndex;
@@ -221,6 +235,7 @@ namespace BookingCareManagement.WinForms
                 customersDataGridView.Rows.Add(
                     // Columns: Customer, Appointments, LastAppointment, Created
                     $"{customer.FullName}\n{customer.Email}",
+                    customer.Email,
                     customer.AppointmentCount.ToString(),
                     customer.LastAppointment?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa có",
                     customer.CreatedAt.ToString("dd/MM/yyyy")
@@ -237,7 +252,7 @@ namespace BookingCareManagement.WinForms
             selectedRowIndex = -1;
         }
 
-        private string NormalizeString(string? input)
+        private string NormalizeString(string input)
         {
             if (string.IsNullOrWhiteSpace(input)) return string.Empty;
             var normalized = input.Normalize(NormalizationForm.FormD);
@@ -713,7 +728,7 @@ namespace BookingCareManagement.WinForms
         }
 
         // Restrict phone input to digits only (AddCustomerForm)
-        private void Phone_KeyPress(object? sender, KeyPressEventArgs e)
+        private void Phone_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
             {
@@ -865,17 +880,17 @@ namespace BookingCareManagement.WinForms
             if (IsEmptyField(txtLastName, "tên")) return false;
             if (IsEmptyField(txtEmail, "email")) return false;
 
-            // Disallow numbers in first and last name
-            if (Regex.IsMatch(txtFirstName.Text ?? string.Empty, "\\d"))
+            // Disallow numbers or special characters in names
+            if (!ValidationHelpers.IsValidPersonName(txtFirstName.Text))
             {
-                MessageBox.Show("Họ không được chứa số", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Họ không hợp lệ (không chứa số hoặc ký tự đặc biệt).", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtFirstName.Focus();
                 return false;
             }
 
-            if (Regex.IsMatch(txtLastName.Text ?? string.Empty, "\\d"))
+            if (!ValidationHelpers.IsValidPersonName(txtLastName.Text))
             {
-                MessageBox.Show("Tên không được chứa số", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Tên không hợp lệ (không chứa số hoặc ký tự đặc biệt).", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtLastName.Focus();
                 return false;
             }
@@ -899,10 +914,9 @@ namespace BookingCareManagement.WinForms
 
             var email = txtEmail.Text?.Trim() ?? string.Empty;
 
-            // Enforce gmail.com domain for AddCustomerForm
-            if (!email.EndsWith("@gmail.com", StringComparison.OrdinalIgnoreCase))
+            if (!ValidationHelpers.IsValidEmail(email))
             {
-                MessageBox.Show("Email phải thuộc miền @gmail.com.", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Email không hợp lệ! Vui lòng nhập đúng định dạng email.", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtEmail.Focus();
                 txtEmail.SelectAll();
                 return false;
@@ -1108,7 +1122,7 @@ namespace BookingCareManagement.WinForms
         }
 
         // Restrict phone input to digits only (EditCustomerForm)
-        private void Phone_KeyPress(object? sender, KeyPressEventArgs e)
+        private void Phone_KeyPress(object sender, KeyPressEventArgs e)
         {
             if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
             {
@@ -1288,17 +1302,17 @@ namespace BookingCareManagement.WinForms
                 return false;
             }
 
-            // Disallow numbers in first and last name
-            if (Regex.IsMatch(txtFirstName.Text ?? string.Empty, "\\d"))
+            // Disallow numbers or special characters in first and last name
+            if (!ValidationHelpers.IsValidPersonName(txtFirstName.Text))
             {
-                MessageBox.Show("Họ không được chứa số", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Họ không hợp lệ (không chứa số hoặc ký tự đặc biệt).", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtFirstName.Focus();
                 return false;
             }
 
-            if (Regex.IsMatch(txtLastName.Text ?? string.Empty, "\\d"))
+            if (!ValidationHelpers.IsValidPersonName(txtLastName.Text))
             {
-                MessageBox.Show("Tên không được chứa số", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                MessageBox.Show("Tên không hợp lệ (không chứa số hoặc ký tự đặc biệt).", "Lỗi xác thực", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 txtLastName.Focus();
                 return false;
             }
@@ -1438,19 +1452,10 @@ namespace BookingCareManagement.WinForms
         public static bool IsValidPhoneNumber(string phone, string countryCode)
         {
             if (string.IsNullOrWhiteSpace(phone)) return false;
-            // must be digits only
             if (!phone.All(char.IsDigit)) return false;
 
-            // Rules for Vietnam (+84): allow 10 digits starting with 0 or 9 digits when using +84 without leading 0
-            if (!string.IsNullOrWhiteSpace(countryCode) && countryCode.StartsWith("+84"))
-            {
-                if (phone.Length == 10 && phone.StartsWith("0")) return true;
-                if (phone.Length == 9) return true; // assumes user removed leading 0
-                return false;
-            }
-
-            // Generic rule: accept 7..15 digits
-            return phone.Length >= 7 && phone.Length <= 15;
+            // Strict VN rule: 10 digits and starts with 0
+            return phone.Length == 10 && phone.StartsWith("0", StringComparison.Ordinal);
         }
     }
 
@@ -1469,6 +1474,28 @@ namespace BookingCareManagement.WinForms
             {
                 return false;
             }
+        }
+
+        public static bool IsValidPersonName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return false;
+            var trimmed = name.Trim();
+            if (trimmed.Length < 2) return false;
+
+            foreach (var ch in trimmed)
+            {
+                if (char.IsDigit(ch))
+                {
+                    return false;
+                }
+
+                if (!(char.IsLetter(ch) || char.IsWhiteSpace(ch) || ch is '.' or '-' or '\''))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
     }
 }

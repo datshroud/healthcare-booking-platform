@@ -40,11 +40,12 @@ public sealed class AdminDoctorApiClient
         var client = CreateClient();
         using var response = await client.GetAsync($"/api/Doctor/{doctorId}", cancellationToken);
         await EnsureSuccessAsync(response);
-        var dto = (await response.Content.ReadFromJsonAsync<DoctorDto>(cancellationToken: cancellationToken))!;
-        if (dto != null)
+        var dto = await response.Content.ReadFromJsonAsync<DoctorDto>(cancellationToken: cancellationToken);
+        if (dto == null)
         {
-            dto.AvatarUrl = ToAbsoluteUrl(client, dto.AvatarUrl);
+            throw new InvalidOperationException("Không đọc được dữ liệu bác sĩ.");
         }
+        dto.AvatarUrl = ToAbsoluteUrl(client, dto.AvatarUrl);
         return dto;
     }
 
@@ -107,11 +108,12 @@ public sealed class AdminDoctorApiClient
         var client = CreateClient();
         using var response = await client.PostAsJsonAsync("/api/Doctor", payload, cancellationToken);
         await EnsureSuccessAsync(response);
-        var dto = (await response.Content.ReadFromJsonAsync<DoctorDto>(cancellationToken: cancellationToken))!;
-        if (dto != null)
+        var dto = await response.Content.ReadFromJsonAsync<DoctorDto>(cancellationToken: cancellationToken);
+        if (dto == null)
         {
-            dto.AvatarUrl = ToAbsoluteUrl(client, dto.AvatarUrl);
+            throw new InvalidOperationException("Không đọc được dữ liệu bác sĩ.");
         }
+        dto.AvatarUrl = ToAbsoluteUrl(client, dto.AvatarUrl);
         return dto;
     }
 

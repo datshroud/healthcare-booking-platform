@@ -13,6 +13,7 @@ using BookingCareManagement.Domain.Aggregates.User;
 using BookingCareManagement.Infrastructure.Persistence;
 using BookingCareManagement.Web.Areas.Doctor.Dtos;
 using BookingCareManagement.Application.Features.Calendar;
+using BookingCareManagement.Application.Common.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -353,14 +354,26 @@ public class DoctorAppointmentsController : ControllerBase
             return (null, new ProblemDetails { Title = "Chuyên khoa không thuộc bác sĩ" });
         }
 
-        if (string.IsNullOrWhiteSpace(request.PatientName))
+        var patientName = InputValidator.SanitizeName(request.PatientName);
+        if (string.IsNullOrWhiteSpace(patientName))
         {
             return (null, new ProblemDetails { Title = "Vui lòng nhập tên bệnh nhân" });
         }
 
-        if (string.IsNullOrWhiteSpace(request.CustomerPhone))
+        if (!InputValidator.IsValidPersonName(patientName))
+        {
+            return (null, new ProblemDetails { Title = "Tên bệnh nhân không hợp lệ (không chứa số hoặc ký tự đặc biệt)" });
+        }
+
+        var customerPhone = InputValidator.NormalizePhone(request.CustomerPhone);
+        if (string.IsNullOrWhiteSpace(customerPhone))
         {
             return (null, new ProblemDetails { Title = "Vui lòng nhập số điện thoại" });
+        }
+
+        if (!InputValidator.IsValidVietnamPhone(customerPhone))
+        {
+            return (null, new ProblemDetails { Title = "Số điện thoại không hợp lệ (phải đúng 10 số và bắt đầu bằng 0)" });
         }
 
         if (request.SlotStartUtc == default)
@@ -396,6 +409,9 @@ public class DoctorAppointmentsController : ControllerBase
                 Status = StatusCodes.Status409Conflict
             });
         }
+
+        request.PatientName = patientName;
+        request.CustomerPhone = customerPhone;
 
         return (new UpsertValidationResult(slotStartUtc, durationMinutes), null);
     }

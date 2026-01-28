@@ -1111,10 +1111,10 @@ public sealed class DoctorEditorForm : Form
             return;
         }
 
-        // Last name must not contain digits
-        if (_txtLastName.Text.Any(char.IsDigit))
+        // Last name must be valid
+        if (!IsValidPersonName(_txtLastName.Text))
         {
-            MessageBox.Show(this, "Họ không được chứa chữ số.", "Dữ liệu không hợp lệ",
+            MessageBox.Show(this, "Họ không hợp lệ (không chứa số hoặc ký tự đặc biệt).", "Dữ liệu không hợp lệ",
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
             ShowTab(0);
             _txtLastName.Focus();
@@ -1130,10 +1130,10 @@ public sealed class DoctorEditorForm : Form
             return;
         }
 
-        // First name must not contain digits
-        if (_txtFirstName.Text.Any(char.IsDigit))
+        // First name must be valid
+        if (!IsValidPersonName(_txtFirstName.Text))
         {
-            MessageBox.Show(this, "Tên không được chứa chữ số.", "Dữ liệu không hợp lệ",
+            MessageBox.Show(this, "Tên không hợp lệ (không chứa số hoặc ký tự đặc biệt).", "Dữ liệu không hợp lệ",
                 MessageBoxButtons.OK, MessageBoxIcon.Warning);
             ShowTab(0);
             _txtFirstName.Focus();
@@ -1164,9 +1164,7 @@ public sealed class DoctorEditorForm : Form
         var phone = _txtPhone.Text?.Trim() ?? string.Empty;
         if (!string.IsNullOrWhiteSpace(phone))
         {
-            var digits = new string(phone.Where(char.IsDigit).ToArray());
-            // Require exactly 10 digits and start with '0'
-            if (digits.Length != 10 || !digits.StartsWith("0"))
+            if (!IsValidVietnamPhone(phone))
             {
                 MessageBox.Show(this, "Vui lòng nhập số điện thoại hợp lệ: 10 chữ số và bắt đầu bằng số 0.", "Dữ liệu không hợp lệ",
                     MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -1418,6 +1416,35 @@ public sealed class DoctorEditorForm : Form
             AvatarUrl = string.IsNullOrWhiteSpace(_txtAvatarUrl.Text) ? null : _txtAvatarUrl.Text.Trim(),
             SpecialtyIds = specialtyIds
         };
+    }
+
+    private static bool IsValidPersonName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return false;
+        var trimmed = name.Trim();
+        if (trimmed.Length < 2) return false;
+
+        foreach (var ch in trimmed)
+        {
+            if (char.IsDigit(ch))
+            {
+                return false;
+            }
+
+            if (!(char.IsLetter(ch) || char.IsWhiteSpace(ch) || ch is '.' or '-' or '\''))
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool IsValidVietnamPhone(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return false;
+        var digits = new string(phone.Where(char.IsDigit).ToArray());
+        return digits.Length == 10 && digits.StartsWith("0", StringComparison.Ordinal);
     }
 
     // Check if candidate overlaps any slot in list. If excludeIndex provided, skip that index (useful when editing).

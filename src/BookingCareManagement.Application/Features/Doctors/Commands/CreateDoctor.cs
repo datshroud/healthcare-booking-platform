@@ -1,4 +1,5 @@
 ﻿using BookingCareManagement.Application.Features.Doctors.Dtos;
+using BookingCareManagement.Application.Common.Validation;
 using BookingCareManagement.Domain.Abstractions;
 using BookingCareManagement.Domain.Aggregates.Doctor;
 using BookingCareManagement.Domain.Aggregates.User;
@@ -49,14 +50,34 @@ namespace BookingCareManagement.Application.Features.Doctors.Commands
 
         public async Task<DoctorDto> Handle(CreateDoctorCommand command, CancellationToken cancellationToken)
         {
+            var firstName = InputValidator.SanitizeName(command.FirstName);
+            var lastName = InputValidator.SanitizeName(command.LastName);
+            var email = InputValidator.NormalizeEmail(command.Email);
+            var phone = InputValidator.NormalizePhone(command.PhoneNumber);
+
+            if (!InputValidator.IsValidPersonName(firstName) || !InputValidator.IsValidPersonName(lastName))
+            {
+                throw new ArgumentException("Họ tên không hợp lệ (không chứa số hoặc ký tự đặc biệt).");
+            }
+
+            if (!InputValidator.IsValidEmail(email))
+            {
+                throw new ArgumentException("Email không hợp lệ.");
+            }
+
+            if (!InputValidator.IsValidVietnamPhone(phone))
+            {
+                throw new ArgumentException("Số điện thoại không hợp lệ (phải đúng 10 số và bắt đầu bằng 0).");
+            }
+
             // 1. Tạo AppUser trước
             var appUser = new AppUser
             {
-                FirstName = command.FirstName,
-                LastName = command.LastName,
-                Email = command.Email,
-                UserName = command.Email,
-                PhoneNumber = command.PhoneNumber,
+                FirstName = firstName,
+                LastName = lastName,
+                Email = email,
+                UserName = email,
+                PhoneNumber = phone,
                 EmailConfirmed = true, // Tạm thời để true cho dễ test
 
                 // ⭐️ THAY ĐỔI Ở ĐÂY ⭐️
@@ -64,7 +85,7 @@ namespace BookingCareManagement.Application.Features.Doctors.Commands
             };
 
             // Tạo mật khẩu tự động
-            var emailLocalPart = command.Email.Split('@')[0];
+            var emailLocalPart = email.Split('@')[0];
             var defaultPassword = $"{emailLocalPart}@123";
 
             var result = await _userManager.CreateAsync(appUser, defaultPassword);

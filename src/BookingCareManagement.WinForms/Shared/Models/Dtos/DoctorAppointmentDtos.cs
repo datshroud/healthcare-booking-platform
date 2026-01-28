@@ -48,6 +48,7 @@ public sealed class DoctorAppointmentUpsertRequest
     public string PatientName { get; set; } = string.Empty;
     public string CustomerPhone { get; set; } = string.Empty;
     public string? PatientId { get; set; }
+    public string? Status { get; set; }
     public Guid? ClinicRoomId { get; set; }
 }
 

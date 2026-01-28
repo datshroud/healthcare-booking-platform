@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms.Areas.Customer.Services.Models;
+using BookingCareManagement.WinForms.Shared.Forms;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
 using BookingCareManagement.WinForms.Shared.Services;
 
@@ -16,6 +17,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private readonly AdminAppointmentsApiClient _appointmentsApiClient;
         private readonly DialogService _dialogService;
         private readonly CustomerBookingApiClient _bookingApiClient;
+        private readonly CustomerService _customerService;
 
         private readonly List<CheckedListBox> _filterDropdowns = new();
         private readonly Dictionary<CheckedListBox, List<string>> _filterOptions = new();
@@ -66,11 +68,12 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             string Note,
             string Phone);
 
-        public AppointmentEditorForm(DialogService dialogService, AdminAppointmentsApiClient appointmentsApiClient, CustomerBookingApiClient bookingApiClient)
+        public AppointmentEditorForm(DialogService dialogService, AdminAppointmentsApiClient appointmentsApiClient, CustomerBookingApiClient bookingApiClient, CustomerService customerService)
         {
             _dialogService = dialogService;
             _appointmentsApiClient = appointmentsApiClient;
             _bookingApiClient = bookingApiClient;
+            _customerService = customerService;
             InitializeComponent();
             InitializeGridColumns();
             ApplyGridStyling();
@@ -664,7 +667,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             try
             {
                 _metadata ??= await _appointmentsApiClient.GetMetadataAsync();
-                using var dialog = new AppointmentUpsertDialog(_metadata, existing, _bookingApiClient);
+                using var dialog = new AppointmentUpsertDialog(_metadata, existing, _bookingApiClient, _customerService);
                 if (dialog.ShowDialog() != DialogResult.OK)
                 {
                     return;
@@ -818,7 +821,8 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
             private readonly ComboBox _doctorBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
             private readonly ComboBox _specialtyBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
-            private readonly ComboBox _patientBox = new() { DropDownStyle = ComboBoxStyle.DropDownList };
+            private readonly TextBox _patientDisplay = new() { ReadOnly = true };
+            private readonly Button _selectPatientButton = new() { Text = "Chọn bệnh nhân" };
             private readonly DateTimePicker _datePicker = new() { Format = DateTimePickerFormat.Custom, CustomFormat = "dd/MM/yyyy", ShowCheckBox = true };
             private readonly ComboBox _timeSlotBox = new() { DropDownStyle = ComboBoxStyle.DropDownList, Enabled = false };
             private readonly NumericUpDown _durationBox = new() { Minimum = DefaultDurationMinutes, Maximum = DefaultDurationMinutes, Increment = DefaultDurationMinutes, Value = DefaultDurationMinutes, ReadOnly = true, Enabled = false };
@@ -827,19 +831,22 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             private readonly AppointmentRow? _existing;
             private readonly AdminAppointmentMetadataDto _metadata;
             private readonly CustomerBookingApiClient _bookingApiClient;
+            private readonly CustomerService _customerService;
             private readonly List<AdminAppointmentDoctorOptionDto> _allDoctors;
             private readonly List<DoctorTimeSlotDto> _slotOptions = new();
             private bool _suppressEvents;
             private bool _hasSelectedDate;
             private DateTime? _existingSlotStart;
+            private CustomerDto? _selectedCustomer;
 
             public AdminAppointmentUpsertRequest? BuiltRequest { get; private set; }
 
-            public AppointmentUpsertDialog(AdminAppointmentMetadataDto metadata, AppointmentRow? existing, CustomerBookingApiClient bookingApiClient)
+            public AppointmentUpsertDialog(AdminAppointmentMetadataDto metadata, AppointmentRow? existing, CustomerBookingApiClient bookingApiClient, CustomerService customerService)
             {
                 _metadata = metadata;
                 _existing = existing;
                 _bookingApiClient = bookingApiClient;
+                _customerService = customerService;
                 _allDoctors = _metadata.Doctors.ToList();
 
                 Text = existing == null ? "Thêm cuộc hẹn" : "Cập nhật cuộc hẹn";
@@ -871,7 +878,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
                 AddRow(layout, 0, "Bác sĩ", _doctorBox);
                 AddRow(layout, 1, "Chuyên khoa", _specialtyBox);
-                AddRow(layout, 2, "Bệnh nhân", _patientBox);
+                AddRow(layout, 2, "Bệnh nhân", BuildPatientSelector());
                 AddRow(layout, 3, "SĐT", _manualPhone);
                 AddRow(layout, 4, "Ngày khám", _datePicker);
                 AddRow(layout, 5, "Khung giờ", _timeSlotBox);
@@ -915,6 +922,27 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 Controls.Add(buttonPanel);
                 AcceptButton = saveButton;
                 CancelButton = cancelButton;
+            }
+
+            private Control BuildPatientSelector()
+            {
+                var panel = new TableLayoutPanel
+                {
+                    ColumnCount = 2,
+                    Dock = DockStyle.Fill,
+                    AutoSize = true
+                };
+                panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70));
+                panel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30));
+
+                _patientDisplay.Dock = DockStyle.Fill;
+                _patientDisplay.PlaceholderText = "Chưa chọn bệnh nhân";
+                _selectPatientButton.Dock = DockStyle.Fill;
+                _selectPatientButton.Click += async (_, _) => await SelectPatientAsync();
+
+                panel.Controls.Add(_patientDisplay, 0, 0);
+                panel.Controls.Add(_selectPatientButton, 1, 0);
+                return panel;
             }
 
             private static void AddRow(TableLayoutPanel panel, int rowIndex, string label, Control control)
@@ -1118,14 +1146,6 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
 
                 ApplyDoctorFilter();
 
-                _patientBox.DataSource = _metadata.Patients.ToList();
-                _patientBox.DisplayMember = nameof(AdminAppointmentPatientOptionDto.Name);
-                _patientBox.ValueMember = nameof(AdminAppointmentPatientOptionDto.Id);
-                _patientBox.SelectedIndexChanged += (_, _) => UpdatePhoneForSelectedPatient();
-
-                // Ensure phone field is populated for the initially selected patient (if any)
-                UpdatePhoneForSelectedPatient();
-
                 _statusBox.DataSource = _metadata.Statuses.ToList();
                 _statusBox.DisplayMember = nameof(AdminAppointmentStatusOptionDto.Label);
                 _statusBox.ValueMember = nameof(AdminAppointmentStatusOptionDto.Code);
@@ -1159,17 +1179,17 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 if (existingDate > maxDate) existingDate = maxDate;
                 _datePicker.Value = existingDate;
 
-                var patientId = _existing.PatientId;
-                if (string.IsNullOrWhiteSpace(patientId))
+                if (!string.IsNullOrWhiteSpace(_existing.PatientId))
                 {
-                    var matched = _metadata.Patients.FirstOrDefault(p => string.Equals(p.Name, _existing.Patient, StringComparison.OrdinalIgnoreCase));
-                    patientId = matched?.Id;
+                    _selectedCustomer = new CustomerDto
+                    {
+                        Id = _existing.PatientId,
+                        FullName = _existing.Patient ?? string.Empty,
+                        PhoneNumber = _existing.Phone ?? string.Empty
+                    };
+                    UpdatePatientDisplay();
                 }
 
-                if (!string.IsNullOrWhiteSpace(patientId))
-                {
-                    _patientBox.SelectedValue = patientId;
-                }
                 _manualPhone.Text = _existing.Phone;
 
                 if (!string.IsNullOrWhiteSpace(_existing.StatusCode))
@@ -1182,32 +1202,42 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                 _ = RefreshSlotsAsync(_existing.Start);
             }
 
-            private void UpdatePhoneForSelectedPatient()
+            private async Task SelectPatientAsync()
             {
-                var patient = GetSelectedPatient();
-                if (patient == null)
+                using var dialog = new CustomerPickerDialog("Chọn bệnh nhân", () => _customerService.GetAllAsync());
+                if (dialog.ShowDialog(this) == DialogResult.OK && dialog.SelectedCustomer != null)
                 {
+                    _selectedCustomer = dialog.SelectedCustomer;
+                    UpdatePatientDisplay();
+                }
+            }
+
+            private void UpdatePatientDisplay()
+            {
+                if (_selectedCustomer == null)
+                {
+                    _patientDisplay.Text = string.Empty;
                     return;
                 }
 
-                if (!string.IsNullOrWhiteSpace(patient.PhoneNumber))
+                var display = _selectedCustomer.FullName;
+                if (!string.IsNullOrWhiteSpace(_selectedCustomer.Email))
                 {
-                    _manualPhone.Text = patient.PhoneNumber;
+                    display = string.IsNullOrWhiteSpace(display)
+                        ? _selectedCustomer.Email
+                        : $"{display} - {_selectedCustomer.Email}";
+                }
+
+                _patientDisplay.Text = display;
+
+                if (!string.IsNullOrWhiteSpace(_selectedCustomer.PhoneNumber))
+                {
+                    _manualPhone.Text = _selectedCustomer.PhoneNumber;
                 }
                 else if (string.IsNullOrWhiteSpace(_manualPhone.Text))
                 {
                     _manualPhone.PlaceholderText = "Bệnh nhân chưa có SĐT, vui lòng nhập.";
                 }
-            }
-
-            private AdminAppointmentPatientOptionDto? GetSelectedPatient()
-            {
-                if (_patientBox.SelectedItem is AdminAppointmentPatientOptionDto option)
-                {
-                    return option;
-                }
-
-                return null;
             }
 
             private AdminAppointmentUpsertRequest BuildRequest()
@@ -1222,14 +1252,13 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     throw new InvalidOperationException("Vui lòng chọn chuyên khoa.");
                 }
 
-                var patient = GetSelectedPatient();
-                if (patient == null)
+                if (_selectedCustomer == null)
                 {
                     throw new InvalidOperationException("Vui lòng chọn bệnh nhân.");
                 }
 
                 var manualPhone = _manualPhone.Text.Trim();
-                var resolvedPhone = string.IsNullOrWhiteSpace(patient.PhoneNumber) ? manualPhone : patient.PhoneNumber;
+                var resolvedPhone = string.IsNullOrWhiteSpace(_selectedCustomer.PhoneNumber) ? manualPhone : _selectedCustomer.PhoneNumber;
                 if (string.IsNullOrWhiteSpace(resolvedPhone))
                 {
                     throw new InvalidOperationException("Bệnh nhân chưa có số điện thoại, vui lòng nhập để tiếp tục.");
@@ -1266,9 +1295,9 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                     SpecialtyId = specialtyId,
                     SlotStartUtc = slot.StartUtc != default ? slot.StartUtc : DateTime.SpecifyKind(startLocal, DateTimeKind.Local).ToUniversalTime(),
                     DurationMinutes = duration,
-                    PatientName = patient.Name,
+                    PatientName = _selectedCustomer.FullName,
                     CustomerPhone = resolvedPhone,
-                    PatientId = patient.Id,
+                    PatientId = _selectedCustomer.Id,
                     Status = _statusBox.SelectedValue?.ToString() ?? "pending"
                 };
             }

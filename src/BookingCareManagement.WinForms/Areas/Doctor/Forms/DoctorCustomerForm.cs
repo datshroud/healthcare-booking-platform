@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
+using System.Drawing.Drawing2D;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using BookingCareManagement.WinForms.Areas.Admin.Services;
@@ -13,7 +14,20 @@ namespace BookingCareManagement.WinForms.Areas.Doctor.Forms;
 public sealed class DoctorCustomerForm : Form
 {
     private readonly CustomerService _customerService;
-    private readonly BindingList<CustomerDto> _customers = new();
+    private readonly List<CustomerDto> _allCustomers = new();
+    private List<CustomerDto> _filteredCustomers = new();
+    private List<CustomerDto> _displayedCustomers = new();
+    private readonly ContextMenuStrip _actionMenu = new();
+    private int _selectedRowIndex = -1;
+
+    private Panel _whitePanel = null!;
+    private Panel _pagerPanel = null!;
+    private Button _btnPrevPage = null!;
+    private Button _btnNextPage = null!;
+    private ComboBox _pageSizeBox = null!;
+    private Label _pageInfo = null!;
+    private int _currentPage = 1;
+    private int _pageSize = 7;
 
     private readonly DataGridView _grid = new()
     {
@@ -44,9 +58,17 @@ public sealed class DoctorCustomerForm : Form
         StartPosition = FormStartPosition.CenterParent;
 
         BuildLayout();
+        InitializeActionMenu();
         ConfigureGrid();
+        BuildPager();
         WireEvents();
         Shown += async (_, _) => await LoadCustomersAsync();
+    }
+
+    private void InitializeActionMenu()
+    {
+        _actionMenu.Items.Add("Chỉnh sửa", null, async (_, _) => await ShowEditorAsync(GetCustomerByRow(_selectedRowIndex)));
+        _actionMenu.Items.Add("Xóa", null, async (_, _) => await DeleteSelectedAsync());
     }
 
     private void BuildLayout()
@@ -101,7 +123,7 @@ public sealed class DoctorCustomerForm : Form
             Padding = new Padding(30, 10, 30, 50)
         };
 
-        var whitePanel = new Panel
+        _whitePanel = new Panel
         {
             BackColor = Color.White,
             Dock = DockStyle.Fill,
@@ -143,8 +165,8 @@ public sealed class DoctorCustomerForm : Form
         searchPanel.Controls.Add(smallButtons);
 
         // add searchPanel and grid into whitePanel
-        whitePanel.Controls.Add(_grid);
-        whitePanel.Controls.Add(searchPanel);
+        _whitePanel.Controls.Add(_grid);
+        _whitePanel.Controls.Add(searchPanel);
 
         // footer status
         var footer = new Panel { Dock = DockStyle.Bottom, Height = 40, Padding = new Padding(12, 4, 12, 4) };
@@ -154,10 +176,59 @@ public sealed class DoctorCustomerForm : Form
         // compose final layout
         headerPanel.Controls.Add(_titleLabel);
         headerPanel.Controls.Add(actionsPanel);
-        contentPanel.Controls.Add(whitePanel);
+        contentPanel.Controls.Add(_whitePanel);
         Controls.Add(contentPanel);
         Controls.Add(headerPanel);
         Controls.Add(footer);
+    }
+
+    private void BuildPager()
+    {
+        _pagerPanel = new Panel
+        {
+            Dock = DockStyle.Bottom,
+            Height = 55,
+            BackColor = Color.White,
+            Padding = new Padding(18, 6, 18, 6)
+        };
+
+        var pagerInner = new FlowLayoutPanel
+        {
+            Dock = DockStyle.Right,
+            FlowDirection = FlowDirection.LeftToRight,
+            AutoSize = true
+        };
+
+        _pageInfo = new Label { AutoSize = true, Text = "Trang 0 / 0", Padding = new Padding(0, 10, 6, 0) };
+        _btnPrevPage = new Button { Text = "‹ Trước", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.White, ForeColor = Color.Black };
+        _btnNextPage = new Button { Text = "Tiếp ›", AutoSize = true, Enabled = false, FlatStyle = FlatStyle.Flat, BackColor = Color.White, ForeColor = Color.Black };
+        _pageSizeBox = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 80 };
+        _pageSizeBox.Items.AddRange(new object[] { "7", "10", "25", "50", "100" });
+        _pageSizeBox.SelectedItem = _pageSize.ToString();
+
+        _btnPrevPage.Click += (_, _) => { if (_currentPage > 1) { _currentPage--; RefreshGrid(); } };
+        _btnNextPage.Click += (_, _) => { _currentPage++; RefreshGrid(); };
+        _pageSizeBox.SelectedIndexChanged += (_, _) =>
+        {
+            if (int.TryParse(_pageSizeBox.SelectedItem?.ToString(), out var size))
+            {
+                _pageSize = size;
+                _currentPage = 1;
+                RefreshGrid();
+            }
+        };
+
+        pagerInner.Controls.Add(_pageInfo);
+        pagerInner.Controls.Add(new Label { Width = 8 });
+        pagerInner.Controls.Add(_btnPrevPage);
+        pagerInner.Controls.Add(_btnNextPage);
+        pagerInner.Controls.Add(new Label { Width = 8 });
+        pagerInner.Controls.Add(new Label { Text = "Hiển thị:", AutoSize = true, Padding = new Padding(6, 10, 0, 0) });
+        pagerInner.Controls.Add(_pageSizeBox);
+
+        _pagerPanel.Controls.Add(pagerInner);
+        _whitePanel.Controls.Add(_pagerPanel);
+        _pagerPanel.BringToFront();
     }
 
     private void ConfigureGrid()
@@ -165,9 +236,8 @@ public sealed class DoctorCustomerForm : Form
         _grid.Columns.Clear();
         _grid.Columns.Add(new DataGridViewTextBoxColumn
         {
-            Name = "FullName",
+            Name = "Customer",
             HeaderText = "Khách hàng",
-            DataPropertyName = nameof(CustomerDto.FullName),
             FillWeight = 30,
             AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
         });
@@ -175,43 +245,37 @@ public sealed class DoctorCustomerForm : Form
         {
             Name = "Email",
             HeaderText = "Email",
-            DataPropertyName = nameof(CustomerDto.Email),
-            FillWeight = 25,
+            FillWeight = 20,
             AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
         });
         _grid.Columns.Add(new DataGridViewTextBoxColumn
         {
-            Name = "Phone",
-            HeaderText = "Số điện thoại",
-            DataPropertyName = nameof(CustomerDto.PhoneNumber),
-            FillWeight = 15,
-            AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
-        });
-        _grid.Columns.Add(new DataGridViewTextBoxColumn
-        {
-            Name = "Created",
-            HeaderText = "Ngày tạo",
-            DataPropertyName = nameof(CustomerDto.CreatedAt),
-            DefaultCellStyle = new DataGridViewCellStyle { Format = "dd/MM/yyyy" },
+            Name = "Appointments",
+            HeaderText = "# Số cuộc hẹn",
             FillWeight = 12,
             AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
         });
         _grid.Columns.Add(new DataGridViewTextBoxColumn
         {
-            Name = "AppointmentCount",
-            HeaderText = "Số lần khám",
-            DataPropertyName = nameof(CustomerDto.AppointmentCount),
-            FillWeight = 10,
+            Name = "LastAppointment",
+            HeaderText = "# Cuộc hẹn cuối cùng",
+            FillWeight = 18,
             AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
         });
         _grid.Columns.Add(new DataGridViewTextBoxColumn
         {
-            Name = "LastAppointment",
-            HeaderText = "Lần khám gần nhất",
-            DataPropertyName = nameof(CustomerDto.LastAppointment),
-            DefaultCellStyle = new DataGridViewCellStyle { Format = "dd/MM/yyyy HH:mm" },
-            FillWeight = 18,
+            Name = "Created",
+            HeaderText = "# Ngày tạo tài khoản",
+            FillWeight = 15,
             AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
+        });
+        _grid.Columns.Add(new DataGridViewButtonColumn
+        {
+            Name = "Actions",
+            HeaderText = "",
+            Text = "⋯",
+            UseColumnTextForButtonValue = true,
+            FillWeight = 6
         });
 
         // styling inspired by Admin Customer form
@@ -243,8 +307,11 @@ public sealed class DoctorCustomerForm : Form
         };
 
         _grid.GridColor = Color.FromArgb(200, 200, 200);
-
-        _grid.DataSource = _customers;
+        _grid.RowTemplate.Height = 70;
+        if (_grid.Columns["Actions"] != null)
+        {
+            _grid.Columns["Actions"].ReadOnly = false;
+        }
         UpdateTitleCount();
     }
 
@@ -255,29 +322,133 @@ public sealed class DoctorCustomerForm : Form
         _editButton.Click += async (_, _) => await ShowEditorAsync(GetSelectedCustomer());
         _deleteButton.Click += async (_, _) => await DeleteSelectedAsync();
         _searchBox.TextChanged += (_, _) => ApplyFilter();
+        _grid.CellClick += Grid_CellClick;
+        _grid.CellPainting += Grid_CellPainting;
+    }
+
+    private void Grid_CellClick(object? sender, DataGridViewCellEventArgs e)
+    {
+        if (e.RowIndex < 0) return;
+        if (_grid.Columns[e.ColumnIndex].Name != "Actions") return;
+
+        _selectedRowIndex = e.RowIndex;
+        _grid.CurrentCell = _grid.Rows[e.RowIndex].Cells[e.ColumnIndex];
+        _grid.Rows[e.RowIndex].Selected = true;
+        var rect = _grid.GetCellDisplayRectangle(e.ColumnIndex, e.RowIndex, true);
+        var pos = _grid.PointToScreen(new Point(rect.Right, rect.Top));
+        _actionMenu.Show(pos);
+    }
+
+    private void Grid_CellPainting(object? sender, DataGridViewCellPaintingEventArgs e)
+    {
+        if (e.ColumnIndex == 0 && e.RowIndex >= 0)
+        {
+            e.PaintBackground(e.CellBounds, true);
+
+            if (e.RowIndex < _displayedCustomers.Count)
+            {
+                var customer = _displayedCustomers[e.RowIndex];
+                bool isSelected = (_grid.Rows[e.RowIndex].Selected) || (e.State & DataGridViewElementStates.Selected) != 0;
+                DrawCustomerCell(e, customer, isSelected);
+            }
+
+            e.Handled = true;
+        }
+    }
+
+    private void DrawCustomerCell(DataGridViewCellPaintingEventArgs e, CustomerDto customer, bool isSelected)
+    {
+        DrawAvatar(e, customer);
+        DrawCustomerInfo(e, customer, isSelected);
+    }
+
+    private void DrawAvatar(DataGridViewCellPaintingEventArgs e, CustomerDto customer)
+    {
+        if (!string.IsNullOrEmpty(customer.AvatarUrl))
+        {
+            DrawDefaultAvatar(e, customer.FullName);
+        }
+        else
+        {
+            DrawDefaultAvatar(e, customer.FullName);
+        }
+    }
+
+    private void DrawDefaultAvatar(DataGridViewCellPaintingEventArgs e, string fullName)
+    {
+        using (var brush = new SolidBrush(Color.FromArgb(147, 197, 253)))
+        {
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+            e.Graphics.FillEllipse(brush, e.CellBounds.X + 15, e.CellBounds.Y + 10, 50, 50);
+        }
+
+        using (var font = new Font("Segoe UI", 12, FontStyle.Bold))
+        using (var textBrush = new SolidBrush(Color.White))
+        {
+            var sf = new StringFormat
+            {
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center
+            };
+            var avatarRect = new Rectangle(e.CellBounds.X + 15, e.CellBounds.Y + 10, 50, 50);
+            string initials = GetInitials(fullName);
+            e.Graphics.DrawString(initials, font, textBrush, avatarRect, sf);
+        }
+    }
+
+    private void DrawCustomerInfo(DataGridViewCellPaintingEventArgs e, CustomerDto customer, bool isSelected)
+    {
+        var nameColor = isSelected ? Color.FromArgb(107, 114, 128) : Color.FromArgb(37, 99, 235);
+        var emailColor = isSelected ? Color.FromArgb(156, 163, 175) : Color.FromArgb(107, 114, 128);
+
+        using (var nameFont = new Font("Segoe UI", 11, FontStyle.Bold))
+        using (var emailFont = new Font("Segoe UI", 9))
+        using (var nameBrush = new SolidBrush(nameColor))
+        using (var emailBrush = new SolidBrush(emailColor))
+        {
+            e.Graphics.DrawString(customer.FullName, nameFont, nameBrush,
+                e.CellBounds.X + 75, e.CellBounds.Y + 18);
+            e.Graphics.DrawString(customer.Email ?? string.Empty, emailFont, emailBrush,
+                e.CellBounds.X + 75, e.CellBounds.Y + 40);
+        }
+    }
+
+    private string GetInitials(string fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName))
+            return "ND";
+
+        string[] names = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (names.Length >= 2)
+            return $"{names[0][0]}{names[1][0]}".ToUpper();
+        if (names.Length == 1 && names[0].Length >= 2)
+            return names[0].Substring(0, 2).ToUpper();
+        return "ND";
     }
 
     private CustomerDto? GetSelectedCustomer()
     {
-        if (_grid.CurrentRow?.DataBoundItem is CustomerDto dto)
+        return GetCustomerByRow(_grid.CurrentRow?.Index ?? -1);
+    }
+
+    private CustomerDto? GetCustomerByRow(int rowIndex)
+    {
+        if (rowIndex < 0 || rowIndex >= _displayedCustomers.Count)
         {
-            return dto;
+            return null;
         }
 
-        return null;
+        return _displayedCustomers[rowIndex];
     }
 
     private async Task LoadCustomersAsync()
     {
         await RunBusyAsync(async () =>
         {
-            var customers = await _customerService.GetAllAsync();
-            _customers.Clear();
-            foreach (var customer in customers.OrderByDescending(c => c.CreatedAt))
-            {
-                _customers.Add(customer);
-            }
-            _statusLabel.Text = $"Tổng: {_customers.Count} khách hàng";
+            var customers = await _customerService.GetForDoctorAsync();
+            _allCustomers.Clear();
+            _allCustomers.AddRange(customers.OrderByDescending(c => c.CreatedAt));
+            _currentPage = 1;
             ApplyFilter();
         }, "Không thể tải danh sách khách hàng.");
     }
@@ -322,8 +493,8 @@ public sealed class DoctorCustomerForm : Form
         await RunBusyAsync(async () =>
         {
             await _customerService.DeleteAsync(selected.Id);
-            _customers.Remove(selected);
-            _statusLabel.Text = $"Tổng: {_customers.Count} khách hàng";
+            _allCustomers.RemoveAll(c => c.Id == selected.Id);
+            ApplyFilter();
         }, "Không thể xóa khách hàng.");
     }
 
@@ -352,37 +523,59 @@ public sealed class DoctorCustomerForm : Form
         _addButton.Enabled = enabled;
         _editButton.Enabled = enabled;
         _deleteButton.Enabled = enabled;
+        if (_btnPrevPage != null) _btnPrevPage.Enabled = enabled && _btnPrevPage.Enabled;
+        if (_btnNextPage != null) _btnNextPage.Enabled = enabled && _btnNextPage.Enabled;
+        if (_pageSizeBox != null) _pageSizeBox.Enabled = enabled;
     }
 
     private void ApplyFilter()
     {
         var keyword = (_searchBox.Text ?? string.Empty).Trim();
-        // Always filter against master list (_customers) so filtering is consistent
-        var view = _customers.Where(c =>
+        _filteredCustomers = _allCustomers.Where(c =>
             string.IsNullOrWhiteSpace(keyword)
             || (!string.IsNullOrWhiteSpace(c.FullName) && c.FullName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
             || (!string.IsNullOrWhiteSpace(c.Email) && c.Email.Contains(keyword, StringComparison.OrdinalIgnoreCase))
             || (!string.IsNullOrWhiteSpace(c.PhoneNumber) && c.PhoneNumber.Contains(keyword, StringComparison.OrdinalIgnoreCase))
         ).ToList();
 
-        _grid.DataSource = new BindingList<CustomerDto>(view);
-        _statusLabel.Text = $"Hiển thị {view.Count}/{_customers.Count} khách hàng";
+        _currentPage = 1;
+        RefreshGrid();
+    }
+
+    private void RefreshGrid()
+    {
+        _grid.Rows.Clear();
+        if (_pageSize <= 0) _pageSize = 7;
+        var totalItems = _filteredCustomers.Count;
+        var totalPages = Math.Max(1, (int)Math.Ceiling(totalItems / (double)_pageSize));
+        if (_currentPage > totalPages) _currentPage = totalPages;
+        if (_currentPage < 1) _currentPage = 1;
+
+        var startIndex = (_currentPage - 1) * _pageSize;
+        var pageItems = _filteredCustomers.Skip(startIndex).Take(_pageSize).ToList();
+        _displayedCustomers = pageItems;
+
+        foreach (var customer in pageItems)
+        {
+            _grid.Rows.Add(
+                $"{customer.FullName}\n{customer.Email}",
+                customer.Email,
+                customer.AppointmentCount.ToString(),
+                customer.LastAppointment?.ToString("dd/MM/yyyy HH:mm") ?? "Chưa có",
+                customer.CreatedAt.ToString("dd/MM/yyyy"),
+                "⋯");
+        }
+
+        _statusLabel.Text = $"Hiển thị {pageItems.Count}/{totalItems} khách hàng";
+        _pageInfo.Text = $"Trang {_currentPage} / {totalPages}";
+        _btnPrevPage.Enabled = _currentPage > 1;
+        _btnNextPage.Enabled = _currentPage < totalPages;
         UpdateTitleCount();
     }
 
     private void UpdateTitleCount()
     {
-        int visible = 0;
-        if (_grid.DataSource is BindingList<CustomerDto> list)
-        {
-            visible = list.Count;
-        }
-        else
-        {
-            visible = _grid.Rows.Count;
-        }
-
-        _titleLabel.Text = $"Khách hàng ({visible})";
+        _titleLabel.Text = $"Khách hàng ({_filteredCustomers.Count})";
     }
 
     private sealed class DoctorCustomerEditorDialog : Form
@@ -496,9 +689,30 @@ public sealed class DoctorCustomerForm : Form
                 return;
             }
 
-            _firstName.Text = existing.FirstName;
-            _lastName.Text = existing.LastName;
-            _email.Text = existing.Email;
+            var firstName = existing.FirstName?.Trim() ?? string.Empty;
+            var lastName = existing.LastName?.Trim() ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(firstName) && string.IsNullOrWhiteSpace(lastName))
+            {
+                var fullName = (existing.FullName ?? string.Empty).Trim();
+                if (!string.IsNullOrWhiteSpace(fullName))
+                {
+                    var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length == 1)
+                    {
+                        firstName = parts[0];
+                    }
+                    else
+                    {
+                        firstName = parts[^1];
+                        lastName = string.Join(" ", parts.Take(parts.Length - 1));
+                    }
+                }
+            }
+
+            _firstName.Text = firstName;
+            _lastName.Text = lastName;
+            _email.Text = existing.Email ?? string.Empty;
             _phone.Text = existing.PhoneNumber;
             _gender.SelectedItem = existing.Gender ?? string.Empty;
             if (existing.DateOfBirth.HasValue)
@@ -522,6 +736,38 @@ public sealed class DoctorCustomerForm : Form
             if (string.IsNullOrWhiteSpace(_email.Text))
             {
                 throw new InvalidOperationException("Vui lòng nhập email khách hàng.");
+            }
+            if (!BookingCareManagement.WinForms.ValidationHelpers.IsValidPersonName(_firstName.Text))
+            {
+                throw new InvalidOperationException("Tên không hợp lệ (không chứa số hoặc ký tự đặc biệt).");
+            }
+            if (!BookingCareManagement.WinForms.ValidationHelpers.IsValidPersonName(_lastName.Text))
+            {
+                throw new InvalidOperationException("Họ không hợp lệ (không chứa số hoặc ký tự đặc biệt).");
+            }
+            if (!BookingCareManagement.WinForms.ValidationHelpers.IsValidEmail(_email.Text.Trim()))
+            {
+                throw new InvalidOperationException("Email không hợp lệ.");
+            }
+
+            var phone = _phone.Text.Trim();
+            if (string.IsNullOrWhiteSpace(phone))
+            {
+                throw new InvalidOperationException("Vui lòng nhập số điện thoại.");
+            }
+            var digits = new string(phone.Where(char.IsDigit).ToArray());
+            if (!digits.StartsWith("0", StringComparison.Ordinal) || (digits.Length != 10 && digits.Length != 11))
+            {
+                throw new InvalidOperationException("Số điện thoại không hợp lệ (bắt đầu bằng 0 và có 10 hoặc 11 chữ số).");
+            }
+
+            if (_dob.Checked)
+            {
+                var minDate = DateTime.Today.AddMonths(-3);
+                if (_dob.Value.Date > minDate)
+                {
+                    throw new InvalidOperationException("Ngày sinh phải lớn hơn hoặc bằng 3 tháng tuổi.");
+                }
             }
         }
 

@@ -5,6 +5,7 @@ using System.Net.Http.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using BookingCareManagement.WinForms.Shared.Models.Dtos;
+using System.Linq;
 
 namespace BookingCareManagement.WinForms.Areas.Admin.Services;
 
@@ -22,6 +23,49 @@ public sealed class CustomerService
     {
         var client = CreateClient();
         using var response = await client.GetAsync("/api/customer", cancellationToken);
+        await EnsureSuccessAsync(response);
+        var dtos = await response.Content.ReadFromJsonAsync<List<CustomerDto>>(cancellationToken: cancellationToken);
+        return dtos ?? new List<CustomerDto>();
+    }
+
+    // Lấy danh sách khách hàng đã từng đặt lịch với bác sĩ hiện tại
+    public async Task<IReadOnlyList<CustomerDto>> GetForDoctorAsync(CancellationToken cancellationToken = default)
+    {
+        var client = CreateClient();
+        using var response = await client.GetAsync("/api/customer/for-doctor", cancellationToken);
+
+        if (response.StatusCode == System.Net.HttpStatusCode.MethodNotAllowed
+            || response.StatusCode == System.Net.HttpStatusCode.NotFound)
+        {
+            response.Dispose();
+            using var fallbackResp = await client.GetAsync("/api/doctor/appointments", cancellationToken);
+            await EnsureSuccessAsync(fallbackResp);
+            var items = await fallbackResp.Content.ReadFromJsonAsync<List<DoctorAppointmentListItemDto>>(cancellationToken: cancellationToken)
+                ?? new List<DoctorAppointmentListItemDto>();
+
+            var grouped = items
+                .Where(i => !string.IsNullOrWhiteSpace(i.PatientId) || !string.IsNullOrWhiteSpace(i.CustomerPhone))
+                .GroupBy(i => i.PatientId ?? i.CustomerPhone)
+                .Select(g =>
+                {
+                    var latest = g.OrderByDescending(x => x.StartUtc).First();
+                    var lastUtc = g.Max(x => x.StartUtc);
+                    return new CustomerDto
+                    {
+                        Id = g.Key ?? string.Empty,
+                        FullName = latest.PatientName ?? string.Empty,
+                        PhoneNumber = latest.CustomerPhone ?? string.Empty,
+                        Email = string.Empty,
+                        CreatedAt = lastUtc == default ? DateTime.UtcNow : lastUtc,
+                        AppointmentCount = g.Count(),
+                        LastAppointment = lastUtc == default ? null : lastUtc
+                    };
+                })
+                .ToList();
+
+            return grouped;
+        }
+
         await EnsureSuccessAsync(response);
         var dtos = await response.Content.ReadFromJsonAsync<List<CustomerDto>>(cancellationToken: cancellationToken);
         return dtos ?? new List<CustomerDto>();

@@ -10,6 +10,7 @@ using BookingCareManagement.Domain.Aggregates.Doctor;
 using BookingCareManagement.Domain.Aggregates.User;
 using BookingCareManagement.Infrastructure.Persistence;
 using BookingCareManagement.Web.Areas.Admin.Dtos;
+using BookingCareManagement.Application.Common.Validation;
 using BookingCareManagement.Web.Areas.Doctor.Dtos;
 using BookingCareManagement.Application.Features.Calendar;
 using Microsoft.AspNetCore.Authorization;
@@ -435,8 +436,8 @@ public sealed class AdminAppointmentsController : ControllerBase
             clinicRoomId = await ResolveClinicRoomIdAsync(null, cancellationToken);
         }
 
-        var patientName = request.PatientName?.Trim();
-        var customerPhone = request.CustomerPhone?.Trim();
+        var patientName = InputValidator.SanitizeName(request.PatientName);
+        var customerPhone = InputValidator.NormalizePhone(request.CustomerPhone);
         if (!string.IsNullOrWhiteSpace(request.PatientId))
         {
             var patientUser = await _dbContext.Users
@@ -452,7 +453,7 @@ public sealed class AdminAppointmentsController : ControllerBase
 
                 if (string.IsNullOrWhiteSpace(customerPhone))
                 {
-                    customerPhone = patientUser.PhoneNumber?.Trim();
+                    customerPhone = InputValidator.NormalizePhone(patientUser.PhoneNumber);
                 }
             }
         }
@@ -462,9 +463,19 @@ public sealed class AdminAppointmentsController : ControllerBase
             return (null, new ProblemDetails { Title = "Vui lòng chọn bệnh nhân" });
         }
 
+        if (!InputValidator.IsValidPersonName(patientName))
+        {
+            return (null, new ProblemDetails { Title = "Tên bệnh nhân không hợp lệ (không chứa số hoặc ký tự đặc biệt)" });
+        }
+
         if (string.IsNullOrWhiteSpace(customerPhone))
         {
             return (null, new ProblemDetails { Title = "Vui lòng nhập số điện thoại" });
+        }
+
+        if (!InputValidator.IsValidVietnamPhone(customerPhone))
+        {
+            return (null, new ProblemDetails { Title = "Số điện thoại không hợp lệ (phải đúng 10 số và bắt đầu bằng 0)" });
         }
 
         var normalizedStatus = AppointmentStatus.NormalizeOrDefault(request.Status);

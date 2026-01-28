@@ -18,6 +18,7 @@ using BookingCareManagement.Domain.Aggregates.Doctor;
 using BookingCareManagement.Domain.Aggregates.User;
 using BookingCareManagement.Infrastructure.Persistence;
 using BookingCareManagement.Web.Areas.Customer.Dtos;
+using BookingCareManagement.Application.Common.Validation;
 using BookingCareManagement.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -792,8 +793,8 @@ public class CustomerBookingController : ControllerBase
             return (null, 0m, validation.Error ?? StatusCode(500));
         }
 
-        var trimmedName = request.CustomerName?.Trim() ?? string.Empty;
-        var trimmedPhone = request.CustomerPhone?.Trim() ?? string.Empty;
+        var trimmedName = InputValidator.SanitizeName(request.CustomerName);
+        var trimmedPhone = InputValidator.NormalizePhone(request.CustomerPhone);
         var slotStartUtc = DateTime.SpecifyKind(request.SlotStartUtc, DateTimeKind.Utc);
         var durationMinutes = request.DurationMinutes <= 0 ? 30 : request.DurationMinutes;
 
@@ -897,11 +898,26 @@ public class CustomerBookingController : ControllerBase
             return (null, null, 0m, BadRequest(new ProblemDetails { Title = "Vui lòng nhập họ tên" }));
         }
 
+        var normalizedName = InputValidator.SanitizeName(trimmedName);
+        if (!InputValidator.IsValidPersonName(normalizedName))
+        {
+            return (null, null, 0m, BadRequest(new ProblemDetails { Title = "Họ tên không hợp lệ (không chứa số hoặc ký tự đặc biệt)" }));
+        }
+
         var trimmedPhone = request.CustomerPhone?.Trim() ?? string.Empty;
         if (string.IsNullOrWhiteSpace(trimmedPhone))
         {
             return (null, null, 0m, BadRequest(new ProblemDetails { Title = "Vui lòng nhập số điện thoại" }));
         }
+
+        var normalizedPhone = InputValidator.NormalizePhone(trimmedPhone);
+        if (!InputValidator.IsValidVietnamPhone(normalizedPhone))
+        {
+            return (null, null, 0m, BadRequest(new ProblemDetails { Title = "Số điện thoại không hợp lệ (phải đúng 10 số và bắt đầu bằng 0)" }));
+        }
+
+        request.CustomerName = normalizedName;
+        request.CustomerPhone = normalizedPhone;
 
         var slotStartUtc = DateTime.SpecifyKind(request.SlotStartUtc, DateTimeKind.Utc);
         var durationMinutes = request.DurationMinutes <= 0 ? 30 : request.DurationMinutes;

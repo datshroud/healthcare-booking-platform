@@ -136,11 +136,11 @@ namespace BookingCareManagement.WinForms
 
         private void OpenRoleDashboard()
         {
-            // If user is doctor (but not admin), open doctor appointments
+            // If user is doctor (but not admin), open doctor dashboard
             if (HasDoctorAccess() && !HasAdminAccess())
             {
-                var doctorForm = _serviceProvider.GetRequiredService<DoctorAppointmentsForm>();
-                OpenChildForm(doctorForm);
+                var dashboard = _serviceProvider.GetRequiredService<DashboardForm>();
+                OpenChildForm(dashboard);
                 return;
             }
 
@@ -881,6 +881,11 @@ namespace BookingCareManagement.WinForms
                             var doctorCustomers = _serviceProvider.GetRequiredService<DoctorCustomerForm>();
                             OpenChildForm(doctorCustomers);
                         }
+                        if (item.Contains("Thống kê"))
+                        {
+                            var dashboard = _serviceProvider.GetRequiredService<DashboardForm>();
+                            OpenChildForm(dashboard);
+                        }
                     };
 
                     btn.MouseDown += Button_MouseDown;
@@ -891,6 +896,11 @@ namespace BookingCareManagement.WinForms
 
                     sidebarPanel.Controls.Add(btn);
                     dy += 50;
+
+                    if (item.Contains("Thống kê"))
+                    {
+                        SetActiveButton(btn);
+                    }
                 }
 
                 return;

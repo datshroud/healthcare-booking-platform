@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using BookingCareManagement.Application.Common.Exceptions;
+using BookingCareManagement.Application.Common.Validation;
 using BookingCareManagement.Domain.Aggregates.User;
 using Microsoft.AspNetCore.Identity;
 
@@ -36,16 +37,34 @@ public class UpdateCustomerCommandHandler
         }
 
         // Cập nhật thông tin
-        var firstName = command.FirstName?.Trim() ?? string.Empty;
-        var lastName = command.LastName?.Trim() ?? string.Empty;
+        var firstName = InputValidator.SanitizeName(command.FirstName);
+        var lastName = InputValidator.SanitizeName(command.LastName);
+        var email = InputValidator.NormalizeEmail(command.Email);
+        var phone = InputValidator.NormalizePhone(command.PhoneNumber);
+
+        if (!InputValidator.IsValidPersonName(firstName) || !InputValidator.IsValidPersonName(lastName))
+        {
+            throw new ArgumentException("Họ tên không hợp lệ (không chứa số hoặc ký tự đặc biệt).");
+        }
+
+        if (!InputValidator.IsValidEmail(email))
+        {
+            throw new ArgumentException("Email không hợp lệ.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(phone) && !InputValidator.IsValidVietnamPhone(phone))
+        {
+            throw new ArgumentException("Số điện thoại không hợp lệ (phải đúng 10 số và bắt đầu bằng 0).");
+        }
+
         var fullName = string.Join(" ", new[] { firstName, lastName }.Where(x => !string.IsNullOrWhiteSpace(x)));
 
         user.FirstName = firstName;
         user.LastName = lastName;
         user.FullName = string.IsNullOrWhiteSpace(fullName) ? user.Email : fullName;
-        user.Email = command.Email;
-        user.UserName = command.Email;
-        user.PhoneNumber = command.PhoneNumber;
+        user.Email = email;
+        user.UserName = email;
+        user.PhoneNumber = string.IsNullOrWhiteSpace(phone) ? null : phone;
         user.Gender = command.Gender;
         user.DateOfBirth = command.DateOfBirth;
         user.InternalNote = command.InternalNote;

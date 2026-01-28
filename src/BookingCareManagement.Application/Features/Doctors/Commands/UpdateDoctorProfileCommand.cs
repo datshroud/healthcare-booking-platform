@@ -1,4 +1,5 @@
 using BookingCareManagement.Application.Common.Exceptions;
+using BookingCareManagement.Application.Common.Validation;
 using BookingCareManagement.Domain.Abstractions;
 using BookingCareManagement.Domain.Aggregates.User;
 using Microsoft.AspNetCore.Identity;
@@ -40,10 +41,24 @@ public class UpdateDoctorProfileCommandHandler
             throw new NotFoundException($"Doctor with ID {command.DoctorId} was not found.");
         }
 
+        var firstName = InputValidator.SanitizeName(command.FirstName);
+        var lastName = InputValidator.SanitizeName(command.LastName);
+        var phone = InputValidator.NormalizePhone(command.PhoneNumber);
+
+        if (!InputValidator.IsValidPersonName(firstName) || !InputValidator.IsValidPersonName(lastName))
+        {
+            throw new ArgumentException("Họ tên không hợp lệ (không chứa số hoặc ký tự đặc biệt).");
+        }
+
+        if (!string.IsNullOrWhiteSpace(phone) && !InputValidator.IsValidVietnamPhone(phone))
+        {
+            throw new ArgumentException("Số điện thoại không hợp lệ (phải đúng 10 số và bắt đầu bằng 0).");
+        }
+
         var user = doctor.AppUser;
-        user.FirstName = command.FirstName;
-        user.LastName = command.LastName;
-        user.PhoneNumber = command.PhoneNumber;
+        user.FirstName = firstName;
+        user.LastName = lastName;
+        user.PhoneNumber = string.IsNullOrWhiteSpace(phone) ? null : phone;
         user.DateOfBirth = command.DateOfBirth;
         user.Description = command.Description;
 

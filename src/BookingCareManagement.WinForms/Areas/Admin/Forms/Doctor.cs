@@ -24,11 +24,11 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         private readonly AdminSpecialtyApiClient _specialtyApiClient;
 
         // Pagination fields
-        private Panel panelPager;
-        private Button btnPrevPage;
-        private Button btnNextPage;
-        private ComboBox comboPageSize;
-        private Label lblPageInfoPager;
+        private Panel panelPager = null!;
+        private Button btnPrevPage = null!;
+        private Button btnNextPage = null!;
+        private ComboBox comboPageSize = null!;
+        private Label lblPageInfoPager = null!;
         private int _currentPage = 1;
         private int _pageSize = 7; // default one page shows 7 doctors
         private int _totalItems = 0;
@@ -75,15 +75,18 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         }
 
         // =============== ACTIONS COLUMN HANDLING ===============
-        private void DataGridViewDoctors_CellClick(object sender, DataGridViewCellEventArgs e)
+        private void DataGridViewDoctors_CellClick(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0) return;
 
             // If Actions column clicked, show context menu with options
-            if (e.ColumnIndex == dataGridViewDoctors.Columns["ColumnActions"].Index)
+            var actionsColumn = dataGridViewDoctors.Columns["ColumnActions"];
+            if (actionsColumn == null) return;
+
+            if (e.ColumnIndex == actionsColumn.Index)
             {
                 var row = dataGridViewDoctors.Rows[e.RowIndex];
-                var id = (Guid)row.Tag;
+                if (row.Tag is not Guid id) return;
                 var doc = doctors.FirstOrDefault(d => d.Id == id);
                 if (doc == null) return;
 
@@ -177,7 +180,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             panelPager.BringToFront();
         }
 
-        private async void Doctor_Load(object sender, EventArgs e)
+           private async void Doctor_Load(object? sender, EventArgs e)
         {
              await LoadDataAsync();
         }
@@ -333,7 +336,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         }
 
         // --- Search Logic ---
-        private void TextBoxSearch_Enter(object sender, EventArgs e)
+        private void TextBoxSearch_Enter(object? sender, EventArgs e)
         {
             if (textBoxSearch.Text == "🔍 Tìm kiếm...")
             {
@@ -342,7 +345,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             }
         }
 
-        private void TextBoxSearch_Leave(object sender, EventArgs e)
+        private void TextBoxSearch_Leave(object? sender, EventArgs e)
         {
             if (string.IsNullOrWhiteSpace(textBoxSearch.Text))
             {
@@ -351,7 +354,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             }
         }
 
-        private void TextBoxSearch_TextChanged(object sender, EventArgs e)
+        private void TextBoxSearch_TextChanged(object? sender, EventArgs e)
         {
             if (textBoxSearch.Text == "🔍 Tìm kiếm..." || string.IsNullOrWhiteSpace(textBoxSearch.Text))
             {
@@ -373,12 +376,12 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
         }
 
         // --- Button Events ---
-        private void DataGridViewDoctors_SelectionChanged(object sender, EventArgs e)
+        private void DataGridViewDoctors_SelectionChanged(object? sender, EventArgs e)
         {
             bool hasSelection = dataGridViewDoctors.SelectedRows.Count > 0;
          }
 
-        private async void ButtonAdd_Click(object sender, EventArgs e)
+        private async void ButtonAdd_Click(object? sender, EventArgs e)
         {
             var editorForm = new DoctorEditorForm(specialties, _doctorApiClient);
             if (editorForm.ShowDialog() == DialogResult.OK)
@@ -431,11 +434,11 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             }
         }
 
-        private async void ButtonEdit_Click(object sender, EventArgs e)
+        private async void ButtonEdit_Click(object? sender, EventArgs e)
         {
             if (dataGridViewDoctors.SelectedRows.Count == 0) return;
 
-            Guid id = (Guid)dataGridViewDoctors.SelectedRows[0].Tag;
+            if (dataGridViewDoctors.SelectedRows[0].Tag is not Guid id) return;
             var doc = doctors.FirstOrDefault(d => d.Id == id);
 
             if (doc != null)
@@ -523,11 +526,11 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             }
         }
 
-        private async void ButtonDelete_Click(object sender, EventArgs e)
+        private async void ButtonDelete_Click(object? sender, EventArgs e)
         {
             if (dataGridViewDoctors.SelectedRows.Count == 0) return;
 
-            Guid id = (Guid)dataGridViewDoctors.SelectedRows[0].Tag;
+            if (dataGridViewDoctors.SelectedRows[0].Tag is not Guid id) return;
             var doc = doctors.FirstOrDefault(d => d.Id == id);
 
             if (doc != null)
@@ -561,7 +564,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
             }
         }
 
-        private void DataGridViewDoctors_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        private void DataGridViewDoctors_CellDoubleClick(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex >= 0) ButtonEdit_Click(sender, e);
         }
