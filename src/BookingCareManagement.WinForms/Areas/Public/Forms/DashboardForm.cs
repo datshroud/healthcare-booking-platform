@@ -375,10 +375,21 @@ public sealed class DashboardForm : Form
             {
                 e.CellStyle.ForeColor = Color.FromArgb(34, 197, 94);
             }
+            else if (text.Contains("Chờ xác nhận", StringComparison.CurrentCultureIgnoreCase)
+                     || text.Equals("Pending", StringComparison.OrdinalIgnoreCase))
+            {
+                e.CellStyle.ForeColor = Color.FromArgb(234, 179, 8);
+            }
             else if (text.Contains("Đã hủy", StringComparison.CurrentCultureIgnoreCase)
                      || text.Equals("Canceled", StringComparison.OrdinalIgnoreCase))
             {
                 e.CellStyle.ForeColor = Color.FromArgb(239, 68, 68);
+            }
+            else if (text.Contains("Vắng mặt", StringComparison.CurrentCultureIgnoreCase)
+                     || text.Equals("NoShow", StringComparison.OrdinalIgnoreCase)
+                     || text.Equals("No-Show", StringComparison.OrdinalIgnoreCase))
+            {
+                e.CellStyle.ForeColor = Color.FromArgb(107, 114, 128);
             }
         };
 

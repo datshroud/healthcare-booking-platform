@@ -102,8 +102,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Forms
                         this.Cursor = Cursors.WaitCursor;
                         await _doctorApiClient.UpdateProfileAsync(id, new { AvatarUrl = doc.AvatarUrl, /* keep avatar */ });
                         // call status endpoint - backend expects PUT /api/Doctor/{id}/status
-                        var client = new HttpClient();
-                        var resp = await client.PutAsJsonAsync($"/api/Doctor/{id}/status", new { active = !doc.Active });
+                        await _doctorApiClient.UpdateStatusAsync(id, !doc.Active);
                     }
                     catch { }
                     finally { this.Cursor = Cursors.Default; }

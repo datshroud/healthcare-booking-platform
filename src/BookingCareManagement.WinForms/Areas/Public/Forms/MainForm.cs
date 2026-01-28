@@ -30,6 +30,8 @@ namespace BookingCareManagement.WinForms
         private Panel contentPanel = null!;
         private SidebarButton? activeButton = null;
         private Form? activeChildForm = null;
+        private Panel offlineBanner = null!;
+        private Label offlineBannerLabel = null!;
 
         // Biến cho chức năng kéo thả
         private SidebarButton? draggedButton = null;
@@ -39,12 +41,14 @@ namespace BookingCareManagement.WinForms
 
         private readonly IServiceProvider _serviceProvider;
         private readonly SessionState _sessionState;
+        private readonly OfflineStateService _offlineState;
 
         public MainForm(IServiceProvider serviceProvider)
         {
             try { System.IO.File.AppendAllText("debug_winforms.log", $"[{DateTime.Now:O}] MainForm: constructor start\n"); } catch {}
             _serviceProvider = serviceProvider;
             _sessionState = serviceProvider.GetRequiredService<SessionState>();
+            _offlineState = serviceProvider.GetRequiredService<OfflineStateService>();
             
             InitializeComponent();
             InitializeCustomComponents();
@@ -66,6 +70,14 @@ namespace BookingCareManagement.WinForms
                 {
                     RebuildSidebar();
                     UpdateAccountDisplay();
+                }
+            };
+
+            _offlineState.StateChanged += (_, _) =>
+            {
+                if (IsHandleCreated)
+                {
+                    BeginInvoke(new Action(UpdateOfflineBanner));
                 }
             };
 
@@ -96,6 +108,7 @@ namespace BookingCareManagement.WinForms
 
             //CreateSidebar();
             CreateNavbar();
+            InitializeOfflineBanner();
 
             // Sự kiện khi thay đổi kích thước cửa sổ
             this.Resize += MainForm_Resize;
@@ -145,7 +158,7 @@ namespace BookingCareManagement.WinForms
                 var serviceForm = _serviceProvider.GetRequiredService<Service>();
                 OpenChildForm(serviceForm);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 // Fallback to dashboard if Service resolution fails
                 try
@@ -159,8 +172,8 @@ namespace BookingCareManagement.WinForms
 
         private void CloseAccountMenu()
         {
-            Panel accountMenu = this.Controls["accountMenu"] as Panel
-                                ?? navbarPanel.Controls["accountMenu"] as Panel;
+            Panel? accountMenu = this.Controls["accountMenu"] as Panel
+                                 ?? navbarPanel.Controls["accountMenu"] as Panel;
 
             if (accountMenu != null && accountMenu.Visible)
             {
@@ -179,28 +192,28 @@ namespace BookingCareManagement.WinForms
 
             int formWidth = this.ClientSize.Width;
 
-            if (navbarPanel.Controls["upgradeBtn"] != null)
+            if (navbarPanel.Controls["upgradeBtn"] is Control upgradeBtn)
             {
-                navbarPanel.Controls["upgradeBtn"].Location = new Point(formWidth - 390, 12);
+                upgradeBtn.Location = new Point(formWidth - 390, 12);
             }
 
-            if (navbarPanel.Controls["shareBtn"] != null)
+            if (navbarPanel.Controls["shareBtn"] is Control shareBtn)
             {
-                navbarPanel.Controls["shareBtn"].Location = new Point(formWidth - 270, 12);
+                shareBtn.Location = new Point(formWidth - 270, 12);
             }
 
-            if (navbarPanel.Controls["avatar"] != null)
+            if (navbarPanel.Controls["avatar"] is Control avatar)
             {
-                navbarPanel.Controls["avatar"].Location = new Point(formWidth - 350, 12);
+                avatar.Location = new Point(formWidth - 350, 12);
             }
 
-            if (navbarPanel.Controls["avatarText"] != null)
+            if (navbarPanel.Controls["avatarText"] is Control avatarText)
             {
-                navbarPanel.Controls["avatarText"].Location = new Point(formWidth - 310, 12);
+                avatarText.Location = new Point(formWidth - 310, 12);
             }
 
-            Panel accountMenu = this.Controls["accountMenu"] as Panel
-                                ?? navbarPanel.Controls["accountMenu"] as Panel;
+            Panel? accountMenu = this.Controls["accountMenu"] as Panel
+                                 ?? navbarPanel.Controls["accountMenu"] as Panel;
 
             if (accountMenu != null)
             {
@@ -475,8 +488,8 @@ namespace BookingCareManagement.WinForms
 
         private void ToggleAccountMenu()
         {
-            Panel accountMenu = this.Controls["accountMenu"] as Panel
-                                ?? navbarPanel.Controls["accountMenu"] as Panel;
+            Panel? accountMenu = this.Controls["accountMenu"] as Panel
+                                 ?? navbarPanel.Controls["accountMenu"] as Panel;
 
             if (accountMenu != null)
             {
@@ -529,6 +542,45 @@ namespace BookingCareManagement.WinForms
             AdjustNavbarButtons();
         }
 
+        private void InitializeOfflineBanner()
+        {
+            offlineBanner = new Panel
+            {
+                Height = 28,
+                Dock = DockStyle.Top,
+                BackColor = Color.FromArgb(254, 215, 170),
+                Visible = false
+            };
+
+            offlineBannerLabel = new Label
+            {
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft,
+                ForeColor = Color.FromArgb(154, 52, 18),
+                Font = new Font("Segoe UI", 9F, FontStyle.Bold),
+                Padding = new Padding(12, 0, 0, 0)
+            };
+
+            offlineBanner.Controls.Add(offlineBannerLabel);
+            navbarPanel.Controls.Add(offlineBanner);
+            offlineBanner.BringToFront();
+            UpdateOfflineBanner();
+        }
+
+        private void UpdateOfflineBanner()
+        {
+            if (offlineBanner == null || offlineBannerLabel == null)
+            {
+                return;
+            }
+
+            offlineBanner.Visible = _offlineState.IsOffline;
+            if (_offlineState.IsOffline)
+            {
+                offlineBannerLabel.Text = "Chế độ offline: hiển thị dữ liệu cục bộ, thao tác sẽ đồng bộ khi có mạng";
+            }
+        }
+
         private void UpdateAccountDisplay()
         {
             try
@@ -536,8 +588,8 @@ namespace BookingCareManagement.WinForms
                 var avatarText = navbarPanel.Controls["avatarText"] as Label;
                 var avatar = navbarPanel.Controls["avatar"] as PictureBox;
 
-                Panel accountMenu = this.Controls["accountMenu"] as Panel
-                                    ?? navbarPanel.Controls["accountMenu"] as Panel;
+                Panel? accountMenu = this.Controls["accountMenu"] as Panel
+                                     ?? navbarPanel.Controls["accountMenu"] as Panel;
 
                 var userName = accountMenu?.Controls.Find("account_userName", true).FirstOrDefault() as Label;
                 var userEmail = accountMenu?.Controls.Find("account_userEmail", true).FirstOrDefault() as Label;
@@ -718,7 +770,8 @@ namespace BookingCareManagement.WinForms
                             if (!(activeChildForm is Calendar))
                             {
                                 var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
-                                OpenChildForm(new Calendar(appointmentsApiClient));
+                                var customerService = _serviceProvider.GetRequiredService<CustomerService>();
+                                OpenChildForm(new Calendar(appointmentsApiClient, customerService));
                             }
                         }
                         if (btn.Text.Contains("Cuộc hẹn"))
@@ -1178,12 +1231,14 @@ namespace BookingCareManagement.WinForms
                 if (HasDoctorAccess() && !HasAdminAccess())
                 {
                     var doctorApi = _serviceProvider.GetRequiredService<DoctorAppointmentsApiClient>();
-                    OpenChildForm(new Calendar(doctorApi));
+                    var customerService = _serviceProvider.GetRequiredService<CustomerService>();
+                    OpenChildForm(new Calendar(doctorApi, customerService));
                 }
                 else
                 {
                     var appointmentsApiClient = _serviceProvider.GetRequiredService<AdminAppointmentsApiClient>();
-                    OpenChildForm(new Calendar(appointmentsApiClient));
+                    var customerService = _serviceProvider.GetRequiredService<CustomerService>();
+                    OpenChildForm(new Calendar(appointmentsApiClient, customerService));
                 }
             }
         }
@@ -1197,7 +1252,8 @@ namespace BookingCareManagement.WinForms
         {
             if (this.Visible)
             {
-                OpenChildForm(new Customer());
+                var customerForm = _serviceProvider.GetRequiredService<Customer>();
+                OpenChildForm(customerForm);
             }
         }
 

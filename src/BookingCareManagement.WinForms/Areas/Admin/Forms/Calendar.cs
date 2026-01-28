@@ -24,6 +24,7 @@ namespace BookingCareManagement.WinForms
         // Allow either admin or doctor API client depending on caller
         private readonly AdminAppointmentsApiClient? _adminAppointmentsApiClient;
         private readonly DoctorAppointmentsApiClient? _doctorAppointmentsApiClient;
+        private readonly CustomerService? _customerService;
         private List<CalendarEventDto> _events = new();
         private CancellationTokenSource? _loadCts;
         private DateTime _lastLoadedMonth = DateTime.MinValue;
@@ -58,18 +59,20 @@ namespace BookingCareManagement.WinForms
         };
 
         // Chỉ giữ lại constructor DI
-        public Calendar(AdminAppointmentsApiClient appointmentsApiClient)
+        public Calendar(AdminAppointmentsApiClient appointmentsApiClient, CustomerService? customerService = null)
         {
             _adminAppointmentsApiClient = appointmentsApiClient;
+            _customerService = customerService;
             currentDate = DateTime.Now;
             InitializeComponent();
             InitializeCustomComponents();
         }
 
         // Overload for doctor client - uses doctor endpoints (avoids 403 when user is doctor)
-        public Calendar(DoctorAppointmentsApiClient appointmentsApiClient)
+        public Calendar(DoctorAppointmentsApiClient appointmentsApiClient, CustomerService? customerService = null)
         {
             _doctorAppointmentsApiClient = appointmentsApiClient;
+            _customerService = customerService;
             currentDate = DateTime.Now;
             InitializeComponent();
             InitializeCustomComponents();
@@ -1171,6 +1174,7 @@ namespace BookingCareManagement.WinForms
         public class AppointmentDialog : Form
         {
             // ... (giữ nguyên toàn bộ code của AppointmentDialog)
+            private readonly CustomerService? _customerService;
             private ComboBox serviceComboBox = null!;
             private ComboBox employeeComboBox = null!;
             private DateTimePicker datePicker = null!;
@@ -1180,8 +1184,9 @@ namespace BookingCareManagement.WinForms
             private Button cancelBtn = null!;
             private Button saveBtn = null!;
 
-            public AppointmentDialog()
+            public AppointmentDialog(CustomerService? customerService = null)
             {
+                _customerService = customerService;
                 InitializeComponent1();
             }
 
@@ -1312,7 +1317,9 @@ namespace BookingCareManagement.WinForms
                 };
                 newCustomerLink.Click += (s, e) =>
                 {
-                    AddCustomerForm addCustomerForm = new AddCustomerForm();
+                    AddCustomerForm addCustomerForm = _customerService != null
+                        ? new AddCustomerForm(_customerService)
+                        : new AddCustomerForm();
                     DialogResult result = addCustomerForm.ShowDialog();
                     if (result == DialogResult.OK)
                     {
@@ -1479,7 +1486,7 @@ namespace BookingCareManagement.WinForms
 
         private void newAppointmentBtn_Click(object sender, EventArgs e)
         {
-            AppointmentDialog dialog = new AppointmentDialog();
+            AppointmentDialog dialog = new AppointmentDialog(_customerService);
             dialog.ShowDialog();   // mở form Add Appointment dạng popup (modal)
 
         }

@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using System.Windows.Forms.DataVisualization.Charting;
+using BookingCareManagement.WinForms.Areas.Admin.Models;
 using BookingCareManagement.WinForms.Areas.Admin.Services;
 using BookingCareManagement.WinForms;
 using BookingCareManagement.WinForms.Shared.Controls;
@@ -18,6 +19,7 @@ namespace BookingCareManagement.WinForms.Areas.Admin.Controls;
 public sealed class DoctorCustomerRelationshipControl : UserControl
 {
     private const int PageSize = 10;
+    private const string CacheKey = "admin-bs-kh-cache";
     private const int SlideMinWidth = 360;
     private const int SlideMaxWidth = 1600;
     private const int SlideDefaultWidth = 700;
@@ -28,6 +30,7 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
     private readonly CustomerService _customerService;
     private readonly DialogService _dialogService;
     private readonly SessionState _sessionState;
+    private readonly LocalCacheService _cache;
 
     private readonly TextBox _txtSearchDoctor = new() { PlaceholderText = "Tìm bác sĩ...", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10F) };
     private readonly TextBox _txtSearchCustomer = new() { PlaceholderText = "Tìm khách hàng...", Dock = DockStyle.Fill, Font = new Font("Segoe UI", 10F) };
@@ -56,6 +59,7 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
     private readonly Label _lblTotalRelations = new() { AutoSize = true, Font = new Font("Segoe UI", 16F, FontStyle.Bold) };
     private readonly Label _lblTotalAppointments = new() { AutoSize = true, Font = new Font("Segoe UI", 16F, FontStyle.Bold) };
     private readonly Label _lblTotalRevenue = new() { AutoSize = true, Font = new Font("Segoe UI", 16F, FontStyle.Bold) };
+    private readonly Label _lblCacheNote = new() { AutoSize = true, ForeColor = Color.FromArgb(234, 88, 12), Font = new Font("Segoe UI", 9F) };
 
     private readonly LoadingOverlay _overlay = new();
     private readonly Panel _slidePanel = new();
@@ -63,6 +67,7 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
     private readonly Panel _slideResizer = new();
     private readonly System.Windows.Forms.Timer _slideTimer = new();
     private readonly System.Windows.Forms.Timer _resizeTimer = new();
+    private readonly System.Windows.Forms.Timer _retryTimer = new();
     private int _pendingResizeWidth;
     private int _slideTargetWidth;
     private int _slideStartWidth;
@@ -88,6 +93,7 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
     private int _upcomingDisplayCount = PageSize;
     private readonly HashSet<DataGridView> _loadingMore = new();
     private bool _overviewErrorShown;
+    private bool _lastLoadFailed;
     private BookingCareManagement.WinForms.Areas.Admin.Services.Models.AdminDashboardOverviewDto? _overview;
     private Guid? _selectedDoctorId;
 
@@ -97,7 +103,8 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
         AdminDoctorApiClient doctorApiClient,
         CustomerService customerService,
         DialogService dialogService,
-        SessionState sessionState)
+        SessionState sessionState,
+        LocalCacheService cache)
     {
         _appointmentsApiClient = appointmentsApiClient;
         _dashboardApiClient = dashboardApiClient;
@@ -105,6 +112,7 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
         _customerService = customerService;
         _dialogService = dialogService;
         _sessionState = sessionState;
+        _cache = cache;
 
         Dock = DockStyle.Fill;
         BackColor = Color.FromArgb(248, 250, 252);
@@ -113,6 +121,7 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
         ConfigureGrids();
         ConfigureCharts();
         ConfigureSlidePanel();
+        ConfigureRetry();
         WireEvents();
     }
 
@@ -149,9 +158,12 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
         };
         subtitle.Location = new Point(0, title.Bottom + 6);
 
-        var headerLeft = new Panel { Dock = DockStyle.Left, Width = 420 };
+        var headerLeft = new Panel { Dock = DockStyle.Left, Width = 520 };
         headerLeft.Controls.Add(title);
         headerLeft.Controls.Add(subtitle);
+        headerLeft.Controls.Add(_lblCacheNote);
+        _lblCacheNote.Location = new Point(0, subtitle.Bottom + 4);
+        _lblCacheNote.Visible = false;
 
         var headerRight = new FlowLayoutPanel
         {
@@ -305,6 +317,18 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
             _slideHost.Visible = true;
             _slideHost.ResumeLayout(true);
             _slidePanel.ResumeLayout(true);
+        };
+    }
+
+    private void ConfigureRetry()
+    {
+        _retryTimer.Interval = 60000;
+        _retryTimer.Tick += async (_, _) =>
+        {
+            if (_lastLoadFailed)
+            {
+                await RefreshAsync();
+            }
         };
     }
 
@@ -573,16 +597,7 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
         }
 
         var text = e.Value?.ToString() ?? string.Empty;
-        if (text.Contains("Đã xác nhận", StringComparison.CurrentCultureIgnoreCase)
-            || text.Equals("Approved", StringComparison.OrdinalIgnoreCase))
-        {
-            e.CellStyle.ForeColor = Color.FromArgb(34, 197, 94);
-        }
-        else if (text.Contains("Đã hủy", StringComparison.CurrentCultureIgnoreCase)
-                 || text.Equals("Canceled", StringComparison.OrdinalIgnoreCase))
-        {
-            e.CellStyle.ForeColor = Color.FromArgb(239, 68, 68);
-        }
+        e.CellStyle.ForeColor = GetStatusColor(text);
     }
 
     private void ConfigureCharts()
@@ -808,6 +823,8 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
             var from = DateOnly.FromDateTime(_dtFrom.Value);
             var to = DateOnly.FromDateTime(_dtTo.Value);
             var appointmentsFailed = false;
+            var usingCache = false;
+            var cache = _cache.Load<DoctorCustomerCacheSnapshot>(CacheKey);
             try
             {
                 _appointments = (await _appointmentsApiClient.GetAppointmentsAsync(from, to, cancellationToken)).ToList();
@@ -816,7 +833,15 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
             {
                 _appointments = new List<DoctorAppointmentListItemDto>();
                 appointmentsFailed = true;
-                _dialogService.ShowError($"Không thể tải lịch hẹn: {ex.Message}");
+                if (cache?.Appointments?.Count > 0)
+                {
+                    _appointments = cache.Appointments;
+                    usingCache = true;
+                }
+                else
+                {
+                    _dialogService.ShowError($"Không thể tải lịch hẹn: {ex.Message}");
+                }
             }
 
             try
@@ -829,12 +854,22 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
                 if (!_overviewErrorShown && appointmentsFailed)
                 {
                     _overviewErrorShown = true;
-                    _dialogService.ShowError($"Không thể tải tổng quan: {ex.Message}");
+                    if (cache?.Overview is not null)
+                    {
+                        _overview = cache.Overview;
+                        usingCache = true;
+                    }
+                    else
+                    {
+                        _dialogService.ShowError($"Không thể tải tổng quan: {ex.Message}");
+                    }
                 }
             }
 
             var doctors = new List<DoctorDto>();
             var customers = new List<CustomerDto>();
+            var doctorCount = 0;
+            var customerCount = 0;
 
             try
             {
@@ -842,7 +877,15 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
             }
             catch (Exception ex)
             {
-                _dialogService.ShowError($"Không thể tải bác sĩ: {ex.Message}");
+                if (cache is not null)
+                {
+                    doctorCount = cache.DoctorCount;
+                    usingCache = true;
+                }
+                else
+                {
+                    _dialogService.ShowError($"Không thể tải bác sĩ: {ex.Message}");
+                }
             }
 
             try
@@ -851,7 +894,15 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
             }
             catch (Exception ex)
             {
-                _dialogService.ShowError($"Không thể tải khách hàng: {ex.Message}");
+                if (cache is not null)
+                {
+                    customerCount = cache.CustomerCount;
+                    usingCache = true;
+                }
+                else
+                {
+                    _dialogService.ShowError($"Không thể tải khách hàng: {ex.Message}");
+                }
             }
 
             BuildDoctorRows();
@@ -861,11 +912,48 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
             BuildActivities();
             BuildUpcoming();
             BuildCharts();
-            UpdateStats(doctors.Count, customers.Count);
+            doctorCount = doctors.Count > 0 ? doctors.Count : doctorCount;
+            customerCount = customers.Count > 0 ? customers.Count : customerCount;
+            UpdateStats(doctorCount, customerCount);
+
+            if (!appointmentsFailed)
+            {
+                var snapshot = new DoctorCustomerCacheSnapshot(
+                    from,
+                    to,
+                    DateTime.UtcNow,
+                    _appointments.ToList(),
+                    _overview,
+                    doctorCount,
+                    customerCount);
+                _cache.Save(CacheKey, snapshot);
+            }
+
+            if (usingCache && cache is not null)
+            {
+                _lblCacheNote.Text = $"Đang hiển thị dữ liệu offline (cập nhật {cache.UpdatedAtUtc.ToLocalTime():dd/MM/yyyy HH:mm})";
+                _lblCacheNote.Visible = true;
+            }
+            else
+            {
+                _lblCacheNote.Visible = false;
+            }
+
+            _lastLoadFailed = appointmentsFailed;
+            if (_lastLoadFailed)
+            {
+                _retryTimer.Start();
+            }
+            else
+            {
+                _retryTimer.Stop();
+            }
         }
         catch (Exception ex)
         {
             _dialogService.ShowError($"Không thể tải mối quan hệ: {ex.Message}");
+            _lastLoadFailed = true;
+            _retryTimer.Start();
         }
         finally
         {
@@ -1271,7 +1359,38 @@ public sealed class DoctorCustomerRelationshipControl : UserControl
             var point = statusSeries.Points[statusSeries.Points.AddXY(item.Status, item.Count)];
             point.Label = item.Count.ToString("N0");
             point.ToolTip = $"Trạng thái: {item.Status}\nSố lượng: {item.Count:N0}";
+            point.Color = GetStatusColor(item.Status);
         }
+    }
+
+    private static Color GetStatusColor(string status)
+    {
+        if (status.Contains("Đã xác nhận", StringComparison.CurrentCultureIgnoreCase)
+            || status.Equals("Approved", StringComparison.OrdinalIgnoreCase))
+        {
+            return Color.FromArgb(34, 197, 94); // green
+        }
+
+        if (status.Contains("Chờ xác nhận", StringComparison.CurrentCultureIgnoreCase)
+            || status.Equals("Pending", StringComparison.OrdinalIgnoreCase))
+        {
+            return Color.FromArgb(234, 179, 8); // yellow
+        }
+
+        if (status.Contains("Đã hủy", StringComparison.CurrentCultureIgnoreCase)
+            || status.Equals("Canceled", StringComparison.OrdinalIgnoreCase))
+        {
+            return Color.FromArgb(239, 68, 68); // red
+        }
+
+        if (status.Contains("Vắng mặt", StringComparison.CurrentCultureIgnoreCase)
+            || status.Equals("NoShow", StringComparison.OrdinalIgnoreCase)
+            || status.Equals("No-Show", StringComparison.OrdinalIgnoreCase))
+        {
+            return Color.FromArgb(107, 114, 128); // gray
+        }
+
+        return Color.FromArgb(59, 130, 246); // fallback blue
     }
 
     private static string BuildCustomerKey(DoctorAppointmentListItemDto appointment)

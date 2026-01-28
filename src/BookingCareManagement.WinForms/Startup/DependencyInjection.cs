@@ -15,7 +15,12 @@ public static class DependencyInjection
         services.AddSingleton(SessionState.CreateUnauthenticated());
         services.AddSingleton<IAuthStorage, FileAuthStorage>();
         services.AddSingleton<DialogService>();
+        services.AddSingleton<LocalCacheService>();
+        services.AddSingleton<OfflineStateService>();
+        services.AddSingleton<OfflineCacheService>();
+        services.AddSingleton<OfflineQueueService>();
         services.AddTransient<AuthHeaderHandler>();
+        services.AddTransient<OfflineHandler>();
         // API client services
         services.AddSingleton<AuthService>();
 
@@ -29,6 +34,7 @@ public static class DependencyInjection
                 client.BaseAddress = new Uri(baseUrl);
             })
             .AddHttpMessageHandler<AuthHeaderHandler>()
+            .AddHttpMessageHandler<OfflineHandler>()
             .ConfigurePrimaryHttpMessageHandler(() => new HttpClientHandler
             {
                 ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
